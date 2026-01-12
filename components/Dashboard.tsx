@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar } from 'lucide-react';
 import { useMatches, useAllPlayers } from '@/lib/useData';
+import { hapticPatterns } from '@/lib/haptic';
 import MatchCard from './MatchCard';
 import StatsView from './StatsView';
 import SettingsView from './SettingsView';
@@ -24,7 +25,9 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
     const { players, fetchAllPlayers } = useAllPlayers();
     const upcomingRef = useRef<HTMLElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const isScrollingRef = useRef(false);
+    const isProgrammaticScrollingRef = useRef(false);
+    const isUserScrollingRef = useRef(false);
+    const isInitialMount = useRef(true);
 
     useEffect(() => {
         fetchMatches();
@@ -38,21 +41,43 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
     const settingsRef = useRef<HTMLDivElement>(null);
 
     // Scroll to current view when it changes programmatically OR when loading finishes
+    // Using useLayoutEffect to prevent visual flash on initial load
     useEffect(() => {
-        if (!loading && scrollContainerRef.current && !isScrollingRef.current) {
+        // If user is actively scrolling/swiping, DO NOT trigger programmatic scroll
+        // This prevents the pill update from forcing a scroll back/forth
+        if (isUserScrollingRef.current) return;
+
+        if (!loading && scrollContainerRef.current) {
+            // Mark as programmatic scrolling to prevent IntersectionObserver conflicts
+            isProgrammaticScrollingRef.current = true;
+
             // Small timeout to ensure layout is stable
             requestAnimationFrame(() => {
                 if (scrollContainerRef.current) {
                     const viewIndex = viewOrder.indexOf(currentView);
                     const scrollTarget = viewIndex * window.innerWidth;
+                    
+                    // Use 'auto' (instant) for the first positioning after loading, 'smooth' for navigation changes
+                    const behavior = isInitialMount.current ? 'auto' : 'smooth';
+                    
                     scrollContainerRef.current.scrollTo({
                         left: scrollTarget,
-                        behavior: 'auto', // Instant jump on load/refresh
+                        behavior, 
                     });
+
+                    if (isInitialMount.current) {
+                        isInitialMount.current = false;
+                    }
+
+                    // Reset after scroll completes
+                    // Increased timeout slightly to ensure smooth scroll is fully done
+                    setTimeout(() => {
+                        isProgrammaticScrollingRef.current = false;
+                    }, 800);
                 }
             });
         }
-    }, [loading, currentView]); // Added loading dependency
+    }, [loading, currentView]); 
 
     // Intersection Observer for updating the pill during swipe
     useEffect(() => {
@@ -60,12 +85,17 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
 
         const observer = new IntersectionObserver(
             (entries) => {
+                // Don't update during programmatic scrolling (clicking nav items)
+                // BUT DO update during user scrolling (swiping)
+                if (isProgrammaticScrollingRef.current) return;
+
                 // Find the entry that is most visible
                 const visibleEntry = entries.find(entry => entry.isIntersecting);
 
                 if (visibleEntry) {
                     const viewName = visibleEntry.target.getAttribute('data-view') as 'home' | 'stats' | 'league' | 'settings';
                     if (viewName && viewName !== currentView) {
+                        hapticPatterns.swipe();
                         onViewChange(viewName);
                     }
                 }
@@ -84,15 +114,15 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
         return () => observer.disconnect();
     }, [loading, currentView, onViewChange]);
 
-    // Mark as manual scrolling when user touches (to prevent auto-scroll interference)
+    // Mark as manual scrolling when user touches
     const handleTouchStart = () => {
-        isScrollingRef.current = true;
+        isUserScrollingRef.current = true;
     };
 
     const handleTouchEnd = () => {
         // Reset after a delay to allow snap to finish
         setTimeout(() => {
-            isScrollingRef.current = false;
+            isUserScrollingRef.current = false;
         }, 500);
     };
 

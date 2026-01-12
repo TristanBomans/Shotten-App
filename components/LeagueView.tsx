@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAllScraperTeams, fetchAllScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
-import { Loader2, ChevronDown, Trophy, Users, TrendingUp } from 'lucide-react';
+import { Loader2, ChevronDown, Trophy, Users, TrendingUp, X } from 'lucide-react';
 import TeamDetailModal from './TeamDetailModal';
 
 export default function LeagueView() {
@@ -14,6 +14,7 @@ export default function LeagueView() {
     const [selectedTeam, setSelectedTeam] = useState<{ team: ScraperTeam, players: ScraperPlayer[] } | null>(null);
     const [selectedLeague, setSelectedLeague] = useState<string>('');
     const [visiblePlayers, setVisiblePlayers] = useState(50);
+    const [teamSelection, setTeamSelection] = useState<{ player: ScraperPlayer, teams: ScraperTeam[] } | null>(null);
 
     // Extract unique leagues
     const leagues = useMemo(() => {
@@ -62,6 +63,19 @@ export default function LeagueView() {
             return p.teamId === team.externalId;
         });
         setSelectedTeam({ team, players: teamPlayers });
+    };
+
+    const handlePlayerClick = (player: ScraperPlayer) => {
+        const playerTeamIds = player.teamIds || [player.teamId];
+        const playerTeams = teams.filter(t => playerTeamIds.includes(t.externalId));
+
+        if (playerTeams.length === 0) return;
+
+        if (playerTeams.length === 1) {
+            handleTeamClick(playerTeams[0]);
+        } else {
+            setTeamSelection({ player, teams: playerTeams });
+        }
     };
 
     const isOwnTeam = (name: string) => {
@@ -438,7 +452,7 @@ export default function LeagueView() {
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         transition={{ delay: Math.min(index * 0.015, 0.3), duration: 0.2 }}
-                                                        onClick={() => primaryTeam && handleTeamClick(primaryTeam)}
+                                                        onClick={() => handlePlayerClick(player)}
                                                         style={{
                                                             background: isHighlighted ? 'rgba(10, 132, 255, 0.12)' :
                                                                        isTop3 ? 'rgba(255, 214, 10, 0.06)' : '#1c1c1e',
@@ -450,7 +464,7 @@ export default function LeagueView() {
                                                             border: isTop3 ? '0.5px solid rgba(255, 214, 10, 0.15)' : '0.5px solid rgba(255,255,255,0.05)',
                                                             position: 'relative',
                                                             overflow: 'hidden',
-                                                            cursor: primaryTeam ? 'pointer' : 'default',
+                                                            cursor: playerTeams.length > 0 ? 'pointer' : 'default',
                                                         }}
                                                     >
                                                         {isHighlighted && (
@@ -568,6 +582,112 @@ export default function LeagueView() {
                     </AnimatePresence>
                 )}
             </div>
+
+            {/* Team Selection Modal */}
+            <AnimatePresence>
+                {teamSelection && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setTeamSelection(null)}
+                            style={{
+                                position: 'fixed', inset: 0,
+                                background: 'rgba(0,0,0,0.85)',
+                                backdropFilter: 'blur(10px)',
+                                zIndex: 10000,
+                            }}
+                        />
+                        <div style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 10001,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            pointerEvents: 'none',
+                            padding: 20,
+                        }}>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                                style={{
+                                    width: '100%',
+                                    maxWidth: 320,
+                                    background: 'rgba(28, 28, 30, 0.95)',
+                                    backdropFilter: 'blur(40px)',
+                                    WebkitBackdropFilter: 'blur(40px)',
+                                    borderRadius: 20,
+                                    padding: 20,
+                                    border: '0.5px solid rgba(255,255,255,0.1)',
+                                    boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                                    pointerEvents: 'auto',
+                                }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>
+                                        Select Team
+                                    </div>
+                                    <button
+                                        onClick={() => setTeamSelection(null)}
+                                        style={{
+                                            background: 'rgba(255,255,255,0.08)',
+                                            border: 'none', borderRadius: '50%',
+                                            width: 30, height: 30,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            color: 'rgba(255,255,255,0.8)', cursor: 'pointer',
+                                            transition: 'background 0.2s',
+                                        }}
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {teamSelection.teams.map(team => (
+                                        <motion.button
+                                            key={team.externalId}
+                                            onClick={() => {
+                                                handleTeamClick(team);
+                                                setTeamSelection(null);
+                                            }}
+                                            whileTap={{ scale: 0.97 }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 12,
+                                                padding: '12px 14px',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                border: '0.5px solid rgba(255,255,255,0.05)',
+                                                borderRadius: 14,
+                                                cursor: 'pointer',
+                                                textAlign: 'left',
+                                            }}
+                                        >
+                                            {team.imageBase64 ? (
+                                                <img src={team.imageBase64} alt="" style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{
+                                                    width: 36, height: 36, borderRadius: 10,
+                                                    background: 'linear-gradient(135deg, #ffd60a, #ff9500)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    fontWeight: 700, fontSize: '0.9rem', color: 'black'
+                                                }}>
+                                                    {team.name.charAt(0)}
+                                                </div>
+                                            )}
+                                            <div style={{ color: 'white', fontWeight: 600, fontSize: '0.95rem' }}>
+                                                {team.name}
+                                            </div>
+                                        </motion.button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
 
             {/* Modal */}
             <AnimatePresence>

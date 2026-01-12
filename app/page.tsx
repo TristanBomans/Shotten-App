@@ -14,10 +14,20 @@ const views: View[] = ['home', 'stats', 'league', 'settings'];
 function HomeContent() {
     const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
-    const [currentView, setCurrentView] = useState<View>('home');
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
+
+    const [currentView, setCurrentView] = useState<View>(() => {
+        // Initialize state from URL param if present to avoid initial flash
+        if (typeof window !== 'undefined') {
+            const viewParam = new URLSearchParams(window.location.search).get('view');
+            if (viewParam && views.includes(viewParam as View)) {
+                return viewParam as View;
+            }
+        }
+        return 'home';
+    });
 
     useEffect(() => {
         const stored = localStorage.getItem('selectedPlayerId');
@@ -26,8 +36,9 @@ function HomeContent() {
         }
 
         // Check for view parameter in URL to handle navigation from version page
+        // Only update if different to avoid redundant state updates
         const viewParam = searchParams?.get('view');
-        if (viewParam && views.includes(viewParam as View)) {
+        if (viewParam && views.includes(viewParam as View) && viewParam !== currentView) {
             setCurrentView(viewParam as View);
         }
 

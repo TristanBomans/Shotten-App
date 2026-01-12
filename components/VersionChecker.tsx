@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface VersionInfo {
   version: string;
@@ -20,6 +20,7 @@ interface UseVersionCheckerReturn {
 
 const VERSION_CHECK_KEY = 'shotten_last_version_check';
 const UPDATE_AVAILABLE_KEY = 'shotten_update_available';
+const CURRENT_VERSION_KEY = 'shotten_current_version';
 
 export function useVersionChecker(): UseVersionCheckerReturn {
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
@@ -27,12 +28,31 @@ export function useVersionChecker(): UseVersionCheckerReturn {
   const [hasUpdate, setHasUpdate] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const initialCheckDone = useRef(false);
 
+  // Initialize from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(VERSION_CHECK_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setLastChecked(new Date(parsed));
+    const storedLastCheck = localStorage.getItem(VERSION_CHECK_KEY);
+    if (storedLastCheck) {
+      try {
+        const parsed = JSON.parse(storedLastCheck);
+        setLastChecked(new Date(parsed));
+      } catch {
+        // Invalid JSON, ignore
+      }
+    }
+
+    // Load current version from localStorage (set after first successful load)
+    const storedCurrentVersion = localStorage.getItem(CURRENT_VERSION_KEY);
+    if (storedCurrentVersion) {
+      setCurrentVersion(storedCurrentVersion);
+    }
+
+    // Check if there's a pending update
+    const pendingUpdate = localStorage.getItem(UPDATE_AVAILABLE_KEY);
+    if (pendingUpdate && storedCurrentVersion && pendingUpdate !== storedCurrentVersion) {
+      setHasUpdate(true);
+      setLatestVersion(pendingUpdate);
     }
   }, []);
 
@@ -41,7 +61,13 @@ export function useVersionChecker(): UseVersionCheckerReturn {
 
     setIsChecking(true);
     try {
-      const res = await fetch('/version.json');
+      // Add cache-busting to prevent cached responses
+      const res = await fetch(`/version.json?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
       if (!res.ok) throw new Error('Failed to fetch version');
 
       const versionInfo: VersionInfo = await res.json();
@@ -51,13 +77,21 @@ export function useVersionChecker(): UseVersionCheckerReturn {
       localStorage.setItem(VERSION_CHECK_KEY, JSON.stringify(now.toISOString()));
       setLastChecked(now);
 
-      const updateAvailable = localStorage.getItem(UPDATE_AVAILABLE_KEY);
-      if (updateAvailable === versionInfo.version) {
-        setHasUpdate(true);
-      } else if (versionInfo.version !== currentVersion) {
+      // Get the current version we're comparing against
+      const storedCurrentVersion = localStorage.getItem(CURRENT_VERSION_KEY);
+
+      if (!storedCurrentVersion) {
+        // First time running - store current version as baseline
+        localStorage.setItem(CURRENT_VERSION_KEY, versionInfo.version);
+        setCurrentVersion(versionInfo.version);
+        setHasUpdate(false);
+        localStorage.removeItem(UPDATE_AVAILABLE_KEY);
+      } else if (versionInfo.version !== storedCurrentVersion) {
+        // New version available!
         setHasUpdate(true);
         localStorage.setItem(UPDATE_AVAILABLE_KEY, versionInfo.version);
       } else {
+        // Up to date
         setHasUpdate(false);
         localStorage.removeItem(UPDATE_AVAILABLE_KEY);
       }
@@ -66,30 +100,51 @@ export function useVersionChecker(): UseVersionCheckerReturn {
     } finally {
       setIsChecking(false);
     }
-  }, [isChecking, currentVersion]);
+  }, [isChecking]);
 
   const updateApp = useCallback(async () => {
-    if (!latestVersion) return;
-
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        await registration.update();
+    setIsChecking(true);
+    
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.update();
+        }
       }
+
+      // Clear version tracking
+      localStorage.removeItem(VERSION_CHECK_KEY);
+      localStorage.removeItem(UPDATE_AVAILABLE_KEY);
+      
+      // Update the stored current version to the latest version
+      if (latestVersion) {
+        localStorage.setItem(CURRENT_VERSION_KEY, latestVersion);
+      }
+
+      // Clear all caches
+      if (typeof caches !== 'undefined') {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
+      }
+
+      // Reload the page
+      window.location.reload();
+    } catch (err) {
+      console.error('Update failed:', err);
+      setIsChecking(false);
     }
-
-    localStorage.removeItem(VERSION_CHECK_KEY);
-    localStorage.removeItem(UPDATE_AVAILABLE_KEY);
-
-    if (caches) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map((name) => caches.delete(name)));
-    }
-
-    window.location.reload();
   }, [latestVersion]);
 
-useEffect(() => {
+  // Initial check on mount + periodic checks
+  useEffect(() => {
+    // Do an initial check
+    if (!initialCheckDone.current) {
+      initialCheckDone.current = true;
+      checkForUpdates();
+    }
+
+    // Set up periodic checks every 5 minutes
     const interval = setInterval(() => {
       checkForUpdates();
     }, 5 * 60 * 1000);
@@ -109,15 +164,7 @@ useEffect(() => {
 }
 
 export default function VersionChecker() {
-  const { hasUpdate, isChecking, checkForUpdates, updateApp, lastChecked } = useVersionChecker();
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      checkForUpdates();
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [checkForUpdates]);
+  const { hasUpdate, isChecking, updateApp, lastChecked } = useVersionChecker();
 
   if (!hasUpdate) return null;
 

@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { Home, BarChart2, Settings, Trophy } from 'lucide-react';
+import { hapticPatterns } from '@/lib/haptic';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
 
@@ -26,10 +27,10 @@ export default function FloatingNav({ currentView, onNavigate }: FloatingNavProp
         const currentIndex = navItems.findIndex(item => item.id === currentView);
         const threshold = 20;
 
-        if (x < -threshold && currentIndex < navItems.length - 1) {
-            return navItems[currentIndex + 1].id;
-        } else if (x > threshold && currentIndex > 0) {
+        if (x < -threshold && currentIndex > 0) {
             return navItems[currentIndex - 1].id;
+        } else if (x > threshold && currentIndex < navItems.length - 1) {
+            return navItems[currentIndex + 1].id;
         }
         return null;
     }, [currentView]);
@@ -40,19 +41,31 @@ export default function FloatingNav({ currentView, onNavigate }: FloatingNavProp
     }, [calculateDragTarget]);
 
     const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-        setIsDragging(false);
         const currentIndex = navItems.findIndex(item => item.id === currentView);
         const threshold = 20;
         const velocity = info.velocity.x;
         const offset = info.offset.x;
 
-        if ((velocity < -500 || offset < -threshold) && currentIndex < navItems.length - 1) {
-            onNavigate(navItems[currentIndex + 1].id);
-        } else if ((velocity > 500 || offset > threshold) && currentIndex > 0) {
-            onNavigate(navItems[currentIndex - 1].id);
+        let shouldNavigate = false;
+        let targetView: View | null = null;
+
+        if ((velocity < -500 || offset < -threshold) && currentIndex > 0) {
+            shouldNavigate = true;
+            targetView = navItems[currentIndex - 1].id;
+        } else if ((velocity > 500 || offset > threshold) && currentIndex < navItems.length - 1) {
+            shouldNavigate = true;
+            targetView = navItems[currentIndex + 1].id;
         }
 
+        // Reset states first
         setDragTarget(null);
+        setIsDragging(false);
+
+        // Navigate after state cleanup
+        if (shouldNavigate && targetView) {
+            hapticPatterns.swipe();
+            onNavigate(targetView);
+        }
     }, [currentView, onNavigate]);
 
     return (
@@ -107,7 +120,12 @@ export default function FloatingNav({ currentView, onNavigate }: FloatingNavProp
                         return (
                             <motion.button
                                 key={item.id}
-                                onClick={() => !isDragging && onNavigate(item.id)}
+                                onClick={() => {
+                                    if (!isDragging) {
+                                        hapticPatterns.navigate();
+                                        onNavigate(item.id);
+                                    }
+                                }}
                                 whileTap={{ scale: isDragging ? 1 : 0.85 }}
                                 drag={isActive ? "x" : false}
                                 dragConstraints={{ left: 0, right: 0 }}

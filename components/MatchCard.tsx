@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { MapPin, Check, X, HelpCircle, Users, ChevronRight, CalendarPlus, Loader2, Trophy, Target, UserCircle } from 'lucide-react';
 import { useUpdateAttendance, findScraperTeamByName, fetchScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
+import { hapticPatterns } from '@/lib/haptic';
 import type { Match, Player } from '@/lib/mockData';
 
 interface MatchCardProps {
@@ -26,6 +27,25 @@ export default function MatchCard({
     const [countdown, setCountdown] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
     const [showConfetti, setShowConfetti] = useState(false);
     const [showModal, setShowModal] = useState(false);
+    const [showFullNames, setShowFullNames] = useState(false);
+
+    // Load showFullNames setting
+    useEffect(() => {
+        const stored = localStorage.getItem('showFullNames');
+        setShowFullNames(stored === 'true');
+
+        // Listen for changes to showFullNames setting
+        const handleShowFullNamesChanged = (event: Event) => {
+            const customEvent = event as CustomEvent<boolean>;
+            setShowFullNames(customEvent.detail);
+        };
+
+        window.addEventListener('showFullNamesChanged', handleShowFullNamesChanged);
+
+        return () => {
+            window.removeEventListener('showFullNamesChanged', handleShowFullNamesChanged);
+        };
+    }, []);
 
     // Memoize date to prevent infinite loop
     const dateTimestamp = useMemo(() => {
@@ -77,6 +97,13 @@ export default function MatchCard({
 
     const handleStatusUpdate = async (status: 'Present' | 'NotPresent' | 'Maybe') => {
         if (myStatus === status) return;
+
+        // Trigger haptic feedback on status change
+        if (status === 'Present') {
+            hapticPatterns.success();
+        } else {
+            hapticPatterns.tap();
+        }
 
         try {
             await updateAttendance(match.id, currentPlayerId, status, () => {
@@ -300,30 +327,42 @@ export default function MatchCard({
                     </div>
 
                     {/* Squad Preview */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '12px 0 0',
-                    }}>
-                        <PlayerAvatars
-                            players={[...present, ...maybe].slice(0, 5)}
+                    {showFullNames ? (
+                        <SquadNamesList
+                            present={present}
+                            maybe={maybe}
+                            notPresent={roster.filter(p => p.status === 'NotPresent')}
                             currentPlayerId={currentPlayerId}
-                            size="sm"
                         />
-                        {present.length > 0 && (
-                            <span style={{
-                                fontSize: '0.8rem',
-                                color: 'rgba(255,255,255,0.5)',
-                            }}>
-                                {present.length} going
-                            </span>
-                        )}
-                    </div>
+                    ) : (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            padding: '12px 0 0',
+                        }}>
+                            <PlayerAvatars
+                                players={[...present, ...maybe].slice(0, 5)}
+                                currentPlayerId={currentPlayerId}
+                                size="sm"
+                            />
+                            {present.length > 0 && (
+                                <span style={{
+                                    fontSize: '0.8rem',
+                                    color: 'rgba(255,255,255,0.5)',
+                                }}>
+                                    {present.length} going
+                                </span>
+                            )}
+                        </div>
+                    )}
 
                     {/* More Info Button - Opens unified modal */}
                     <motion.button
-                        onClick={() => setShowModal(true)}
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setShowModal(true);
+                        }}
                         whileTap={{ scale: 0.98 }}
                         style={{
                             width: '100%',
@@ -455,28 +494,46 @@ export default function MatchCard({
             </div>
 
             {/* Squad count display */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                marginTop: 12,
-                paddingTop: 12,
-                borderTop: '0.5px solid rgba(255, 255, 255, 0.08)',
-            }}>
-                <Users size={12} style={{ color: 'rgba(255,255,255,0.35)' }} />
-                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>
-                    {present.length} in
-                </span>
-                <PlayerAvatars
-                    players={present.slice(0, 3)}
-                    currentPlayerId={currentPlayerId}
-                    size="sm"
-                />
-            </div>
+            {showFullNames ? (
+                <div style={{
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTop: '0.5px solid rgba(255, 255, 255, 0.08)',
+                }}>
+                    <SquadNamesList
+                        present={present}
+                        maybe={maybe}
+                        notPresent={roster.filter(p => p.status === 'NotPresent')}
+                        currentPlayerId={currentPlayerId}
+                    />
+                </div>
+            ) : (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTop: '0.5px solid rgba(255, 255, 255, 0.08)',
+                }}>
+                    <Users size={12} style={{ color: 'rgba(255,255,255,0.35)' }} />
+                    <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>
+                        {present.length} in
+                    </span>
+                    <PlayerAvatars
+                        players={present.slice(0, 3)}
+                        currentPlayerId={currentPlayerId}
+                        size="sm"
+                    />
+                </div>
+            )}
 
             {/* More Info Button - Opens unified modal */}
             <motion.button
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                    hapticPatterns.tap();
+                    setShowModal(true);
+                }}
                 whileTap={{ scale: 0.97 }}
                 style={{
                     width: '100%',
@@ -776,6 +833,119 @@ function PlayerAvatars({
                     </motion.div>
                 );
             })}
+        </div>
+    );
+}
+
+// Compact squad names list for when showFullNames is enabled
+function SquadNamesList({
+    present,
+    maybe,
+    notPresent,
+    currentPlayerId,
+}: {
+    present: { id: number; name: string; status: string }[];
+    maybe: { id: number; name: string; status: string }[];
+    notPresent: { id: number; name: string; status: string }[];
+    currentPlayerId: number;
+}) {
+    const formatName = (player: { id: number; name: string }) => {
+        const isMe = player.id === currentPlayerId;
+        return isMe ? `${player.name} (you)` : player.name;
+    };
+
+    const formatList = (players: { id: number; name: string }[]) => {
+        if (players.length === 0) return null;
+        return players.map(formatName).join(', ');
+    };
+
+    return (
+        <div style={{
+            padding: '12px 0 0',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+        }}>
+            {present.length > 0 && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                }}>
+                    <span style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: '#30d158',
+                        minWidth: 50,
+                    }}>
+                        Coming
+                    </span>
+                    <span style={{
+                        fontSize: '0.75rem',
+                        color: 'rgba(255,255,255,0.7)',
+                        flex: 1,
+                        lineHeight: 1.4,
+                    }}>
+                        {formatList(present)}
+                    </span>
+                </div>
+            )}
+            {maybe.length > 0 && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                }}>
+                    <span style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: '#ffd60a',
+                        minWidth: 50,
+                    }}>
+                        Maybe
+                    </span>
+                    <span style={{
+                        fontSize: '0.75rem',
+                        color: 'rgba(255,255,255,0.5)',
+                        flex: 1,
+                        lineHeight: 1.4,
+                    }}>
+                        {formatList(maybe)}
+                    </span>
+                </div>
+            )}
+            {notPresent.length > 0 && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                }}>
+                    <span style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: '#ff453a',
+                        minWidth: 50,
+                    }}>
+                        Out
+                    </span>
+                    <span style={{
+                        fontSize: '0.75rem',
+                        color: 'rgba(255,255,255,0.4)',
+                        flex: 1,
+                        lineHeight: 1.4,
+                    }}>
+                        {formatList(notPresent)}
+                    </span>
+                </div>
+            )}
+            {present.length === 0 && maybe.length === 0 && notPresent.length === 0 && (
+                <span style={{
+                    fontSize: '0.75rem',
+                    color: 'rgba(255,255,255,0.4)',
+                }}>
+                    No responses yet
+                </span>
+            )}
         </div>
     );
 }
@@ -1251,6 +1421,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
     // State for opponent team data from scraper API
     const [opponentData, setOpponentData] = useState<ScraperTeam | null>(null);
     const [opponentPlayers, setOpponentPlayers] = useState<ScraperPlayer[]>([]);
+    const [opponentMatches, setOpponentMatches] = useState<any[]>([]);
     const [loadingOpponent, setLoadingOpponent] = useState(false);
 
     // Fetch opponent data from our scraper API
@@ -1264,9 +1435,16 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                     const team = await findScraperTeamByName(opponentTeam);
                     if (team) {
                         setOpponentData(team);
-                        // Also fetch players
+                        // Fetch players
                         const players = await fetchScraperPlayers(team.externalId);
                         setOpponentPlayers(players.slice(0, 5)); // Top 5 players
+                        
+                        // Fetch matches for recent form
+                        const matchesRes = await fetch(`https://shottenscraper.trisbom.com/api/matches?teamId=${team.externalId}`);
+                        if (matchesRes.ok) {
+                            const matchesData = await matchesRes.json();
+                            setOpponentMatches(matchesData);
+                        }
                     }
                 } catch (error) {
                     console.warn('Failed to fetch opponent data:', error);
@@ -1283,6 +1461,29 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
     const mapUrl = match.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}` : null;
     const appleMapUrl = match.location ? `https://maps.apple.com/?q=${encodeURIComponent(match.location)}` : null;
     const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${dateObj.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${new Date(dateObj.getTime() + 2 * 60 * 60 * 1000).toISOString().replace(/[-:]/g, '').split('.')[0]}Z&location=${encodeURIComponent(match.location || '')}`;
+
+    // Calculate recent form from opponent matches
+    const getRecentForm = () => {
+        if (!opponentData || opponentMatches.length === 0) return [];
+        
+        const playedMatches = opponentMatches
+            .filter((m: any) => m.status === 'Played')
+            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 5);
+
+        return playedMatches.map((m: any) => {
+            const isHome = m.homeTeam.toLowerCase().includes(opponentData.name.toLowerCase().slice(0, 5)) ||
+                           opponentData.name.toLowerCase().includes(m.homeTeam.toLowerCase().slice(0, 5));
+            const teamScore = isHome ? m.homeScore : m.awayScore;
+            const opponentScore = isHome ? m.awayScore : m.homeScore;
+            
+            if (teamScore > opponentScore) return 'W';
+            if (teamScore < opponentScore) return 'L';
+            return 'D';
+        });
+    };
+
+    const recentForm = getRecentForm();
 
     const generateICS = () => {
         const startDate = dateObj.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -1513,6 +1714,43 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                                                         )}
                                                     </div>
                                                 </div>
+
+                                                {/* Recent Form */}
+                                                {recentForm.length > 0 && (
+                                                    <div style={{ padding: '0 12px 12px 12px' }}>
+                                                        <div style={{
+                                                            fontSize: '0.7rem', fontWeight: 600,
+                                                            color: 'rgba(255,255,255,0.4)',
+                                                            textTransform: 'uppercase',
+                                                            marginBottom: 8,
+                                                        }}>
+                                                            Recent Form
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: 6 }}>
+                                                            {recentForm.map((result, i) => (
+                                                                <div
+                                                                    key={i}
+                                                                    style={{
+                                                                        width: 32, height: 32,
+                                                                        borderRadius: 8,
+                                                                        background: result === 'W' ? 'rgba(48, 209, 88, 0.2)' :
+                                                                                   result === 'L' ? 'rgba(255, 69, 58, 0.2)' :
+                                                                                   'rgba(255, 214, 10, 0.2)',
+                                                                        color: result === 'W' ? '#30d158' :
+                                                                               result === 'L' ? '#ff453a' : '#ffd60a',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        fontSize: '0.85rem',
+                                                                        fontWeight: 700,
+                                                                    }}
+                                                                >
+                                                                    {result}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 {/* Stats Grid */}
                                                 {opponentData.rank !== undefined && (

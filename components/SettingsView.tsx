@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Database, Wifi, WifiOff, Settings, Bell, Smartphone, Info, ChevronRight, RefreshCw } from 'lucide-react';
+import { LogOut, Database, Wifi, WifiOff, Settings, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users } from 'lucide-react';
 import { getUseMockData, setUseMockData } from '@/lib/useData';
+import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
 import VersionChecker from './VersionChecker';
 import Link from 'next/link';
@@ -17,7 +18,8 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
     const [isLocalhost, setIsLocalhost] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [hapticFeedback, setHapticFeedback] = useState(true);
-    const { hasUpdate, checkForUpdates, isChecking } = useVersionChecker();
+    const [showFullNames, setShowFullNames] = useState(false);
+    const { hasUpdate, updateApp, isChecking } = useVersionChecker();
 
     useEffect(() => {
         setUseMock(getUseMockData());
@@ -29,15 +31,19 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
         setNotificationsEnabled(notifPref === 'true');
         const hapticPref = localStorage.getItem('hapticFeedback');
         setHapticFeedback(hapticPref !== 'false');
+        const fullNamesPref = localStorage.getItem('showFullNames');
+        setShowFullNames(fullNamesPref === 'true');
     }, []);
 
     const handleToggleMock = () => {
+        hapticPatterns.toggle();
         const newValue = !useMock;
         setUseMock(newValue);
         setUseMockData(newValue);
     };
 
     const handleToggleNotifications = async () => {
+        hapticPatterns.toggle();
         if (!notificationsEnabled && 'Notification' in window) {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
@@ -54,10 +60,20 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
         const newValue = !hapticFeedback;
         setHapticFeedback(newValue);
         localStorage.setItem('hapticFeedback', newValue.toString());
-        // Trigger test haptic
-        if (newValue && 'vibrate' in navigator) {
-            navigator.vibrate(10);
+        // Trigger test haptic using our utility
+        if (newValue) {
+            hapticPatterns.toggle();
         }
+    };
+
+    const handleToggleFullNames = () => {
+        hapticPatterns.toggle();
+        const newValue = !showFullNames;
+        setShowFullNames(newValue);
+        localStorage.setItem('showFullNames', newValue.toString());
+        
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new CustomEvent('showFullNamesChanged', { detail: newValue }));
     };
 
     return (
@@ -137,6 +153,19 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
                         toggle
                         toggleValue={hapticFeedback}
                         onToggle={handleToggleHaptic}
+                        hasBorder
+                    />
+
+                    {/* Show Full Names */}
+                    <SettingRow
+                        icon={<Users size={20} />}
+                        iconBg="rgba(10, 132, 255, 0.15)"
+                        iconColor="#0a84ff"
+                        title="Show Full Names"
+                        subtitle={showFullNames ? 'Names visible on cards' : 'Avatars only'}
+                        toggle
+                        toggleValue={showFullNames}
+                        onToggle={handleToggleFullNames}
                     />
                 </motion.div>
 
@@ -213,7 +242,7 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
                         iconColor="#0a84ff"
                         title="About Shotten"
                         hasUpdate={hasUpdate}
-                        onUpdate={checkForUpdates}
+                        onUpdate={updateApp}
                         isChecking={isChecking}
                     />
                     <Link href="/version/?from=settings" style={{ textDecoration: 'none', color: 'inherit' }}>

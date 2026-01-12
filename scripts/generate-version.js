@@ -19,6 +19,26 @@ function getCommitHash() {
   }
 }
 
+function getCommitMessage() {
+  try {
+    const msg = execSync('git log -1 --pretty=%B', { encoding: 'utf8' }).trim();
+    const lines = msg.split('\n');
+    const subject = lines[0];
+    const body = lines.slice(1).join('\n').trim();
+    return {
+      message: msg,
+      subject,
+      body
+    };
+  } catch {
+    return {
+      message: '',
+      subject: '',
+      body: ''
+    };
+  }
+}
+
 function getBuildTimestamp() {
   return new Date().toISOString();
 }
@@ -27,11 +47,15 @@ function main() {
   const version = getVersion();
   const commitHash = getCommitHash();
   const timestamp = getBuildTimestamp();
+  const commitMsg = getCommitMessage();
 
   const versionInfo = {
     version,
     commitHash: commitHash || `no-git-${Date.now()}`,
     buildTimestamp: timestamp,
+    commitMessage: commitMsg.message,
+    commitSubject: commitMsg.subject,
+    commitBody: commitMsg.body,
   };
 
   const outputPath = path.join(process.cwd(), 'public', 'version.json');
@@ -40,6 +64,7 @@ function main() {
   console.log(`Version info generated:`);
   console.log(`  Version: ${versionInfo.version}`);
   console.log(`  Commit: ${versionInfo.commitHash}`);
+  console.log(`  Subject: ${versionInfo.commitSubject}`);
   console.log(`  Timestamp: ${versionInfo.buildTimestamp}`);
   console.log(`  Output: ${outputPath}`);
 }
