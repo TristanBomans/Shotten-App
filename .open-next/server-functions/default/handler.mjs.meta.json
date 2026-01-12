@@ -9792,71 +9792,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/api/Matches/route.js": {
-      "bytes": 7281,
-      "imports": [
-        {
-          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
-          "kind": "require-call",
-          "original": "next/dist/compiled/next-server/app-page.runtime.prod.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js",
-          "kind": "require-call",
-          "original": "next/dist/compiled/next-server/app-route.runtime.prod.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
-          "kind": "require-call",
-          "original": "../../../webpack-runtime.js"
-        }
-      ],
-      "format": "cjs"
-    },
     ".open-next/server-functions/default/.next/server/app/api/Matches/[id]/route.js": {
       "bytes": 7705,
-      "imports": [
-        {
-          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
-          "kind": "require-call",
-          "original": "next/dist/compiled/next-server/app-page.runtime.prod.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js",
-          "kind": "require-call",
-          "original": "next/dist/compiled/next-server/app-route.runtime.prod.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
-          "kind": "require-call",
-          "original": "../../../../webpack-runtime.js"
-        }
-      ],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/.next/server/app/api/Teams/route.js": {
-      "bytes": 6816,
-      "imports": [
-        {
-          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
-          "kind": "require-call",
-          "original": "next/dist/compiled/next-server/app-page.runtime.prod.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js",
-          "kind": "require-call",
-          "original": "next/dist/compiled/next-server/app-route.runtime.prod.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
-          "kind": "require-call",
-          "original": "../../../webpack-runtime.js"
-        }
-      ],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/.next/server/app/api/lzv/matches/route.js": {
-      "bytes": 7111,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
@@ -9897,8 +9834,8 @@
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/api/lzv/players/route.js": {
-      "bytes": 6919,
+    ".open-next/server-functions/default/.next/server/app/api/Players/route.js": {
+      "bytes": 7095,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
@@ -9913,13 +9850,13 @@
         {
           "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
           "kind": "require-call",
-          "original": "../../../../webpack-runtime.js"
+          "original": "../../../webpack-runtime.js"
         }
       ],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/api/Players/route.js": {
-      "bytes": 7095,
+    ".open-next/server-functions/default/.next/server/app/api/Teams/route.js": {
+      "bytes": 6816,
       "imports": [
         {
           "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
@@ -9977,27 +9914,6 @@
           "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
           "kind": "require-call",
           "original": "../../../../../webpack-runtime.js"
-        }
-      ],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/.next/server/app/api/matches/[matchId]/players/[playerId]/attendance/route.js": {
-      "bytes": 7376,
-      "imports": [
-        {
-          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
-          "kind": "require-call",
-          "original": "next/dist/compiled/next-server/app-page.runtime.prod.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js",
-          "kind": "require-call",
-          "original": "next/dist/compiled/next-server/app-route.runtime.prod.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
-          "kind": "require-call",
-          "original": "../../../../../../../webpack-runtime.js"
         }
       ],
       "format": "cjs"
@@ -10161,6 +10077,69 @@
       ],
       "format": "cjs"
     },
+    ".open-next/server-functions/default/.next/server/app/api/lzv/players/route.js": {
+      "bytes": 6955,
+      "imports": [
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-page.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-route.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
+          "kind": "require-call",
+          "original": "../../../../webpack-runtime.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/.next/server/app/api/lzv/matches/route.js": {
+      "bytes": 7147,
+      "imports": [
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-page.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-route.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
+          "kind": "require-call",
+          "original": "../../../../webpack-runtime.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/.next/server/app/api/Matches/route.js": {
+      "bytes": 7317,
+      "imports": [
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-page.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-route.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
+          "kind": "require-call",
+          "original": "../../../webpack-runtime.js"
+        }
+      ],
+      "format": "cjs"
+    },
     ".open-next/server-functions/default/.next/server/app/manifest.webmanifest/route.js": {
       "bytes": 4103,
       "imports": [
@@ -10178,6 +10157,27 @@
           "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
           "kind": "require-call",
           "original": "../../webpack-runtime.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/.next/server/app/api/matches/[matchId]/players/[playerId]/attendance/route.js": {
+      "bytes": 7412,
+      "imports": [
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-page.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js",
+          "kind": "require-call",
+          "original": "next/dist/compiled/next-server/app-route.runtime.prod.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/webpack-runtime.js",
+          "kind": "require-call",
+          "original": "../../../../../../../webpack-runtime.js"
         }
       ],
       "format": "cjs"
@@ -10251,24 +10251,9 @@
           "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/_not-found/page.js"
         },
         {
-          "path": ".open-next/server-functions/default/.next/server/app/api/Matches/route.js",
-          "kind": "require-call",
-          "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/Matches/route.js"
-        },
-        {
           "path": ".open-next/server-functions/default/.next/server/app/api/Matches/[id]/route.js",
           "kind": "require-call",
           "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/Matches/[id]/route.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/app/api/Teams/route.js",
-          "kind": "require-call",
-          "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/Teams/route.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/app/api/lzv/matches/route.js",
-          "kind": "require-call",
-          "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/lzv/matches/route.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/app/api/Players/[id]/route.js",
@@ -10276,14 +10261,14 @@
           "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/Players/[id]/route.js"
         },
         {
-          "path": ".open-next/server-functions/default/.next/server/app/api/lzv/players/route.js",
-          "kind": "require-call",
-          "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/lzv/players/route.js"
-        },
-        {
           "path": ".open-next/server-functions/default/.next/server/app/api/Players/route.js",
           "kind": "require-call",
           "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/Players/route.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/app/api/Teams/route.js",
+          "kind": "require-call",
+          "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/Teams/route.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/app/api/lzv/stats/route.js",
@@ -10294,11 +10279,6 @@
           "path": ".open-next/server-functions/default/.next/server/app/api/lzv/team/[id]/route.js",
           "kind": "require-call",
           "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/lzv/team/[id]/route.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/app/api/matches/[matchId]/players/[playerId]/attendance/route.js",
-          "kind": "require-call",
-          "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/matches/[matchId]/players/[playerId]/attendance/route.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/app/favicon.ico/route.js",
@@ -10321,9 +10301,29 @@
           "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/version/page.js"
         },
         {
+          "path": ".open-next/server-functions/default/.next/server/app/api/lzv/players/route.js",
+          "kind": "require-call",
+          "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/lzv/players/route.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/app/api/lzv/matches/route.js",
+          "kind": "require-call",
+          "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/lzv/matches/route.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/app/api/Matches/route.js",
+          "kind": "require-call",
+          "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/Matches/route.js"
+        },
+        {
           "path": ".open-next/server-functions/default/.next/server/app/manifest.webmanifest/route.js",
           "kind": "require-call",
           "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/manifest.webmanifest/route.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/app/api/matches/[matchId]/players/[playerId]/attendance/route.js",
+          "kind": "require-call",
+          "original": "/home/tristan/Documents/projects/Shotten-App/.open-next/server-functions/default/.next/server/app/api/matches/[matchId]/players/[playerId]/attendance/route.js"
         }
       ],
       "format": "cjs"
@@ -11358,7 +11358,7 @@
       "format": "esm"
     },
     ".open-next/server-functions/default/index.mjs": {
-      "bytes": 63385,
+      "bytes": 63513,
       "imports": [
         {
           "path": "node:module",
@@ -14434,26 +14434,17 @@
         ".open-next/server-functions/default/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js": {
           "bytesInOutput": 78667
         },
-        ".open-next/server-functions/default/.next/server/app/api/Matches/route.js": {
-          "bytesInOutput": 10962
-        },
         ".open-next/server-functions/default/.next/server/app/api/Matches/[id]/route.js": {
-          "bytesInOutput": 11650
-        },
-        ".open-next/server-functions/default/.next/server/app/api/Teams/route.js": {
-          "bytesInOutput": 10299
-        },
-        ".open-next/server-functions/default/.next/server/app/api/lzv/matches/route.js": {
-          "bytesInOutput": 10656
+          "bytesInOutput": 11649
         },
         ".open-next/server-functions/default/.next/server/app/api/Players/[id]/route.js": {
           "bytesInOutput": 11358
         },
-        ".open-next/server-functions/default/.next/server/app/api/lzv/players/route.js": {
-          "bytesInOutput": 10431
-        },
         ".open-next/server-functions/default/.next/server/app/api/Players/route.js": {
           "bytesInOutput": 10720
+        },
+        ".open-next/server-functions/default/.next/server/app/api/Teams/route.js": {
+          "bytesInOutput": 10299
         },
         ".open-next/server-functions/default/.next/server/app/api/lzv/stats/route.js": {
           "bytesInOutput": 10327
@@ -14461,11 +14452,8 @@
         ".open-next/server-functions/default/.next/server/app/api/lzv/team/[id]/route.js": {
           "bytesInOutput": 10522
         },
-        ".open-next/server-functions/default/.next/server/app/api/matches/[matchId]/players/[playerId]/attendance/route.js": {
-          "bytesInOutput": 10999
-        },
         ".open-next/server-functions/default/.next/server/app/favicon.ico/route.js": {
-          "bytesInOutput": 36422
+          "bytesInOutput": 36421
         },
         ".open-next/server-functions/default/.next/server/app/page.js": {
           "bytesInOutput": 134446
@@ -14476,8 +14464,20 @@
         ".open-next/server-functions/default/.next/server/app/version/page.js": {
           "bytesInOutput": 284255
         },
+        ".open-next/server-functions/default/.next/server/app/api/lzv/players/route.js": {
+          "bytesInOutput": 10482
+        },
+        ".open-next/server-functions/default/.next/server/app/api/lzv/matches/route.js": {
+          "bytesInOutput": 10707
+        },
+        ".open-next/server-functions/default/.next/server/app/api/Matches/route.js": {
+          "bytesInOutput": 11015
+        },
         ".open-next/server-functions/default/.next/server/app/manifest.webmanifest/route.js": {
           "bytesInOutput": 5835
+        },
+        ".open-next/server-functions/default/.next/server/app/api/matches/[matchId]/players/[playerId]/attendance/route.js": {
+          "bytesInOutput": 11050
         },
         ".open-next/server-functions/default/node_modules/next/dist/server/require.js": {
           "bytesInOutput": 15400
@@ -14621,10 +14621,10 @@
           "bytesInOutput": 748
         },
         ".open-next/server-functions/default/index.mjs": {
-          "bytesInOutput": 60995
+          "bytesInOutput": 61123
         }
       },
-      "bytes": 7504045
+      "bytes": 7504377
     }
   }
 }

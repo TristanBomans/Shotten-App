@@ -7,7 +7,7 @@
     "build": "node scripts/generate-version.js && next build",
     "start": "next start",
     "lint": "eslint",
-    "build:cf": "node scripts/generate-version.js && next build && opennextjs-cloudflare && cp .open-next/worker.js .open-next/assets/_worker.js",
+    "build:cf": "node scripts/generate-version.js && next build && opennextjs-cloudflare && npx esbuild .open-next/worker.js --bundle --outfile=.open-next/assets/_worker.js --format=esm --platform=browser --external:cloudflare:*",
     "build:worker": "opennextjs-cloudflare",
     "dev:worker": "wrangler dev --port 3000",
     "deploy": "opennextjs-cloudflare && cp .open-next/worker.js .open-next/assets/_worker.js && wrangler deploy"

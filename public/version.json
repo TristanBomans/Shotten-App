@@ -1,8 +1,8 @@
 {
   "version": "0.1.0",
-  "commitHash": "8cbbd76e56778525644b9c1ed2b291c86e09348f",
-  "buildTimestamp": "2026-01-12T18:50:02.105Z",
-  "commitMessage": "feat: Update configuration for Cloudflare integration and add OpenNext support",
-  "commitSubject": "feat: Update configuration for Cloudflare integration and add OpenNext support",
+  "commitHash": "5e9f9874e8a5e590033b80badc0ece417bdefa52",
+  "buildTimestamp": "2026-01-12T19:00:59.700Z",
+  "commitMessage": "fix: copy worker to assets directory for cloudflare pages",
+  "commitSubject": "fix: copy worker to assets directory for cloudflare pages",
   "commitBody": ""
 }
