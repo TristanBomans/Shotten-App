@@ -1,8 +1,8 @@
 {
   "version": "0.1.0",
-  "commitHash": "69352e4e7f366869910668a81413264e8b19dd76",
-  "buildTimestamp": "2026-01-12T19:17:34.080Z",
-  "commitMessage": "fix: use custom esbuild script for worker bundling",
-  "commitSubject": "fix: use custom esbuild script for worker bundling",
+  "commitHash": "e1d55ca2e580424ea93d886275da1bc3246b9848",
+  "buildTimestamp": "2026-01-12T19:22:31.794Z",
+  "commitMessage": "fix: adjust esbuild platform to node and add shim banner for cloudflare",
+  "commitSubject": "fix: adjust esbuild platform to node and add shim banner for cloudflare",
   "commitBody": ""
 }

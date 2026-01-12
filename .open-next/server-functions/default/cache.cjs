@@ -1,4 +1,4 @@
-globalThis.disableIncrementalCache = false;globalThis.disableDynamoDBCache = false;globalThis.isNextAfter15 = false;globalThis.openNextDebug = false;globalThis.openNextVersion = "3.5.2";
+globalThis.disableIncrementalCache = false;globalThis.disableDynamoDBCache = false;globalThis.isNextAfter15 = false;globalThis.openNextDebug = false;globalThis.openNextVersion = "3.9.7";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -20,9 +20,69 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // node_modules/@opennextjs/aws/dist/adapters/cache.js
 var cache_exports = {};
 __export(cache_exports, {
+  SOFT_TAG_PREFIX: () => SOFT_TAG_PREFIX,
   default: () => Cache
 });
 module.exports = __toCommonJS(cache_exports);
+
+// node_modules/@opennextjs/aws/dist/utils/error.js
+function isOpenNextError(e) {
+  try {
+    return "__openNextInternal" in e;
+  } catch {
+    return false;
+  }
+}
+
+// node_modules/@opennextjs/aws/dist/adapters/logger.js
+function debug(...args) {
+  if (globalThis.openNextDebug) {
+    console.log(...args);
+  }
+}
+function warn(...args) {
+  console.warn(...args);
+}
+var DOWNPLAYED_ERROR_LOGS = [
+  {
+    clientName: "S3Client",
+    commandName: "GetObjectCommand",
+    errorName: "NoSuchKey"
+  }
+];
+var isDownplayedErrorLog = (errorLog) => DOWNPLAYED_ERROR_LOGS.some((downplayedInput) => downplayedInput.clientName === errorLog?.clientName && downplayedInput.commandName === errorLog?.commandName && (downplayedInput.errorName === errorLog?.error?.name || downplayedInput.errorName === errorLog?.error?.Code));
+function error(...args) {
+  if (args.some((arg) => isDownplayedErrorLog(arg))) {
+    return debug(...args);
+  }
+  if (args.some((arg) => isOpenNextError(arg))) {
+    const error2 = args.find((arg) => isOpenNextError(arg));
+    if (error2.logLevel < getOpenNextErrorLogLevel()) {
+      return;
+    }
+    if (error2.logLevel === 0) {
+      return console.log(...args.map((arg) => isOpenNextError(arg) ? `${arg.name}: ${arg.message}` : arg));
+    }
+    if (error2.logLevel === 1) {
+      return warn(...args.map((arg) => isOpenNextError(arg) ? `${arg.name}: ${arg.message}` : arg));
+    }
+    return console.error(...args);
+  }
+  console.error(...args);
+}
+function getOpenNextErrorLogLevel() {
+  const strLevel = process.env.OPEN_NEXT_ERROR_LOG_LEVEL ?? "1";
+  switch (strLevel.toLowerCase()) {
+    case "debug":
+    case "0":
+      return 0;
+    case "error":
+    case "2":
+      return 2;
+    default:
+      return 1;
+  }
+}
 
 // node_modules/@opennextjs/aws/dist/utils/cache.js
 async function hasBeenRevalidated(key, tags, cacheEntry) {
@@ -38,7 +98,7 @@ async function hasBeenRevalidated(key, tags, cacheEntry) {
   }
   const lastModified = cacheEntry.lastModified ?? Date.now();
   if (globalThis.tagCache.mode === "nextMode") {
-    return await globalThis.tagCache.hasBeenRevalidated(tags, lastModified);
+    return tags.length === 0 ? false : await globalThis.tagCache.hasBeenRevalidated(tags, lastModified);
   }
   const _lastModified = await globalThis.tagCache.getLastModified(key, lastModified);
   return _lastModified === -1;
@@ -48,10 +108,40 @@ function getTagsFromValue(value) {
     return [];
   }
   try {
-    return value.meta?.headers?.["x-next-cache-tags"]?.split(",") ?? [];
+    const cacheTags = value.meta?.headers?.["x-next-cache-tags"]?.split(",") ?? [];
+    delete value.meta?.headers?.["x-next-cache-tags"];
+    return cacheTags;
   } catch (e) {
     return [];
   }
+}
+function getTagKey(tag) {
+  if (typeof tag === "string") {
+    return tag;
+  }
+  return JSON.stringify({
+    tag: tag.tag,
+    path: tag.path
+  });
+}
+async function writeTags(tags) {
+  const store = globalThis.__openNextAls.getStore();
+  debug("Writing tags", tags, store);
+  if (!store || globalThis.openNextConfig.dangerous?.disableTagCache) {
+    return;
+  }
+  const tagsToWrite = tags.filter((t) => {
+    const tagKey = getTagKey(t);
+    const shouldWrite = !store.writtenTags.has(tagKey);
+    if (shouldWrite) {
+      store.writtenTags.add(tagKey);
+    }
+    return shouldWrite;
+  });
+  if (tagsToWrite.length === 0) {
+    return;
+  }
+  await globalThis.tagCache.writeTags(tagsToWrite);
 }
 
 // node_modules/@opennextjs/aws/dist/utils/binary.js
@@ -118,70 +208,12 @@ var commonBinaryMimeTypes = /* @__PURE__ */ new Set([
 function isBinaryContentType(contentType) {
   if (!contentType)
     return false;
-  const value = contentType?.split(";")[0] ?? "";
+  const value = contentType.split(";")[0];
   return commonBinaryMimeTypes.has(value);
 }
 
-// node_modules/@opennextjs/aws/dist/utils/error.js
-function isOpenNextError(e) {
-  try {
-    return "__openNextInternal" in e;
-  } catch {
-    return false;
-  }
-}
-
-// node_modules/@opennextjs/aws/dist/adapters/logger.js
-function debug(...args) {
-  if (globalThis.openNextDebug) {
-    console.log(...args);
-  }
-}
-function warn(...args) {
-  console.warn(...args);
-}
-var DOWNPLAYED_ERROR_LOGS = [
-  {
-    clientName: "S3Client",
-    commandName: "GetObjectCommand",
-    errorName: "NoSuchKey"
-  }
-];
-var isDownplayedErrorLog = (errorLog) => DOWNPLAYED_ERROR_LOGS.some((downplayedInput) => downplayedInput.clientName === errorLog?.clientName && downplayedInput.commandName === errorLog?.commandName && (downplayedInput.errorName === errorLog?.error?.name || downplayedInput.errorName === errorLog?.error?.Code));
-function error(...args) {
-  if (args.some((arg) => isDownplayedErrorLog(arg))) {
-    return debug(...args);
-  }
-  if (args.some((arg) => isOpenNextError(arg))) {
-    const error2 = args.find((arg) => isOpenNextError(arg));
-    if (error2.logLevel < getOpenNextErrorLogLevel()) {
-      return;
-    }
-    if (error2.logLevel === 0) {
-      return console.log(...args.map((arg) => isOpenNextError(arg) ? `${arg.name}: ${arg.message}` : arg));
-    }
-    if (error2.logLevel === 1) {
-      return warn(...args.map((arg) => isOpenNextError(arg) ? `${arg.name}: ${arg.message}` : arg));
-    }
-    return console.error(...args);
-  }
-  console.error(...args);
-}
-function getOpenNextErrorLogLevel() {
-  const strLevel = process.env.OPEN_NEXT_ERROR_LOG_LEVEL ?? "1";
-  switch (strLevel.toLowerCase()) {
-    case "debug":
-    case "0":
-      return 0;
-    case "error":
-    case "2":
-      return 2;
-    default:
-      return 1;
-  }
-}
-
 // node_modules/@opennextjs/aws/dist/adapters/cache.js
+var SOFT_TAG_PREFIX = "_N_T_/";
 function isFetchCache(options) {
   if (typeof options === "boolean") {
     return options;
@@ -203,18 +235,18 @@ var Cache = class {
   async getFetchCache(key, softTags, tags) {
     debug("get fetch cache", { key, softTags, tags });
     try {
-      const cachedEntry = await globalThis.incrementalCache.get(key, true);
+      const cachedEntry = await globalThis.incrementalCache.get(key, "fetch");
       if (cachedEntry?.value === void 0)
         return null;
       const _tags = [...tags ?? [], ...softTags ?? []];
       const _lastModified = cachedEntry.lastModified ?? Date.now();
-      const _hasBeenRevalidated = await hasBeenRevalidated(key, _tags, cachedEntry);
+      const _hasBeenRevalidated = cachedEntry.shouldBypassTagCache ? false : await hasBeenRevalidated(key, _tags, cachedEntry);
       if (_hasBeenRevalidated)
         return null;
       if ((tags ?? []).length === 0) {
-        const path = softTags?.find((tag) => tag.startsWith("_N_T_/") && !tag.endsWith("layout") && !tag.endsWith("page"));
+        const path = softTags?.find((tag) => tag.startsWith(SOFT_TAG_PREFIX) && !tag.endsWith("layout") && !tag.endsWith("page"));
         if (path) {
-          const hasPathBeenUpdated = await hasBeenRevalidated(path.replace("_N_T_/", ""), [], cachedEntry);
+          const hasPathBeenUpdated = cachedEntry.shouldBypassTagCache ? false : await hasBeenRevalidated(path.replace(SOFT_TAG_PREFIX, ""), [], cachedEntry);
           if (hasPathBeenUpdated) {
             return null;
           }
@@ -231,7 +263,7 @@ var Cache = class {
   }
   async getIncrementalCache(key) {
     try {
-      const cachedEntry = await globalThis.incrementalCache.get(key, false);
+      const cachedEntry = await globalThis.incrementalCache.get(key, "cache");
       if (!cachedEntry?.value) {
         return null;
       }
@@ -239,7 +271,7 @@ var Cache = class {
       const meta = cacheData.meta;
       const tags = getTagsFromValue(cacheData);
       const _lastModified = cachedEntry.lastModified ?? Date.now();
-      const _hasBeenRevalidated = await hasBeenRevalidated(key, tags, cachedEntry);
+      const _hasBeenRevalidated = cachedEntry.shouldBypassTagCache ? false : await hasBeenRevalidated(key, tags, cachedEntry);
       if (_hasBeenRevalidated)
         return null;
       const store = globalThis.__openNextAls.getStore();
@@ -259,6 +291,12 @@ var Cache = class {
       }
       if (cacheData?.type === "page" || cacheData?.type === "app") {
         if (globalThis.isNextAfter15 && cacheData?.type === "app") {
+          const segmentData = /* @__PURE__ */ new Map();
+          if (cacheData.segmentData) {
+            for (const [segmentPath, segmentContent] of Object.entries(cacheData.segmentData ?? {})) {
+              segmentData.set(segmentPath, Buffer.from(segmentContent));
+            }
+          }
           return {
             lastModified: _lastModified,
             value: {
@@ -267,7 +305,8 @@ var Cache = class {
               rscData: Buffer.from(cacheData.rsc),
               status: meta?.status,
               headers: meta?.headers,
-              postponed: meta?.postponed
+              postponed: meta?.postponed,
+              segmentData
             }
           };
         }
@@ -307,6 +346,7 @@ var Cache = class {
       if (data === null || data === void 0) {
         await globalThis.incrementalCache.delete(key);
       } else {
+        const revalidate = this.extractRevalidateForSet(ctx);
         switch (data.kind) {
           case "ROUTE":
           case "APP_ROUTE": {
@@ -317,8 +357,9 @@ var Cache = class {
               meta: {
                 status,
                 headers
-              }
-            }, false);
+              },
+              revalidate
+            }, "cache");
             break;
           }
           case "PAGE":
@@ -333,14 +374,16 @@ var Cache = class {
                 meta: {
                   status,
                   headers
-                }
-              }, false);
+                },
+                revalidate
+              }, "cache");
             } else {
               await globalThis.incrementalCache.set(key, {
                 type: "page",
                 html,
-                json: pageData
-              }, false);
+                json: pageData,
+                revalidate
+              }, "cache");
             }
             break;
           }
@@ -353,18 +396,20 @@ var Cache = class {
               meta: {
                 status,
                 headers
-              }
-            }, false);
+              },
+              revalidate
+            }, "cache");
             break;
           }
           case "FETCH":
-            await globalThis.incrementalCache.set(key, data, true);
+            await globalThis.incrementalCache.set(key, data, "fetch");
             break;
           case "REDIRECT":
             await globalThis.incrementalCache.set(key, {
               type: "redirect",
-              props: data.props
-            }, false);
+              props: data.props,
+              revalidate
+            }, "cache");
             break;
           case "IMAGE":
             break;
@@ -383,11 +428,14 @@ var Cache = class {
     if (config?.disableTagCache || config?.disableIncrementalCache) {
       return;
     }
+    const _tags = Array.isArray(tags) ? tags : [tags];
+    if (_tags.length === 0) {
+      return;
+    }
     try {
-      const _tags = Array.isArray(tags) ? tags : [tags];
       if (globalThis.tagCache.mode === "nextMode") {
         const paths = await globalThis.tagCache.getPathsByTags?.(_tags) ?? [];
-        await globalThis.tagCache.writeTags(_tags);
+        await writeTags(_tags);
         if (paths.length > 0) {
           await globalThis.cdnInvalidationHandler.invalidatePaths(paths.map((path) => ({
             initialPath: path,
@@ -411,10 +459,10 @@ var Cache = class {
           path,
           tag
         }));
-        if (tag.startsWith("_N_T_/")) {
+        if (tag.startsWith(SOFT_TAG_PREFIX)) {
           for (const path of paths) {
             const _tags2 = await globalThis.tagCache.getByPath(path);
-            const hardTags = _tags2.filter((t) => !t.startsWith("_N_T_/"));
+            const hardTags = _tags2.filter((t) => !t.startsWith(SOFT_TAG_PREFIX));
             for (const hardTag of hardTags) {
               const _paths = await globalThis.tagCache.getByTag(hardTag);
               debug({ hardTag, _paths });
@@ -425,8 +473,8 @@ var Cache = class {
             }
           }
         }
-        await globalThis.tagCache.writeTags(toInsert);
-        const uniquePaths = Array.from(new Set(toInsert.filter((t) => t.tag.startsWith("_N_T_/")).map((t) => `/${t.path}`)));
+        await writeTags(toInsert);
+        const uniquePaths = Array.from(new Set(toInsert.filter((t) => t.tag.startsWith(SOFT_TAG_PREFIX)).map((t) => `/${t.path}`)));
         if (uniquePaths.length > 0) {
           await globalThis.cdnInvalidationHandler.invalidatePaths(uniquePaths.map((path) => ({
             initialPath: path,
@@ -452,12 +500,15 @@ var Cache = class {
     !data) {
       return;
     }
-    const derivedTags = data?.kind === "FETCH" ? ctx?.tags ?? data?.data?.tags ?? [] : data?.kind === "PAGE" ? data.headers?.["x-next-cache-tags"]?.split(",") ?? [] : [];
+    const derivedTags = data?.kind === "FETCH" ? (
+      //@ts-expect-error - On older versions of next, ctx was a number, but for these cases we use data?.data?.tags
+      ctx?.tags ?? data?.data?.tags ?? []
+    ) : data?.kind === "PAGE" ? data.headers?.["x-next-cache-tags"]?.split(",") ?? [] : [];
     debug("derivedTags", derivedTags);
     const storedTags = await globalThis.tagCache.getByPath(key);
     const tagsToWrite = derivedTags.filter((tag) => !storedTags.includes(tag));
     if (tagsToWrite.length > 0) {
-      await globalThis.tagCache.writeTags(tagsToWrite.map((tag) => ({
+      await writeTags(tagsToWrite.map((tag) => ({
         path: key,
         tag,
         // In case the tags are not there we just need to create them
@@ -466,4 +517,23 @@ var Cache = class {
       })));
     }
   }
+  extractRevalidateForSet(ctx) {
+    if (ctx === void 0) {
+      return void 0;
+    }
+    if (typeof ctx === "number" || ctx === false) {
+      return ctx;
+    }
+    if ("revalidate" in ctx) {
+      return ctx.revalidate;
+    }
+    if ("cacheControl" in ctx) {
+      return ctx.cacheControl?.revalidate;
+    }
+    return void 0;
+  }
 };
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  SOFT_TAG_PREFIX
+});

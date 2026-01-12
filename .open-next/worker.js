@@ -1,65 +1,50 @@
-import { AsyncLocalStorage } from "node:async_hooks";
-// @ts-expect-error: resolved by wrangler build
-import * as nextEnvVars from "./env/next-env.mjs";
-// @ts-expect-error: resolved by wrangler build
+//@ts-expect-error: Will be resolved by wrangler build
+import { handleImageRequest } from "./cloudflare/images.js";
+//@ts-expect-error: Will be resolved by wrangler build
+import { runWithCloudflareRequestContext } from "./cloudflare/init.js";
+//@ts-expect-error: Will be resolved by wrangler build
+import { maybeGetSkewProtectionResponse } from "./cloudflare/skew-protection.js";
+// @ts-expect-error: Will be resolved by wrangler build
 import { handler as middlewareHandler } from "./middleware/handler.mjs";
-// @ts-expect-error: resolved by wrangler build
-import { handler as serverHandler } from "./server-functions/default/handler.mjs";
-const cloudflareContextALS = new AsyncLocalStorage();
-// Note: this symbol needs to be kept in sync with `src/api/get-cloudflare-context.ts`
-Object.defineProperty(globalThis, Symbol.for("__cloudflare-context__"), {
-    get() {
-        return cloudflareContextALS.getStore();
-    },
-});
-// Populate process.env on the first request
-let processEnvPopulated = false;
+//@ts-expect-error: Will be resolved by wrangler build
+export { DOQueueHandler } from "./.build/durable-objects/queue.js";
+//@ts-expect-error: Will be resolved by wrangler build
+export { DOShardedTagCache } from "./.build/durable-objects/sharded-tag-cache.js";
+//@ts-expect-error: Will be resolved by wrangler build
+export { BucketCachePurge } from "./.build/durable-objects/bucket-cache-purge.js";
 export default {
     async fetch(request, env, ctx) {
-        return cloudflareContextALS.run({ env, ctx, cf: request.cf }, async () => {
-            const url = new URL(request.url);
-            populateProcessEnv(url, env.NEXTJS_ENV);
-            if (url.pathname === "/_next/image") {
-                const imageUrl = url.searchParams.get("url") ?? "";
-                return imageUrl.startsWith("/")
-                    ? env.ASSETS.fetch(new URL(imageUrl, request.url))
-                    : fetch(imageUrl, { cf: { cacheEverything: true } });
+        return runWithCloudflareRequestContext(request, env, ctx, async () => {
+            const response = maybeGetSkewProtectionResponse(request);
+            if (response) {
+                return response;
             }
-            // The Middleware handler can return either a `Response` or a `Request`:
-            // - `Response`s should be returned early
+            const url = new URL(request.url);
+            // Serve images in development.
+            // Note: "/cdn-cgi/image/..." requests do not reach production workers.
+            if (url.pathname.startsWith("/cdn-cgi/image/")) {
+                const m = url.pathname.match(/\/cdn-cgi\/image\/.+?\/(?<url>.+)$/);
+                if (m === null) {
+                    return new Response("Not Found!", { status: 404 });
+                }
+                const imageUrl = m.groups.url;
+                return imageUrl.match(/^https?:\/\//)
+                    ? fetch(imageUrl, { cf: { cacheEverything: true } })
+                    : env.ASSETS?.fetch(new URL(`/${imageUrl}`, url));
+            }
+            // Fallback for the Next default image loader.
+            if (url.pathname ===
+                `${globalThis.__NEXT_BASE_PATH__}/_next/image${globalThis.__TRAILING_SLASH__ ? "/" : ""}`) {
+                return await handleImageRequest(url, request.headers, env);
+            }
             // - `Request`s are handled by the Next server
             const reqOrResp = await middlewareHandler(request, env, ctx);
             if (reqOrResp instanceof Response) {
                 return reqOrResp;
             }
-            return serverHandler(reqOrResp, env, ctx);
+            // @ts-expect-error: resolved by wrangler build
+            const { handler } = await import("./server-functions/default/handler.mjs");
+            return handler(reqOrResp, env, ctx, request.signal);
         });
     },
 };
-/**
- * Populate process.env with:
- * - the variables from Next .env* files
- * - the origin resolver information
- *
- * Note that cloudflare env string values are copied by the middleware handler.
- */
-function populateProcessEnv(url, nextJsEnv) {
-    if (processEnvPopulated) {
-        return;
-    }
-    processEnvPopulated = true;
-    const mode = nextJsEnv ?? "production";
-    if (nextEnvVars[mode]) {
-        for (const key in nextEnvVars[mode]) {
-            process.env[key] = nextEnvVars[mode][key];
-        }
-    }
-    // Set the default Origin for the origin resolver.
-    process.env.OPEN_NEXT_ORIGIN = JSON.stringify({
-        default: {
-            host: url.hostname,
-            protocol: url.protocol.slice(0, -1),
-            port: url.port,
-        },
-    });
-}

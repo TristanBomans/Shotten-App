@@ -1,2 +1,2 @@
-"use strict";
-throw new Error();
+throw "OpenNext shim";
+export default {};

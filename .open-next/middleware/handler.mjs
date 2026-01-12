@@ -16,16 +16,39 @@ Object.defineProperty = function(o, p, a) {
 
   
   
-  globalThis.openNextDebug = false;globalThis.openNextVersion = "3.5.2";
+  globalThis.openNextDebug = false;globalThis.openNextVersion = "3.9.7";
+var __create = Object.create;
 var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 
 // node_modules/@opennextjs/aws/dist/utils/error.js
 function isOpenNextError(e) {
@@ -96,15 +119,293 @@ var init_logger = __esm({
   }
 });
 
+// node_modules/cookie/dist/index.js
+var require_dist = __commonJS({
+  "node_modules/cookie/dist/index.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.parseCookie = parseCookie;
+    exports.parse = parseCookie;
+    exports.stringifyCookie = stringifyCookie;
+    exports.stringifySetCookie = stringifySetCookie;
+    exports.serialize = stringifySetCookie;
+    exports.parseSetCookie = parseSetCookie;
+    exports.stringifySetCookie = stringifySetCookie;
+    exports.serialize = stringifySetCookie;
+    var cookieNameRegExp = /^[\u0021-\u003A\u003C\u003E-\u007E]+$/;
+    var cookieValueRegExp = /^[\u0021-\u003A\u003C-\u007E]*$/;
+    var domainValueRegExp = /^([.]?[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)([.][a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
+    var pathValueRegExp = /^[\u0020-\u003A\u003D-\u007E]*$/;
+    var maxAgeRegExp = /^-?\d+$/;
+    var __toString = Object.prototype.toString;
+    var NullObject = /* @__PURE__ */ (() => {
+      const C = function() {
+      };
+      C.prototype = /* @__PURE__ */ Object.create(null);
+      return C;
+    })();
+    function parseCookie(str, options) {
+      const obj = new NullObject();
+      const len = str.length;
+      if (len < 2)
+        return obj;
+      const dec = options?.decode || decode;
+      let index = 0;
+      do {
+        const eqIdx = eqIndex(str, index, len);
+        if (eqIdx === -1)
+          break;
+        const endIdx = endIndex(str, index, len);
+        if (eqIdx > endIdx) {
+          index = str.lastIndexOf(";", eqIdx - 1) + 1;
+          continue;
+        }
+        const key = valueSlice(str, index, eqIdx);
+        if (obj[key] === void 0) {
+          obj[key] = dec(valueSlice(str, eqIdx + 1, endIdx));
+        }
+        index = endIdx + 1;
+      } while (index < len);
+      return obj;
+    }
+    function stringifyCookie(cookie, options) {
+      const enc = options?.encode || encodeURIComponent;
+      const cookieStrings = [];
+      for (const name of Object.keys(cookie)) {
+        const val = cookie[name];
+        if (val === void 0)
+          continue;
+        if (!cookieNameRegExp.test(name)) {
+          throw new TypeError(`cookie name is invalid: ${name}`);
+        }
+        const value = enc(val);
+        if (!cookieValueRegExp.test(value)) {
+          throw new TypeError(`cookie val is invalid: ${val}`);
+        }
+        cookieStrings.push(`${name}=${value}`);
+      }
+      return cookieStrings.join("; ");
+    }
+    function stringifySetCookie(_name, _val, _opts) {
+      const cookie = typeof _name === "object" ? _name : { ..._opts, name: _name, value: String(_val) };
+      const options = typeof _val === "object" ? _val : _opts;
+      const enc = options?.encode || encodeURIComponent;
+      if (!cookieNameRegExp.test(cookie.name)) {
+        throw new TypeError(`argument name is invalid: ${cookie.name}`);
+      }
+      const value = cookie.value ? enc(cookie.value) : "";
+      if (!cookieValueRegExp.test(value)) {
+        throw new TypeError(`argument val is invalid: ${cookie.value}`);
+      }
+      let str = cookie.name + "=" + value;
+      if (cookie.maxAge !== void 0) {
+        if (!Number.isInteger(cookie.maxAge)) {
+          throw new TypeError(`option maxAge is invalid: ${cookie.maxAge}`);
+        }
+        str += "; Max-Age=" + cookie.maxAge;
+      }
+      if (cookie.domain) {
+        if (!domainValueRegExp.test(cookie.domain)) {
+          throw new TypeError(`option domain is invalid: ${cookie.domain}`);
+        }
+        str += "; Domain=" + cookie.domain;
+      }
+      if (cookie.path) {
+        if (!pathValueRegExp.test(cookie.path)) {
+          throw new TypeError(`option path is invalid: ${cookie.path}`);
+        }
+        str += "; Path=" + cookie.path;
+      }
+      if (cookie.expires) {
+        if (!isDate(cookie.expires) || !Number.isFinite(cookie.expires.valueOf())) {
+          throw new TypeError(`option expires is invalid: ${cookie.expires}`);
+        }
+        str += "; Expires=" + cookie.expires.toUTCString();
+      }
+      if (cookie.httpOnly) {
+        str += "; HttpOnly";
+      }
+      if (cookie.secure) {
+        str += "; Secure";
+      }
+      if (cookie.partitioned) {
+        str += "; Partitioned";
+      }
+      if (cookie.priority) {
+        const priority = typeof cookie.priority === "string" ? cookie.priority.toLowerCase() : void 0;
+        switch (priority) {
+          case "low":
+            str += "; Priority=Low";
+            break;
+          case "medium":
+            str += "; Priority=Medium";
+            break;
+          case "high":
+            str += "; Priority=High";
+            break;
+          default:
+            throw new TypeError(`option priority is invalid: ${cookie.priority}`);
+        }
+      }
+      if (cookie.sameSite) {
+        const sameSite = typeof cookie.sameSite === "string" ? cookie.sameSite.toLowerCase() : cookie.sameSite;
+        switch (sameSite) {
+          case true:
+          case "strict":
+            str += "; SameSite=Strict";
+            break;
+          case "lax":
+            str += "; SameSite=Lax";
+            break;
+          case "none":
+            str += "; SameSite=None";
+            break;
+          default:
+            throw new TypeError(`option sameSite is invalid: ${cookie.sameSite}`);
+        }
+      }
+      return str;
+    }
+    function parseSetCookie(str, options) {
+      const dec = options?.decode || decode;
+      const len = str.length;
+      const endIdx = endIndex(str, 0, len);
+      const eqIdx = eqIndex(str, 0, endIdx);
+      const setCookie = eqIdx === -1 ? { name: "", value: dec(valueSlice(str, 0, endIdx)) } : {
+        name: valueSlice(str, 0, eqIdx),
+        value: dec(valueSlice(str, eqIdx + 1, endIdx))
+      };
+      let index = endIdx + 1;
+      while (index < len) {
+        const endIdx2 = endIndex(str, index, len);
+        const eqIdx2 = eqIndex(str, index, endIdx2);
+        const attr = eqIdx2 === -1 ? valueSlice(str, index, endIdx2) : valueSlice(str, index, eqIdx2);
+        const val = eqIdx2 === -1 ? void 0 : valueSlice(str, eqIdx2 + 1, endIdx2);
+        switch (attr.toLowerCase()) {
+          case "httponly":
+            setCookie.httpOnly = true;
+            break;
+          case "secure":
+            setCookie.secure = true;
+            break;
+          case "partitioned":
+            setCookie.partitioned = true;
+            break;
+          case "domain":
+            setCookie.domain = val;
+            break;
+          case "path":
+            setCookie.path = val;
+            break;
+          case "max-age":
+            if (val && maxAgeRegExp.test(val))
+              setCookie.maxAge = Number(val);
+            break;
+          case "expires":
+            if (!val)
+              break;
+            const date = new Date(val);
+            if (Number.isFinite(date.valueOf()))
+              setCookie.expires = date;
+            break;
+          case "priority":
+            if (!val)
+              break;
+            const priority = val.toLowerCase();
+            if (priority === "low" || priority === "medium" || priority === "high") {
+              setCookie.priority = priority;
+            }
+            break;
+          case "samesite":
+            if (!val)
+              break;
+            const sameSite = val.toLowerCase();
+            if (sameSite === "lax" || sameSite === "strict" || sameSite === "none") {
+              setCookie.sameSite = sameSite;
+            }
+            break;
+        }
+        index = endIdx2 + 1;
+      }
+      return setCookie;
+    }
+    function endIndex(str, min, len) {
+      const index = str.indexOf(";", min);
+      return index === -1 ? len : index;
+    }
+    function eqIndex(str, min, max) {
+      const index = str.indexOf("=", min);
+      return index < max ? index : -1;
+    }
+    function valueSlice(str, min, max) {
+      let start = min;
+      let end = max;
+      do {
+        const code = str.charCodeAt(start);
+        if (code !== 32 && code !== 9)
+          break;
+      } while (++start < end);
+      while (end > start) {
+        const code = str.charCodeAt(end - 1);
+        if (code !== 32 && code !== 9)
+          break;
+        end--;
+      }
+      return str.slice(start, end);
+    }
+    function decode(str) {
+      if (str.indexOf("%") === -1)
+        return str;
+      try {
+        return decodeURIComponent(str);
+      } catch (e) {
+        return str;
+      }
+    }
+    function isDate(val) {
+      return __toString.call(val) === "[object Date]";
+    }
+  }
+});
+
 // node_modules/@opennextjs/aws/dist/http/util.js
-function parseCookies(cookies) {
+function parseSetCookieHeader(cookies) {
   if (!cookies) {
     return [];
   }
-  return typeof cookies === "string" ? cookies.split(/(?<!Expires=\w+),/i).map((c) => c.trim()) : cookies;
+  if (typeof cookies === "string") {
+    return cookies.split(/(?<!Expires=\w+),/i).map((c) => c.trim());
+  }
+  return cookies;
+}
+function getQueryFromIterator(it) {
+  const query = {};
+  for (const [key, value] of it) {
+    if (key in query) {
+      if (Array.isArray(query[key])) {
+        query[key].push(value);
+      } else {
+        query[key] = [query[key], value];
+      }
+    } else {
+      query[key] = value;
+    }
+  }
+  return query;
 }
 var init_util = __esm({
   "node_modules/@opennextjs/aws/dist/http/util.js"() {
+    init_logger();
+  }
+});
+
+// node_modules/@opennextjs/aws/dist/overrides/converters/utils.js
+function getQueryFromSearchParams(searchParams) {
+  return getQueryFromIterator(searchParams.entries());
+}
+var init_utils = __esm({
+  "node_modules/@opennextjs/aws/dist/overrides/converters/utils.js"() {
+    init_util();
   }
 });
 
@@ -114,27 +415,18 @@ __export(edge_exports, {
   default: () => edge_default
 });
 import { Buffer as Buffer2 } from "node:buffer";
-var converter, edge_default;
+var import_cookie, NULL_BODY_STATUSES, converter, edge_default;
 var init_edge = __esm({
   "node_modules/@opennextjs/aws/dist/overrides/converters/edge.js"() {
+    import_cookie = __toESM(require_dist(), 1);
     init_util();
+    init_utils();
+    NULL_BODY_STATUSES = /* @__PURE__ */ new Set([101, 103, 204, 205, 304]);
     converter = {
       convertFrom: async (event) => {
         const url = new URL(event.url);
         const searchParams = url.searchParams;
-        const query = {};
-        for (const [key, value] of searchParams.entries()) {
-          if (key in query) {
-            if (Array.isArray(query[key])) {
-              query[key].push(value);
-            } else {
-              query[key] = [query[key], value];
-            }
-          } else {
-            query[key] = value;
-          }
-        }
-        const body = await event.arrayBuffer();
+        const query = getQueryFromSearchParams(searchParams);
         const headers = {};
         event.headers.forEach((value, key) => {
           headers[key] = value;
@@ -142,13 +434,15 @@ var init_edge = __esm({
         const rawPath = url.pathname;
         const method = event.method;
         const shouldHaveBody = method !== "GET" && method !== "HEAD";
-        const cookies = Object.fromEntries(parseCookies(event.headers.get("cookie")).map((cookie) => cookie.split("=")));
+        const body = shouldHaveBody ? Buffer2.from(await event.arrayBuffer()) : void 0;
+        const cookieHeader = event.headers.get("cookie");
+        const cookies = cookieHeader ? import_cookie.default.parse(cookieHeader) : {};
         return {
           type: "core",
           method,
           rawPath,
           url: event.url,
-          body: shouldHaveBody ? Buffer2.from(body) : void 0,
+          body,
           headers,
           remoteAddress: event.headers.get("x-forwarded-for") ?? "::1",
           query,
@@ -178,9 +472,23 @@ var init_edge = __esm({
         }
         const headers = new Headers();
         for (const [key, value] of Object.entries(result.headers)) {
-          headers.set(key, Array.isArray(value) ? value.join(",") : value);
+          if (key === "set-cookie" && typeof value === "string") {
+            const cookies = parseSetCookieHeader(value);
+            for (const cookie of cookies) {
+              headers.append(key, cookie);
+            }
+            continue;
+          }
+          if (Array.isArray(value)) {
+            for (const v of value) {
+              headers.append(key, v);
+            }
+          } else {
+            headers.set(key, value);
+          }
         }
-        return new Response(result.body, {
+        const body = NULL_BODY_STATUSES.has(result.statusCode) ? null : result.body;
+        return new Response(body, {
           status: result.statusCode,
           headers
         });
@@ -244,33 +552,54 @@ var pattern_env_exports = {};
 __export(pattern_env_exports, {
   default: () => pattern_env_default
 });
-var envLoader, pattern_env_default;
+function initializeOnce() {
+  if (initialized)
+    return;
+  cachedOrigins = JSON.parse(process.env.OPEN_NEXT_ORIGIN ?? "{}");
+  const functions = globalThis.openNextConfig.functions ?? {};
+  for (const key in functions) {
+    if (key !== "default") {
+      const value = functions[key];
+      const regexes = [];
+      for (const pattern of value.patterns) {
+        const regexPattern = `/${pattern.replace(/\*\*/g, "(.*)").replace(/\*/g, "([^/]*)").replace(/\//g, "\\/").replace(/\?/g, ".")}`;
+        regexes.push(new RegExp(regexPattern));
+      }
+      cachedPatterns.push({
+        key,
+        patterns: value.patterns,
+        regexes
+      });
+    }
+  }
+  initialized = true;
+}
+var cachedOrigins, cachedPatterns, initialized, envLoader, pattern_env_default;
 var init_pattern_env = __esm({
   "node_modules/@opennextjs/aws/dist/overrides/originResolver/pattern-env.js"() {
     init_logger();
+    cachedPatterns = [];
+    initialized = false;
     envLoader = {
       name: "env",
       resolve: async (_path) => {
         try {
-          const origin = JSON.parse(process.env.OPEN_NEXT_ORIGIN ?? "{}");
-          for (const [key, value] of Object.entries(globalThis.openNextConfig.functions ?? {}).filter(([key2]) => key2 !== "default")) {
-            if (value.patterns.some((pattern) => {
-              return new RegExp(
-                // transform glob pattern to regex
-                `/${pattern.replace(/\*\*/g, "(.*)").replace(/\*/g, "([^/]*)").replace(/\//g, "\\/").replace(/\?/g, ".")}`
-              ).test(_path);
-            })) {
-              debug("Using origin", key, value.patterns);
-              return origin[key];
+          initializeOnce();
+          for (const { key, patterns, regexes } of cachedPatterns) {
+            for (const regex of regexes) {
+              if (regex.test(_path)) {
+                debug("Using origin", key, patterns);
+                return cachedOrigins[key];
+              }
             }
           }
-          if (_path.startsWith("/_next/image") && origin.imageOptimizer) {
+          if (_path.startsWith("/_next/image") && cachedOrigins.imageOptimizer) {
             debug("Using origin", "imageOptimizer", _path);
-            return origin.imageOptimizer;
+            return cachedOrigins.imageOptimizer;
           }
-          if (origin.default) {
-            debug("Using default origin", origin.default, _path);
-            return origin.default;
+          if (cachedOrigins.default) {
+            debug("Using default origin", cachedOrigins.default, _path);
+            return cachedOrigins.default;
           }
           return false;
         } catch (e) {
@@ -283,17 +612,48 @@ var init_pattern_env = __esm({
   }
 });
 
+// node_modules/@opennextjs/aws/dist/overrides/assetResolver/dummy.js
+var dummy_exports = {};
+__export(dummy_exports, {
+  default: () => dummy_default
+});
+var resolver, dummy_default;
+var init_dummy = __esm({
+  "node_modules/@opennextjs/aws/dist/overrides/assetResolver/dummy.js"() {
+    resolver = {
+      name: "dummy"
+    };
+    dummy_default = resolver;
+  }
+});
+
 // node_modules/@opennextjs/aws/dist/utils/stream.js
-import { Readable } from "node:stream";
+import { ReadableStream } from "node:stream/web";
 function toReadableStream(value, isBase64) {
-  return Readable.toWeb(Readable.from(Buffer.from(value, isBase64 ? "base64" : "utf8")));
+  return new ReadableStream({
+    pull(controller) {
+      controller.enqueue(Buffer.from(value, isBase64 ? "base64" : "utf8"));
+      controller.close();
+    }
+  }, { highWaterMark: 0 });
 }
 function emptyReadableStream() {
   if (process.env.OPEN_NEXT_FORCE_NON_EMPTY_RESPONSE === "true") {
-    return Readable.toWeb(Readable.from([Buffer.from("SOMETHING")]));
+    return new ReadableStream({
+      pull(controller) {
+        maybeSomethingBuffer ??= Buffer.from("SOMETHING");
+        controller.enqueue(maybeSomethingBuffer);
+        controller.close();
+      }
+    }, { highWaterMark: 0 });
   }
-  return Readable.toWeb(Readable.from([]));
+  return new ReadableStream({
+    start(controller) {
+      controller.close();
+    }
+  });
 }
+var maybeSomethingBuffer;
 var init_stream = __esm({
   "node_modules/@opennextjs/aws/dist/utils/stream.js"() {
   }
@@ -342,9 +702,9 @@ __export(edgeFunctionHandler_exports, {
   default: () => edgeFunctionHandler
 });
 async function edgeFunctionHandler(request) {
-  const path2 = new URL(request.url).pathname;
+  const path3 = new URL(request.url).pathname;
   const routes = globalThis._ROUTES;
-  const correspondingRoute = routes.find((route) => route.regex.some((r) => new RegExp(r).test(path2)));
+  const correspondingRoute = routes.find((route) => route.regex.some((r) => new RegExp(r).test(path3)));
   if (!correspondingRoute) {
     throw new Error(`No route found for ${request.url}`);
   }
@@ -432,12 +792,13 @@ function provideNextAfterProvider() {
     globalThis[VERCEL_REQUEST_CONTEXT_SYMBOL] = nextAfterContext;
   }
 }
-function runWithOpenNextRequestContext({ isISRRevalidation, waitUntil }, fn) {
+function runWithOpenNextRequestContext({ isISRRevalidation, waitUntil, requestId = Math.random().toString(36) }, fn) {
   return globalThis.__openNextAls.run({
-    requestId: Math.random().toString(36),
+    requestId,
     pendingPromiseRunner: new DetachedPromiseRunner(),
     isISRRevalidation,
-    waitUntil
+    waitUntil,
+    writtenTags: /* @__PURE__ */ new Set()
   }, async () => {
     provideNextAfterProvider();
     let result;
@@ -478,6 +839,13 @@ async function resolveOriginResolver(originResolver) {
   const m_1 = await Promise.resolve().then(() => (init_pattern_env(), pattern_env_exports));
   return m_1.default;
 }
+async function resolveAssetResolver(assetResolver) {
+  if (typeof assetResolver === "function") {
+    return assetResolver();
+  }
+  const m_1 = await Promise.resolve().then(() => (init_dummy(), dummy_exports));
+  return m_1.default;
+}
 async function resolveProxyRequest(proxyRequest) {
   if (typeof proxyRequest === "function") {
     return proxyRequest();
@@ -490,7 +858,8 @@ async function resolveProxyRequest(proxyRequest) {
 async function createGenericHandler(handler3) {
   const config = await import("./open-next.config.mjs").then((m) => m.default);
   globalThis.openNextConfig = config;
-  const override = config[handler3.type]?.override;
+  const handlerConfig = config[handler3.type];
+  const override = handlerConfig && "override" in handlerConfig ? handlerConfig.override : void 0;
   const converter2 = await resolveConverter(override?.converter);
   const { name, wrapper } = await resolveWrapper(override?.wrapper);
   debug("Using wrapper", name);
@@ -499,7 +868,7 @@ async function createGenericHandler(handler3) {
 
 // node_modules/@opennextjs/aws/dist/core/routing/util.js
 import crypto from "node:crypto";
-import { Readable as Readable2 } from "node:stream";
+import { parse as parseQs, stringify as stringifyQs } from "node:querystring";
 
 // node_modules/@opennextjs/aws/dist/adapters/config/index.js
 init_logger();
@@ -509,14 +878,16 @@ var NEXT_DIR = path.join(__dirname, ".next");
 var OPEN_NEXT_DIR = path.join(__dirname, ".open-next");
 debug({ NEXT_DIR, OPEN_NEXT_DIR });
 var NextConfig = { "env": {}, "webpack": null, "eslint": { "ignoreDuringBuilds": false }, "typescript": { "ignoreBuildErrors": false, "tsconfigPath": "tsconfig.json" }, "distDir": ".next", "cleanDistDir": true, "assetPrefix": "", "cacheMaxMemorySize": 52428800, "configOrigin": "next.config.mjs", "useFileSystemPublicRoutes": true, "generateEtags": true, "pageExtensions": ["tsx", "ts", "jsx", "js"], "poweredByHeader": true, "compress": true, "analyticsId": "", "images": { "deviceSizes": [640, 750, 828, 1080, 1200, 1920, 2048, 3840], "imageSizes": [16, 32, 48, 64, 96, 128, 256, 384], "path": "/_next/image", "loader": "default", "loaderFile": "", "domains": [], "disableStaticImages": false, "minimumCacheTTL": 60, "formats": ["image/webp"], "dangerouslyAllowSVG": false, "contentSecurityPolicy": "script-src 'none'; frame-src 'none'; sandbox;", "contentDispositionType": "inline", "remotePatterns": [], "unoptimized": true }, "devIndicators": { "buildActivity": true, "buildActivityPosition": "bottom-right" }, "onDemandEntries": { "maxInactiveAge": 6e4, "pagesBufferLength": 5 }, "amp": { "canonicalBase": "" }, "basePath": "", "sassOptions": {}, "trailingSlash": false, "i18n": null, "productionBrowserSourceMaps": false, "optimizeFonts": true, "excludeDefaultMomentLocales": true, "serverRuntimeConfig": {}, "publicRuntimeConfig": {}, "reactProductionProfiling": false, "reactStrictMode": null, "httpAgentOptions": { "keepAlive": true }, "outputFileTracing": true, "staticPageGenerationTimeout": 60, "swcMinify": true, "output": "standalone", "modularizeImports": { "@mui/icons-material": { "transform": "@mui/icons-material/{{member}}" }, "lodash": { "transform": "lodash/{{member}}" } }, "experimental": { "multiZoneDraftMode": false, "prerenderEarlyExit": false, "serverMinification": true, "serverSourceMaps": false, "linkNoTouchStart": false, "caseSensitiveRoutes": false, "clientRouterFilter": true, "clientRouterFilterRedirects": false, "fetchCacheKeyPrefix": "", "middlewarePrefetch": "flexible", "optimisticClientCache": true, "manualClientBasePath": false, "cpus": 19, "memoryBasedWorkersCount": false, "isrFlushToDisk": true, "workerThreads": false, "optimizeCss": false, "nextScriptWorkers": false, "scrollRestoration": false, "externalDir": false, "disableOptimizedLoading": false, "gzipSize": true, "craCompat": false, "esmExternals": true, "fullySpecified": false, "outputFileTracingRoot": "/home/tristan/Documents/projects/Shotten-App", "swcTraceProfiling": false, "forceSwcTransforms": false, "largePageDataBytes": 128e3, "adjustFontFallbacks": false, "adjustFontFallbacksWithSizeAdjust": false, "typedRoutes": false, "instrumentationHook": false, "bundlePagesExternals": false, "parallelServerCompiles": false, "parallelServerBuildTraces": false, "ppr": false, "missingSuspenseWithCSRBailout": true, "optimizeServerReact": true, "useEarlyImport": false, "staleTimes": { "dynamic": 30, "static": 300 }, "optimizePackageImports": ["lucide-react", "date-fns", "lodash-es", "ramda", "antd", "react-bootstrap", "ahooks", "@ant-design/icons", "@headlessui/react", "@headlessui-float/react", "@heroicons/react/20/solid", "@heroicons/react/24/solid", "@heroicons/react/24/outline", "@visx/visx", "@tremor/react", "rxjs", "@mui/material", "@mui/icons-material", "recharts", "react-use", "@material-ui/core", "@material-ui/icons", "@tabler/icons-react", "mui-core", "react-icons/ai", "react-icons/bi", "react-icons/bs", "react-icons/cg", "react-icons/ci", "react-icons/di", "react-icons/fa", "react-icons/fa6", "react-icons/fc", "react-icons/fi", "react-icons/gi", "react-icons/go", "react-icons/gr", "react-icons/hi", "react-icons/hi2", "react-icons/im", "react-icons/io", "react-icons/io5", "react-icons/lia", "react-icons/lib", "react-icons/lu", "react-icons/md", "react-icons/pi", "react-icons/ri", "react-icons/rx", "react-icons/si", "react-icons/sl", "react-icons/tb", "react-icons/tfi", "react-icons/ti", "react-icons/vsc", "react-icons/wi"], "trustHostHeader": false, "isExperimentalCompile": false }, "configFileName": "next.config.mjs" };
-var BuildId = "RuhO34WjSMo5N2sz8lJw8";
+var BuildId = "Z4jVweY4i4HG53Vxg-pQr";
 var RoutesManifest = { "basePath": "", "rewrites": { "beforeFiles": [], "afterFiles": [], "fallback": [] }, "redirects": [{ "source": "/:path+/", "destination": "/:path+", "internal": true, "statusCode": 308, "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$" }], "routes": { "static": [{ "page": "/", "regex": "^/(?:/)?$", "routeKeys": {}, "namedRegex": "^/(?:/)?$" }, { "page": "/_not-found", "regex": "^/_not\\-found(?:/)?$", "routeKeys": {}, "namedRegex": "^/_not\\-found(?:/)?$" }, { "page": "/favicon.ico", "regex": "^/favicon\\.ico(?:/)?$", "routeKeys": {}, "namedRegex": "^/favicon\\.ico(?:/)?$" }, { "page": "/manifest.webmanifest", "regex": "^/manifest\\.webmanifest(?:/)?$", "routeKeys": {}, "namedRegex": "^/manifest\\.webmanifest(?:/)?$" }, { "page": "/stats", "regex": "^/stats(?:/)?$", "routeKeys": {}, "namedRegex": "^/stats(?:/)?$" }, { "page": "/version", "regex": "^/version(?:/)?$", "routeKeys": {}, "namedRegex": "^/version(?:/)?$" }], "dynamic": [{ "page": "/api/Matches/[id]", "regex": "^/api/Matches/([^/]+?)(?:/)?$", "routeKeys": { "nxtPid": "nxtPid" }, "namedRegex": "^/api/Matches/(?<nxtPid>[^/]+?)(?:/)?$" }, { "page": "/api/Players/[id]", "regex": "^/api/Players/([^/]+?)(?:/)?$", "routeKeys": { "nxtPid": "nxtPid" }, "namedRegex": "^/api/Players/(?<nxtPid>[^/]+?)(?:/)?$" }, { "page": "/api/lzv/team/[id]", "regex": "^/api/lzv/team/([^/]+?)(?:/)?$", "routeKeys": { "nxtPid": "nxtPid" }, "namedRegex": "^/api/lzv/team/(?<nxtPid>[^/]+?)(?:/)?$" }, { "page": "/api/matches/[matchId]/players/[playerId]/attendance", "regex": "^/api/matches/([^/]+?)/players/([^/]+?)/attendance(?:/)?$", "routeKeys": { "nxtPmatchId": "nxtPmatchId", "nxtPplayerId": "nxtPplayerId" }, "namedRegex": "^/api/matches/(?<nxtPmatchId>[^/]+?)/players/(?<nxtPplayerId>[^/]+?)/attendance(?:/)?$" }], "data": { "static": [], "dynamic": [] } }, "locales": [] };
 var ConfigHeaders = [];
-var PrerenderManifest = { "version": 4, "routes": { "/": { "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/", "dataRoute": "/index.rsc" }, "/version": { "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/version", "dataRoute": "/version.rsc" }, "/api/lzv/stats": { "initialHeaders": { "content-type": "application/json", "x-next-cache-tags": "_N_T_/layout,_N_T_/api/layout,_N_T_/api/lzv/layout,_N_T_/api/lzv/stats/layout,_N_T_/api/lzv/stats/route,_N_T_/api/lzv/stats" }, "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/api/lzv/stats", "dataRoute": null }, "/favicon.ico": { "initialHeaders": { "cache-control": "public, max-age=0, must-revalidate", "content-type": "image/x-icon", "x-next-cache-tags": "_N_T_/layout,_N_T_/favicon.ico/layout,_N_T_/favicon.ico/route,_N_T_/favicon.ico" }, "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/favicon.ico", "dataRoute": null }, "/api/Teams": { "initialHeaders": { "content-type": "application/json", "x-next-cache-tags": "_N_T_/layout,_N_T_/api/layout,_N_T_/api/Teams/layout,_N_T_/api/Teams/route,_N_T_/api/Teams" }, "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/api/Teams", "dataRoute": null }, "/manifest.webmanifest": { "initialHeaders": { "cache-control": "public, max-age=0, must-revalidate", "content-type": "application/manifest+json", "x-next-cache-tags": "_N_T_/layout,_N_T_/manifest.webmanifest/layout,_N_T_/manifest.webmanifest/route,_N_T_/manifest.webmanifest" }, "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/manifest.webmanifest", "dataRoute": null }, "/stats": { "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/stats", "dataRoute": "/stats.rsc" } }, "dynamicRoutes": {}, "notFoundRoutes": [], "preview": { "previewModeId": "3c44d4671e931d17d677b85c434798a4", "previewModeSigningKey": "d549d0c9b6f5f2c8f98eccd5f964f7f7febdc0278d97798ba16a5009826facbd", "previewModeEncryptionKey": "abf3404e2bcf37992e4ebbecdc6f49e52a0691f561571fc4a953718a32b831ea" } };
+var PrerenderManifest = { "version": 4, "routes": { "/stats": { "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/stats", "dataRoute": "/stats.rsc" }, "/api/Teams": { "initialHeaders": { "content-type": "application/json", "x-next-cache-tags": "_N_T_/layout,_N_T_/api/layout,_N_T_/api/Teams/layout,_N_T_/api/Teams/route,_N_T_/api/Teams" }, "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/api/Teams", "dataRoute": null }, "/version": { "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/version", "dataRoute": "/version.rsc" }, "/": { "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/", "dataRoute": "/index.rsc" }, "/manifest.webmanifest": { "initialHeaders": { "cache-control": "public, max-age=0, must-revalidate", "content-type": "application/manifest+json", "x-next-cache-tags": "_N_T_/layout,_N_T_/manifest.webmanifest/layout,_N_T_/manifest.webmanifest/route,_N_T_/manifest.webmanifest" }, "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/manifest.webmanifest", "dataRoute": null }, "/favicon.ico": { "initialHeaders": { "cache-control": "public, max-age=0, must-revalidate", "content-type": "image/x-icon", "x-next-cache-tags": "_N_T_/layout,_N_T_/favicon.ico/layout,_N_T_/favicon.ico/route,_N_T_/favicon.ico" }, "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/favicon.ico", "dataRoute": null }, "/api/lzv/stats": { "initialHeaders": { "content-type": "application/json", "x-next-cache-tags": "_N_T_/layout,_N_T_/api/layout,_N_T_/api/lzv/layout,_N_T_/api/lzv/stats/layout,_N_T_/api/lzv/stats/route,_N_T_/api/lzv/stats" }, "experimentalBypassFor": [{ "type": "header", "key": "Next-Action" }, { "type": "header", "key": "content-type", "value": "multipart/form-data;.*" }], "initialRevalidateSeconds": false, "srcRoute": "/api/lzv/stats", "dataRoute": null } }, "dynamicRoutes": {}, "notFoundRoutes": [], "preview": { "previewModeId": "2c6a4ddbb84e37ac655fb248c0838705", "previewModeSigningKey": "4e20a9cc83f16f064d72b8bb60883eed12bf3e6f71a5cb93bb93be647b04bf07", "previewModeEncryptionKey": "fe0eec570e2f337cbab17809ffc1c5bf499b453d06d7eb6542e3874e62a355f3" } };
 var MiddlewareManifest = { "version": 3, "middleware": {}, "functions": {}, "sortedMiddleware": [] };
-var AppPathRoutesManifest = { "/_not-found/page": "/_not-found", "/api/Matches/[id]/route": "/api/Matches/[id]", "/api/Players/[id]/route": "/api/Players/[id]", "/api/Players/route": "/api/Players", "/api/Teams/route": "/api/Teams", "/api/lzv/stats/route": "/api/lzv/stats", "/api/lzv/team/[id]/route": "/api/lzv/team/[id]", "/favicon.ico/route": "/favicon.ico", "/page": "/", "/stats/page": "/stats", "/version/page": "/version", "/api/Matches/route": "/api/Matches", "/api/lzv/matches/route": "/api/lzv/matches", "/api/lzv/players/route": "/api/lzv/players", "/manifest.webmanifest/route": "/manifest.webmanifest", "/api/matches/[matchId]/players/[playerId]/attendance/route": "/api/matches/[matchId]/players/[playerId]/attendance" };
-var FunctionsConfigManifest = { "version": 1, "functions": { "/api/lzv/players": {}, "/api/lzv/matches": {}, "/api/Matches": {}, "/manifest.webmanifest": {}, "/api/matches/[matchId]/players/[playerId]/attendance": {} } };
+var AppPathRoutesManifest = { "/_not-found/page": "/_not-found", "/api/Matches/[id]/route": "/api/Matches/[id]", "/api/Players/[id]/route": "/api/Players/[id]", "/api/Players/route": "/api/Players", "/api/Teams/route": "/api/Teams", "/api/lzv/stats/route": "/api/lzv/stats", "/api/lzv/team/[id]/route": "/api/lzv/team/[id]", "/page": "/", "/favicon.ico/route": "/favicon.ico", "/stats/page": "/stats", "/version/page": "/version", "/api/Matches/route": "/api/Matches", "/api/matches/[matchId]/players/[playerId]/attendance/route": "/api/matches/[matchId]/players/[playerId]/attendance", "/api/lzv/players/route": "/api/lzv/players", "/api/lzv/matches/route": "/api/lzv/matches", "/manifest.webmanifest/route": "/manifest.webmanifest" };
+var FunctionsConfigManifest = { "version": 1, "functions": { "/api/lzv/players": {}, "/api/lzv/matches": {}, "/api/Matches": {}, "/api/matches/[matchId]/players/[playerId]/attendance": {}, "/manifest.webmanifest": {} } };
+var PagesManifest = { "/_app": "pages/_app.js", "/_error": "pages/_error.js", "/_document": "pages/_document.js", "/404": "pages/404.html" };
 process.env.NEXT_BUILD_ID = BuildId;
+process.env.NEXT_PREVIEW_MODE_ID = PrerenderManifest?.preview?.previewModeId;
 
 // node_modules/@opennextjs/aws/dist/http/openNextResponse.js
 init_logger();
@@ -526,6 +897,75 @@ import { Transform } from "node:stream";
 // node_modules/@opennextjs/aws/dist/core/routing/util.js
 init_util();
 init_logger();
+import { ReadableStream as ReadableStream2 } from "node:stream/web";
+
+// node_modules/@opennextjs/aws/dist/utils/binary.js
+var commonBinaryMimeTypes = /* @__PURE__ */ new Set([
+  "application/octet-stream",
+  // Docs
+  "application/epub+zip",
+  "application/msword",
+  "application/pdf",
+  "application/rtf",
+  "application/vnd.amazon.ebook",
+  "application/vnd.ms-excel",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  // Fonts
+  "font/otf",
+  "font/woff",
+  "font/woff2",
+  // Images
+  "image/bmp",
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/tiff",
+  "image/vnd.microsoft.icon",
+  "image/webp",
+  // Audio
+  "audio/3gpp",
+  "audio/aac",
+  "audio/basic",
+  "audio/flac",
+  "audio/mpeg",
+  "audio/ogg",
+  "audio/wavaudio/webm",
+  "audio/x-aiff",
+  "audio/x-midi",
+  "audio/x-wav",
+  // Video
+  "video/3gpp",
+  "video/mp2t",
+  "video/mpeg",
+  "video/ogg",
+  "video/quicktime",
+  "video/webm",
+  "video/x-msvideo",
+  // Archives
+  "application/java-archive",
+  "application/vnd.apple.installer+xml",
+  "application/x-7z-compressed",
+  "application/x-apple-diskimage",
+  "application/x-bzip",
+  "application/x-bzip2",
+  "application/x-gzip",
+  "application/x-java-archive",
+  "application/x-rar-compressed",
+  "application/x-tar",
+  "application/x-zip",
+  "application/zip",
+  // Serialized data
+  "application/x-protobuf"
+]);
+function isBinaryContentType(contentType) {
+  if (!contentType)
+    return false;
+  const value = contentType.split(";")[0];
+  return commonBinaryMimeTypes.has(value);
+}
 
 // node_modules/@opennextjs/aws/dist/core/routing/i18n/index.js
 init_stream();
@@ -632,8 +1072,8 @@ function acceptLanguage(header = "", preferences) {
 }
 
 // node_modules/@opennextjs/aws/dist/core/routing/i18n/index.js
-function isLocalizedPath(path2) {
-  return NextConfig.i18n?.locales.includes(path2.split("/")[1].toLowerCase()) ?? false;
+function isLocalizedPath(path3) {
+  return NextConfig.i18n?.locales.includes(path3.split("/")[1].toLowerCase()) ?? false;
 }
 function getLocaleFromCookie(cookies) {
   const i18n = NextConfig.i18n;
@@ -728,15 +1168,18 @@ function handleLocaleRedirect(internalEvent) {
 }
 
 // node_modules/@opennextjs/aws/dist/core/routing/queue.js
-function generateMessageGroupId(rawPath) {
+function generateShardId(rawPath, maxConcurrency, prefix) {
   let a = cyrb128(rawPath);
   let t = a += 1831565813;
   t = Math.imul(t ^ t >>> 15, t | 1);
   t ^= t + Math.imul(t ^ t >>> 7, t | 61);
   const randomFloat = ((t ^ t >>> 14) >>> 0) / 4294967296;
-  const maxConcurrency = Number.parseInt(process.env.MAX_REVALIDATE_CONCURRENCY ?? "10");
   const randomInt = Math.floor(randomFloat * maxConcurrency);
-  return `revalidate-${randomInt}`;
+  return `${prefix}-${randomInt}`;
+}
+function generateMessageGroupId(rawPath) {
+  const maxConcurrency = Number.parseInt(process.env.MAX_REVALIDATE_CONCURRENCY ?? "10");
+  return generateShardId(rawPath, maxConcurrency, "revalidate");
 }
 function cyrb128(str) {
   let h1 = 1779033703;
@@ -763,20 +1206,26 @@ function isExternal(url, host) {
   if (!url)
     return false;
   const pattern = /^https?:\/\//;
+  if (!pattern.test(url))
+    return false;
   if (host) {
-    return pattern.test(url) && !url.includes(host);
+    try {
+      const parsedUrl = new URL(url);
+      return parsedUrl.host !== host;
+    } catch {
+      return !url.includes(host);
+    }
   }
-  return pattern.test(url);
+  return true;
 }
 function convertFromQueryString(query) {
   if (query === "")
     return {};
   const queryParts = query.split("&");
-  return queryParts.reduce((acc, part) => {
-    const [key, value] = part.split("=");
-    acc[key] = value;
-    return acc;
-  }, {});
+  return getQueryFromIterator(queryParts.map((p) => {
+    const [key, value] = p.split("=");
+    return [key, value];
+  }));
 }
 function getUrlParts(url, isExternal2) {
   if (!isExternal2) {
@@ -801,22 +1250,21 @@ function getUrlParts(url, isExternal2) {
     queryString: match2[4]?.slice(1) ?? ""
   };
 }
-function constructNextUrl(baseUrl, path2) {
+function constructNextUrl(baseUrl, path3) {
   const nextBasePath = NextConfig.basePath ?? "";
-  const url = new URL(`${nextBasePath}${path2}`, baseUrl);
+  const url = new URL(`${nextBasePath}${path3}`, baseUrl);
   return url.href;
 }
 function convertToQueryString(query) {
-  const urlQuery = new URLSearchParams();
+  const queryStrings = [];
   Object.entries(query).forEach(([key, value]) => {
     if (Array.isArray(value)) {
-      value.forEach((entry) => urlQuery.append(key, decodeURIComponent(entry)));
+      value.forEach((entry) => queryStrings.push(`${key}=${entry}`));
     } else {
-      urlQuery.append(key, decodeURIComponent(value));
+      queryStrings.push(`${key}=${value}`);
     }
   });
-  const queryString = urlQuery.toString();
-  return queryString ? `?${queryString}` : "";
+  return queryStrings.length > 0 ? `?${queryStrings.join("&")}` : "";
 }
 function getMiddlewareMatch(middlewareManifest2, functionsManifest) {
   if (functionsManifest?.functions?.["/_middleware"]) {
@@ -827,30 +1275,46 @@ function getMiddlewareMatch(middlewareManifest2, functionsManifest) {
     return [];
   return rootMiddleware.matchers.map(({ regexp }) => new RegExp(regexp));
 }
-function escapeRegex(str) {
-  return str.replaceAll("(.)", "_\xB51_").replaceAll("(..)", "_\xB52_").replaceAll("(...)", "_\xB53_");
+function escapeRegex(str, { isPath } = {}) {
+  const result = str.replaceAll("(.)", "_\xB51_").replaceAll("(..)", "_\xB52_").replaceAll("(...)", "_\xB53_");
+  return isPath ? result : result.replaceAll("+", "_\xB54_");
 }
 function unescapeRegex(str) {
-  return str.replaceAll("_\xB51_", "(.)").replaceAll("_\xB52_", "(..)").replaceAll("_\xB53_", "(...)");
+  return str.replaceAll("_\xB51_", "(.)").replaceAll("_\xB52_", "(..)").replaceAll("_\xB53_", "(...)").replaceAll("_\xB54_", "+");
 }
 function convertBodyToReadableStream(method, body) {
   if (method === "GET" || method === "HEAD")
     return void 0;
   if (!body)
     return void 0;
-  const readable = new ReadableStream({
+  return new ReadableStream2({
     start(controller) {
       controller.enqueue(body);
       controller.close();
     }
   });
-  return readable;
 }
 var CommonHeaders;
 (function(CommonHeaders2) {
   CommonHeaders2["CACHE_CONTROL"] = "cache-control";
   CommonHeaders2["NEXT_CACHE"] = "x-nextjs-cache";
 })(CommonHeaders || (CommonHeaders = {}));
+function normalizeLocationHeader(location, baseUrl, encodeQuery = false) {
+  if (!URL.canParse(location)) {
+    return location;
+  }
+  const locationURL = new URL(location);
+  const origin = new URL(baseUrl).origin;
+  let search = locationURL.search;
+  if (encodeQuery && search) {
+    search = `?${stringifyQs(parseQs(search.slice(1)))}`;
+  }
+  const href = `${locationURL.origin}${locationURL.pathname}${search}${locationURL.hash}`;
+  if (locationURL.origin === origin) {
+    return href.slice(origin.length);
+  }
+  return href;
+}
 
 // node_modules/@opennextjs/aws/dist/core/routingHandler.js
 init_logger();
@@ -860,6 +1324,7 @@ import { createHash } from "node:crypto";
 init_stream();
 
 // node_modules/@opennextjs/aws/dist/utils/cache.js
+init_logger();
 async function hasBeenRevalidated(key, tags, cacheEntry) {
   if (globalThis.openNextConfig.dangerous?.disableTagCache) {
     return false;
@@ -873,7 +1338,7 @@ async function hasBeenRevalidated(key, tags, cacheEntry) {
   }
   const lastModified = cacheEntry.lastModified ?? Date.now();
   if (globalThis.tagCache.mode === "nextMode") {
-    return await globalThis.tagCache.hasBeenRevalidated(tags, lastModified);
+    return tags.length === 0 ? false : await globalThis.tagCache.hasBeenRevalidated(tags, lastModified);
   }
   const _lastModified = await globalThis.tagCache.getLastModified(key, lastModified);
   return _lastModified === -1;
@@ -883,7 +1348,9 @@ function getTagsFromValue(value) {
     return [];
   }
   try {
-    return value.meta?.headers?.["x-next-cache-tags"]?.split(",") ?? [];
+    const cacheTags = value.meta?.headers?.["x-next-cache-tags"]?.split(",") ?? [];
+    delete value.meta?.headers?.["x-next-cache-tags"];
+    return cacheTags;
   } catch (e) {
     return [];
   }
@@ -893,9 +1360,13 @@ function getTagsFromValue(value) {
 init_logger();
 var CACHE_ONE_YEAR = 60 * 60 * 24 * 365;
 var CACHE_ONE_MONTH = 60 * 60 * 24 * 30;
-async function computeCacheControl(path2, body, host, revalidate, lastModified) {
+var VARY_HEADER = "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Next-Url";
+var NEXT_SEGMENT_PREFETCH_HEADER = "next-router-segment-prefetch";
+var NEXT_PRERENDER_HEADER = "x-nextjs-prerender";
+var NEXT_POSTPONED_HEADER = "x-nextjs-postponed";
+async function computeCacheControl(path3, body, host, revalidate, lastModified) {
   let finalRevalidate = CACHE_ONE_YEAR;
-  const existingRoute = Object.entries(PrerenderManifest.routes).find((p) => p[0] === path2)?.[1];
+  const existingRoute = Object.entries(PrerenderManifest?.routes ?? {}).find((p) => p[0] === path3)?.[1];
   if (revalidate === void 0 && existingRoute) {
     finalRevalidate = existingRoute.initialRevalidateSeconds === false ? CACHE_ONE_YEAR : existingRoute.initialRevalidateSeconds;
   } else if (revalidate !== void 0) {
@@ -921,14 +1392,19 @@ async function computeCacheControl(path2, body, host, revalidate, lastModified) 
     });
     const isStale = sMaxAge === 1;
     if (isStale) {
-      let url = NextConfig.trailingSlash ? `${path2}/` : path2;
+      let url = NextConfig.trailingSlash ? `${path3}/` : path3;
       if (NextConfig.basePath) {
         url = `${NextConfig.basePath}${url}`;
       }
       await globalThis.queue.send({
-        MessageBody: { host, url },
-        MessageDeduplicationId: hash(`${path2}-${lastModified}-${etag}`),
-        MessageGroupId: generateMessageGroupId(path2)
+        MessageBody: {
+          host,
+          url,
+          eTag: etag,
+          lastModified: lastModified ?? Date.now()
+        },
+        MessageDeduplicationId: hash(`${path3}-${lastModified}-${etag}`),
+        MessageGroupId: generateMessageGroupId(path3)
       });
     }
     return {
@@ -943,60 +1419,106 @@ async function computeCacheControl(path2, body, host, revalidate, lastModified) 
     etag
   };
 }
+function getBodyForAppRouter(event, cachedValue) {
+  if (cachedValue.type !== "app") {
+    throw new Error("getBodyForAppRouter called with non-app cache value");
+  }
+  try {
+    const segmentHeader = `${event.headers[NEXT_SEGMENT_PREFETCH_HEADER]}`;
+    const isSegmentResponse = Boolean(segmentHeader) && segmentHeader in (cachedValue.segmentData || {});
+    const body = isSegmentResponse ? cachedValue.segmentData[segmentHeader] : cachedValue.rsc;
+    return {
+      body,
+      additionalHeaders: isSegmentResponse ? { [NEXT_PRERENDER_HEADER]: "1", [NEXT_POSTPONED_HEADER]: "2" } : {}
+    };
+  } catch (e) {
+    error("Error while getting body for app router from cache:", e);
+    return { body: cachedValue.rsc, additionalHeaders: {} };
+  }
+}
 async function generateResult(event, localizedPath, cachedValue, lastModified) {
   debug("Returning result from experimental cache");
   let body = "";
   let type = "application/octet-stream";
   let isDataRequest = false;
-  switch (cachedValue.type) {
-    case "app":
-      isDataRequest = Boolean(event.headers.rsc);
-      body = isDataRequest ? cachedValue.rsc : cachedValue.html;
-      type = isDataRequest ? "text/x-component" : "text/html; charset=utf-8";
-      break;
-    case "page":
-      isDataRequest = Boolean(event.query.__nextDataReq);
-      body = isDataRequest ? JSON.stringify(cachedValue.json) : cachedValue.html;
-      type = isDataRequest ? "application/json" : "text/html; charset=utf-8";
-      break;
+  let additionalHeaders = {};
+  if (cachedValue.type === "app") {
+    isDataRequest = Boolean(event.headers.rsc);
+    if (isDataRequest) {
+      const { body: appRouterBody, additionalHeaders: appHeaders } = getBodyForAppRouter(event, cachedValue);
+      body = appRouterBody;
+      additionalHeaders = appHeaders;
+    } else {
+      body = cachedValue.html;
+    }
+    type = isDataRequest ? "text/x-component" : "text/html; charset=utf-8";
+  } else if (cachedValue.type === "page") {
+    isDataRequest = Boolean(event.query.__nextDataReq);
+    body = isDataRequest ? JSON.stringify(cachedValue.json) : cachedValue.html;
+    type = isDataRequest ? "application/json" : "text/html; charset=utf-8";
+  } else {
+    throw new Error("generateResult called with unsupported cache value type, only 'app' and 'page' are supported");
   }
   const cacheControl = await computeCacheControl(localizedPath, body, event.headers.host, cachedValue.revalidate, lastModified);
   return {
     type: "core",
-    statusCode: 200,
+    // Sometimes other status codes can be cached, like 404. For these cases, we should return the correct status code
+    // Also set the status code to the rewriteStatusCode if defined
+    // This can happen in handleMiddleware in routingHandler.
+    // `NextResponse.rewrite(url, { status: xxx})
+    // The rewrite status code should take precedence over the cached one
+    statusCode: event.rewriteStatusCode ?? cachedValue.meta?.status ?? 200,
     body: toReadableStream(body, false),
     isBase64Encoded: false,
     headers: {
       ...cacheControl,
       "content-type": type,
-      ...cachedValue.meta?.headers
+      ...cachedValue.meta?.headers,
+      vary: VARY_HEADER,
+      ...additionalHeaders
     }
   };
+}
+function escapePathDelimiters(segment, escapeEncoded) {
+  return segment.replace(new RegExp(`([/#?]${escapeEncoded ? "|%(2f|23|3f|5c)" : ""})`, "gi"), (char) => encodeURIComponent(char));
+}
+function decodePathParams(pathname) {
+  return pathname.split("/").map((segment) => {
+    try {
+      return escapePathDelimiters(decodeURIComponent(segment), true);
+    } catch (e) {
+      return segment;
+    }
+  }).join("/");
 }
 async function cacheInterceptor(event) {
   if (Boolean(event.headers["next-action"]) || Boolean(event.headers["x-prerender-revalidate"]))
     return event;
+  const cookies = event.headers.cookie || "";
+  const hasPreviewData = cookies.includes("__prerender_bypass") || cookies.includes("__next_preview_data");
+  if (hasPreviewData) {
+    debug("Preview mode detected, passing through to handler");
+    return event;
+  }
   let localizedPath = localizePath(event);
   if (NextConfig.basePath) {
     localizedPath = localizedPath.replace(NextConfig.basePath, "");
   }
   localizedPath = localizedPath.replace(/\/$/, "");
-  if (localizedPath === "") {
-    localizedPath = "index";
-  }
+  localizedPath = decodePathParams(localizedPath);
   debug("Checking cache for", localizedPath, PrerenderManifest);
-  const isISR = Object.keys(PrerenderManifest.routes).includes(localizedPath) || Object.values(PrerenderManifest.dynamicRoutes).some((dr) => new RegExp(dr.routeRegex).test(localizedPath));
+  const isISR = Object.keys(PrerenderManifest?.routes ?? {}).includes(localizedPath ?? "/") || Object.values(PrerenderManifest?.dynamicRoutes ?? {}).some((dr) => new RegExp(dr.routeRegex).test(localizedPath));
   debug("isISR", isISR);
   if (isISR) {
     try {
-      const cachedData = await globalThis.incrementalCache.get(localizedPath);
+      const cachedData = await globalThis.incrementalCache.get(localizedPath ?? "/index");
       debug("cached data in interceptor", cachedData);
       if (!cachedData?.value) {
         return event;
       }
-      if (cachedData.value?.type === "app") {
+      if (cachedData.value?.type === "app" || cachedData.value?.type === "route") {
         const tags = getTagsFromValue(cachedData.value);
-        const _hasBeenRevalidated = await hasBeenRevalidated(localizedPath, tags, cachedData);
+        const _hasBeenRevalidated = cachedData.shouldBypassTagCache ? false : await hasBeenRevalidated(localizedPath, tags, cachedData);
         if (_hasBeenRevalidated) {
           return event;
         }
@@ -1017,6 +1539,21 @@ async function cacheInterceptor(event) {
               ...cacheControl
             },
             isBase64Encoded: false
+          };
+        }
+        case "route": {
+          const cacheControl = await computeCacheControl(localizedPath, cachedData.value.body, host, cachedData.value.revalidate, cachedData.lastModified);
+          const isBinary = isBinaryContentType(String(cachedData.value.meta?.headers?.["content-type"]));
+          return {
+            type: "core",
+            statusCode: event.rewriteStatusCode ?? cachedData.value.meta?.status ?? 200,
+            body: toReadableStream(cachedData.value.body, isBinary),
+            headers: {
+              ...cacheControl,
+              ...cachedData.value.meta?.headers,
+              vary: VARY_HEADER
+            },
+            isBase64Encoded: isBinary
           };
         }
         default:
@@ -1123,7 +1660,7 @@ function parse2(str, options) {
   var result = [];
   var key = 0;
   var i = 0;
-  var path2 = "";
+  var path3 = "";
   var tryConsume = function(type) {
     if (i < tokens.length && tokens[i].type === type)
       return tokens[i++].value;
@@ -1168,12 +1705,12 @@ function parse2(str, options) {
     if (name || pattern) {
       var prefix = char || "";
       if (prefixes.indexOf(prefix) === -1) {
-        path2 += prefix;
+        path3 += prefix;
         prefix = "";
       }
-      if (path2) {
-        result.push(path2);
-        path2 = "";
+      if (path3) {
+        result.push(path3);
+        path3 = "";
       }
       result.push({
         name: name || key++,
@@ -1186,12 +1723,12 @@ function parse2(str, options) {
     }
     var value = char || tryConsume("ESCAPED_CHAR");
     if (value) {
-      path2 += value;
+      path3 += value;
       continue;
     }
-    if (path2) {
-      result.push(path2);
-      path2 = "";
+    if (path3) {
+      result.push(path3);
+      path3 = "";
     }
     var open = tryConsume("OPEN");
     if (open) {
@@ -1230,11 +1767,11 @@ function tokensToFunction(tokens, options) {
     }
   });
   return function(data) {
-    var path2 = "";
+    var path3 = "";
     for (var i = 0; i < tokens.length; i++) {
       var token = tokens[i];
       if (typeof token === "string") {
-        path2 += token;
+        path3 += token;
         continue;
       }
       var value = data ? data[token.name] : void 0;
@@ -1254,7 +1791,7 @@ function tokensToFunction(tokens, options) {
           if (validate && !matches[i].test(segment)) {
             throw new TypeError('Expected all "'.concat(token.name, '" to match "').concat(token.pattern, '", but got "').concat(segment, '"'));
           }
-          path2 += token.prefix + segment + token.suffix;
+          path3 += token.prefix + segment + token.suffix;
         }
         continue;
       }
@@ -1263,7 +1800,7 @@ function tokensToFunction(tokens, options) {
         if (validate && !matches[i].test(segment)) {
           throw new TypeError('Expected "'.concat(token.name, '" to match "').concat(token.pattern, '", but got "').concat(segment, '"'));
         }
-        path2 += token.prefix + segment + token.suffix;
+        path3 += token.prefix + segment + token.suffix;
         continue;
       }
       if (optional)
@@ -1271,7 +1808,7 @@ function tokensToFunction(tokens, options) {
       var typeOfMessage = repeat ? "an array" : "a string";
       throw new TypeError('Expected "'.concat(token.name, '" to be ').concat(typeOfMessage));
     }
-    return path2;
+    return path3;
   };
 }
 function match(str, options) {
@@ -1290,7 +1827,7 @@ function regexpToFunction(re, keys, options) {
     var m = re.exec(pathname);
     if (!m)
       return false;
-    var path2 = m[0], index = m.index;
+    var path3 = m[0], index = m.index;
     var params = /* @__PURE__ */ Object.create(null);
     var _loop_1 = function(i2) {
       if (m[i2] === void 0)
@@ -1307,7 +1844,7 @@ function regexpToFunction(re, keys, options) {
     for (var i = 1; i < m.length; i++) {
       _loop_1(i);
     }
-    return { path: path2, index, params };
+    return { path: path3, index, params };
   };
 }
 function escapeString(str) {
@@ -1316,12 +1853,12 @@ function escapeString(str) {
 function flags(options) {
   return options && options.sensitive ? "" : "i";
 }
-function regexpToRegexp(path2, keys) {
+function regexpToRegexp(path3, keys) {
   if (!keys)
-    return path2;
+    return path3;
   var groupsRegex = /\((?:\?<(.*?)>)?(?!\?)/g;
   var index = 0;
-  var execResult = groupsRegex.exec(path2.source);
+  var execResult = groupsRegex.exec(path3.source);
   while (execResult) {
     keys.push({
       // Use parenthesized substring match if available, index otherwise
@@ -1331,18 +1868,18 @@ function regexpToRegexp(path2, keys) {
       modifier: "",
       pattern: ""
     });
-    execResult = groupsRegex.exec(path2.source);
+    execResult = groupsRegex.exec(path3.source);
   }
-  return path2;
+  return path3;
 }
 function arrayToRegexp(paths, keys, options) {
-  var parts = paths.map(function(path2) {
-    return pathToRegexp(path2, keys, options).source;
+  var parts = paths.map(function(path3) {
+    return pathToRegexp(path3, keys, options).source;
   });
   return new RegExp("(?:".concat(parts.join("|"), ")"), flags(options));
 }
-function stringToRegexp(path2, keys, options) {
-  return tokensToRegexp(parse2(path2, options), keys, options);
+function stringToRegexp(path3, keys, options) {
+  return tokensToRegexp(parse2(path3, options), keys, options);
 }
 function tokensToRegexp(tokens, keys, options) {
   if (options === void 0) {
@@ -1398,17 +1935,76 @@ function tokensToRegexp(tokens, keys, options) {
   }
   return new RegExp(route, flags(options));
 }
-function pathToRegexp(path2, keys, options) {
-  if (path2 instanceof RegExp)
-    return regexpToRegexp(path2, keys);
-  if (Array.isArray(path2))
-    return arrayToRegexp(path2, keys, options);
-  return stringToRegexp(path2, keys, options);
+function pathToRegexp(path3, keys, options) {
+  if (path3 instanceof RegExp)
+    return regexpToRegexp(path3, keys);
+  if (Array.isArray(path3))
+    return arrayToRegexp(path3, keys, options);
+  return stringToRegexp(path3, keys, options);
+}
+
+// node_modules/@opennextjs/aws/dist/utils/normalize-path.js
+import path2 from "node:path";
+function normalizeRepeatedSlashes(url) {
+  const urlNoQuery = url.host + url.pathname;
+  return `${url.protocol}//${urlNoQuery.replace(/\\/g, "/").replace(/\/\/+/g, "/")}${url.search}`;
 }
 
 // node_modules/@opennextjs/aws/dist/core/routing/matcher.js
 init_stream();
 init_logger();
+
+// node_modules/@opennextjs/aws/dist/core/routing/routeMatcher.js
+var optionalLocalePrefixRegex = `^/(?:${RoutesManifest.locales.map((locale) => `${locale}/?`).join("|")})?`;
+var optionalBasepathPrefixRegex = RoutesManifest.basePath ? `^${RoutesManifest.basePath}/?` : "^/";
+var optionalPrefix = optionalLocalePrefixRegex.replace("^/", optionalBasepathPrefixRegex);
+function routeMatcher(routeDefinitions) {
+  const regexp = routeDefinitions.map((route) => ({
+    page: route.page,
+    regexp: new RegExp(route.regex.replace("^/", optionalPrefix))
+  }));
+  const appPathsSet = /* @__PURE__ */ new Set();
+  const routePathsSet = /* @__PURE__ */ new Set();
+  for (const [k, v] of Object.entries(AppPathRoutesManifest)) {
+    if (k.endsWith("page")) {
+      appPathsSet.add(v);
+    } else if (k.endsWith("route")) {
+      routePathsSet.add(v);
+    }
+  }
+  return function matchRoute(path3) {
+    const foundRoutes = regexp.filter((route) => route.regexp.test(path3));
+    return foundRoutes.map((foundRoute) => {
+      let routeType = "page";
+      if (appPathsSet.has(foundRoute.page)) {
+        routeType = "app";
+      } else if (routePathsSet.has(foundRoute.page)) {
+        routeType = "route";
+      }
+      return {
+        route: foundRoute.page,
+        type: routeType
+      };
+    });
+  };
+}
+var staticRouteMatcher = routeMatcher([
+  ...RoutesManifest.routes.static,
+  ...getStaticAPIRoutes()
+]);
+var dynamicRouteMatcher = routeMatcher(RoutesManifest.routes.dynamic);
+function getStaticAPIRoutes() {
+  const createRouteDefinition = (route) => ({
+    page: route,
+    regex: `^${route}(?:/)?$`
+  });
+  const dynamicRoutePages = new Set(RoutesManifest.routes.dynamic.map(({ page }) => page));
+  const pagesStaticAPIRoutes = Object.keys(PagesManifest).filter((route) => route.startsWith("/api/") && !dynamicRoutePages.has(route)).map(createRouteDefinition);
+  const appPathsStaticAPIRoutes = Object.values(AppPathRoutesManifest).filter((route) => (route.startsWith("/api/") || route === "/api") && !dynamicRoutePages.has(route)).map(createRouteDefinition);
+  return [...pagesStaticAPIRoutes, ...appPathsStaticAPIRoutes];
+}
+
+// node_modules/@opennextjs/aws/dist/core/routing/matcher.js
 var routeHasMatcher = (headers, cookies, query) => (redirect) => {
   switch (redirect.type) {
     case "header":
@@ -1470,10 +2066,10 @@ function getNextConfigHeaders(event, configHeaders) {
   const requestHeaders = {};
   const localizedRawPath = localizePath(event);
   for (const { headers, has, missing, regex, source, locale } of configHeaders) {
-    const path2 = locale === false ? event.rawPath : localizedRawPath;
-    if (new RegExp(regex).test(path2) && checkHas(matcher, has) && checkHas(matcher, missing, true)) {
+    const path3 = locale === false ? event.rawPath : localizedRawPath;
+    if (new RegExp(regex).test(path3) && checkHas(matcher, has) && checkHas(matcher, missing, true)) {
       const fromSource = match(source);
-      const _match = fromSource(path2);
+      const _match = fromSource(path3);
       headers.forEach((h) => {
         try {
           const key = convertMatch(_match, compile(h.key), h.key);
@@ -1494,8 +2090,8 @@ function handleRewrites(event, rewrites) {
   const matcher = routeHasMatcher(headers, cookies, query);
   const computeHas = computeParamHas(headers, cookies, query);
   const rewrite = rewrites.find((route) => {
-    const path2 = route.locale === false ? rawPath : localizedRawPath;
-    return new RegExp(route.regex).test(path2) && checkHas(matcher, route.has) && checkHas(matcher, route.missing, true);
+    const path3 = route.locale === false ? rawPath : localizedRawPath;
+    return new RegExp(route.regex).test(path3) && checkHas(matcher, route.has) && checkHas(matcher, route.missing, true);
   });
   let finalQuery = query;
   let rewrittenUrl = url;
@@ -1504,14 +2100,13 @@ function handleRewrites(event, rewrites) {
   if (rewrite) {
     const { pathname, protocol, hostname, queryString } = getUrlParts(rewrite.destination, isExternalRewrite);
     const pathToUse = rewrite.locale === false ? rawPath : localizedRawPath;
-    const encodePlusQueryString = queryString.replaceAll("+", "%20");
     debug("urlParts", { pathname, protocol, hostname, queryString });
-    const toDestinationPath = compile(escapeRegex(pathname));
+    const toDestinationPath = compile(escapeRegex(pathname, { isPath: true }));
     const toDestinationHost = compile(escapeRegex(hostname));
-    const toDestinationQuery = compile(escapeRegex(encodePlusQueryString));
+    const toDestinationQuery = compile(escapeRegex(queryString));
     const params = {
       // params for the source
-      ...getParamsFromSource(match(escapeRegex(rewrite.source)))(pathToUse),
+      ...getParamsFromSource(match(escapeRegex(rewrite.source, { isPath: true })))(pathToUse),
       // params for the has
       ...rewrite.has?.reduce((acc, cur) => {
         return Object.assign(acc, computeHas(cur));
@@ -1522,7 +2117,7 @@ function handleRewrites(event, rewrites) {
       }, {})
     };
     const isUsingParams = Object.keys(params).length > 0;
-    let rewrittenQuery = encodePlusQueryString;
+    let rewrittenQuery = queryString;
     let rewrittenHost = hostname;
     let rewrittenPath = pathname;
     if (isUsingParams) {
@@ -1554,6 +2149,20 @@ function handleRewrites(event, rewrites) {
     __rewrite: rewrite,
     isExternalRewrite
   };
+}
+function handleRepeatedSlashRedirect(event) {
+  if (event.rawPath.match(/(\\|\/\/)/)) {
+    return {
+      type: event.type,
+      statusCode: 308,
+      headers: {
+        Location: normalizeRepeatedSlashes(new URL(event.url))
+      },
+      body: emptyReadableStream(),
+      isBase64Encoded: false
+    };
+  }
+  return false;
 }
 function handleTrailingSlashRedirect(event) {
   const url = new URL(event.rawPath, "http://localhost");
@@ -1592,6 +2201,9 @@ function handleTrailingSlashRedirect(event) {
   return false;
 }
 function handleRedirects(event, redirects) {
+  const repeatedSlashRedirect = handleRepeatedSlashRedirect(event);
+  if (repeatedSlashRedirect)
+    return repeatedSlashRedirect;
   const trailingSlashRedirect = handleTrailingSlashRedirect(event);
   if (trailingSlashRedirect)
     return trailingSlashRedirect;
@@ -1613,7 +2225,8 @@ function handleRedirects(event, redirects) {
 }
 function fixDataPage(internalEvent, buildId) {
   const { rawPath, query } = internalEvent;
-  const dataPattern = `${NextConfig.basePath ?? ""}/_next/data/${buildId}`;
+  const basePath = NextConfig.basePath ?? "";
+  const dataPattern = `${basePath}/_next/data/${buildId}`;
   if (rawPath.startsWith("/_next/data") && !rawPath.startsWith(dataPattern)) {
     return {
       type: internalEvent.type,
@@ -1626,7 +2239,7 @@ function fixDataPage(internalEvent, buildId) {
     };
   }
   if (rawPath.startsWith(dataPattern) && rawPath.endsWith(".json")) {
-    const newPath = rawPath.slice(dataPattern.length, -".json".length).replace(/^\/index$/, "/");
+    const newPath = `${basePath}${rawPath.slice(dataPattern.length, -".json".length).replace(/^\/index$/, "/")}`;
     query.__nextDataReq = "1";
     return {
       ...internalEvent,
@@ -1639,17 +2252,27 @@ function fixDataPage(internalEvent, buildId) {
 }
 function handleFallbackFalse(internalEvent, prerenderManifest) {
   const { rawPath } = internalEvent;
-  const { dynamicRoutes, routes } = prerenderManifest;
-  const routeFallback = Object.entries(dynamicRoutes).filter(([, { fallback }]) => fallback === false).some(([, { routeRegex }]) => {
+  const { dynamicRoutes = {}, routes = {} } = prerenderManifest ?? {};
+  const prerenderedFallbackRoutes = Object.entries(dynamicRoutes).filter(([, { fallback }]) => fallback === false);
+  const routeFallback = prerenderedFallbackRoutes.some(([, { routeRegex }]) => {
     const routeRegexExp = new RegExp(routeRegex);
     return routeRegexExp.test(rawPath);
   });
   const locales = NextConfig.i18n?.locales;
   const routesAlreadyHaveLocale = locales?.includes(rawPath.split("/")[1]) || // If we don't use locales, we don't need to add the default locale
   locales === void 0;
-  const localizedPath = routesAlreadyHaveLocale ? rawPath : `/${NextConfig.i18n?.defaultLocale}${rawPath}`;
+  let localizedPath = routesAlreadyHaveLocale ? rawPath : `/${NextConfig.i18n?.defaultLocale}${rawPath}`;
+  if (
+    // Not if localizedPath is "/" tho, because that would not make it find `isPregenerated` below since it would be try to match an empty string.
+    localizedPath !== "/" && NextConfig.trailingSlash && localizedPath.endsWith("/")
+  ) {
+    localizedPath = localizedPath.slice(0, -1);
+  }
+  const matchedStaticRoute = staticRouteMatcher(localizedPath);
+  const prerenderedFallbackRoutesName = prerenderedFallbackRoutes.map(([name]) => name);
+  const matchedDynamicRoute = dynamicRouteMatcher(localizedPath).filter(({ route }) => !prerenderedFallbackRoutesName.includes(route));
   const isPregenerated = Object.keys(routes).includes(localizedPath);
-  if (routeFallback && !isPregenerated) {
+  if (routeFallback && !isPregenerated && matchedStaticRoute.length === 0 && matchedDynamicRoute.length === 0) {
     return {
       event: {
         ...internalEvent,
@@ -1671,22 +2294,24 @@ function handleFallbackFalse(internalEvent, prerenderManifest) {
 
 // node_modules/@opennextjs/aws/dist/core/routing/middleware.js
 init_stream();
+init_utils();
 var middlewareManifest = MiddlewareManifest;
 var functionsConfigManifest = FunctionsConfigManifest;
 var middleMatch = getMiddlewareMatch(middlewareManifest, functionsConfigManifest);
+var REDIRECTS = /* @__PURE__ */ new Set([301, 302, 303, 307, 308]);
 function defaultMiddlewareLoader() {
   return Promise.resolve().then(() => (init_edgeFunctionHandler(), edgeFunctionHandler_exports));
 }
-async function handleMiddleware(internalEvent, middlewareLoader = defaultMiddlewareLoader) {
+async function handleMiddleware(internalEvent, initialSearch, middlewareLoader = defaultMiddlewareLoader) {
   const headers = internalEvent.headers;
-  if (headers["x-isr"])
+  if (headers["x-isr"] && headers["x-prerender-revalidate"] === PrerenderManifest?.preview?.previewModeId)
     return internalEvent;
   const normalizedPath = localizePath(internalEvent);
   const hasMatch = middleMatch.some((r) => r.test(normalizedPath));
   if (!hasMatch)
     return internalEvent;
   const initialUrl = new URL(normalizedPath, internalEvent.url);
-  initialUrl.search = convertToQueryString(internalEvent.query);
+  initialUrl.search = initialSearch;
   const url = initialUrl.href;
   const middleware = await middlewareLoader();
   const result = await middleware.default({
@@ -1714,52 +2339,48 @@ async function handleMiddleware(internalEvent, middlewareLoader = defaultMiddlew
   const responseHeaders = result.headers;
   const reqHeaders = {};
   const resHeaders = {};
-  responseHeaders.delete("x-middleware-override-headers");
+  const filteredHeaders = [
+    "x-middleware-override-headers",
+    "x-middleware-next",
+    "x-middleware-rewrite",
+    // We need to drop `content-encoding` because it will be decoded
+    "content-encoding"
+  ];
   const xMiddlewareKey = "x-middleware-request-";
   responseHeaders.forEach((value, key) => {
     if (key.startsWith(xMiddlewareKey)) {
       const k = key.substring(xMiddlewareKey.length);
       reqHeaders[k] = value;
     } else {
+      if (filteredHeaders.includes(key.toLowerCase()))
+        return;
       if (key.toLowerCase() === "set-cookie") {
         resHeaders[key] = resHeaders[key] ? [...resHeaders[key], value] : [value];
+      } else if (REDIRECTS.has(statusCode) && key.toLowerCase() === "location") {
+        resHeaders[key] = normalizeLocationHeader(value, internalEvent.url);
       } else {
         resHeaders[key] = value;
       }
     }
   });
-  if (statusCode >= 300 && statusCode < 400) {
-    resHeaders.location = responseHeaders.get("location") ?? resHeaders.location;
-    return {
-      body: emptyReadableStream(),
-      type: internalEvent.type,
-      statusCode,
-      headers: resHeaders,
-      isBase64Encoded: false
-    };
-  }
   const rewriteUrl = responseHeaders.get("x-middleware-rewrite");
-  let rewritten = false;
   let isExternalRewrite = false;
-  let middlewareQueryString = internalEvent.query;
+  let middlewareQuery = internalEvent.query;
   let newUrl = internalEvent.url;
   if (rewriteUrl) {
     newUrl = rewriteUrl;
-    rewritten = true;
     if (isExternal(newUrl, internalEvent.headers.host)) {
       isExternalRewrite = true;
     } else {
       const rewriteUrlObject = new URL(rewriteUrl);
-      middlewareQueryString = middlewareQueryString.__nextDataReq ? {
-        __nextDataReq: middlewareQueryString.__nextDataReq
-      } : {};
-      rewriteUrlObject.searchParams.forEach((v, k) => {
-        middlewareQueryString[k] = v;
-      });
+      middlewareQuery = getQueryFromSearchParams(rewriteUrlObject.searchParams);
+      if ("__nextDataReq" in internalEvent.query) {
+        middlewareQuery.__nextDataReq = internalEvent.query.__nextDataReq;
+      }
     }
   }
-  if (result.body) {
-    const body = result.body;
+  if (!rewriteUrl && !responseHeaders.get("x-middleware-next")) {
+    const body = result.body ?? emptyReadableStream();
     return {
       type: internalEvent.type,
       statusCode,
@@ -1776,50 +2397,13 @@ async function handleMiddleware(internalEvent, middlewareLoader = defaultMiddlew
     headers: { ...internalEvent.headers, ...reqHeaders },
     body: internalEvent.body,
     method: internalEvent.method,
-    query: middlewareQueryString,
+    query: middlewareQuery,
     cookies: internalEvent.cookies,
     remoteAddress: internalEvent.remoteAddress,
-    isExternalRewrite
+    isExternalRewrite,
+    rewriteStatusCode: rewriteUrl && !isExternalRewrite ? statusCode : void 0
   };
 }
-
-// node_modules/@opennextjs/aws/dist/core/routing/routeMatcher.js
-var optionalLocalePrefixRegex = `^/(?:${RoutesManifest.locales.map((locale) => `${locale}/?`).join("|")})?`;
-var optionalBasepathPrefixRegex = RoutesManifest.basePath ? `^${RoutesManifest.basePath}/?` : "^/";
-var apiPrefix = `${RoutesManifest.basePath ?? ""}/api`;
-var optionalPrefix = optionalLocalePrefixRegex.replace("^/", optionalBasepathPrefixRegex);
-function routeMatcher(routeDefinitions) {
-  const regexp = routeDefinitions.map((route) => ({
-    page: route.page,
-    regexp: new RegExp(route.regex.replace("^/", optionalPrefix))
-  }));
-  const appPathsSet = /* @__PURE__ */ new Set();
-  const routePathsSet = /* @__PURE__ */ new Set();
-  for (const [k, v] of Object.entries(AppPathRoutesManifest)) {
-    if (k.endsWith("page")) {
-      appPathsSet.add(v);
-    } else if (k.endsWith("route")) {
-      routePathsSet.add(v);
-    }
-  }
-  return function matchRoute(path2) {
-    const foundRoutes = regexp.filter((route) => route.regexp.test(path2));
-    return foundRoutes.map((foundRoute) => {
-      let routeType = "page";
-      if (appPathsSet.has(foundRoute.page)) {
-        routeType = "app";
-      } else if (routePathsSet.has(foundRoute.page)) {
-        routeType = "route";
-      }
-      return {
-        route: foundRoute.page,
-        type: routeType
-      };
-    });
-  };
-}
-var staticRouteMatcher = routeMatcher(RoutesManifest.routes.static);
-var dynamicRouteMatcher = routeMatcher(RoutesManifest.routes.dynamic);
 
 // node_modules/@opennextjs/aws/dist/core/routingHandler.js
 var MIDDLEWARE_HEADER_PREFIX = "x-middleware-response-";
@@ -1828,6 +2412,8 @@ var INTERNAL_HEADER_PREFIX = "x-opennext-";
 var INTERNAL_HEADER_INITIAL_URL = `${INTERNAL_HEADER_PREFIX}initial-url`;
 var INTERNAL_HEADER_LOCALE = `${INTERNAL_HEADER_PREFIX}locale`;
 var INTERNAL_HEADER_RESOLVED_ROUTES = `${INTERNAL_HEADER_PREFIX}resolved-routes`;
+var INTERNAL_HEADER_REWRITE_STATUS_CODE = `${INTERNAL_HEADER_PREFIX}rewrite-status-code`;
+var INTERNAL_EVENT_REQUEST_ID = `${INTERNAL_HEADER_PREFIX}request-id`;
 var geoHeaderToNextHeader = {
   "x-open-next-city": "x-vercel-ip-city",
   "x-open-next-country": "x-vercel-ip-country",
@@ -1835,122 +2421,177 @@ var geoHeaderToNextHeader = {
   "x-open-next-latitude": "x-vercel-ip-latitude",
   "x-open-next-longitude": "x-vercel-ip-longitude"
 };
-function applyMiddlewareHeaders(eventHeaders, middlewareHeaders, setPrefix = true) {
-  const keyPrefix = setPrefix ? MIDDLEWARE_HEADER_PREFIX : "";
+function applyMiddlewareHeaders(eventOrResult, middlewareHeaders) {
+  const isResult = isInternalResult(eventOrResult);
+  const headers = eventOrResult.headers;
+  const keyPrefix = isResult ? "" : MIDDLEWARE_HEADER_PREFIX;
   Object.entries(middlewareHeaders).forEach(([key, value]) => {
     if (value) {
-      eventHeaders[keyPrefix + key] = Array.isArray(value) ? value.join(",") : value;
+      headers[keyPrefix + key] = Array.isArray(value) ? value.join(",") : value;
     }
   });
 }
-async function routingHandler(event) {
-  for (const [openNextGeoName, nextGeoName] of Object.entries(geoHeaderToNextHeader)) {
-    const value = event.headers[openNextGeoName];
-    if (value) {
-      event.headers[nextGeoName] = value;
-    }
-  }
-  for (const key of Object.keys(event.headers)) {
-    if (key.startsWith(INTERNAL_HEADER_PREFIX) || key.startsWith(MIDDLEWARE_HEADER_PREFIX)) {
-      delete event.headers[key];
-    }
-  }
-  const nextHeaders = getNextConfigHeaders(event, ConfigHeaders);
-  let internalEvent = fixDataPage(event, BuildId);
-  if ("statusCode" in internalEvent) {
-    return internalEvent;
-  }
-  const redirect = handleRedirects(internalEvent, RoutesManifest.redirects);
-  if (redirect) {
-    debug("redirect", redirect);
-    return redirect;
-  }
-  const eventOrResult = await handleMiddleware(internalEvent);
-  const isResult = "statusCode" in eventOrResult;
-  if (isResult) {
-    return eventOrResult;
-  }
-  const middlewareResponseHeaders = eventOrResult.responseHeaders;
-  let isExternalRewrite = eventOrResult.isExternalRewrite ?? false;
-  internalEvent = eventOrResult;
-  if (!isExternalRewrite) {
-    const beforeRewrites = handleRewrites(internalEvent, RoutesManifest.rewrites.beforeFiles);
-    internalEvent = beforeRewrites.internalEvent;
-    isExternalRewrite = beforeRewrites.isExternalRewrite;
-  }
-  const foundStaticRoute = staticRouteMatcher(internalEvent.rawPath);
-  const isStaticRoute = !isExternalRewrite && foundStaticRoute.length > 0;
-  if (!(isStaticRoute || isExternalRewrite)) {
-    const afterRewrites = handleRewrites(internalEvent, RoutesManifest.rewrites.afterFiles);
-    internalEvent = afterRewrites.internalEvent;
-    isExternalRewrite = afterRewrites.isExternalRewrite;
-  }
-  const { event: fallbackEvent, isISR } = handleFallbackFalse(internalEvent, PrerenderManifest);
-  internalEvent = fallbackEvent;
-  const foundDynamicRoute = dynamicRouteMatcher(internalEvent.rawPath);
-  const isDynamicRoute = !isExternalRewrite && foundDynamicRoute.length > 0;
-  if (!(isDynamicRoute || isStaticRoute || isExternalRewrite)) {
-    const fallbackRewrites = handleRewrites(internalEvent, RoutesManifest.rewrites.fallback);
-    internalEvent = fallbackRewrites.internalEvent;
-    isExternalRewrite = fallbackRewrites.isExternalRewrite;
-  }
-  const isApiRoute = internalEvent.rawPath === apiPrefix || internalEvent.rawPath.startsWith(`${apiPrefix}/`);
-  const isNextImageRoute = internalEvent.rawPath.startsWith("/_next/image");
-  const isRouteFoundBeforeAllRewrites = isStaticRoute || isDynamicRoute || isExternalRewrite;
-  if (!(isRouteFoundBeforeAllRewrites || isApiRoute || isNextImageRoute || // We need to check again once all rewrites have been applied
-  staticRouteMatcher(internalEvent.rawPath).length > 0 || dynamicRouteMatcher(internalEvent.rawPath).length > 0)) {
-    internalEvent = {
-      ...internalEvent,
-      rawPath: "/404",
-      url: constructNextUrl(internalEvent.url, "/404"),
-      headers: {
-        ...internalEvent.headers,
-        "x-middleware-response-cache-control": "private, no-cache, no-store, max-age=0, must-revalidate"
+async function routingHandler(event, { assetResolver }) {
+  try {
+    for (const [openNextGeoName, nextGeoName] of Object.entries(geoHeaderToNextHeader)) {
+      const value = event.headers[openNextGeoName];
+      if (value) {
+        event.headers[nextGeoName] = value;
       }
+    }
+    for (const key of Object.keys(event.headers)) {
+      if (key.startsWith(INTERNAL_HEADER_PREFIX) || key.startsWith(MIDDLEWARE_HEADER_PREFIX)) {
+        delete event.headers[key];
+      }
+    }
+    let headers = getNextConfigHeaders(event, ConfigHeaders);
+    let eventOrResult = fixDataPage(event, BuildId);
+    if (isInternalResult(eventOrResult)) {
+      return eventOrResult;
+    }
+    const redirect = handleRedirects(eventOrResult, RoutesManifest.redirects);
+    if (redirect) {
+      redirect.headers.Location = normalizeLocationHeader(redirect.headers.Location, event.url, true);
+      debug("redirect", redirect);
+      return redirect;
+    }
+    const middlewareEventOrResult = await handleMiddleware(
+      eventOrResult,
+      // We need to pass the initial search without any decoding
+      // TODO: we'd need to refactor InternalEvent to include the initial querystring directly
+      // Should be done in another PR because it is a breaking change
+      new URL(event.url).search
+    );
+    if (isInternalResult(middlewareEventOrResult)) {
+      return middlewareEventOrResult;
+    }
+    const middlewareHeadersPrioritized = globalThis.openNextConfig.dangerous?.middlewareHeadersOverrideNextConfigHeaders ?? false;
+    if (middlewareHeadersPrioritized) {
+      headers = {
+        ...headers,
+        ...middlewareEventOrResult.responseHeaders
+      };
+    } else {
+      headers = {
+        ...middlewareEventOrResult.responseHeaders,
+        ...headers
+      };
+    }
+    let isExternalRewrite = middlewareEventOrResult.isExternalRewrite ?? false;
+    eventOrResult = middlewareEventOrResult;
+    if (!isExternalRewrite) {
+      const beforeRewrite = handleRewrites(eventOrResult, RoutesManifest.rewrites.beforeFiles);
+      eventOrResult = beforeRewrite.internalEvent;
+      isExternalRewrite = beforeRewrite.isExternalRewrite;
+      if (!isExternalRewrite) {
+        const assetResult = await assetResolver?.maybeGetAssetResult?.(eventOrResult);
+        if (assetResult) {
+          applyMiddlewareHeaders(assetResult, headers);
+          return assetResult;
+        }
+      }
+    }
+    const foundStaticRoute = staticRouteMatcher(eventOrResult.rawPath);
+    const isStaticRoute = !isExternalRewrite && foundStaticRoute.length > 0;
+    if (!(isStaticRoute || isExternalRewrite)) {
+      const afterRewrite = handleRewrites(eventOrResult, RoutesManifest.rewrites.afterFiles);
+      eventOrResult = afterRewrite.internalEvent;
+      isExternalRewrite = afterRewrite.isExternalRewrite;
+    }
+    let isISR = false;
+    if (!isExternalRewrite) {
+      const fallbackResult = handleFallbackFalse(eventOrResult, PrerenderManifest);
+      eventOrResult = fallbackResult.event;
+      isISR = fallbackResult.isISR;
+    }
+    const foundDynamicRoute = dynamicRouteMatcher(eventOrResult.rawPath);
+    const isDynamicRoute = !isExternalRewrite && foundDynamicRoute.length > 0;
+    if (!(isDynamicRoute || isStaticRoute || isExternalRewrite)) {
+      const fallbackRewrites = handleRewrites(eventOrResult, RoutesManifest.rewrites.fallback);
+      eventOrResult = fallbackRewrites.internalEvent;
+      isExternalRewrite = fallbackRewrites.isExternalRewrite;
+    }
+    const isNextImageRoute = eventOrResult.rawPath.startsWith("/_next/image");
+    const isRouteFoundBeforeAllRewrites = isStaticRoute || isDynamicRoute || isExternalRewrite;
+    if (!(isRouteFoundBeforeAllRewrites || isNextImageRoute || // We need to check again once all rewrites have been applied
+    staticRouteMatcher(eventOrResult.rawPath).length > 0 || dynamicRouteMatcher(eventOrResult.rawPath).length > 0)) {
+      eventOrResult = {
+        ...eventOrResult,
+        rawPath: "/404",
+        url: constructNextUrl(eventOrResult.url, "/404"),
+        headers: {
+          ...eventOrResult.headers,
+          "x-middleware-response-cache-control": "private, no-cache, no-store, max-age=0, must-revalidate"
+        }
+      };
+    }
+    if (globalThis.openNextConfig.dangerous?.enableCacheInterception && !isInternalResult(eventOrResult)) {
+      debug("Cache interception enabled");
+      eventOrResult = await cacheInterceptor(eventOrResult);
+      if (isInternalResult(eventOrResult)) {
+        applyMiddlewareHeaders(eventOrResult, headers);
+        return eventOrResult;
+      }
+    }
+    applyMiddlewareHeaders(eventOrResult, headers);
+    const resolvedRoutes = [
+      ...foundStaticRoute,
+      ...foundDynamicRoute
+    ];
+    debug("resolvedRoutes", resolvedRoutes);
+    return {
+      internalEvent: eventOrResult,
+      isExternalRewrite,
+      origin: false,
+      isISR,
+      resolvedRoutes,
+      initialURL: event.url,
+      locale: NextConfig.i18n ? detectLocale(eventOrResult, NextConfig.i18n) : void 0,
+      rewriteStatusCode: middlewareEventOrResult.rewriteStatusCode
+    };
+  } catch (e) {
+    error("Error in routingHandler", e);
+    return {
+      internalEvent: {
+        type: "core",
+        method: "GET",
+        rawPath: "/500",
+        url: constructNextUrl(event.url, "/500"),
+        headers: {
+          ...event.headers
+        },
+        query: event.query,
+        cookies: event.cookies,
+        remoteAddress: event.remoteAddress
+      },
+      isExternalRewrite: false,
+      origin: false,
+      isISR: false,
+      resolvedRoutes: [],
+      initialURL: event.url,
+      locale: NextConfig.i18n ? detectLocale(event, NextConfig.i18n) : void 0
     };
   }
-  if (globalThis.openNextConfig.dangerous?.enableCacheInterception && !("statusCode" in internalEvent)) {
-    debug("Cache interception enabled");
-    internalEvent = await cacheInterceptor(internalEvent);
-    if ("statusCode" in internalEvent) {
-      applyMiddlewareHeaders(internalEvent.headers, {
-        ...middlewareResponseHeaders,
-        ...nextHeaders
-      }, false);
-      return internalEvent;
-    }
-  }
-  applyMiddlewareHeaders(internalEvent.headers, {
-    ...middlewareResponseHeaders,
-    ...nextHeaders
-  });
-  const resolvedRoutes = [
-    ...foundStaticRoute,
-    ...foundDynamicRoute
-  ];
-  debug("resolvedRoutes", resolvedRoutes);
-  return {
-    internalEvent,
-    isExternalRewrite,
-    origin: false,
-    isISR,
-    resolvedRoutes,
-    initialURL: event.url,
-    locale: NextConfig.i18n ? detectLocale(internalEvent, NextConfig.i18n) : void 0
-  };
+}
+function isInternalResult(eventOrResult) {
+  return eventOrResult != null && "statusCode" in eventOrResult;
 }
 
 // node_modules/@opennextjs/aws/dist/adapters/middleware.js
 globalThis.internalFetch = fetch;
 globalThis.__openNextAls = new AsyncLocalStorage();
 var defaultHandler = async (internalEvent, options) => {
-  const originResolver = await resolveOriginResolver(globalThis.openNextConfig.middleware?.originResolver);
-  const externalRequestProxy = await resolveProxyRequest(globalThis.openNextConfig.middleware?.override?.proxyExternalRequest);
+  const middlewareConfig = globalThis.openNextConfig.middleware;
+  const originResolver = await resolveOriginResolver(middlewareConfig?.originResolver);
+  const externalRequestProxy = await resolveProxyRequest(middlewareConfig?.override?.proxyExternalRequest);
+  const assetResolver = await resolveAssetResolver(middlewareConfig?.assetResolver);
+  const requestId = Math.random().toString(36);
   return runWithOpenNextRequestContext({
     isISRRevalidation: internalEvent.headers["x-isr"] === "1",
-    waitUntil: options?.waitUntil
+    waitUntil: options?.waitUntil,
+    requestId
   }, async () => {
-    const result = await routingHandler(internalEvent);
+    const result = await routingHandler(internalEvent, { assetResolver });
     if ("internalEvent" in result) {
       debug("Middleware intercepted event", internalEvent);
       if (!result.isExternalRewrite) {
@@ -1962,7 +2603,9 @@ var defaultHandler = async (internalEvent, options) => {
             headers: {
               ...result.internalEvent.headers,
               [INTERNAL_HEADER_INITIAL_URL]: internalEvent.url,
-              [INTERNAL_HEADER_RESOLVED_ROUTES]: JSON.stringify(result.resolvedRoutes)
+              [INTERNAL_HEADER_RESOLVED_ROUTES]: JSON.stringify(result.resolvedRoutes),
+              [INTERNAL_EVENT_REQUEST_ID]: requestId,
+              [INTERNAL_HEADER_REWRITE_STATUS_CODE]: String(result.rewriteStatusCode)
             }
           },
           isExternalRewrite: result.isExternalRewrite,
@@ -1980,6 +2623,10 @@ var defaultHandler = async (internalEvent, options) => {
           type: "middleware",
           internalEvent: {
             ...result.internalEvent,
+            headers: {
+              ...result.internalEvent.headers,
+              [INTERNAL_EVENT_REQUEST_ID]: requestId
+            },
             rawPath: "/500",
             url: constructNextUrl(result.internalEvent.url, "/500"),
             method: "GET"
@@ -1992,6 +2639,9 @@ var defaultHandler = async (internalEvent, options) => {
           resolvedRoutes: [{ route: "/500", type: "page" }]
         };
       }
+    }
+    if (process.env.OPEN_NEXT_REQUEST_ID_HEADER || globalThis.openNextDebug) {
+      result.headers[INTERNAL_EVENT_REQUEST_ID] = requestId;
     }
     debug("Middleware response", result);
     return result;
