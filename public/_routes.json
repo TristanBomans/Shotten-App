@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "include": [
+        "/*"
+    ],
+    "exclude": [
+        "/_next/static/*",
+        "/favicon.ico",
+        "/icons/*",
+        "/file.svg",
+        "/globe.svg",
+        "/next.svg",
+        "/vercel.svg",
+        "/window.svg",
+        "/offline.html",
+        "/sw.js",
+        "/version.json"
+    ],
+    "description": "Excluding static assets from Worker invocation"
+}
