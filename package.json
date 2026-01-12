@@ -7,7 +7,7 @@
     "build": "node scripts/generate-version.js && next build",
     "start": "next start",
     "lint": "eslint",
-    "build:cf": "node scripts/generate-version.js && next build && opennextjs-cloudflare && npx esbuild .open-next/worker.js --bundle --outfile=.open-next/assets/_worker.js --format=esm --platform=browser --external:cloudflare:*",
+    "build:cf": "node scripts/generate-version.js && next build && opennextjs-cloudflare && npx esbuild .open-next/worker.js --bundle --outfile=.open-next/assets/_worker.js --format=esm --platform=node --external:node:* --external:cloudflare:* --external:async_hooks --external:fs --external:path --external:url --external:buffer --external:crypto --external:stream --external:http --external:https --external:zlib --external:util --external:events --external:net --external:tls --external:string_decoder --external:punycode --external:querystring --external:assert --external:constants --external:os --external:tty --external:vm --external:child_process --external:worker_threads --external:process --external:console",
     "build:worker": "opennextjs-cloudflare",
     "dev:worker": "wrangler dev --port 3000",
     "deploy": "opennextjs-cloudflare && cp .open-next/worker.js .open-next/assets/_worker.js && wrangler deploy"
