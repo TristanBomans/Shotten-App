@@ -1,8 +1,8 @@
 {
   "version": "0.1.0",
-  "commitHash": "5e9f9874e8a5e590033b80badc0ece417bdefa52",
-  "buildTimestamp": "2026-01-12T19:00:59.700Z",
-  "commitMessage": "fix: copy worker to assets directory for cloudflare pages",
-  "commitSubject": "fix: copy worker to assets directory for cloudflare pages",
+  "commitHash": "fbb99f0ad9b5238d6d9a8c0cc1851fe7032dd2d6",
+  "buildTimestamp": "2026-01-12T19:12:47.011Z",
+  "commitMessage": "fix: explicit externals for esbuild bundle",
+  "commitSubject": "fix: explicit externals for esbuild bundle",
   "commitBody": ""
 }
