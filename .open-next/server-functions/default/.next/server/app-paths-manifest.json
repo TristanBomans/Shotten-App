@@ -1,0 +1,18 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/Matches/route": "app/api/Matches/route.js",
+  "/api/Matches/[id]/route": "app/api/Matches/[id]/route.js",
+  "/api/Teams/route": "app/api/Teams/route.js",
+  "/api/lzv/matches/route": "app/api/lzv/matches/route.js",
+  "/api/Players/[id]/route": "app/api/Players/[id]/route.js",
+  "/api/lzv/players/route": "app/api/lzv/players/route.js",
+  "/api/Players/route": "app/api/Players/route.js",
+  "/api/lzv/stats/route": "app/api/lzv/stats/route.js",
+  "/api/lzv/team/[id]/route": "app/api/lzv/team/[id]/route.js",
+  "/api/matches/[matchId]/players/[playerId]/attendance/route": "app/api/matches/[matchId]/players/[playerId]/attendance/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js",
+  "/stats/page": "app/stats/page.js",
+  "/version/page": "app/version/page.js",
+  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js"
+}

@@ -1,0 +1,1 @@
+{"type":"route","meta":{"status":200,"headers":{"content-type":"application/json","x-next-cache-tags":"_N_T_/layout,_N_T_/api/layout,_N_T_/api/Teams/layout,_N_T_/api/Teams/route,_N_T_/api/Teams"}},"body":"[{\"id\":1,\"name\":\"Wille ma ni kunne\"},{\"id\":2,\"name\":\"FC Degradé\"}]"}

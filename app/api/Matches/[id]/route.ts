@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCoreMatch, updateCoreMatch, deleteCoreMatch, toMatchResponse } from '@/lib/supabase';
