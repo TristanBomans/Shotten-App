@@ -2,23 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Database, Wifi, WifiOff, Settings, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users } from 'lucide-react';
+import { LogOut, Database, Wifi, WifiOff, Settings, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog } from 'lucide-react';
 import { getUseMockData, setUseMockData } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
 import VersionChecker from './VersionChecker';
+import PlayerManagementSheet from './PlayerManagementSheet';
 import Link from 'next/link';
 
 interface SettingsViewProps {
     onLogout: () => void;
+    onPlayerManagementOpenChange?: (isOpen: boolean) => void;
 }
 
-export default function SettingsView({ onLogout }: SettingsViewProps) {
+export default function SettingsView({ onLogout, onPlayerManagementOpenChange }: SettingsViewProps) {
     const [useMock, setUseMock] = useState(true);
     const [isLocalhost, setIsLocalhost] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [hapticFeedback, setHapticFeedback] = useState(true);
     const [showFullNames, setShowFullNames] = useState(false);
+    const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
     const { hasUpdate, updateApp, isChecking } = useVersionChecker();
 
     useEffect(() => {
@@ -34,6 +37,10 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
         const fullNamesPref = localStorage.getItem('showFullNames');
         setShowFullNames(fullNamesPref === 'true');
     }, []);
+
+    useEffect(() => {
+        onPlayerManagementOpenChange?.(isPlayerManagementOpen);
+    }, [isPlayerManagementOpen, onPlayerManagementOpenChange]);
 
     const handleToggleMock = () => {
         hapticPatterns.toggle();
@@ -167,6 +174,58 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
                         toggleValue={showFullNames}
                         onToggle={handleToggleFullNames}
                     />
+                </motion.div>
+
+                {/* Player Management */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.12 }}
+                    style={{
+                        background: 'rgba(255, 255, 255, 0.06)',
+                        backdropFilter: 'blur(40px)',
+                        WebkitBackdropFilter: 'blur(40px)',
+                        borderRadius: 20,
+                        border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                        overflow: 'hidden',
+                        marginBottom: 16,
+                    }}
+                >
+                    <motion.div
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setIsPlayerManagementOpen(true);
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'rgba(100, 210, 80, 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#64d250',
+                            flexShrink: 0,
+                        }}>
+                            <UserCog size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'white' }}>Manage Players</div>
+                            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
+                                Add, edit or remove players
+                            </div>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    </motion.div>
                 </motion.div>
 
                 {/* Developer Settings - Only on localhost */}
@@ -307,6 +366,12 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
                     </motion.button>
                 </motion.div>
             </motion.div>
+
+            {/* Player Management Sheet */}
+            <PlayerManagementSheet
+                isOpen={isPlayerManagementOpen}
+                onClose={() => setIsPlayerManagementOpen(false)}
+            />
         </div>
     );
 }

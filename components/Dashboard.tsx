@@ -15,12 +15,13 @@ interface DashboardProps {
     currentView: 'home' | 'stats' | 'league' | 'settings';
     onLogout: () => void;
     onViewChange: (view: 'home' | 'stats' | 'league' | 'settings') => void;
+    onPlayerManagementOpenChange?: (isOpen: boolean) => void;
 }
 
 // View order for determining slide position
 const viewOrder = ['home', 'stats', 'league', 'settings'] as const;
 
-export default function Dashboard({ playerId, currentView, onLogout, onViewChange }: DashboardProps) {
+export default function Dashboard({ playerId, currentView, onLogout, onViewChange, onPlayerManagementOpenChange }: DashboardProps) {
     const { matches, loading, error, fetchMatches, setMatches } = useMatches(playerId);
     const { players, fetchAllPlayers } = useAllPlayers();
     const upcomingRef = useRef<HTMLElement>(null);
@@ -390,7 +391,7 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                     overflowY: 'auto',
                 }}
             >
-                <SettingsView onLogout={onLogout} />
+                <SettingsView onLogout={onLogout} onPlayerManagementOpenChange={onPlayerManagementOpenChange} />
             </div>
         </div>
     );

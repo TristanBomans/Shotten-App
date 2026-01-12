@@ -30,9 +30,10 @@ export const setUseMockData = (value: boolean): void => {
 };
 
 // Backend URL (when not using mock)
-const BASE_URL = 'https://shotten-be.taltiko.com';
+// Now pointing to the unified Node.js backend (was: shotten-be.taltiko.com)
+const BASE_URL = 'https://shottenscraper.trisbom.com';
 
-// Scraper API URL (LZV Cup data)
+// Scraper API URL (LZV Cup data) - same as BASE_URL now
 const SCRAPER_API = 'https://shottenscraper.trisbom.com';
 
 // =============================================================================
@@ -88,25 +89,25 @@ export interface ScraperPlayer {
 // =============================================================================
 
 export async function fetchAllScraperTeams(): Promise<ScraperTeam[]> {
-    const res = await fetch(`${SCRAPER_API}/api/stats`);
+    const res = await fetch(`${SCRAPER_API}/api/lzv/stats`);
     if (!res.ok) throw new Error('Failed to fetch scraper stats');
     return res.json();
 }
 
 export async function fetchScraperTeamById(externalId: number): Promise<ScraperTeam | null> {
-    const res = await fetch(`${SCRAPER_API}/api/team/${externalId}`);
+    const res = await fetch(`${SCRAPER_API}/api/lzv/team/${externalId}`);
     if (!res.ok) return null;
     return res.json();
 }
 
 export async function fetchAllScraperPlayers(): Promise<ScraperPlayer[]> {
-    const res = await fetch(`${SCRAPER_API}/api/players`);
+    const res = await fetch(`${SCRAPER_API}/api/lzv/players`);
     if (!res.ok) throw new Error('Failed to fetch scraper players');
     return res.json();
 }
 
 export async function fetchScraperPlayers(teamId: number): Promise<ScraperPlayer[]> {
-    const res = await fetch(`${SCRAPER_API}/api/players?teamId=${teamId}`);
+    const res = await fetch(`${SCRAPER_API}/api/lzv/players?teamId=${teamId}`);
     if (!res.ok) return [];
     return res.json();
 }
@@ -325,4 +326,155 @@ export function useTeams() {
     }, []);
 
     return { teams, fetchTeams };
+}
+
+// =============================================================================
+// PLAYER MANAGEMENT FUNCTIONS (CRUD)
+// =============================================================================
+
+/**
+ * Create a new player
+ */
+export async function createPlayer(name: string, teamIds: number[] = []): Promise<Player> {
+    if (getUseMockData()) {
+        await new Promise(r => setTimeout(r, 300));
+        const newPlayer: Player = {
+            id: Math.max(...MOCK_PLAYERS.map(p => p.id), 0) + 1,
+            name,
+            teamIds,
+        };
+        MOCK_PLAYERS.push(newPlayer);
+        return newPlayer;
+    }
+    
+    const res = await fetch(`${BASE_URL}/api/Players`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, teamIds }),
+    });
+    
+    if (!res.ok) throw new Error('Failed to create player');
+    return res.json();
+}
+
+/**
+ * Update an existing player
+ */
+export async function updatePlayer(id: number, data: { name: string; teamIds: number[] }): Promise<Player> {
+    if (getUseMockData()) {
+        await new Promise(r => setTimeout(r, 300));
+        const player = MOCK_PLAYERS.find(p => p.id === id);
+        if (!player) throw new Error('Player not found');
+        player.name = data.name;
+        player.teamIds = data.teamIds;
+        return player;
+    }
+    
+    const res = await fetch(`${BASE_URL}/api/Players/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    
+    if (!res.ok) throw new Error('Failed to update player');
+    return res.json();
+}
+
+/**
+ * Delete a player
+ */
+export async function deletePlayer(id: number): Promise<void> {
+    if (getUseMockData()) {
+        await new Promise(r => setTimeout(r, 300));
+        const idx = MOCK_PLAYERS.findIndex(p => p.id === id);
+        if (idx >= 0) {
+            MOCK_PLAYERS.splice(idx, 1);
+        }
+        return;
+    }
+    
+    const res = await fetch(`${BASE_URL}/api/Players/${id}`, {
+        method: 'DELETE',
+    });
+    
+    if (!res.ok) throw new Error('Failed to delete player');
+}
+
+/**
+ * Hook for player management (CRUD operations)
+ */
+export function usePlayerManagement() {
+    const [players, setPlayers] = useState<Player[]>([]);
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    const refresh = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [playersRes, teamsRes] = await Promise.all([
+                getUseMockData() 
+                    ? Promise.resolve(MOCK_PLAYERS)
+                    : fetch(`${BASE_URL}/api/Players`).then(r => r.json()),
+                getUseMockData()
+                    ? Promise.resolve(MOCK_TEAMS)
+                    : fetch(`${BASE_URL}/api/Teams`).then(r => r.json()),
+            ]);
+            setPlayers(playersRes.sort((a: Player, b: Player) => a.name.localeCompare(b.name)));
+            setTeams(teamsRes);
+        } catch (e) {
+            console.error('Failed to load player management data:', e);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const addPlayer = useCallback(async (name: string) => {
+        setSaving(true);
+        try {
+            await createPlayer(name, []);
+            await refresh();
+        } finally {
+            setSaving(false);
+        }
+    }, [refresh]);
+
+    const editPlayer = useCallback(async (id: number, name: string, teamIds: number[]) => {
+        setSaving(true);
+        try {
+            await updatePlayer(id, { name, teamIds });
+            await refresh();
+        } finally {
+            setSaving(false);
+        }
+    }, [refresh]);
+
+    const removePlayer = useCallback(async (id: number) => {
+        setSaving(true);
+        try {
+            await deletePlayer(id);
+            await refresh();
+        } finally {
+            setSaving(false);
+        }
+    }, [refresh]);
+
+    const toggleTeam = useCallback(async (player: Player, teamId: number) => {
+        const newTeamIds = player.teamIds.includes(teamId)
+            ? player.teamIds.filter(t => t !== teamId)
+            : [...player.teamIds, teamId];
+        await editPlayer(player.id, player.name, newTeamIds);
+    }, [editPlayer]);
+
+    return {
+        players,
+        teams,
+        loading,
+        saving,
+        refresh,
+        addPlayer,
+        editPlayer,
+        removePlayer,
+        toggleTeam,
+    };
 }

@@ -10,6 +10,7 @@ type View = 'home' | 'stats' | 'league' | 'settings';
 interface FloatingNavProps {
     currentView: View;
     onNavigate: (view: View) => void;
+    isHidden?: boolean;
 }
 
 const navItems: { id: View; icon: React.ReactNode; label: string }[] = [
@@ -19,7 +20,7 @@ const navItems: { id: View; icon: React.ReactNode; label: string }[] = [
     { id: 'settings', icon: <Settings size={22} />, label: 'Settings' },
 ];
 
-export default function FloatingNav({ currentView, onNavigate }: FloatingNavProps) {
+export default function FloatingNav({ currentView, onNavigate, isHidden = false }: FloatingNavProps) {
     const [dragTarget, setDragTarget] = useState<View | null>(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -80,6 +81,9 @@ export default function FloatingNav({ currentView, onNavigate }: FloatingNavProp
                 paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
                 zIndex: 9999,
                 pointerEvents: 'none',
+                opacity: isHidden ? 0 : 1,
+                transform: isHidden ? 'translateY(100px)' : 'translateY(0)',
+                transition: 'opacity 0.3s, transform 0.3s',
             }}
         >
             <motion.nav

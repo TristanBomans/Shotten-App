@@ -14,6 +14,7 @@ const views: View[] = ['home', 'stats', 'league', 'settings'];
 function HomeContent() {
     const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
@@ -110,6 +111,7 @@ function HomeContent() {
                         currentView={currentView}
                         onLogout={handleLogout}
                         onViewChange={handleNavChange}
+                        onPlayerManagementOpenChange={setIsPlayerManagementOpen}
                     />
                 )}
             </AnimatePresence>
@@ -119,6 +121,7 @@ function HomeContent() {
                 <FloatingNav
                     currentView={currentView}
                     onNavigate={(view) => handleNavChange(view)}
+                    isHidden={isPlayerManagementOpen}
                 />
             )}
         </main>

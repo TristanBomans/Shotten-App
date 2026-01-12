@@ -43,7 +43,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
         const fetchMatches = async () => {
             setLoadingMatches(true);
             try {
-                const res = await fetch(`${SCRAPER_API}/api/matches?teamId=${team.externalId}`);
+                const res = await fetch(`${SCRAPER_API}/api/lzv/matches?teamId=${team.externalId}`);
                 if (res.ok) {
                     const data = await res.json();
                     setMatches(data);

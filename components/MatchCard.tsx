@@ -1440,7 +1440,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                         setOpponentPlayers(players.slice(0, 5)); // Top 5 players
                         
                         // Fetch matches for recent form
-                        const matchesRes = await fetch(`https://shottenscraper.trisbom.com/api/matches?teamId=${team.externalId}`);
+                        const matchesRes = await fetch(`https://shottenscraper.trisbom.com/api/lzv/matches?teamId=${team.externalId}`);
                         if (matchesRes.ok) {
                             const matchesData = await matchesRes.json();
                             setOpponentMatches(matchesData);
