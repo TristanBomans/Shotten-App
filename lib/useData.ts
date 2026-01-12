@@ -10,6 +10,7 @@ import {
     type Match,
     type Team,
 } from './mockData';
+import { API_BASE_URL } from './config';
 
 // =============================================================================
 // CONFIGURATION
@@ -28,13 +29,6 @@ export const setUseMockData = (value: boolean): void => {
         localStorage.setItem('useMockData', String(value));
     }
 };
-
-// Backend URL (when not using mock)
-// Now pointing to the unified Node.js backend (was: shotten-be.taltiko.com)
-const BASE_URL = 'https://shottenscraper.trisbom.com';
-
-// Scraper API URL (LZV Cup data) - same as BASE_URL now
-const SCRAPER_API = 'https://shottenscraper.trisbom.com';
 
 // =============================================================================
 // SCRAPER API TYPES
@@ -89,25 +83,25 @@ export interface ScraperPlayer {
 // =============================================================================
 
 export async function fetchAllScraperTeams(): Promise<ScraperTeam[]> {
-    const res = await fetch(`${SCRAPER_API}/api/lzv/stats`);
+    const res = await fetch(`${API_BASE_URL}/api/lzv/stats`);
     if (!res.ok) throw new Error('Failed to fetch scraper stats');
     return res.json();
 }
 
 export async function fetchScraperTeamById(externalId: number): Promise<ScraperTeam | null> {
-    const res = await fetch(`${SCRAPER_API}/api/lzv/team/${externalId}`);
+    const res = await fetch(`${API_BASE_URL}/api/lzv/team/${externalId}`);
     if (!res.ok) return null;
     return res.json();
 }
 
 export async function fetchAllScraperPlayers(): Promise<ScraperPlayer[]> {
-    const res = await fetch(`${SCRAPER_API}/api/lzv/players`);
+    const res = await fetch(`${API_BASE_URL}/api/lzv/players`);
     if (!res.ok) throw new Error('Failed to fetch scraper players');
     return res.json();
 }
 
 export async function fetchScraperPlayers(teamId: number): Promise<ScraperPlayer[]> {
-    const res = await fetch(`${SCRAPER_API}/api/lzv/players?teamId=${teamId}`);
+    const res = await fetch(`${API_BASE_URL}/api/lzv/players?teamId=${teamId}`);
     if (!res.ok) return [];
     return res.json();
 }
@@ -131,7 +125,7 @@ export async function fetchAllPlayersData(): Promise<Player[]> {
         await new Promise(r => setTimeout(r, 300));
         return [...MOCK_PLAYERS].sort((a, b) => a.name.localeCompare(b.name));
     }
-    const res = await fetch(`${BASE_URL}/api/Players`);
+    const res = await fetch(`${API_BASE_URL}/api/Players`);
     if (!res.ok) throw new Error('Failed to fetch players');
     const data = await res.json();
     return data.sort((a: Player, b: Player) => a.name.localeCompare(b.name));
@@ -142,7 +136,7 @@ export async function fetchPlayerMatchesData(playerId: number): Promise<Match[]>
         await new Promise(r => setTimeout(r, 400));
         return getMatchesForPlayer(playerId);
     }
-    const res = await fetch(`${BASE_URL}/api/Matches?playerId=${playerId}`);
+    const res = await fetch(`${API_BASE_URL}/api/Matches?playerId=${playerId}`);
     if (!res.ok) throw new Error('Failed to fetch matches');
     const data = await res.json();
     data.sort((a: Match, b: Match) =>
@@ -173,7 +167,7 @@ export function usePlayers() {
                 await new Promise(r => setTimeout(r, 300));
                 setPlayers([...MOCK_PLAYERS].sort((a, b) => a.name.localeCompare(b.name)));
             } else {
-                const res = await fetch(`${BASE_URL}/api/Players`);
+                const res = await fetch(`${API_BASE_URL}/api/Players`);
                 if (!res.ok) throw new Error('Failed to fetch players');
                 const data = await res.json();
                 setPlayers(data.sort((a: Player, b: Player) => a.name.localeCompare(b.name)));
@@ -211,7 +205,7 @@ export function useMatches(playerId: number | null) {
                 await new Promise(r => setTimeout(r, 400));
                 setMatches(getMatchesForPlayer(playerId));
             } else {
-                const res = await fetch(`${BASE_URL}/api/Matches?playerId=${playerId}`);
+                const res = await fetch(`${API_BASE_URL}/api/Matches?playerId=${playerId}`);
                 if (!res.ok) throw new Error('Failed to fetch matches');
                 const data = await res.json();
                 data.sort((a: Match, b: Match) =>
@@ -243,7 +237,7 @@ export function useAllPlayers() {
                 await new Promise(r => setTimeout(r, 200));
                 setPlayers(MOCK_PLAYERS);
             } else {
-                const res = await fetch(`${BASE_URL}/api/Players`);
+                const res = await fetch(`${API_BASE_URL}/api/Players`);
                 if (!res.ok) throw new Error('Failed to fetch players');
                 setPlayers(await res.json());
             }
@@ -286,7 +280,7 @@ export function useUpdateAttendance() {
                 }
             } else {
                 const res = await fetch(
-                    `${BASE_URL}/api/matches/${matchId}/players/${playerId}/attendance?status=${status}`,
+                    `${API_BASE_URL}/api/matches/${matchId}/players/${playerId}/attendance?status=${status}`,
                     { method: 'PUT', headers: { 'Content-Type': 'application/json' } }
                 );
                 if (!res.ok) throw new Error('Failed to update attendance');
@@ -316,7 +310,7 @@ export function useTeams() {
                 await new Promise(r => setTimeout(r, 100));
                 setTeams(MOCK_TEAMS);
             } else {
-                const res = await fetch(`${BASE_URL}/api/Teams`);
+                const res = await fetch(`${API_BASE_URL}/api/Teams`);
                 if (!res.ok) throw new Error('Failed to fetch teams');
                 setTeams(await res.json());
             }
@@ -347,7 +341,7 @@ export async function createPlayer(name: string, teamIds: number[] = []): Promis
         return newPlayer;
     }
     
-    const res = await fetch(`${BASE_URL}/api/Players`, {
+    const res = await fetch(`${API_BASE_URL}/api/Players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, teamIds }),
@@ -370,7 +364,7 @@ export async function updatePlayer(id: number, data: { name: string; teamIds: nu
         return player;
     }
     
-    const res = await fetch(`${BASE_URL}/api/Players/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/Players/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -393,7 +387,7 @@ export async function deletePlayer(id: number): Promise<void> {
         return;
     }
     
-    const res = await fetch(`${BASE_URL}/api/Players/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/Players/${id}`, {
         method: 'DELETE',
     });
     
@@ -415,10 +409,10 @@ export function usePlayerManagement() {
             const [playersRes, teamsRes] = await Promise.all([
                 getUseMockData() 
                     ? Promise.resolve(MOCK_PLAYERS)
-                    : fetch(`${BASE_URL}/api/Players`).then(r => r.json()),
+                    : fetch(`${API_BASE_URL}/api/Players`).then(r => r.json()),
                 getUseMockData()
                     ? Promise.resolve(MOCK_TEAMS)
-                    : fetch(`${BASE_URL}/api/Teams`).then(r => r.json()),
+                    : fetch(`${API_BASE_URL}/api/Teams`).then(r => r.json()),
             ]);
             setPlayers(playersRes.sort((a: Player, b: Player) => a.name.localeCompare(b.name)));
             setTeams(teamsRes);

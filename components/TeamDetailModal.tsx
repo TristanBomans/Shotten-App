@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp } from 'lucide-react';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
+import { API_BASE_URL } from '@/lib/config';
 
 interface ScraperMatch {
     _id: string;
@@ -25,8 +26,6 @@ interface TeamDetailModalProps {
     onClose: () => void;
 }
 
-const SCRAPER_API = 'https://shottenscraper.trisbom.com';
-
 export default function TeamDetailModal({ team, players, onClose }: TeamDetailModalProps) {
     const [showImage, setShowImage] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'squad'>('overview');
@@ -43,7 +42,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
         const fetchMatches = async () => {
             setLoadingMatches(true);
             try {
-                const res = await fetch(`${SCRAPER_API}/api/lzv/matches?teamId=${team.externalId}`);
+                const res = await fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`);
                 if (res.ok) {
                     const data = await res.json();
                     setMatches(data);
