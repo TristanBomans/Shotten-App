@@ -1,10 +1,8 @@
 const esbuild = require('esbuild');
-const path = require('path');
 
-// List of Node.js built-ins that need to be external and prefixed with node:
-// Cloudflare with nodejs_compat expects "node:fs", not "fs".
+// Standard Node.js built-ins
 const nodeBuiltIns = [
-  'async_hooks', 'assert', 'buffer', 'child_process', 'cluster', 'console',
+  'assert', 'async_hooks', 'buffer', 'child_process', 'cluster', 'console',
   'constants', 'crypto', 'dgram', 'dns', 'domain', 'events', 'fs', 'http',
   'http2', 'https', 'inspector', 'module', 'net', 'os', 'path', 'perf_hooks',
   'process', 'punycode', 'querystring', 'readline', 'repl', 'stream',
@@ -12,25 +10,12 @@ const nodeBuiltIns = [
   'wasi', 'worker_threads', 'zlib'
 ];
 
-// Create a plugin to redirect bare node imports to node: prefixed imports
-const nodeProtocolPlugin = {
-  name: 'node-protocol',
-  setup(build) {
-    build.onResolve({ filter: new RegExp(`^(${nodeBuiltIns.join('|')})$`) }, args => {
-      return { path: `node:${args.path}`, external: true };
-    });
-    
-    // Also mark existing node: imports as external
-    build.onResolve({ filter: /^node:/ }, args => {
-      return { path: args.path, external: true };
-    });
-    
-    // Mark cloudflare: imports as external
-    build.onResolve({ filter: /^cloudflare:/ }, args => {
-      return { path: args.path, external: true };
-    });
-  },
-};
+// Create a list of externals that includes both bare names and node: prefixed names
+const externals = [
+  ...nodeBuiltIns,
+  ...nodeBuiltIns.map(m => `node:${m}`),
+  'cloudflare:*'
+];
 
 esbuild.build({
   entryPoints: ['.open-next/worker.js'],
@@ -38,7 +23,14 @@ esbuild.build({
   outfile: '.open-next/assets/_worker.js',
   format: 'esm',
   target: 'esnext',
-  platform: 'browser', // Use browser platform to avoid esbuild injecting its own node polyfills
-  plugins: [nodeProtocolPlugin],
+  platform: 'node', // Use node platform to better handle node-style code
+  external: externals,
+  // Inject shims if needed, but nodejs_compat usually handles imports
+  // We define a banner to ensure globalThis.process exists if missed
+  banner: {
+    js: `import { Buffer } from 'node:buffer';
+         if (!globalThis.Buffer) globalThis.Buffer = Buffer;
+         if (!globalThis.process) globalThis.process = { env: {}, version: 'v18.0.0' };`,
+  },
   logLevel: 'info',
 }).catch(() => process.exit(1));

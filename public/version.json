@@ -1,8 +1,8 @@
 {
   "version": "0.1.0",
-  "commitHash": "fbb99f0ad9b5238d6d9a8c0cc1851fe7032dd2d6",
-  "buildTimestamp": "2026-01-12T19:12:47.011Z",
-  "commitMessage": "fix: explicit externals for esbuild bundle",
-  "commitSubject": "fix: explicit externals for esbuild bundle",
+  "commitHash": "69352e4e7f366869910668a81413264e8b19dd76",
+  "buildTimestamp": "2026-01-12T19:17:34.080Z",
+  "commitMessage": "fix: use custom esbuild script for worker bundling",
+  "commitSubject": "fix: use custom esbuild script for worker bundling",
   "commitBody": ""
 }
