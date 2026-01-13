@@ -13,7 +13,7 @@
     "build:cf": "npm run build && npm run build:worker"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.0",
+    "@supabase/supabase-js": "^2.90.1",
     "@tailwindcss/postcss": "^4.1.17",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.25",
@@ -27,8 +27,8 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.14.4",
     "@cloudflare/workers-types": "^4.20250109.0",
+    "@opennextjs/cloudflare": "^1.14.4",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

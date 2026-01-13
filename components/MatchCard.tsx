@@ -8,6 +8,7 @@ import { useUpdateAttendance, findScraperTeamByName, fetchScraperPlayers, type S
 import { hapticPatterns } from '@/lib/haptic';
 import type { Match, Player } from '@/lib/mockData';
 import { API_BASE_URL } from '@/lib/config';
+import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 
 interface MatchCardProps {
     match: Match;
@@ -50,11 +51,11 @@ export default function MatchCard({
 
     // Memoize date to prevent infinite loop
     const dateTimestamp = useMemo(() => {
-        const d = new Date(match.date + (match.date.endsWith('Z') ? '' : 'Z'));
-        return d.getTime();
+        const d = parseDate(match.date);
+        return d ? d.getTime() : 0;
     }, [match.date]);
 
-    const dateObj = new Date(dateTimestamp);
+    const dateObj = parseDate(match.date) || new Date(0);
     const isPast = dateTimestamp < Date.now();
 
     // Countdown timer
@@ -1439,7 +1440,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                         // Fetch players
                         const players = await fetchScraperPlayers(team.externalId);
                         setOpponentPlayers(players.slice(0, 5)); // Top 5 players
-                        
+
                         // Fetch matches for recent form
                         const matchesRes = await fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`);
                         if (matchesRes.ok) {
@@ -1466,7 +1467,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
     // Calculate recent form from opponent matches
     const getRecentForm = () => {
         if (!opponentData || opponentMatches.length === 0) return [];
-        
+
         const playedMatches = opponentMatches
             .filter((m: any) => m.status === 'Played')
             .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -1474,10 +1475,10 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
 
         return playedMatches.map((m: any) => {
             const isHome = m.homeTeam.toLowerCase().includes(opponentData.name.toLowerCase().slice(0, 5)) ||
-                           opponentData.name.toLowerCase().includes(m.homeTeam.toLowerCase().slice(0, 5));
+                opponentData.name.toLowerCase().includes(m.homeTeam.toLowerCase().slice(0, 5));
             const teamScore = isHome ? m.homeScore : m.awayScore;
             const opponentScore = isHome ? m.awayScore : m.homeScore;
-            
+
             if (teamScore > opponentScore) return 'W';
             if (teamScore < opponentScore) return 'L';
             return 'D';
@@ -1735,10 +1736,10 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                                                                         width: 32, height: 32,
                                                                         borderRadius: 8,
                                                                         background: result === 'W' ? 'rgba(48, 209, 88, 0.2)' :
-                                                                                   result === 'L' ? 'rgba(255, 69, 58, 0.2)' :
-                                                                                   'rgba(255, 214, 10, 0.2)',
+                                                                            result === 'L' ? 'rgba(255, 69, 58, 0.2)' :
+                                                                                'rgba(255, 214, 10, 0.2)',
                                                                         color: result === 'W' ? '#30d158' :
-                                                                               result === 'L' ? '#ff453a' : '#ffd60a',
+                                                                            result === 'L' ? '#ff453a' : '#ffd60a',
                                                                         display: 'flex',
                                                                         alignItems: 'center',
                                                                         justifyContent: 'center',

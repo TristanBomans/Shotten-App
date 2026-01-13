@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, X } from 'lucide-react';
 import type { Match, Player } from '@/lib/mockData';
+import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 
 interface StatsViewProps {
     matches: Match[];
@@ -44,15 +45,16 @@ interface MatchResult {
 
 function calculatePlayerScore(player: Player, allMatches: Match[]) {
     // Filter: player's team's matches, past, and at least 1 person Present
+    const now = Date.now();
     const relevantMatches = allMatches.filter(m => {
-        const isPast = new Date(m.date) < new Date();
+        const isPast = parseDateToTimestamp(m.date) < now;
         const isPlayerTeam = player.teamIds.includes(m.teamId);
         const hasAttendees = m.attendances?.some(a => a.status === 'Present');
         return isPast && isPlayerTeam && hasAttendees;
     });
 
     const sortedMatches = [...relevantMatches].sort((a, b) =>
-        new Date(b.date).getTime() - new Date(a.date).getTime()
+        parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date)
     );
 
     let score = POINTS.base;
@@ -91,7 +93,7 @@ function calculatePlayerScore(player: Player, allMatches: Match[]) {
         matchResults.push({
             matchId: match.id,
             matchName: match.name,
-            date: new Date(match.date),
+            date: parseDate(match.date) || new Date(0),
             status,
             points,
         });
