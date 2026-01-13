@@ -1411,7 +1411,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
 
     // Current user status for calendar
     const myStatus = roster.find(p => p.id === currentPlayerId)?.status;
-    const calendarTitle = myStatus === 'Present' ? `${match.name} (Confirmed)` : match.name;
+    const calendarTitle = myStatus === 'Present' ? `${match.name} (Confirmed ✅)` : match.name;
 
     // Determine opponent team (the team that isn't ours)
     const ownTeams = ['FC Degradé', 'Wille ma ni kunne']; // Our teams
