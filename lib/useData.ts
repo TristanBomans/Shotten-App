@@ -11,6 +11,7 @@ import {
     type Team,
 } from './mockData';
 import { API_BASE_URL } from './config';
+import { parseDateToTimestamp } from './dateUtils';
 
 // =============================================================================
 // CONFIGURATION
@@ -140,7 +141,7 @@ export async function fetchPlayerMatchesData(playerId: number): Promise<Match[]>
     if (!res.ok) throw new Error('Failed to fetch matches');
     const data = await res.json();
     data.sort((a: Match, b: Match) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
+        parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date)
     );
     return data;
 }
@@ -209,7 +210,7 @@ export function useMatches(playerId: number | null) {
                 if (!res.ok) throw new Error('Failed to fetch matches');
                 const data = await res.json();
                 data.sort((a: Match, b: Match) =>
-                    new Date(a.date).getTime() - new Date(b.date).getTime()
+                    parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date)
                 );
                 setMatches(data);
             }
@@ -280,7 +281,7 @@ export function useUpdateAttendance() {
                 }
             } else {
                 const res = await fetch(
-                    `${API_BASE_URL}/api/matches/${matchId}/players/${playerId}/attendance?status=${status}`,
+                    `${API_BASE_URL}/api/Matches/${matchId}/players/${playerId}/attendance?status=${status}`,
                     { method: 'PUT', headers: { 'Content-Type': 'application/json' } }
                 );
                 if (!res.ok) throw new Error('Failed to update attendance');
@@ -340,13 +341,13 @@ export async function createPlayer(name: string, teamIds: number[] = []): Promis
         MOCK_PLAYERS.push(newPlayer);
         return newPlayer;
     }
-    
+
     const res = await fetch(`${API_BASE_URL}/api/Players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, teamIds }),
     });
-    
+
     if (!res.ok) throw new Error('Failed to create player');
     return res.json();
 }
@@ -363,13 +364,13 @@ export async function updatePlayer(id: number, data: { name: string; teamIds: nu
         player.teamIds = data.teamIds;
         return player;
     }
-    
+
     const res = await fetch(`${API_BASE_URL}/api/Players/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
-    
+
     if (!res.ok) throw new Error('Failed to update player');
     return res.json();
 }
@@ -386,11 +387,11 @@ export async function deletePlayer(id: number): Promise<void> {
         }
         return;
     }
-    
+
     const res = await fetch(`${API_BASE_URL}/api/Players/${id}`, {
         method: 'DELETE',
     });
-    
+
     if (!res.ok) throw new Error('Failed to delete player');
 }
 
@@ -407,7 +408,7 @@ export function usePlayerManagement() {
         setLoading(true);
         try {
             const [playersRes, teamsRes] = await Promise.all([
-                getUseMockData() 
+                getUseMockData()
                     ? Promise.resolve(MOCK_PLAYERS)
                     : fetch(`${API_BASE_URL}/api/Players`).then(r => r.json()),
                 getUseMockData()

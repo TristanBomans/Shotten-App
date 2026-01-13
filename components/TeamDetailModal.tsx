@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp } from 'lucide-react';
+import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 
@@ -31,7 +32,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
     const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'squad'>('overview');
     const [matches, setMatches] = useState<ScraperMatch[]>([]);
     const [loadingMatches, setLoadingMatches] = useState(false);
-    
+
     const scrollRef = useRef<HTMLDivElement>(null);
     const overviewRef = useRef<HTMLDivElement>(null);
     const matchesRef = useRef<HTMLDivElement>(null);
@@ -90,15 +91,15 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
     const getRecentForm = () => {
         const playedMatches = matches
             .filter(m => m.status === 'Played')
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date))
             .slice(0, 5);
 
         return playedMatches.map(m => {
             const isHome = m.homeTeam.toLowerCase().includes(team.name.toLowerCase().slice(0, 5)) ||
-                           team.name.toLowerCase().includes(m.homeTeam.toLowerCase().slice(0, 5));
+                team.name.toLowerCase().includes(m.homeTeam.toLowerCase().slice(0, 5));
             const teamScore = isHome ? m.homeScore : m.awayScore;
             const opponentScore = isHome ? m.awayScore : m.homeScore;
-            
+
             if (teamScore > opponentScore) return 'W';
             if (teamScore < opponentScore) return 'L';
             return 'D';
@@ -108,13 +109,13 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
     const recentForm = getRecentForm();
 
     // Split matches into upcoming and past
-    const now = new Date();
+    const now = Date.now();
     const upcomingMatches = matches
-        .filter(m => new Date(m.date) > now || m.status === 'Scheduled')
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        .filter(m => parseDateToTimestamp(m.date) > now || m.status === 'Scheduled')
+        .sort((a, b) => parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date));
     const pastMatches = matches
-        .filter(m => new Date(m.date) <= now && m.status === 'Played')
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        .filter(m => parseDateToTimestamp(m.date) <= now && m.status === 'Played')
+        .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date));
 
     // Sort players by goals
     // Extract per-team stats for THIS team specifically
@@ -122,7 +123,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
         .map(p => {
             // Find stats for this specific team
             const teamStats = p.teamStats?.find(ts => ts.teamId === team.externalId);
-            
+
             // Use team-specific stats if available, otherwise fall back to aggregated
             return {
                 ...p,
@@ -330,10 +331,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                                     width: 32, height: 32,
                                                     borderRadius: 8,
                                                     background: result === 'W' ? 'rgba(48, 209, 88, 0.2)' :
-                                                               result === 'L' ? 'rgba(255, 69, 58, 0.2)' :
-                                                               'rgba(255, 214, 10, 0.2)',
+                                                        result === 'L' ? 'rgba(255, 69, 58, 0.2)' :
+                                                            'rgba(255, 214, 10, 0.2)',
                                                     color: result === 'W' ? '#30d158' :
-                                                           result === 'L' ? '#ff453a' : '#ffd60a',
+                                                        result === 'L' ? '#ff453a' : '#ffd60a',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
@@ -676,17 +677,16 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
 
 function MatchRow({ match, teamName, isPlayed }: { match: ScraperMatch; teamName: string; isPlayed?: boolean }) {
     const isHome = match.homeTeam.toLowerCase().includes(teamName.toLowerCase().slice(0, 5)) ||
-                   teamName.toLowerCase().includes(match.homeTeam.toLowerCase().slice(0, 5));
+        teamName.toLowerCase().includes(match.homeTeam.toLowerCase().slice(0, 5));
     const opponent = isHome ? match.awayTeam : match.homeTeam;
     const teamScore = isHome ? match.homeScore : match.awayScore;
     const opponentScore = isHome ? match.awayScore : match.homeScore;
-    
+
     const result = teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D';
     const resultColor = result === 'W' ? '#30d158' : result === 'L' ? '#ff453a' : '#ffd60a';
 
-    const dateObj = new Date(match.date);
-    const dateStr = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-    const timeStr = dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = formatDateSafe(match.date, { day: 'numeric', month: 'short' }, 'TBD');
+    const timeStr = formatTimeSafe(match.date, { hour: '2-digit', minute: '2-digit' }, 'TBD');
 
     return (
         <div style={{
@@ -715,7 +715,7 @@ function MatchRow({ match, teamName, isPlayed }: { match: ScraperMatch; teamName
                     {result}
                 </div>
             )}
-            
+
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                     fontSize: '0.85rem', fontWeight: 500, color: 'white',

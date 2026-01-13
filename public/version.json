@@ -1,8 +1,8 @@
 {
   "version": "0.1.0",
-  "commitHash": "0828f73c403e728e386413e882b6617c8f4d7738",
-  "buildTimestamp": "2026-01-12T14:44:23.582Z",
-  "commitMessage": "feat(ui): add haptic feedback and version info display\n\n- Add haptic feedback system with multiple patterns (success, tap, navigate, swipe, toggle)\n- Implement version info display with commit message parsing and markdown rendering\n- Add \"What's New\" section to version page showing commit subject and body\n- Add showFullNames setting to display player names instead of avatars\n- Improve scroll behavior with user/programmatic scroll detection\n- Add recent form display for opponent teams in match details\n- Fix navigation direction in FloatingNav component\n- Add team selection modal for players with multiple teams\n- Improve version checking with cache-busting and periodic updates\n- Add various UI improvements and bug fixes throughout the application\n\nBREAKING CHANGE: The version.json format now includes additional fields (commitMessage, commitSubject, commitBody)",
-  "commitSubject": "feat(ui): add haptic feedback and version info display",
-  "commitBody": "- Add haptic feedback system with multiple patterns (success, tap, navigate, swipe, toggle)\n- Implement version info display with commit message parsing and markdown rendering\n- Add \"What's New\" section to version page showing commit subject and body\n- Add showFullNames setting to display player names instead of avatars\n- Improve scroll behavior with user/programmatic scroll detection\n- Add recent form display for opponent teams in match details\n- Fix navigation direction in FloatingNav component\n- Add team selection modal for players with multiple teams\n- Improve version checking with cache-busting and periodic updates\n- Add various UI improvements and bug fixes throughout the application\n\nBREAKING CHANGE: The version.json format now includes additional fields (commitMessage, commitSubject, commitBody)"
+  "commitHash": "e1d55ca2e580424ea93d886275da1bc3246b9848",
+  "buildTimestamp": "2026-01-12T19:22:31.794Z",
+  "commitMessage": "fix: adjust esbuild platform to node and add shim banner for cloudflare",
+  "commitSubject": "fix: adjust esbuild platform to node and add shim banner for cloudflare",
+  "commitBody": ""
 }

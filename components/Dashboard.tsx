@@ -9,6 +9,7 @@ import MatchCard from './MatchCard';
 import StatsView from './StatsView';
 import SettingsView from './SettingsView';
 import LeagueView from './LeagueView';
+import { parseDateToTimestamp } from '@/lib/dateUtils';
 
 interface DashboardProps {
     playerId: number;
@@ -57,13 +58,13 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                 if (scrollContainerRef.current) {
                     const viewIndex = viewOrder.indexOf(currentView);
                     const scrollTarget = viewIndex * window.innerWidth;
-                    
+
                     // Use 'auto' (instant) for the first positioning after loading, 'smooth' for navigation changes
                     const behavior = isInitialMount.current ? 'auto' : 'smooth';
-                    
+
                     scrollContainerRef.current.scrollTo({
                         left: scrollTarget,
-                        behavior, 
+                        behavior,
                     });
 
                     if (isInitialMount.current) {
@@ -78,7 +79,7 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                 }
             });
         }
-    }, [loading, currentView]); 
+    }, [loading, currentView]);
 
     // Intersection Observer for updating the pill during swipe
     useEffect(() => {
@@ -152,15 +153,15 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
     };
 
     // Split matches
-    const now = new Date();
-    const threshold = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+    const now = Date.now();
+    const threshold = now - 2 * 60 * 60 * 1000;
 
-    const heroMatch = matches.find(m => new Date(m.date) > threshold);
+    const heroMatch = matches.find(m => parseDateToTimestamp(m.date) > threshold);
     const remainingMatches = matches.filter(m => m.id !== heroMatch?.id);
-    const upcomingMatches = remainingMatches.filter(m => new Date(m.date) > threshold);
+    const upcomingMatches = remainingMatches.filter(m => parseDateToTimestamp(m.date) > threshold);
     const pastMatches = remainingMatches
-        .filter(m => new Date(m.date) <= threshold)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        .filter(m => parseDateToTimestamp(m.date) <= threshold)
+        .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date));
 
     // Loading state
     if (loading) {
