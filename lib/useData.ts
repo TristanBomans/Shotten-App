@@ -281,7 +281,7 @@ export function useUpdateAttendance() {
                 }
             } else {
                 const res = await fetch(
-                    `${API_BASE_URL}/api/matches/${matchId}/players/${playerId}/attendance?status=${status}`,
+                    `${API_BASE_URL}/api/Matches/${matchId}/players/${playerId}/attendance?status=${status}`,
                     { method: 'PUT', headers: { 'Content-Type': 'application/json' } }
                 );
                 if (!res.ok) throw new Error('Failed to update attendance');
