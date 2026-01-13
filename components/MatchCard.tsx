@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { MapPin, Check, X, HelpCircle, Users, ChevronRight, CalendarPlus, Loader2, Trophy, Target, UserCircle } from 'lucide-react';
+import { MapPin, Calendar, Check, X, HelpCircle, Users, ChevronRight, CalendarPlus, Loader2, Trophy, Target, UserCircle, Map } from 'lucide-react';
 import { useUpdateAttendance, findScraperTeamByName, fetchScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import type { Match, Player } from '@/lib/mockData';
@@ -29,12 +29,12 @@ export default function MatchCard({
     const [countdown, setCountdown] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
     const [showConfetti, setShowConfetti] = useState(false);
     const [showModal, setShowModal] = useState(false);
-    const [showFullNames, setShowFullNames] = useState(false);
+    const [showFullNames, setShowFullNames] = useState(true);
 
     // Load showFullNames setting
     useEffect(() => {
         const stored = localStorage.getItem('showFullNames');
-        setShowFullNames(stored === 'true');
+        setShowFullNames(stored === null ? true : stored === 'true');
 
         // Listen for changes to showFullNames setting
         const handleShowFullNamesChanged = (event: Event) => {
@@ -1329,6 +1329,41 @@ END:VCALENDAR`;
     return createPortal(modalContent, document.body);
 }
 
+// Icon Action Button for Modal Header
+function IconActionButton({
+    icon: Icon,
+    label,
+    onClick
+}: {
+    icon: any;
+    label: string;
+    onClick: () => void;
+}) {
+    return (
+        <motion.button
+            onClick={onClick}
+            whileTap={{ scale: 0.9 }}
+            aria-label={label}
+            title={label}
+            style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                border: 'none',
+                background: 'rgba(255,255,255,0.08)',
+                color: 'rgba(255,255,255,0.7)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s',
+            }}
+        >
+            <Icon size={18} />
+        </motion.button>
+    );
+}
+
 // Action Button Component for Modal
 function ActionButton({ icon, title, subtitle, href, onClick }: { icon: string; title: string; subtitle: React.ReactNode; href?: string; onClick?: () => void }) {
     const content = (
@@ -1357,11 +1392,11 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
     currentPlayerId: number;
     onClose: () => void;
 }) {
-    const [activeTab, setActiveTab] = useState<'squad' | 'details'>('squad');
+    const [activeTab, setActiveTab] = useState<'squad' | 'opponent'>('squad');
     const [showImage, setShowImage] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const squadRef = useRef<HTMLDivElement>(null);
-    const detailsRef = useRef<HTMLDivElement>(null);
+    const opponentRef = useRef<HTMLDivElement>(null);
 
     // Intersection Observer to update tabs on scroll
     useEffect(() => {
@@ -1369,7 +1404,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
             (entries) => {
                 const visible = entries.find((e) => e.isIntersecting);
                 if (visible) { // Allow update even during scroll for responsiveness
-                    const view = visible.target.getAttribute('data-view') as 'squad' | 'details';
+                    const view = visible.target.getAttribute('data-view') as 'squad' | 'opponent';
                     if (view && view !== activeTab) {
                         setActiveTab(view);
                     }
@@ -1382,12 +1417,12 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
         );
 
         if (squadRef.current) observer.observe(squadRef.current);
-        if (detailsRef.current) observer.observe(detailsRef.current);
+        if (opponentRef.current) observer.observe(opponentRef.current);
 
         return () => observer.disconnect();
     }, [activeTab]);
 
-    const scrollToView = (view: 'squad' | 'details') => {
+    const scrollToView = (view: 'squad' | 'opponent') => {
         if (scrollRef.current) {
             const left = view === 'squad' ? 0 : scrollRef.current.clientWidth;
             scrollRef.current.scrollTo({ left, behavior: 'smooth' });
@@ -1419,21 +1454,25 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
     const opponentTeam = teams.find(t => !ownTeams.some(own =>
         t.toLowerCase().includes(own.toLowerCase()) || own.toLowerCase().includes(t.toLowerCase())
     )) || teams[1] || null;
+    const ownTeam = teams.find(t => ownTeams.some(own =>
+        t.toLowerCase().includes(own.toLowerCase()) || own.toLowerCase().includes(t.toLowerCase())
+    )) || teams[0] || null;
 
     // State for opponent team data from scraper API
     const [opponentData, setOpponentData] = useState<ScraperTeam | null>(null);
     const [opponentPlayers, setOpponentPlayers] = useState<ScraperPlayer[]>([]);
     const [opponentMatches, setOpponentMatches] = useState<any[]>([]);
     const [loadingOpponent, setLoadingOpponent] = useState(false);
+    const [ownTeamData, setOwnTeamData] = useState<ScraperTeam | null>(null);
 
-    // Fetch opponent data from our scraper API
+    // Fetch opponent and own team data from our scraper API
     useEffect(() => {
-        if (opponentTeam && activeTab === 'details') {
+        if (opponentTeam && activeTab === 'opponent') {
             setLoadingOpponent(true);
 
-            const fetchOpponentData = async () => {
+            const fetchTeamData = async () => {
                 try {
-                    // Find team by name from our API
+                    // Fetch opponent team
                     const team = await findScraperTeamByName(opponentTeam);
                     if (team) {
                         setOpponentData(team);
@@ -1448,16 +1487,24 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                             setOpponentMatches(matchesData);
                         }
                     }
+
+                    // Fetch own team data for comparison
+                    if (ownTeam) {
+                        const ownTeamResult = await findScraperTeamByName(ownTeam);
+                        if (ownTeamResult) {
+                            setOwnTeamData(ownTeamResult);
+                        }
+                    }
                 } catch (error) {
-                    console.warn('Failed to fetch opponent data:', error);
+                    console.warn('Failed to fetch team data:', error);
                 } finally {
                     setLoadingOpponent(false);
                 }
             };
 
-            fetchOpponentData();
+            fetchTeamData();
         }
-    }, [opponentTeam, activeTab]);
+    }, [opponentTeam, ownTeam, activeTab]);
 
     // Details data
     const mapUrl = match.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}` : null;
@@ -1535,9 +1582,12 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                         boxShadow: '0 24px 80px rgba(0, 0, 0, 0.8)', overflow: 'hidden',
                     }}
                 >
-                    {/* Header */}
-                    <div style={{ padding: 20, borderBottom: '0.5px solid rgba(255, 255, 255, 0.1)' }}>
-                        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'white', marginBottom: 4 }}>
+                    {/* Header - Clean, title-focused */}
+                    <div style={{
+                        padding: '20px 20px 16px',
+                        borderBottom: '0.5px solid rgba(255, 255, 255, 0.1)',
+                    }}>
+                        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'white', marginBottom: 6 }}>
                             {match.name.replace(/-/g, ' vs ')}
                         </h2>
                         <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
@@ -1550,7 +1600,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                         display: 'flex', padding: '12px 16px', gap: 8,
                         borderBottom: '0.5px solid rgba(255, 255, 255, 0.08)',
                     }}>
-                        {(['squad', 'details'] as const).map(tab => (
+                        {(['squad', 'opponent'] as const).map(tab => (
                             <motion.button
                                 key={tab}
                                 onClick={() => scrollToView(tab)}
@@ -1565,7 +1615,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                                     transition: 'all 0.2s',
                                 }}
                             >
-                                {tab === 'squad' ? `Squad (${present.length + maybe.length})` : 'Details'}
+                                {tab === 'squad' ? `Squad (${present.length + maybe.length})` : 'Opponent'}
                             </motion.button>
                         ))}
                     </div>
@@ -1639,10 +1689,10 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                             </div>
                         </div>
 
-                        {/* Details View */}
+                        {/* Opponent View */}
                         <div
-                            ref={detailsRef}
-                            data-view="details"
+                            ref={opponentRef}
+                            data-view="opponent"
                             style={{
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
@@ -1651,18 +1701,8 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                             }}
                         >
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {match.location && (
-                                    <>
-                                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: 4 }}>Location</div>
-                                        <ActionButton icon="📍" title="Apple Maps" subtitle={match.location} href={appleMapUrl!} />
-                                        <ActionButton icon="🗺️" title="Google Maps" subtitle={match.location} href={mapUrl!} />
-                                    </>
-                                )}
-
                                 {opponentTeam && (
                                     <>
-                                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginTop: 12, marginBottom: 8 }}>Opponent</div>
-
                                         {loadingOpponent ? (
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, color: 'rgba(255,255,255,0.5)' }}>
                                                 <Loader2 className="animate-spin" size={20} style={{ marginRight: 8 }} /> Loading team data...
@@ -1845,6 +1885,129 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                                                     </div>
                                                 )}
 
+                                                {/* Head-to-Head Comparison */}
+                                                {ownTeamData && opponentData.rank !== undefined && ownTeamData.rank !== undefined && (() => {
+                                                    const comparisons = [
+                                                        { label: 'Rank', us: ownTeamData.rank, them: opponentData.rank, lowerIsBetter: true },
+                                                        { label: 'Points', us: ownTeamData.points || 0, them: opponentData.points || 0, lowerIsBetter: false },
+                                                        { label: 'Wins', us: ownTeamData.wins || 0, them: opponentData.wins || 0, lowerIsBetter: false },
+                                                        { label: 'Goal Diff', us: ownTeamData.goalDifference || 0, them: opponentData.goalDifference || 0, lowerIsBetter: false },
+                                                    ];
+
+                                                    let usWins = 0;
+                                                    let themWins = 0;
+                                                    comparisons.forEach(c => {
+                                                        const usAhead = c.lowerIsBetter ? c.us < c.them : c.us > c.them;
+                                                        const themAhead = c.lowerIsBetter ? c.them < c.us : c.them > c.us;
+                                                        if (usAhead) usWins++;
+                                                        if (themAhead) themWins++;
+                                                    });
+
+                                                    let verdict = { text: 'Even match', emoji: '🤝', color: '#ffd60a', bg: 'rgba(255, 214, 10, 0.15)' };
+                                                    if (usWins === 4) {
+                                                        verdict = { text: 'Easy pickings', emoji: '🔥', color: '#30d158', bg: 'rgba(48, 209, 88, 0.2)' };
+                                                    } else if (usWins >= 3) {
+                                                        verdict = { text: 'Looking good', emoji: '💪', color: '#30d158', bg: 'rgba(48, 209, 88, 0.15)' };
+                                                    } else if (themWins === 4) {
+                                                        verdict = { text: 'Major challenge', emoji: '🚨', color: '#ff453a', bg: 'rgba(255, 69, 58, 0.15)' };
+                                                    } else if (themWins >= 3) {
+                                                        verdict = { text: 'Tough match', emoji: '⚠️', color: '#ff9f0a', bg: 'rgba(255, 159, 10, 0.15)' };
+                                                    }
+
+                                                    return (
+                                                        <div style={{ padding: '12px', borderTop: '0.5px solid rgba(255,255,255,0.05)' }}>
+                                                            {/* Section Title + Verdict */}
+                                                            <div style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'space-between',
+                                                                marginBottom: 10,
+                                                            }}>
+                                                                <div style={{
+                                                                    fontSize: '0.7rem',
+                                                                    fontWeight: 600,
+                                                                    color: 'rgba(255,255,255,0.4)',
+                                                                    textTransform: 'uppercase',
+                                                                    letterSpacing: '0.05em',
+                                                                }}>
+                                                                    Head to Head
+                                                                </div>
+                                                                <div style={{
+                                                                    padding: '4px 10px',
+                                                                    borderRadius: 12,
+                                                                    background: verdict.bg,
+                                                                    color: verdict.color,
+                                                                    fontSize: '0.7rem',
+                                                                    fontWeight: 600,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 4,
+                                                                }}>
+                                                                    <span>{verdict.emoji}</span>
+                                                                    <span>{verdict.text}</span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Comparison Table */}
+                                                            <div style={{
+                                                                display: 'grid',
+                                                                gridTemplateColumns: '1fr auto auto',
+                                                                gap: '6px 8px',
+                                                            }}>
+                                                                {comparisons.map((stat) => {
+                                                                    const usAhead = stat.lowerIsBetter ? stat.us < stat.them : stat.us > stat.them;
+                                                                    const themAhead = stat.lowerIsBetter ? stat.them < stat.us : stat.them > stat.us;
+
+                                                                    return (
+                                                                        <div key={stat.label} style={{ display: 'contents' }}>
+                                                                            <div
+                                                                                style={{
+                                                                                    fontSize: '0.8rem',
+                                                                                    color: 'rgba(255,255,255,0.5)',
+                                                                                    display: 'flex',
+                                                                                    alignItems: 'center',
+                                                                                }}
+                                                                            >
+                                                                                {stat.label}
+                                                                            </div>
+                                                                            <div
+                                                                                style={{
+                                                                                    padding: '6px 12px',
+                                                                                    borderRadius: 8,
+                                                                                    background: usAhead ? 'rgba(48, 209, 88, 0.15)' : 'transparent',
+                                                                                    border: usAhead ? '1px solid rgba(48, 209, 88, 0.3)' : '1px solid transparent',
+                                                                                    fontSize: '0.85rem',
+                                                                                    fontWeight: 600,
+                                                                                    color: usAhead ? '#30d158' : 'rgba(255,255,255,0.6)',
+                                                                                    textAlign: 'center',
+                                                                                    minWidth: 50,
+                                                                                }}
+                                                                            >
+                                                                                {stat.label === 'Goal Diff' && stat.us > 0 ? '+' : ''}{stat.us}
+                                                                            </div>
+                                                                            <div
+                                                                                style={{
+                                                                                    padding: '6px 12px',
+                                                                                    borderRadius: 8,
+                                                                                    background: themAhead ? 'rgba(255, 69, 58, 0.15)' : 'transparent',
+                                                                                    border: themAhead ? '1px solid rgba(255, 69, 58, 0.3)' : '1px solid transparent',
+                                                                                    fontSize: '0.85rem',
+                                                                                    fontWeight: 600,
+                                                                                    color: themAhead ? '#ff453a' : 'rgba(255,255,255,0.6)',
+                                                                                    textAlign: 'center',
+                                                                                    minWidth: 50,
+                                                                                }}
+                                                                            >
+                                                                                {stat.label === 'Goal Diff' && stat.them > 0 ? '+' : ''}{stat.them}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
+
                                                 {/* Link to LZV */}
                                                 <a
                                                     href={`https://www.lzvcup.be/teams/detail/${opponentData.externalId}`}
@@ -1872,16 +2035,63 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                                         )}
                                     </>
                                 )}
-
-                                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginTop: 12, marginBottom: 4 }}>Calendar</div>
-                                <ActionButton icon="📅" title="Add to Calendar" subtitle="Download .ics file" onClick={generateICS} />
-                                <ActionButton icon="📆" title="Google Calendar" subtitle={dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} href={calendarUrl} />
                             </div>
                         </div>
                     </div>
 
-                    {/* Close button */}
-                    <div style={{ padding: '8px 16px 16px' }}>
+                    {/* Bottom Action Bar + Close */}
+                    <div style={{ padding: '12px 16px 16px', borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
+                        {/* Quick Actions */}
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                            {match.location && (
+                                <motion.button
+                                    onClick={() => window.open(mapUrl!, '_blank')}
+                                    whileTap={{ scale: 0.96 }}
+                                    style={{
+                                        flex: 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 6,
+                                        padding: '10px 12px',
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                                        borderRadius: 10,
+                                        color: 'rgba(255,255,255,0.7)',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <MapPin size={14} />
+                                    Maps
+                                </motion.button>
+                            )}
+                            <motion.button
+                                onClick={() => window.open(calendarUrl, '_blank')}
+                                whileTap={{ scale: 0.96 }}
+                                style={{
+                                    flex: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6,
+                                    padding: '10px 12px',
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                                    borderRadius: 10,
+                                    color: 'rgba(255,255,255,0.7)',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <Calendar size={14} />
+                                Add to Calendar
+                            </motion.button>
+                        </div>
+                        
+                        {/* Done button */}
                         <motion.button onClick={onClose} whileTap={{ scale: 0.98 }} style={{
                             width: '100%', padding: 14, background: 'rgba(255, 255, 255, 0.08)',
                             border: 'none', borderRadius: 14, color: 'white', fontSize: '1rem', fontWeight: 600, cursor: 'pointer',

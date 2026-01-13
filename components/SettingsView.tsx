@@ -20,7 +20,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
     const [isLocalhost, setIsLocalhost] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [hapticFeedback, setHapticFeedback] = useState(true);
-    const [showFullNames, setShowFullNames] = useState(false);
+    const [showFullNames, setShowFullNames] = useState(true);
     const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
     const { hasUpdate, updateApp, isChecking } = useVersionChecker();
 
@@ -35,7 +35,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
         const hapticPref = localStorage.getItem('hapticFeedback');
         setHapticFeedback(hapticPref !== 'false');
         const fullNamesPref = localStorage.getItem('showFullNames');
-        setShowFullNames(fullNamesPref === 'true');
+        setShowFullNames(fullNamesPref === null ? true : fullNamesPref === 'true');
     }, []);
 
     useEffect(() => {

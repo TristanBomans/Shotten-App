@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAllScraperTeams, fetchAllScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
 import { Loader2, ChevronDown, Trophy, Users, TrendingUp, X } from 'lucide-react';
 import TeamDetailModal from './TeamDetailModal';
+import LeagueSelector from './LeagueSelector';
 
 export default function LeagueView() {
     const [activeTab, setActiveTab] = useState<'standings' | 'players'>('standings');
@@ -173,34 +174,12 @@ export default function LeagueView() {
 
                 {/* League Selector */}
                 {leagues.length > 0 && (
-                    <div style={{ marginTop: 12, position: 'relative' }}>
-                        <select
-                            value={selectedLeague}
-                            onChange={(e) => setSelectedLeague(e.target.value)}
-                            style={{
-                                width: '100%',
-                                appearance: 'none',
-                                background: 'rgba(255,255,255,0.08)',
-                                border: '0.5px solid rgba(255,255,255,0.1)',
-                                borderRadius: 10,
-                                padding: '10px 14px',
-                                paddingRight: 36,
-                                color: 'white',
-                                fontSize: '0.9rem',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                            }}
-                        >
-                            {leagues.map(league => (
-                                <option key={league} value={league} style={{ color: 'black', background: '#1c1c1e' }}>
-                                    {league}
-                                </option>
-                            ))}
-                        </select>
-                        <ChevronDown
-                            size={16}
-                            color="rgba(255,255,255,0.5)"
-                            style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+                    <div style={{ marginTop: 12 }}>
+                        <LeagueSelector
+                            leagues={leagues}
+                            selectedLeague={selectedLeague}
+                            onSelect={setSelectedLeague}
+                            teamsData={teams}
                         />
                     </div>
                 )}
