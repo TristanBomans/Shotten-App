@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar } from 'lucide-react';
 import { useMatches, useAllPlayers } from '@/lib/useData';
@@ -9,6 +9,7 @@ import MatchCard from './MatchCard';
 import StatsView from './StatsView';
 import SettingsView from './SettingsView';
 import LeagueView from './LeagueView';
+import PullToRefresh from './PullToRefresh';
 import { parseDateToTimestamp } from '@/lib/dateUtils';
 
 interface DashboardProps {
@@ -25,6 +26,7 @@ const viewOrder = ['home', 'stats', 'league', 'settings'] as const;
 export default function Dashboard({ playerId, currentView, onLogout, onViewChange, onPlayerManagementOpenChange }: DashboardProps) {
     const { matches, loading, error, fetchMatches, setMatches } = useMatches(playerId);
     const { players, fetchAllPlayers } = useAllPlayers();
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const upcomingRef = useRef<HTMLElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const isProgrammaticScrollingRef = useRef(false);
@@ -128,6 +130,18 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
         }, 500);
     };
 
+    const handleRefresh = useCallback(async () => {
+        setIsRefreshing(true);
+        try {
+            await Promise.all([fetchMatches(), fetchAllPlayers()]);
+            hapticPatterns.success();
+        } catch (err) {
+            hapticPatterns.error();
+        } finally {
+            setIsRefreshing(false);
+        }
+    }, [fetchMatches, fetchAllPlayers]);
+
     const handleUpdate = async (matchId?: number, newStatus?: 'Present' | 'NotPresent' | 'Maybe') => {
         if (matchId !== undefined && newStatus !== undefined) {
             setMatches(prevMatches =>
@@ -205,6 +219,53 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
             </div>
         );
     }
+
+    // Skeleton loading component for refresh
+    const SkeletonContent = (
+        <div className="container">
+            {/* Header - Keep visible during refresh */}
+            <div style={{ marginBottom: 20 }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginBottom: 8,
+                }}>
+                    <Calendar size={16} style={{ color: '#0a84ff' }} />
+                    <span style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: '#0a84ff',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                    }}>
+                        Schedule
+                    </span>
+                </div>
+                <h1 style={{
+                    fontSize: '1.75rem',
+                    fontWeight: 700,
+                    color: 'white',
+                    margin: 0,
+                }}>
+                    Matches
+                </h1>
+            </div>
+
+            {/* Skeleton for hero match */}
+            <div className="glass-panel-heavy skeleton" style={{ height: 320, marginBottom: 'var(--space-xl)' }} />
+
+            {/* Skeleton for upcoming matches */}
+            <h2 className="text-label" style={{ marginBottom: 'var(--space-md)' }}>
+                Upcoming Matches
+            </h2>
+            <div className="grid-cards">
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="glass-panel skeleton" style={{ height: 200 }} />
+                ))}
+            </div>
+        </div>
+    );
 
     // Home content component
     const HomeContent = (
@@ -341,10 +402,12 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                     flexShrink: 0,
                     scrollSnapAlign: 'start',
                     scrollSnapStop: 'always',
-                    overflowY: 'auto',
+                    overflowY: 'hidden', // Changed to hidden because PullToRefresh handles scrolling
                 }}
             >
-                {HomeContent}
+                <PullToRefresh onRefresh={handleRefresh}>
+                    {isRefreshing ? SkeletonContent : HomeContent}
+                </PullToRefresh>
             </div>
 
             {/* Stats View */}

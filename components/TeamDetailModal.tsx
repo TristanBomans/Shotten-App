@@ -7,6 +7,7 @@ import { X, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp } from
 import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
+import { hapticPatterns } from '@/lib/haptic';
 
 interface ScraperMatch {
     _id: string;
@@ -65,6 +66,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                 if (visible) {
                     const view = visible.target.getAttribute('data-view') as 'overview' | 'matches' | 'squad';
                     if (view && view !== activeTab) {
+                        hapticPatterns.tap();
                         setActiveTab(view);
                     }
                 }
@@ -145,7 +147,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={onClose}
+                onClick={() => {
+                    hapticPatterns.tap();
+                    onClose();
+                }}
                 style={{
                     position: 'fixed',
                     inset: 0,
@@ -202,7 +207,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             <img
                                 src={team.imageBase64}
                                 alt={team.name}
-                                onClick={() => setShowImage(true)}
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    setShowImage(true);
+                                }}
                                 style={{
                                     width: 48, height: 48,
                                     borderRadius: 12,
@@ -237,7 +245,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 </div>
                             )}
                         </div>
-                        <button onClick={onClose} style={{
+                        <button onClick={() => {
+                            hapticPatterns.tap();
+                            onClose();
+                        }} style={{
                             background: 'rgba(255,255,255,0.1)', border: 'none',
                             borderRadius: '50%', width: 32, height: 32,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -262,7 +273,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                         ] as const).map(tab => (
                             <motion.button
                                 key={tab.id}
-                                onClick={() => scrollToView(tab.id)}
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    scrollToView(tab.id);
+                                }}
                                 whileTap={{ scale: 0.95 }}
                                 style={{
                                     flex: 1,
@@ -308,6 +322,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             style={{
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
+                                scrollSnapStop: 'always',
                                 padding: 16,
                                 overflowY: 'auto',
                             }}
@@ -462,6 +477,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             style={{
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
+                                scrollSnapStop: 'always',
                                 padding: 16,
                                 overflowY: 'auto',
                             }}
@@ -530,6 +546,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             style={{
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
+                                scrollSnapStop: 'always',
                                 padding: 16,
                                 overflowY: 'auto',
                             }}
@@ -591,7 +608,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setShowImage(false)}
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setShowImage(false);
+                        }}
                         style={{
                             position: 'fixed',
                             inset: 0,
@@ -617,7 +637,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             }}
                         />
                         <button
-                            onClick={() => setShowImage(false)}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setShowImage(false);
+                            }}
                             style={{
                                 position: 'absolute',
                                 top: 20, right: 20,

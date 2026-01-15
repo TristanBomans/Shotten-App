@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, X, Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
+import { hapticPatterns } from '@/lib/haptic';
 
 interface StatsViewProps {
     matches: Match[];
@@ -158,7 +159,10 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                             Social Credit
                         </span>
                         <motion.button
-                            onClick={() => setShowRules(true)}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setShowRules(true);
+                            }}
                             whileTap={{ scale: 0.95 }}
                             style={{
                                 display: 'flex',
@@ -216,7 +220,10 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                     {playerStats.map((player, i) => (
                         <motion.div
                             key={player.id}
-                            onClick={() => setSelectedPlayer(player)}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setSelectedPlayer(player);
+                            }}
                             whileTap={{ scale: 0.98 }}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -374,7 +381,10 @@ function PlayerDetailModal({ player, rank, onClose }: {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={onClose}
+                onClick={() => {
+                    hapticPatterns.tap();
+                    onClose();
+                }}
                 style={{
                     position: 'fixed',
                     top: 0, left: 0, right: 0, bottom: 0,
@@ -415,7 +425,10 @@ function PlayerDetailModal({ player, rank, onClose }: {
                                 </h2>
                             </div>
                             <motion.button
-                                onClick={onClose}
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    onClose();
+                                }}
                                 whileTap={{ scale: 0.9 }}
                                 style={{
                                     width: 32, height: 32, borderRadius: 9999, border: 'none',
@@ -517,7 +530,10 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={onClose}
+                onClick={() => {
+                    hapticPatterns.tap();
+                    onClose();
+                }}
                 style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(20px)',
@@ -547,7 +563,10 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                             How it works 🤡
                         </h2>
                         <motion.button
-                            onClick={onClose}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                onClose();
+                            }}
                             whileTap={{ scale: 0.9 }}
                             style={{
                                 width: 32, height: 32, borderRadius: 9999, border: 'none',
@@ -595,7 +614,10 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                     </div>
 
                     <motion.button
-                        onClick={onClose}
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            onClose();
+                        }}
                         whileTap={{ scale: 0.98 }}
                         style={{
                             width: '100%', marginTop: 20, padding: '12px',

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronRight, Check } from 'lucide-react';
 import type { ScraperTeam } from '@/lib/useData';
+import { hapticPatterns } from '@/lib/haptic';
 
 interface LeagueSelectorProps {
     leagues: string[];
@@ -27,6 +28,7 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
     }, [leagues, teamsData]);
 
     const handleSelect = (league: string) => {
+        hapticPatterns.tap();
         onSelect(league);
         setShowModal(false);
     };
@@ -52,7 +54,10 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
             {/* Trigger Button */}
             <motion.button
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                    hapticPatterns.tap();
+                    setShowModal(true);
+                }}
                 style={{
                     width: '100%',
                     display: 'flex',
@@ -82,7 +87,10 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={() => setShowModal(false)}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setShowModal(false);
+                            }}
                             style={{
                                 position: 'fixed',
                                 inset: 0,

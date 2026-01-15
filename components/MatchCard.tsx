@@ -437,9 +437,27 @@ export default function MatchCard({
                     color: '#30d158',
                     letterSpacing: '0.03em',
                 }}>
-                    {compactDateStr}
+                    {compactDateStr} · {timeStr}
                 </span>
-                <StatusBadge status={myStatus} />
+                <motion.button
+                    onClick={() => {
+                        hapticPatterns.tap();
+                        setShowModal(true);
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                    }}
+                >
+                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>Details</span>
+                    <ChevronRight size={12} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                </motion.button>
             </div>
 
             {/* Title */}
@@ -448,22 +466,13 @@ export default function MatchCard({
                 fontWeight: 600,
                 color: 'white',
                 margin: 0,
-                marginBottom: 4,
+                marginBottom: 16,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
             }}>
                 {match.name.replace(/-/g, ' – ')}
             </h3>
-
-            {/* Time */}
-            <span style={{
-                fontSize: '0.85rem',
-                color: 'rgba(255,255,255,0.4)',
-                marginBottom: 16,
-            }}>
-                {timeStr}
-            </span>
 
             {/* Response buttons */}
             <div style={{
@@ -529,31 +538,6 @@ export default function MatchCard({
                     />
                 </div>
             )}
-
-            {/* More Info Button - Opens unified modal */}
-            <motion.button
-                onClick={() => {
-                    hapticPatterns.tap();
-                    setShowModal(true);
-                }}
-                whileTap={{ scale: 0.97 }}
-                style={{
-                    width: '100%',
-                    marginTop: 10,
-                    padding: '10px 12px',
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    border: '0.5px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    color: 'white',
-                }}
-            >
-                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>View details</span>
-                <ChevronRight size={12} style={{ color: 'rgba(255,255,255,0.3)' }} />
-            </motion.button>
 
             {/* Unified Match Modal */}
             <AnimatePresence>
@@ -1268,7 +1252,10 @@ END:VCALENDAR`;
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={onClose}
+                onClick={() => {
+                    hapticPatterns.tap();
+                    onClose();
+                }}
                 style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0, 0, 0, 0.85)',
@@ -1406,6 +1393,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                 if (visible) { // Allow update even during scroll for responsiveness
                     const view = visible.target.getAttribute('data-view') as 'squad' | 'opponent';
                     if (view && view !== activeTab) {
+                        hapticPatterns.tap();
                         setActiveTab(view);
                     }
                 }
@@ -1553,7 +1541,10 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={onClose}
+                onClick={() => {
+                    hapticPatterns.tap();
+                    onClose();
+                }}
                 style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0, 0, 0, 0.85)',
@@ -1603,7 +1594,10 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                         {(['squad', 'opponent'] as const).map(tab => (
                             <motion.button
                                 key={tab}
-                                onClick={() => scrollToView(tab)}
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    scrollToView(tab);
+                                }}
                                 whileTap={{ scale: 0.95 }}
                                 style={{
                                     flex: 1, padding: '10px 16px',
@@ -1640,6 +1634,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                             style={{
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
+                                scrollSnapStop: 'always',
                                 padding: 16,
                                 overflowY: 'auto'
                             }}
@@ -1696,6 +1691,7 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                             style={{
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
+                                scrollSnapStop: 'always',
                                 padding: 16,
                                 overflowY: 'auto'
                             }}
@@ -1720,7 +1716,10 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                                                         <img
                                                             src={opponentData.imageBase64}
                                                             alt={opponentData.name}
-                                                            onClick={() => setShowImage(true)}
+                                                            onClick={() => {
+                                                                hapticPatterns.tap();
+                                                                setShowImage(true);
+                                                            }}
                                                             style={{
                                                                 width: 64, height: 64,
                                                                 borderRadius: 12,
@@ -2108,7 +2107,10 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setShowImage(false)}
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setShowImage(false);
+                        }}
                         style={{
                             position: 'fixed',
                             inset: 0,
@@ -2135,7 +2137,10 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                             }}
                         />
                         <button
-                            onClick={() => setShowImage(false)}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setShowImage(false);
+                            }}
                             style={{
                                 position: 'absolute',
                                 top: 20,

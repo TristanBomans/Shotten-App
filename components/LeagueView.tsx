@@ -6,6 +6,7 @@ import { fetchAllScraperTeams, fetchAllScraperPlayers, type ScraperTeam, type Sc
 import { Loader2, ChevronDown, Trophy, Users, TrendingUp, X } from 'lucide-react';
 import TeamDetailModal from './TeamDetailModal';
 import LeagueSelector from './LeagueSelector';
+import { hapticPatterns } from '@/lib/haptic';
 
 export default function LeagueView() {
     const [activeTab, setActiveTab] = useState<'standings' | 'players'>('standings');
@@ -55,6 +56,7 @@ export default function LeagueView() {
     }, []);
 
     const handleTeamClick = (team: ScraperTeam) => {
+        hapticPatterns.tap();
         // Filter players who belong to this team
         // Check teamIds array first (multi-team support), fallback to teamId
         const teamPlayers = allPlayers.filter(p => {
@@ -67,6 +69,7 @@ export default function LeagueView() {
     };
 
     const handlePlayerClick = (player: ScraperPlayer) => {
+        hapticPatterns.tap();
         const playerTeamIds = player.teamIds || [player.teamId];
         const playerTeams = teams.filter(t => playerTeamIds.includes(t.externalId));
 
@@ -110,6 +113,7 @@ export default function LeagueView() {
     }, [allPlayers, filteredTeams, selectedLeague]);
 
     const handleShowMore = () => {
+        hapticPatterns.tap();
         setVisiblePlayers(prev => prev + 50);
     };
 
@@ -161,13 +165,10 @@ export default function LeagueView() {
                     {/* Mini Stats */}
                     {!loading && (
                         <div style={{
-                            display: 'flex',
-                            gap: 12,
                             fontSize: '0.75rem',
                             color: 'rgba(255,255,255,0.5)',
                         }}>
                             <span><strong style={{ color: 'white' }}>{leagueStats.teamCount}</strong> teams</span>
-                            <span><strong style={{ color: '#30d158' }}>{leagueStats.totalGoals}</strong> goals</span>
                         </div>
                     )}
                 </div>
@@ -198,7 +199,10 @@ export default function LeagueView() {
                     ] as const).map((tab) => (
                         <motion.button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setActiveTab(tab.id);
+                            }}
                             whileTap={{ scale: 0.98 }}
                             style={{
                                 flex: 1,
@@ -570,7 +574,10 @@ export default function LeagueView() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={() => setTeamSelection(null)}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setTeamSelection(null);
+                            }}
                             style={{
                                 position: 'fixed', inset: 0,
                                 background: 'rgba(0,0,0,0.85)',
@@ -611,7 +618,10 @@ export default function LeagueView() {
                                         Select Team
                                     </div>
                                     <button
-                                        onClick={() => setTeamSelection(null)}
+                                        onClick={() => {
+                                            hapticPatterns.tap();
+                                            setTeamSelection(null);
+                                        }}
                                         style={{
                                             background: 'rgba(255,255,255,0.08)',
                                             border: 'none', borderRadius: '50%',

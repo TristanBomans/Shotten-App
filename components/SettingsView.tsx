@@ -331,7 +331,10 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     }}
                 >
                     <motion.button
-                        onClick={onLogout}
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            onLogout();
+                        }}
                         whileTap={{ scale: 0.98 }}
                         style={{
                             width: '100%',
@@ -492,7 +495,10 @@ function VersionRow({
             </div>
             {hasUpdate && (
                 <motion.button
-                    onClick={onUpdate}
+                    onClick={() => {
+                        hapticPatterns.tap();
+                        onUpdate();
+                    }}
                     disabled={isChecking}
                     whileTap={{ scale: 0.95 }}
                     style={{
