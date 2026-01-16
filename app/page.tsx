@@ -106,13 +106,21 @@ function HomeContent() {
                         <PlayerSelect onSelect={handlePlayerSelect} />
                     </motion.div>
                 ) : (
-                    <Dashboard
-                        playerId={selectedPlayerId}
-                        currentView={currentView}
-                        onLogout={handleLogout}
-                        onViewChange={handleNavChange}
-                        onPlayerManagementOpenChange={setIsPlayerManagementOpen}
-                    />
+                    <motion.div
+                        key="dashboard"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <Dashboard
+                            playerId={selectedPlayerId}
+                            currentView={currentView}
+                            onLogout={handleLogout}
+                            onViewChange={handleNavChange}
+                            onPlayerManagementOpenChange={setIsPlayerManagementOpen}
+                        />
+                    </motion.div>
                 )}
             </AnimatePresence>
 

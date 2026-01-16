@@ -163,50 +163,74 @@ export default function MatchCard({
                 {/* Main Content */}
                 <div style={{ position: 'relative', zIndex: 1, padding: 24 }}>
 
-                    {/* Match Header - Date, Time, Countdown */}
+                    {/* Match Header - Date, Time, Location, Countdown */}
                     <div style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
+                        flexDirection: 'column',
+                        gap: 8,
                         marginBottom: 24,
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={{
-                                fontSize: '0.9rem',
-                                fontWeight: 600,
-                                color: 'white',
-                            }}>
-                                {dayName.slice(0, 3)} {dateNum} {monthName}
-                            </span>
-                            <span style={{
-                                width: 4,
-                                height: 4,
-                                borderRadius: '50%',
-                                background: 'rgba(255,255,255,0.3)',
-                            }} />
-                            <span style={{
-                                fontSize: '0.9rem',
-                                fontWeight: 500,
-                                color: 'rgba(255,255,255,0.6)',
-                            }}>
-                                {timeStr}
-                            </span>
+                        {/* Top row: Date/Time + Countdown */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    color: 'white',
+                                }}>
+                                    {dayName.slice(0, 3)} {dateNum} {monthName}
+                                </span>
+                                <span style={{
+                                    width: 4,
+                                    height: 4,
+                                    borderRadius: '50%',
+                                    background: 'rgba(255,255,255,0.3)',
+                                }} />
+                                <span style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: 500,
+                                    color: 'rgba(255,255,255,0.6)',
+                                }}>
+                                    {timeStr}
+                                </span>
+                            </div>
+
+                            {/* Countdown - compact */}
+                            {!isPast && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 2,
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    color: '#30d158',
+                                }}>
+                                    {countdown.days > 0 && <span>{countdown.days}d </span>}
+                                    <span>{String(countdown.hours).padStart(2, '0')}:</span>
+                                    <span>{String(countdown.mins).padStart(2, '0')}:</span>
+                                    <span style={{ opacity: 0.7 }}>{String(countdown.secs).padStart(2, '0')}</span>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Countdown - compact */}
-                        {!isPast && (
+                        {/* Location row */}
+                        {match.location && (
                             <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 2,
-                                fontSize: '0.8rem',
-                                fontWeight: 600,
-                                color: '#30d158',
+                                gap: 6,
                             }}>
-                                {countdown.days > 0 && <span>{countdown.days}d </span>}
-                                <span>{String(countdown.hours).padStart(2, '0')}:</span>
-                                <span>{String(countdown.mins).padStart(2, '0')}:</span>
-                                <span style={{ opacity: 0.7 }}>{String(countdown.secs).padStart(2, '0')}</span>
+                                <MapPin size={12} style={{ color: 'rgba(255,255,255,0.4)' }} />
+                                <span style={{
+                                    fontSize: '0.8rem',
+                                    color: 'rgba(255,255,255,0.4)',
+                                }}>
+                                    {match.location}
+                                </span>
                             </div>
                         )}
                     </div>
@@ -276,25 +300,6 @@ export default function MatchCard({
                         )}
                     </div>
 
-                    {/* Location - display only */}
-                    {match.location && (
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 6,
-                            marginBottom: 24,
-                        }}>
-                            <MapPin size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
-                            <span style={{
-                                fontSize: '0.85rem',
-                                color: 'rgba(255,255,255,0.4)',
-                            }}>
-                                {match.location}
-                            </span>
-                        </div>
-                    )}
-
                     {/* Response Section - Compact Pill Buttons */}
                     <div style={{
                         background: 'rgba(0, 0, 0, 0.2)',
@@ -334,6 +339,7 @@ export default function MatchCard({
                             present={present}
                             maybe={maybe}
                             notPresent={roster.filter(p => p.status === 'NotPresent')}
+                            unknown={roster.filter(p => p.status === 'Unknown')}
                             currentPlayerId={currentPlayerId}
                         />
                     ) : (
@@ -386,17 +392,15 @@ export default function MatchCard({
                 </div>
 
                 {/* Unified Match Modal */}
-                <AnimatePresence>
-                    {showModal && (
-                        <MatchModal
-                            match={match}
-                            dateObj={dateObj}
-                            roster={roster}
-                            currentPlayerId={currentPlayerId}
-                            onClose={() => setShowModal(false)}
-                        />
-                    )}
-                </AnimatePresence>
+                {showModal && (
+                    <MatchModal
+                        match={match}
+                        dateObj={dateObj}
+                        roster={roster}
+                        currentPlayerId={currentPlayerId}
+                        onClose={() => setShowModal(false)}
+                    />
+                )}
             </motion.div>
         );
     }
@@ -410,18 +414,26 @@ export default function MatchCard({
         month: 'short'
     }).toUpperCase();
 
+    const handleCardClick = () => {
+        hapticPatterns.tap();
+        setShowModal(true);
+    };
+
     return (
         <motion.div
+            onClick={handleCardClick}
+            whileTap={{ scale: 0.98 }}
             style={{
                 background: 'rgba(255, 255, 255, 0.06)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
                 borderRadius: 24,
                 border: '0.5px solid rgba(255, 255, 255, 0.1)',
-                padding: 20,
+                padding: 16,
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
+                cursor: 'pointer',
             }}
         >
             {/* Header */}
@@ -429,35 +441,48 @@ export default function MatchCard({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: 12,
+                marginBottom: 8,
             }}>
+                {/* Date/Time */}
                 <span style={{
                     fontSize: '0.7rem',
                     fontWeight: 600,
                     color: '#30d158',
                     letterSpacing: '0.03em',
+                    flexShrink: 0,
                 }}>
                     {compactDateStr} · {timeStr}
                 </span>
-                <motion.button
-                    onClick={() => {
-                        hapticPatterns.tap();
-                        setShowModal(true);
-                    }}
-                    whileTap={{ scale: 0.95 }}
+
+                {/* Response Buttons */}
+                <div
+                    onClick={(e) => e.stopPropagation()}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 4,
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: 0,
+                        gap: 6,
+                        flexShrink: 0,
                     }}
                 >
-                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>Details</span>
-                    <ChevronRight size={12} style={{ color: 'rgba(255,255,255,0.3)' }} />
-                </motion.button>
+                    <HeaderResponseButton
+                        type="yes"
+                        selected={myStatus === 'Present'}
+                        loading={updating === 'Present'}
+                        onClick={() => handleStatusUpdate('Present')}
+                    />
+                    <HeaderResponseButton
+                        type="maybe"
+                        selected={myStatus === 'Maybe'}
+                        loading={updating === 'Maybe'}
+                        onClick={() => handleStatusUpdate('Maybe')}
+                    />
+                    <HeaderResponseButton
+                        type="no"
+                        selected={myStatus === 'NotPresent'}
+                        loading={updating === 'NotPresent'}
+                        onClick={() => handleStatusUpdate('NotPresent')}
+                    />
+                </div>
             </div>
 
             {/* Title */}
@@ -466,7 +491,7 @@ export default function MatchCard({
                 fontWeight: 600,
                 color: 'white',
                 margin: 0,
-                marginBottom: 16,
+                marginBottom: 8,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -474,47 +499,18 @@ export default function MatchCard({
                 {match.name.replace(/-/g, ' – ')}
             </h3>
 
-            {/* Response buttons */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 8,
-                marginTop: 'auto',
-            }}>
-                <ResponseButton
-                    type="yes"
-                    selected={myStatus === 'Present'}
-                    loading={updating === 'Present'}
-                    onClick={() => handleStatusUpdate('Present')}
-                    compact
-                />
-                <ResponseButton
-                    type="maybe"
-                    selected={myStatus === 'Maybe'}
-                    loading={updating === 'Maybe'}
-                    onClick={() => handleStatusUpdate('Maybe')}
-                    compact
-                />
-                <ResponseButton
-                    type="no"
-                    selected={myStatus === 'NotPresent'}
-                    loading={updating === 'NotPresent'}
-                    onClick={() => handleStatusUpdate('NotPresent')}
-                    compact
-                />
-            </div>
-
             {/* Squad count display */}
             {showFullNames ? (
                 <div style={{
-                    marginTop: 12,
-                    paddingTop: 12,
+                    marginTop: 8,
+                    paddingTop: 8,
                     borderTop: '0.5px solid rgba(255, 255, 255, 0.08)',
                 }}>
                     <SquadNamesList
                         present={present}
                         maybe={maybe}
                         notPresent={roster.filter(p => p.status === 'NotPresent')}
+                        unknown={roster.filter(p => p.status === 'Unknown')}
                         currentPlayerId={currentPlayerId}
                     />
                 </div>
@@ -523,8 +519,8 @@ export default function MatchCard({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    marginTop: 12,
-                    paddingTop: 12,
+                    marginTop: 8,
+                    paddingTop: 8,
                     borderTop: '0.5px solid rgba(255, 255, 255, 0.08)',
                 }}>
                     <Users size={12} style={{ color: 'rgba(255,255,255,0.35)' }} />
@@ -539,18 +535,30 @@ export default function MatchCard({
                 </div>
             )}
 
+            {/* Tap hint */}
+            <div style={{
+                marginTop: 4,
+                textAlign: 'right',
+            }}>
+                <span style={{
+                    fontSize: '0.65rem',
+                    color: 'rgba(255,255,255,0.25)',
+                    fontStyle: 'italic',
+                }}>
+                    Tap for details
+                </span>
+            </div>
+
             {/* Unified Match Modal */}
-            <AnimatePresence>
-                {showModal && (
-                    <MatchModal
-                        match={match}
-                        dateObj={dateObj}
-                        roster={roster}
-                        currentPlayerId={currentPlayerId}
-                        onClose={() => setShowModal(false)}
-                    />
-                )}
-            </AnimatePresence>
+            {showModal && (
+                <MatchModal
+                    match={match}
+                    dateObj={dateObj}
+                    roster={roster}
+                    currentPlayerId={currentPlayerId}
+                    onClose={() => setShowModal(false)}
+                />
+            )}
         </motion.div>
     );
 }
@@ -720,6 +728,72 @@ function CompactResponse({ type, selected, loading, onClick }: {
     );
 }
 
+// Small inline button for compact card header
+function HeaderResponseButton({
+    type,
+    selected,
+    loading,
+    onClick
+}: {
+    type: 'yes' | 'maybe' | 'no';
+    selected: boolean;
+    loading: boolean;
+    onClick: () => void;
+}) {
+    const config = {
+        yes: {
+            icon: <Check size={14} />,
+            color: '#30d158',
+            bg: 'rgba(48, 209, 88, 0.25)',
+        },
+        maybe: {
+            icon: <HelpCircle size={14} />,
+            color: '#ffd60a',
+            bg: 'rgba(255, 214, 10, 0.2)',
+        },
+        no: {
+            icon: <X size={14} />,
+            color: '#ff453a',
+            bg: 'rgba(255, 69, 58, 0.2)',
+        },
+    };
+
+    const { icon, color, bg } = config[type];
+
+    return (
+        <motion.button
+            onClick={onClick}
+            whileTap={{ scale: 0.9 }}
+            disabled={loading}
+            style={{
+                width: 32,
+                height: 32,
+                border: 'none',
+                borderRadius: 8,
+                background: selected ? bg : 'rgba(255, 255, 255, 0.08)',
+                color: selected ? color : 'rgba(255, 255, 255, 0.35)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                boxShadow: selected ? `inset 0 0 0 1.5px ${color}50` : 'none',
+            }}
+        >
+            {loading ? (
+                <div style={{
+                    width: 12,
+                    height: 12,
+                    border: '2px solid rgba(255,255,255,0.2)',
+                    borderTopColor: color,
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                }} />
+            ) : icon}
+        </motion.button>
+    );
+}
+
 function StatusText({ status }: { status: string }) {
     const config: Record<string, { text: string; color: string }> = {
         Present: { text: "You're in! 🔥", color: '#30d158' },
@@ -828,11 +902,13 @@ function SquadNamesList({
     present,
     maybe,
     notPresent,
+    unknown,
     currentPlayerId,
 }: {
     present: { id: number; name: string; status: string }[];
     maybe: { id: number; name: string; status: string }[];
     notPresent: { id: number; name: string; status: string }[];
+    unknown: { id: number; name: string; status: string }[];
     currentPlayerId: number;
 }) {
     const formatName = (player: { id: number; name: string }) => {
@@ -924,7 +1000,31 @@ function SquadNamesList({
                     </span>
                 </div>
             )}
-            {present.length === 0 && maybe.length === 0 && notPresent.length === 0 && (
+            {unknown.length > 0 && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                }}>
+                    <span style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: 'rgba(255,255,255,0.4)',
+                        minWidth: 50,
+                    }}>
+                        TBD
+                    </span>
+                    <span style={{
+                        fontSize: '0.75rem',
+                        color: 'rgba(255,255,255,0.35)',
+                        flex: 1,
+                        lineHeight: 1.4,
+                    }}>
+                        {formatList(unknown)}
+                    </span>
+                </div>
+            )}
+            {present.length === 0 && maybe.length === 0 && notPresent.length === 0 && unknown.length === 0 && (
                 <span style={{
                     fontSize: '0.75rem',
                     color: 'rgba(255,255,255,0.4)',
@@ -1015,7 +1115,10 @@ function SquadModal({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={onClose}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                }}
                 style={{
                     position: 'fixed',
                     top: 0,
@@ -1087,7 +1190,10 @@ function SquadModal({
                                 Squad
                             </h2>
                             <motion.button
-                                onClick={onClose}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onClose();
+                                }}
                                 whileTap={{ scale: 0.9 }}
                                 style={{
                                     width: 32,
@@ -1252,7 +1358,8 @@ END:VCALENDAR`;
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => {
+                onClick={(e) => {
+                    e.stopPropagation();
                     hapticPatterns.tap();
                     onClose();
                 }}
@@ -1273,6 +1380,7 @@ END:VCALENDAR`;
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
                     transition={{ type: 'spring' as const, stiffness: 400, damping: 30 }}
+                    onClick={(e) => e.stopPropagation()}
                     style={{
                         width: '100%', maxWidth: 340, pointerEvents: 'auto',
                         background: 'rgba(25, 25, 30, 0.98)',
@@ -1282,10 +1390,29 @@ END:VCALENDAR`;
                     }}
                 >
                     <div style={{ padding: 20, borderBottom: '0.5px solid rgba(255, 255, 255, 0.1)' }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'white', marginBottom: 4 }}>
-                            Match Details
-                        </h2>
-                        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>{match.name}</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'white', marginBottom: 4 }}>
+                                    Match Details
+                                </h2>
+                                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>{match.name}</p>
+                            </div>
+                            <motion.button
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    onClose();
+                                }}
+                                whileTap={{ scale: 0.9 }}
+                                style={{
+                                    width: 32, height: 32, borderRadius: 9999, border: 'none',
+                                    background: 'rgba(255, 255, 255, 0.08)', color: 'rgba(255, 255, 255, 0.6)',
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                <X size={16} />
+                            </motion.button>
+                        </div>
                     </div>
 
                     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1299,15 +1426,6 @@ END:VCALENDAR`;
                         <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginTop: 12, marginBottom: 4 }}>Calendar</div>
                         <ActionButton icon="📅" title="Add to Calendar" subtitle="Download .ics file" onClick={generateICS} />
                         <ActionButton icon="📆" title="Google Calendar" subtitle="Opens in browser" href={calendarUrl} />
-                    </div>
-
-                    <div style={{ padding: '8px 16px 16px' }}>
-                        <motion.button onClick={onClose} whileTap={{ scale: 0.98 }} style={{
-                            width: '100%', padding: 14, background: 'rgba(255, 255, 255, 0.08)',
-                            border: 'none', borderRadius: 14, color: 'white', fontSize: '1rem', fontWeight: 600, cursor: 'pointer',
-                        }}>
-                            Done
-                        </motion.button>
                     </div>
                 </motion.div>
             </div>
@@ -1541,7 +1659,8 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => {
+                onClick={(e) => {
+                    e.stopPropagation();
                     hapticPatterns.tap();
                     onClose();
                 }}
@@ -1562,9 +1681,10 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
                     transition={{ type: 'spring' as const, stiffness: 400, damping: 30 }}
+                    onClick={(e) => e.stopPropagation()}
                     style={{
                         width: '100%', maxWidth: 360,
-                        height: '80vh', maxHeight: 'calc(100dvh - 100px)',
+                        height: '90vh', maxHeight: 'calc(100dvh - 60px)',
                         display: 'flex', flexDirection: 'column',
                         pointerEvents: 'auto',
                         background: 'rgba(25, 25, 30, 0.98)',
@@ -1578,12 +1698,36 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                         padding: '20px 20px 16px',
                         borderBottom: '0.5px solid rgba(255, 255, 255, 0.1)',
                     }}>
-                        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'white', marginBottom: 6 }}>
-                            {match.name.replace(/-/g, ' vs ')}
-                        </h2>
-                        <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                            {dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} • {dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'white', marginBottom: 6 }}>
+                                    {match.name.replace(/-/g, ' vs ')}
+                                </h2>
+                                <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                                    {dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} • {dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                                {match.location && (
+                                    <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', margin: 0, marginTop: 4 }}>
+                                        {match.location}
+                                    </p>
+                                )}
+                            </div>
+                            <motion.button
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    onClose();
+                                }}
+                                whileTap={{ scale: 0.9 }}
+                                style={{
+                                    width: 32, height: 32, borderRadius: 9999, border: 'none',
+                                    background: 'rgba(255, 255, 255, 0.08)', color: 'rgba(255, 255, 255, 0.6)',
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                <X size={16} />
+                            </motion.button>
+                        </div>
                     </div>
 
                     {/* Tabs */}
@@ -2089,14 +2233,6 @@ function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: {
                                 Add to Calendar
                             </motion.button>
                         </div>
-                        
-                        {/* Done button */}
-                        <motion.button onClick={onClose} whileTap={{ scale: 0.98 }} style={{
-                            width: '100%', padding: 14, background: 'rgba(255, 255, 255, 0.08)',
-                            border: 'none', borderRadius: 14, color: 'white', fontSize: '1rem', fontWeight: 600, cursor: 'pointer',
-                        }}>
-                            Done
-                        </motion.button>
                     </div>
                 </motion.div>
             </div>
