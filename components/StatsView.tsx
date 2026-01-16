@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, X, Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer, ReferenceLine } from 'recharts';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
@@ -42,6 +43,61 @@ interface MatchResult {
     date: Date;
     status: 'present' | 'maybe' | 'notPresent' | 'ghost';
     points: number;
+}
+
+interface ScoreHistoryPoint {
+    date: number;
+    score: number;
+    matchName: string;
+    delta: number;
+}
+
+function calculateScoreHistory(player: Player, allMatches: Match[]): ScoreHistoryPoint[] {
+    const now = Date.now();
+    const relevantMatches = allMatches.filter(m => {
+        const isPast = parseDateToTimestamp(m.date) < now;
+        const isPlayerTeam = player.teamIds.includes(m.teamId);
+        const hasAttendees = m.attendances?.some(a => a.status === 'Present');
+        return isPast && isPlayerTeam && hasAttendees;
+    });
+
+    // Sort ASCENDING (oldest first) for chronological history
+    const sortedMatches = [...relevantMatches].sort((a, b) =>
+        parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date)
+    );
+
+    let runningScore = POINTS.base;
+    const history: ScoreHistoryPoint[] = [{
+        date: 0,
+        score: POINTS.base,
+        matchName: 'Start',
+        delta: 0,
+    }];
+
+    sortedMatches.forEach((match, index) => {
+        const attendance = match.attendances?.find(a => a.playerId === player.id);
+        let delta: number;
+
+        if (!attendance) {
+            delta = POINTS.ghost;
+        } else if (attendance.status === 'Present') {
+            delta = POINTS.present;
+        } else if (attendance.status === 'Maybe') {
+            delta = POINTS.maybe;
+        } else {
+            delta = POINTS.notPresent;
+        }
+
+        runningScore += delta;
+        history.push({
+            date: index + 1,
+            score: runningScore,
+            matchName: match.name,
+            delta,
+        });
+    });
+
+    return history;
 }
 
 function calculatePlayerScore(player: Player, allMatches: Match[]) {
@@ -101,6 +157,7 @@ function calculatePlayerScore(player: Player, allMatches: Match[]) {
     });
 
     const recentForm = matchResults.slice(0, 5).map(r => r.status);
+    const scoreHistory = calculateScoreHistory(player, allMatches);
 
     return {
         score,
@@ -112,6 +169,7 @@ function calculatePlayerScore(player: Player, allMatches: Match[]) {
         rank: getRank(score),
         recentForm,
         matchResults,
+        scoreHistory,
     };
 }
 
@@ -451,6 +509,20 @@ function PlayerDetailModal({ player, rank, onClose }: {
                             <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>
                                 Shotten Points
                             </div>
+
+                            {/* Score History Sparkline */}
+                            {player.stats.scoreHistory && player.stats.scoreHistory.length > 1 && (
+                                <div style={{ marginTop: 12 }}>
+                                    <ScoreSparkline history={player.stats.scoreHistory} />
+                                    <div style={{
+                                        fontSize: '0.6rem',
+                                        color: 'rgba(255,255,255,0.3)',
+                                        marginTop: 4,
+                                    }}>
+                                        Season trend
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Stats */}
@@ -633,6 +705,44 @@ function RulesModal({ onClose }: { onClose: () => void }) {
     );
 
     return createPortal(modalContent, document.body);
+}
+
+function ScoreSparkline({ history }: { history: ScoreHistoryPoint[] }) {
+    if (history.length < 2) return null;
+
+    const startScore = history[0].score;
+    const endScore = history[history.length - 1].score;
+    const trendColor = endScore >= startScore ? '#30d158' : '#ff453a';
+    const trendArrow = endScore > startScore ? '↗' : endScore < startScore ? '↘' : '→';
+
+    return (
+        <div style={{ position: 'relative', width: '100%', height: 48 }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={history} margin={{ top: 8, right: 24, bottom: 8, left: 8 }}>
+                    <ReferenceLine y={1000} stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
+                    <Line
+                        type="monotone"
+                        dataKey="score"
+                        stroke={trendColor}
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={false}
+                    />
+                </LineChart>
+            </ResponsiveContainer>
+            <div style={{
+                position: 'absolute',
+                right: 0,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: '0.85rem',
+                color: trendColor,
+                fontWeight: 600,
+            }}>
+                {trendArrow}
+            </div>
+        </div>
+    );
 }
 
 function PointRow({ emoji, label, points, color }: { emoji: string; label: string; points: string; color: string }) {

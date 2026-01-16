@@ -26,14 +26,30 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
 
     const calculateDragTarget = useCallback((x: number): View | null => {
         const currentIndex = navItems.findIndex(item => item.id === currentView);
+        const itemWidth = 58; // 52px button + 6px gap
         const threshold = 20;
 
-        if (x < -threshold && currentIndex > 0) {
-            return navItems[currentIndex - 1].id;
-        } else if (x > threshold && currentIndex < navItems.length - 1) {
-            return navItems[currentIndex + 1].id;
+        // Calculate how many items to move based on drag distance
+        const itemsToMove = Math.round(x / itemWidth);
+
+        if (Math.abs(x) < threshold) {
+            return null;
         }
-        return null;
+
+        const targetIndex = currentIndex + itemsToMove;
+
+        // Clamp to valid range
+        if (targetIndex < 0 || targetIndex >= navItems.length || targetIndex === currentIndex) {
+            // If out of bounds, return the edge item
+            if (x < -threshold && currentIndex > 0) {
+                return navItems[0].id;
+            } else if (x > threshold && currentIndex < navItems.length - 1) {
+                return navItems[navItems.length - 1].id;
+            }
+            return null;
+        }
+
+        return navItems[targetIndex].id;
     }, [currentView]);
 
     const handleDrag = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -43,19 +59,28 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
 
     const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         const currentIndex = navItems.findIndex(item => item.id === currentView);
+        const itemWidth = 58; // 52px button + 6px gap
         const threshold = 20;
         const velocity = info.velocity.x;
         const offset = info.offset.x;
 
-        let shouldNavigate = false;
         let targetView: View | null = null;
 
-        if ((velocity < -500 || offset < -threshold) && currentIndex > 0) {
-            shouldNavigate = true;
-            targetView = navItems[currentIndex - 1].id;
-        } else if ((velocity > 500 || offset > threshold) && currentIndex < navItems.length - 1) {
-            shouldNavigate = true;
-            targetView = navItems[currentIndex + 1].id;
+        // Calculate target based on drag distance
+        const itemsToMove = Math.round(offset / itemWidth);
+
+        // Add velocity boost: fast swipe can add extra items
+        const velocityBoost = Math.abs(velocity) > 500 ? Math.sign(velocity) : 0;
+        const totalMove = itemsToMove + velocityBoost;
+
+        const targetIndex = currentIndex + totalMove;
+
+        if (Math.abs(offset) >= threshold || Math.abs(velocity) > 500) {
+            // Clamp to valid range
+            const clampedIndex = Math.max(0, Math.min(navItems.length - 1, targetIndex));
+            if (clampedIndex !== currentIndex) {
+                targetView = navItems[clampedIndex].id;
+            }
         }
 
         // Reset states first
@@ -63,7 +88,7 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
         setIsDragging(false);
 
         // Navigate after state cleanup
-        if (shouldNavigate && targetView) {
+        if (targetView) {
             hapticPatterns.swipe();
             onNavigate(targetView);
         }
@@ -133,7 +158,7 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
                                 whileTap={{ scale: isDragging ? 1 : 0.85 }}
                                 drag={isActive ? "x" : false}
                                 dragConstraints={{ left: 0, right: 0 }}
-                                dragElastic={0.5}
+                                dragElastic={1}
                                 onDragStart={() => setIsDragging(true)}
                                 onDrag={isActive ? handleDrag : undefined}
                                 onDragEnd={isActive ? handleDragEnd : undefined}

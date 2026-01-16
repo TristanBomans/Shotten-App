@@ -1,0 +1,1 @@
+export { useOpponentTeamData } from './useOpponentTeamData';
