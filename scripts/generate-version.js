@@ -3,13 +3,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 async function main() {
-  const { Mistral } = await import('@mistralai/mistralai');
-
   const apiKey = process.env.MISTRAL_API_KEY;
-  if (!apiKey) {
-    console.error('ERROR: MISTRAL_API_KEY environment variable is required');
-    process.exit(1);
-  }
 
   // Get version and commit hash for update checking
   const version = getVersion();
@@ -20,11 +14,32 @@ async function main() {
   console.log('Recent commits:');
   commits.forEach(c => console.log(`  - [${c.date}] ${c.message}`));
 
-  // Generate changelog via Mistral (one friendly message per commit)
-  console.log('\nGenerating changelog via Mistral AI...');
-  const releases = await generateChangelog(commits, apiKey, Mistral);
-  console.log('Generated releases:');
-  releases.forEach(r => console.log(`  - [${r.date}] ${r.changes.length} bullet(s)`));
+  let releases;
+
+  if (!apiKey) {
+    console.warn('⚠️  MISTRAL_API_KEY not found - using basic changelog format');
+    // Fallback: create basic changelog from commit messages
+    releases = commits.map(commit => ({
+      date: commit.date,
+      changes: [`📝 ${commit.message.split('\n')[0]}`], // Use first line only as fallback
+    }));
+  } else {
+    // Generate changelog via Mistral AI
+    console.log('\nGenerating changelog via Mistral AI...');
+    try {
+      const { Mistral } = await import('@mistralai/mistralai');
+      releases = await generateChangelog(commits, apiKey, Mistral);
+      console.log('Generated releases:');
+      releases.forEach(r => console.log(`  - [${r.date}] ${r.changes.length} bullet(s)`));
+    } catch (error) {
+      console.warn('⚠️  Failed to generate AI changelog, using basic format:', error.message);
+      // Fallback on error
+      releases = commits.map(commit => ({
+        date: commit.date,
+        changes: [`📝 ${commit.message.split('\n')[0]}`],
+      }));
+    }
+  }
 
   // Build version info
   const versionInfo = {
@@ -37,7 +52,7 @@ async function main() {
   const outputPath = path.join(process.cwd(), 'public', 'version.json');
   fs.writeFileSync(outputPath, JSON.stringify(versionInfo, null, 2));
 
-  console.log(`\nVersion info generated:`);
+  console.log(`\n✅ Version info generated:`);
   console.log(`  Version: ${version}`);
   console.log(`  Commit: ${commitHash}`);
   console.log(`  Releases: ${releases.length}`);
