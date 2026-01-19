@@ -29,6 +29,16 @@ function copyFile(src, dest) {
 }
 
 try {
+    // 0. Unshallow git repository if needed (for Cloudflare Pages shallow clones)
+    console.log("Ensuring git history is available...");
+    try {
+        execSync("git fetch --unshallow", { stdio: "inherit" });
+        console.log("✓ Git history expanded");
+    } catch (error) {
+        // Ignore errors - repository might not be shallow or git might not be available
+        console.log("ℹ Git unshallow not needed or failed (this is OK)");
+    }
+
     // 1. Generate version file (specific for Shotten-App)
     console.log("Generating version info...");
     runCommand("node scripts/generate-version.js");
