@@ -14,17 +14,17 @@ interface HeaderResponseButtonProps {
 
 const config = {
     yes: {
-        icon: <Check size={14} />,
+        icon: <Check size={12} />,
         color: '#30d158',
         bg: 'rgba(48, 209, 88, 0.25)',
     },
     maybe: {
-        icon: <HelpCircle size={14} />,
+        icon: <HelpCircle size={12} />,
         color: '#ffd60a',
         bg: 'rgba(255, 214, 10, 0.2)',
     },
     no: {
-        icon: <X size={14} />,
+        icon: <X size={12} />,
         color: '#ff453a',
         bg: 'rgba(255, 69, 58, 0.2)',
     },
@@ -47,10 +47,10 @@ export default function HeaderResponseButton({
             whileTap={{ scale: 0.9 }}
             disabled={loading}
             style={{
-                width: 32,
-                height: 32,
+                width: 28,
+                height: 28,
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 8,
                 background: selected ? bg : 'rgba(255, 255, 255, 0.08)',
                 color: selected ? color : 'rgba(255, 255, 255, 0.35)',
                 cursor: 'pointer',

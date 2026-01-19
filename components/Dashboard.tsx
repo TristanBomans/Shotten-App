@@ -357,6 +357,9 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
             {/* Hero Section */}
             {heroMatch ? (
                 <section style={{ marginBottom: 'var(--space-2xl)', position: 'relative' }}>
+                    <h2 className="text-label" style={{ marginBottom: 'var(--space-md)' }}>
+                        Next Match
+                    </h2>
                     <MatchCard
                         match={heroMatch}
                         currentPlayerId={playerId}

@@ -8,7 +8,7 @@ import { hapticPatterns } from '@/lib/haptic';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import type { MatchCardProps, RosterPlayer, AttendanceStatus } from './types';
 import Confetti from './Confetti';
-import { CompactResponse, HeaderResponseButton } from './ResponseButtons';
+import { HeaderResponseButton } from './ResponseButtons';
 import { PlayerAvatars, SquadNamesList } from './SquadDisplay';
 import MatchModal from './MatchModal';
 
@@ -102,7 +102,7 @@ export default function MatchCard({
         }
     };
 
-    // HERO VARIANT
+    // HERO VARIANT - COMPACT
     if (variant === 'hero') {
         const teams = match.name.split('-');
         const team1 = teams[0]?.trim() || match.name;
@@ -113,14 +113,17 @@ export default function MatchCard({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                onClick={() => { hapticPatterns.tap(); setShowModal(true); }}
+                whileTap={{ scale: 0.98 }}
                 style={{
                     background: 'linear-gradient(165deg, rgba(40, 45, 55, 0.9) 0%, rgba(20, 22, 28, 0.95) 100%)',
                     backdropFilter: 'blur(40px)',
                     WebkitBackdropFilter: 'blur(40px)',
-                    borderRadius: 28,
+                    borderRadius: 24,
                     border: '1px solid rgba(255, 255, 255, 0.08)',
                     overflow: 'hidden',
                     position: 'relative',
+                    cursor: 'pointer',
                 }}
             >
                 {/* Subtle gradient overlay */}
@@ -137,107 +140,154 @@ export default function MatchCard({
                 </AnimatePresence>
 
                 {/* Main Content */}
-                <div style={{ position: 'relative', zIndex: 1, padding: 24 }}>
-                    {/* Match Header */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'white' }}>
-                                    {dayName.slice(0, 3)} {dateNum} {monthName}
-                                </span>
-                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.3)' }} />
-                                <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>
-                                    {timeStr}
-                                </span>
-                            </div>
-
-                            {/* Countdown */}
-                            {!isPast && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: '0.8rem', fontWeight: 600, color: '#30d158' }}>
-                                    {countdown.days > 0 && <span>{countdown.days}d </span>}
-                                    <span>{String(countdown.hours).padStart(2, '0')}:</span>
-                                    <span>{String(countdown.mins).padStart(2, '0')}:</span>
-                                    <span style={{ opacity: 0.7 }}>{String(countdown.secs).padStart(2, '0')}</span>
-                                </div>
-                            )}
+                <div style={{ position: 'relative', zIndex: 1, padding: 12 }}>
+                    {/* Match Header - Same layout as compact: date left, buttons right */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'white' }}>
+                                {dayName.slice(0, 3)} {dateNum} {monthName}
+                            </span>
+                            <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.3)' }} />
+                            <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>
+                                {timeStr}
+                            </span>
                         </div>
 
-                        {/* Location */}
-                        {match.location && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <MapPin size={12} style={{ color: 'rgba(255,255,255,0.4)' }} />
-                                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>{match.location}</span>
-                            </div>
-                        )}
+                        {/* Response Buttons - Top right like compact variant */}
+                        <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                            <HeaderResponseButton type="yes" selected={myStatus === 'Present'} loading={updating === 'Present'} onClick={() => handleStatusUpdate('Present')} />
+                            <HeaderResponseButton type="maybe" selected={myStatus === 'Maybe'} loading={updating === 'Maybe'} onClick={() => handleStatusUpdate('Maybe')} />
+                            <HeaderResponseButton type="no" selected={myStatus === 'NotPresent'} loading={updating === 'NotPresent'} onClick={() => handleStatusUpdate('NotPresent')} />
+                        </div>
                     </div>
 
-                    {/* Teams with VS Badge */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 20 }}>
-                        <div style={{ flex: 1, textAlign: 'right' }}>
-                            <div style={{ fontSize: team2 ? '1.3rem' : '1.5rem', fontWeight: 700, color: 'white', lineHeight: 1.1 }}>
-                                {team1}
-                            </div>
-                        </div>
-
-                        {team2 && (
+                    {/* Teams with VS Badge - Original vertical layout */}
+                    {team2 ? (
+                        <div style={{ marginBottom: 12 }}>
                             <div style={{
-                                width: 44, height: 44, borderRadius: 12,
-                                background: 'linear-gradient(135deg, #30d158 0%, #25a847 100%)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                                boxShadow: '0 4px 16px rgba(48, 209, 88, 0.3)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 8,
+                                background: 'rgba(0, 0, 0, 0.15)',
+                                borderRadius: 20,
+                                padding: '10px 14px',
+                                border: '0.5px solid rgba(255, 255, 255, 0.06)',
                             }}>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'white', letterSpacing: '-0.02em' }}>VS</span>
-                            </div>
-                        )}
+                                {/* Team 1 */}
+                                <div style={{
+                                    fontSize: '1.1rem',
+                                    fontWeight: 700,
+                                    color: 'white',
+                                    textAlign: 'center',
+                                    lineHeight: 1.3,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                }}>
+                                    {team1}
+                                </div>
 
-                        {team2 && (
-                            <div style={{ flex: 1, textAlign: 'left' }}>
-                                <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'white', lineHeight: 1.1 }}>{team2}</div>
-                            </div>
-                        )}
-                    </div>
+                                {/* VS Divider */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div style={{ flex: 1, height: '0.5px', background: 'rgba(255, 255, 255, 0.1)' }} />
+                                    <div style={{
+                                        padding: '5px 12px',
+                                        borderRadius: 8,
+                                        background: 'linear-gradient(135deg, #30d158 0%, #25a847 100%)',
+                                        boxShadow: '0 2px 6px rgba(48, 209, 88, 0.25)',
+                                    }}>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'white', letterSpacing: '0.05em' }}>VS</span>
+                                    </div>
+                                    <div style={{ flex: 1, height: '0.5px', background: 'rgba(255, 255, 255, 0.1)' }} />
+                                </div>
 
-                    {/* Response Buttons */}
-                    <div style={{ background: 'rgba(0, 0, 0, 0.2)', borderRadius: 20, padding: 6, marginBottom: 16 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-                            <CompactResponse type="yes" selected={myStatus === 'Present'} loading={updating === 'Present'} onClick={() => handleStatusUpdate('Present')} />
-                            <CompactResponse type="maybe" selected={myStatus === 'Maybe'} loading={updating === 'Maybe'} onClick={() => handleStatusUpdate('Maybe')} />
-                            <CompactResponse type="no" selected={myStatus === 'NotPresent'} loading={updating === 'NotPresent'} onClick={() => handleStatusUpdate('NotPresent')} />
+                                {/* Team 2 */}
+                                <div style={{
+                                    fontSize: '1.1rem',
+                                    fontWeight: 700,
+                                    color: 'white',
+                                    textAlign: 'center',
+                                    lineHeight: 1.3,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                }}>
+                                    {team2}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    {/* Squad Preview */}
-                    {showFullNames ? (
-                        <SquadNamesList
-                            present={present}
-                            maybe={maybe}
-                            notPresent={roster.filter(p => p.status === 'NotPresent')}
-                            unknown={roster.filter(p => p.status === 'Unknown')}
-                            currentPlayerId={currentPlayerId}
-                        />
                     ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 0 0' }}>
-                            <PlayerAvatars players={[...present, ...maybe].slice(0, 5)} currentPlayerId={currentPlayerId} size="sm" />
+                        <div style={{
+                            marginBottom: 16,
+                            fontSize: '1.3rem',
+                            fontWeight: 700,
+                            color: 'white',
+                            textAlign: 'center',
+                            lineHeight: 1.3,
+                        }}>
+                            {team1}
+                        </div>
+                    )}
+
+                    {/* Countdown - Centered where buttons used to be */}
+                    {!isPast && (
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: 4,
+                            marginBottom: 12,
+                            padding: '8px 16px',
+                            background: 'rgba(48, 209, 88, 0.1)',
+                            borderRadius: 12,
+                            border: '1px solid rgba(48, 209, 88, 0.15)',
+                        }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#30d158', letterSpacing: '0.02em' }}>
+                                {countdown.days > 0 ? (
+                                    // More than 1 day: show days and hours
+                                    <>{countdown.days}d {countdown.hours}h</>
+                                ) : countdown.hours > 0 ? (
+                                    // Less than 1 day: show hours and minutes
+                                    <>{countdown.hours}h {countdown.mins}m</>
+                                ) : (
+                                    // Less than 1 hour: show minutes and seconds
+                                    <>{countdown.mins}m {countdown.secs}s</>
+                                )}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Squad Preview - Conditional based on showFullNames setting */}
+                    {showFullNames ? (
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
+                            <SquadNamesList
+                                present={present}
+                                maybe={maybe}
+                                notPresent={roster.filter(p => p.status === 'NotPresent')}
+                                unknown={roster.filter(p => p.status === 'Unknown')}
+                                currentPlayerId={currentPlayerId}
+                            />
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 8, borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
+                            <PlayerAvatars players={[...present, ...maybe].slice(0, 4)} currentPlayerId={currentPlayerId} size="sm" />
                             {present.length > 0 && (
-                                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{present.length} going</span>
+                                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>{present.length} in</span>
+                            )}
+                            {maybe.length > 0 && (
+                                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>+{maybe.length}</span>
                             )}
                         </div>
                     )}
 
-                    {/* More Info Button */}
-                    <motion.button
-                        onClick={() => { hapticPatterns.tap(); setShowModal(true); }}
-                        whileTap={{ scale: 0.98 }}
-                        style={{
-                            width: '100%', marginTop: 16, padding: '12px 16px',
-                            background: 'rgba(255, 255, 255, 0.06)', border: '0.5px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            cursor: 'pointer', color: 'white',
-                        }}
-                    >
-                        <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>View Squad & Details</span>
-                        <ChevronRight size={16} style={{ color: 'rgba(255,255,255,0.4)' }} />
-                    </motion.button>
+                    {/* Tap hint - Bottom right like compact variant */}
+                    <div style={{ marginTop: 4, textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Tap for details</span>
+                    </div>
                 </div>
 
                 {/* Modal */}
@@ -248,7 +298,7 @@ export default function MatchCard({
         );
     }
 
-    // COMPACT VARIANT
+    // COMPACT VARIANT - OPTIMIZED (with hero card styling)
     const compactDateStr = dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
 
     return (
@@ -256,43 +306,43 @@ export default function MatchCard({
             onClick={() => { hapticPatterns.tap(); setShowModal(true); }}
             whileTap={{ scale: 0.98 }}
             style={{
-                background: 'rgba(255, 255, 255, 0.06)',
+                background: 'linear-gradient(165deg, rgba(40, 45, 55, 0.9) 0%, rgba(20, 22, 28, 0.95) 100%)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
                 borderRadius: 24,
-                border: '0.5px solid rgba(255, 255, 255, 0.1)',
-                padding: 16,
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: 12,
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 cursor: 'pointer',
             }}
         >
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#30d158', letterSpacing: '0.03em', flexShrink: 0 }}>
+            {/* Header - Compact */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#30d158', letterSpacing: '0.03em', flexShrink: 0 }}>
                     {compactDateStr} · {timeStr}
                 </span>
 
-                {/* Response Buttons */}
-                <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                {/* Response Buttons - Compact */}
+                <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                     <HeaderResponseButton type="yes" selected={myStatus === 'Present'} loading={updating === 'Present'} onClick={() => handleStatusUpdate('Present')} />
                     <HeaderResponseButton type="maybe" selected={myStatus === 'Maybe'} loading={updating === 'Maybe'} onClick={() => handleStatusUpdate('Maybe')} />
                     <HeaderResponseButton type="no" selected={myStatus === 'NotPresent'} loading={updating === 'NotPresent'} onClick={() => handleStatusUpdate('NotPresent')} />
                 </div>
             </div>
 
-            {/* Title */}
+            {/* Title - Compact */}
             <h3 style={{
-                fontSize: '1.1rem', fontWeight: 600, color: 'white', margin: 0, marginBottom: 8,
+                fontSize: '0.95rem', fontWeight: 600, color: 'white', margin: 0, marginBottom: 6,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
                 {match.name.replace(/-/g, ' – ')}
             </h3>
 
-            {/* Squad count */}
+            {/* Squad count - Compact (with showFullNames support) */}
             {showFullNames ? (
-                <div style={{ marginTop: 8, paddingTop: 8, borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ marginTop: 4, paddingTop: 6, borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
                     <SquadNamesList
                         present={present}
                         maybe={maybe}
@@ -302,16 +352,20 @@ export default function MatchCard({
                     />
                 </div>
             ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, paddingTop: 8, borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
-                    <Users size={12} style={{ color: 'rgba(255,255,255,0.35)' }} />
-                    <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>{present.length} in</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, paddingTop: 6, borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
                     <PlayerAvatars players={present.slice(0, 3)} currentPlayerId={currentPlayerId} size="sm" />
+                    {present.length > 0 && (
+                        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>{present.length} in</span>
+                    )}
+                    {maybe.length > 0 && (
+                        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>+{maybe.length}</span>
+                    )}
                 </div>
             )}
 
-            {/* Tap hint */}
+            {/* Tap hint - Compact */}
             <div style={{ marginTop: 4, textAlign: 'right' }}>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>Tap for details</span>
+                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Tap for details</span>
             </div>
 
             {/* Modal */}

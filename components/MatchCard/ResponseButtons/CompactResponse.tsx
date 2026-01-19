@@ -14,9 +14,9 @@ interface CompactResponseProps {
 
 export default function CompactResponse({ type, selected, loading, onClick }: CompactResponseProps) {
     const icons = {
-        yes: <Check size={18} />,
-        maybe: <HelpCircle size={18} />,
-        no: <X size={18} />,
+        yes: <Check size={16} />,
+        maybe: <HelpCircle size={16} />,
+        no: <X size={16} />,
     };
 
     const { color, bg } = RESPONSE_CONFIG[type];
@@ -27,9 +27,10 @@ export default function CompactResponse({ type, selected, loading, onClick }: Co
             whileTap={{ scale: 0.92 }}
             disabled={loading}
             style={{
-                height: 44,
+                height: 36,
+                width: 36,
                 border: 'none',
-                borderRadius: 12,
+                borderRadius: 10,
                 background: selected ? bg : 'rgba(255, 255, 255, 0.06)',
                 color: selected ? color : 'rgba(255, 255, 255, 0.35)',
                 cursor: 'pointer',
@@ -44,8 +45,8 @@ export default function CompactResponse({ type, selected, loading, onClick }: Co
         >
             {loading ? (
                 <div style={{
-                    width: 14,
-                    height: 14,
+                    width: 12,
+                    height: 12,
                     border: '2px solid rgba(255,255,255,0.2)',
                     borderTopColor: color,
                     borderRadius: '50%',

@@ -35,30 +35,30 @@ export default function SquadNamesList({
 
     return (
         <div style={{
-            padding: '12px 0 0',
+            padding: '8px 0 0',
             display: 'flex',
             flexDirection: 'column',
-            gap: 6,
+            gap: 4,
         }}>
             {present.length > 0 && (
                 <div style={{
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: 8,
+                    gap: 6,
                 }}>
                     <span style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         fontWeight: 600,
                         color: '#30d158',
-                        minWidth: 50,
+                        minWidth: 40,
                     }}>
                         Coming
                     </span>
                     <span style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         color: 'rgba(255,255,255,0.7)',
                         flex: 1,
-                        lineHeight: 1.4,
+                        lineHeight: 1.3,
                     }}>
                         {formatList(present)}
                     </span>
@@ -68,21 +68,21 @@ export default function SquadNamesList({
                 <div style={{
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: 8,
+                    gap: 6,
                 }}>
                     <span style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         fontWeight: 600,
                         color: '#ffd60a',
-                        minWidth: 50,
+                        minWidth: 40,
                     }}>
                         Maybe
                     </span>
                     <span style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         color: 'rgba(255,255,255,0.5)',
                         flex: 1,
-                        lineHeight: 1.4,
+                        lineHeight: 1.3,
                     }}>
                         {formatList(maybe)}
                     </span>
@@ -92,21 +92,21 @@ export default function SquadNamesList({
                 <div style={{
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: 8,
+                    gap: 6,
                 }}>
                     <span style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         fontWeight: 600,
                         color: '#ff453a',
-                        minWidth: 50,
+                        minWidth: 40,
                     }}>
                         Out
                     </span>
                     <span style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         color: 'rgba(255,255,255,0.4)',
                         flex: 1,
-                        lineHeight: 1.4,
+                        lineHeight: 1.3,
                     }}>
                         {formatList(notPresent)}
                     </span>
@@ -116,21 +116,21 @@ export default function SquadNamesList({
                 <div style={{
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: 8,
+                    gap: 6,
                 }}>
                     <span style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         fontWeight: 600,
                         color: 'rgba(255,255,255,0.4)',
-                        minWidth: 50,
+                        minWidth: 40,
                     }}>
                         TBD
                     </span>
                     <span style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         color: 'rgba(255,255,255,0.35)',
                         flex: 1,
-                        lineHeight: 1.4,
+                        lineHeight: 1.3,
                     }}>
                         {formatList(unknown)}
                     </span>
@@ -138,7 +138,7 @@ export default function SquadNamesList({
             )}
             {present.length === 0 && maybe.length === 0 && notPresent.length === 0 && unknown.length === 0 && (
                 <span style={{
-                    fontSize: '0.75rem',
+                    fontSize: '0.7rem',
                     color: 'rgba(255,255,255,0.4)',
                 }}>
                     No responses yet
