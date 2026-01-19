@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/generate-version.js && next build",
     "start": "next start",
     "lint": "eslint",
     "build:worker": "node scripts/build-worker.mjs",
@@ -13,6 +13,7 @@
     "build:cf": "npm run build && npm run build:worker"
   },
   "dependencies": {
+    "@mistralai/mistralai": "^1.11.0",
     "@supabase/supabase-js": "^2.90.1",
     "@tailwindcss/postcss": "^4.1.17",
     "clsx": "^2.1.1",

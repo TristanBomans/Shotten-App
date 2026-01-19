@@ -2,19 +2,41 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, GitCommit, Clock, Tag, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+
+interface Release {
+  date: string;
+  changes: string[];
+}
 
 interface VersionInfo {
-  version: string;
-  commitHash: string;
-  buildTimestamp: string;
-  commitMessage?: string;
-  commitSubject?: string;
-  commitBody?: string;
+  releases: Release[];
+}
+
+// Official Mistral AI logo (2025)
+function MistralLogo({ size = 18 }: { size?: number }) {
+  const scale = size / 129;
+  return (
+    <svg 
+      width={size} 
+      height={size * (91/129)} 
+      viewBox="0 0 129 91" 
+      style={{ fillRule: 'evenodd', clipRule: 'evenodd' }}
+    >
+      <rect x="18.292" y="0" width="18.293" height="18.123" fill="#ffd800" />
+      <rect x="91.473" y="0" width="18.293" height="18.123" fill="#ffd800" />
+      <rect x="18.292" y="18.121" width="36.586" height="18.123" fill="#ffaf00" />
+      <rect x="73.181" y="18.121" width="36.586" height="18.123" fill="#ffaf00" />
+      <rect x="18.292" y="36.243" width="91.476" height="18.122" fill="#ff8205" />
+      <rect x="18.292" y="54.37" width="18.293" height="18.123" fill="#fa500f" />
+      <rect x="54.883" y="54.37" width="18.293" height="18.123" fill="#fa500f" />
+      <rect x="91.473" y="54.37" width="18.293" height="18.123" fill="#fa500f" />
+      <rect x="0" y="72.504" width="54.89" height="18.123" fill="#e10500" />
+      <rect x="73.181" y="72.504" width="54.89" height="18.123" fill="#e10500" />
+    </svg>
+  );
 }
 
 function VersionPageContent() {
@@ -23,9 +45,6 @@ function VersionPageContent() {
   const searchParams = useSearchParams();
   const fromParam = searchParams.get('from');
   
-  // Determine the back URL based on the 'from' parameter
-  // When coming from settings, we need to go back to the main app
-  // The main app handles internal navigation to show the settings view
   const backUrl = fromParam === 'settings' ? '/?view=settings' : '/';
 
   useEffect(() => {
@@ -38,19 +57,31 @@ function VersionPageContent() {
       .catch(() => setLoading(false));
   }, []);
 
+  const formatRelativeTime = (isoString: string) => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffWeeks = Math.floor(diffDays / 7);
+    const diffMonths = Math.floor(diffDays / 30);
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffWeeks < 4) return `${diffWeeks}w ago`;
+    return `${diffMonths}mo ago`;
+  };
+
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
-    return date.toLocaleDateString('nl-BE', {
-      year: 'numeric',
-      month: 'long',
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
   return (
-    <div className="container">
+    <div className="container" style={{ paddingBottom: 100 }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -71,14 +102,14 @@ function VersionPageContent() {
           <span>Back to app</span>
         </Link>
 
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 32 }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: 8,
             marginBottom: 8,
           }}>
-            <Tag size={16} style={{ color: '#0a84ff' }} />
+            <Sparkles size={16} style={{ color: '#0a84ff' }} />
             <span style={{
               fontSize: '0.75rem',
               fontWeight: 600,
@@ -86,7 +117,7 @@ function VersionPageContent() {
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
             }}>
-              Info
+              What&apos;s New
             </span>
           </div>
           <h1 style={{
@@ -95,7 +126,7 @@ function VersionPageContent() {
             color: 'white',
             margin: 0,
           }}>
-            Version Info
+            Version History
           </h1>
         </div>
 
@@ -103,43 +134,62 @@ function VersionPageContent() {
           <div style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: 40 }}>
             Loading...
           </div>
-        ) : versionInfo ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            style={{
-              background: 'rgba(255, 255, 255, 0.06)',
-              backdropFilter: 'blur(40px)',
-              WebkitBackdropFilter: 'blur(40px)',
-              borderRadius: 20,
-              border: '0.5px solid rgba(255, 255, 255, 0.1)',
-              overflow: 'hidden',
-            }}
-          >
-            <VersionRow
-              icon={<Tag size={20} />}
-              iconBg="rgba(10, 132, 255, 0.15)"
-              iconColor="#0a84ff"
-              label="Version"
-              value={versionInfo.version}
-            />
-            <VersionRow
-              icon={<GitCommit size={20} />}
-              iconBg="rgba(48, 209, 88, 0.15)"
-              iconColor="#30d158"
-              label="Commit"
-              value={versionInfo.commitHash}
-              monospace
-            />
-            <VersionRow
-              icon={<Clock size={20} />}
-              iconBg="rgba(255, 159, 10, 0.15)"
-              iconColor="#ff9f0a"
-              label="Built"
-              value={formatDate(versionInfo.buildTimestamp)}
-            />
-          </motion.div>
+        ) : versionInfo && versionInfo.releases && versionInfo.releases.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+            {versionInfo.releases.map((release, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 * index }}
+              >
+                {/* Header row: date left, relative time right */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
+                  marginBottom: 10,
+                }}>
+                  <span style={{
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    color: 'white',
+                  }}>
+                    {formatDate(release.date)}
+                  </span>
+                  <span style={{
+                    fontSize: '0.85rem',
+                    color: 'rgba(255,255,255,0.4)',
+                  }}>
+                    {formatRelativeTime(release.date)}
+                  </span>
+                </div>
+
+                {/* Changes list */}
+                <ul style={{
+                  margin: 0,
+                  padding: 0,
+                  listStyle: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                }}>
+                  {release.changes.map((change, changeIndex) => (
+                    <li
+                      key={changeIndex}
+                      style={{
+                        fontSize: '0.95rem',
+                        lineHeight: 1.5,
+                        color: 'rgba(255, 255, 255, 0.7)',
+                      }}
+                    >
+                      {change}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            ))}
+          </div>
         ) : (
           <div style={{
             color: 'rgba(255,255,255,0.5)',
@@ -148,13 +198,43 @@ function VersionPageContent() {
             background: 'rgba(255, 255, 255, 0.06)',
             borderRadius: 20,
           }}>
-            Version info not available
+            No changes available
           </div>
         )}
 
-        {versionInfo && (
-          <WhatsNewSection info={versionInfo} />
-        )}
+        {/* Powered by Mistral */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          style={{
+            marginTop: 48,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: '0.75rem',
+          }}
+        >
+          <span>Release notes powered by</span>
+          <a
+            href="https://mistral.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              color: 'rgba(255,255,255,0.5)',
+              textDecoration: 'none',
+              fontWeight: 500,
+            }}
+          >
+            <MistralLogo size={18} />
+            <span>Mistral AI</span>
+          </a>
+        </motion.div>
       </motion.div>
     </div>
   );
@@ -169,153 +249,5 @@ export default function VersionPage() {
     )}>
       <VersionPageContent />
     </Suspense>
-  );
-}
-
-function VersionRow({
-  icon,
-  iconBg,
-  iconColor,
-  label,
-  value,
-  monospace,
-}: {
-  icon: React.ReactNode;
-  iconBg: string;
-  iconColor: string;
-  label: string;
-  value: string;
-  monospace?: boolean;
-}) {
-  return (
-    <div style={{
-      padding: 16,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
-      borderBottom: '0.5px solid rgba(255, 255, 255, 0.06)',
-    }}>
-      <div style={{
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        background: iconBg,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: iconColor,
-        flexShrink: 0,
-      }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>
-          {label}
-        </div>
-        <div style={{
-          fontWeight: 600,
-          fontSize: '1rem',
-          color: 'white',
-          fontFamily: monospace ? 'monospace' : 'inherit',
-          wordBreak: 'break-all',
-        }}>
-          {value}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WhatsNewSection({ info }: { info: VersionInfo }) {
-  if (!info.commitSubject) return null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-      style={{
-        marginTop: 24,
-        background: 'rgba(255, 255, 255, 0.06)',
-        backdropFilter: 'blur(40px)',
-        WebkitBackdropFilter: 'blur(40px)',
-        borderRadius: 20,
-        border: '0.5px solid rgba(255, 255, 255, 0.1)',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{
-        padding: '16px 20px',
-        borderBottom: '0.5px solid rgba(255, 255, 255, 0.06)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        background: 'rgba(255, 255, 255, 0.02)',
-      }}>
-        <div style={{
-          width: 32,
-          height: 32,
-          borderRadius: 8,
-          background: 'rgba(10, 132, 255, 0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#0a84ff',
-        }}>
-          <Sparkles size={18} />
-        </div>
-        <span style={{
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          color: 'white',
-        }}>
-          What&apos;s New
-        </span>
-      </div>
-      
-      <div style={{ padding: 24 }}>
-        <h3 style={{
-          fontSize: '1.125rem',
-          fontWeight: 600,
-          color: 'white',
-          margin: '0 0 16px 0',
-          lineHeight: 1.4,
-        }}>
-          {info.commitSubject}
-        </h3>
-        
-        {info.commitBody && (
-          <div className="markdown-content" style={{
-            fontSize: '0.9rem',
-            lineHeight: 1.6,
-            color: 'rgba(255, 255, 255, 0.8)',
-          }}>
-            <ReactMarkdown 
-              remarkPlugins={[remarkGfm]}
-              components={{
-                p: ({...props}) => <p style={{ marginBottom: 12, marginTop: 0 }} {...props} />,
-                ul: ({...props}) => <ul style={{ paddingLeft: 20, marginBottom: 12, marginTop: 0 }} {...props} />,
-                ol: ({...props}) => <ol style={{ paddingLeft: 20, marginBottom: 12, marginTop: 0 }} {...props} />,
-                li: ({...props}) => <li style={{ marginBottom: 4 }} {...props} />,
-                a: ({...props}) => <a style={{ color: '#0a84ff', textDecoration: 'none' }} {...props} />,
-                h1: ({...props}) => <h4 style={{ fontSize: '1.1em', fontWeight: 600, marginTop: 16, marginBottom: 8, color: 'white' }} {...props} />,
-                h2: ({...props}) => <h5 style={{ fontSize: '1.05em', fontWeight: 600, marginTop: 16, marginBottom: 8, color: 'white' }} {...props} />,
-                h3: ({...props}) => <h6 style={{ fontSize: '1em', fontWeight: 600, marginTop: 16, marginBottom: 8, color: 'white' }} {...props} />,
-                blockquote: ({...props}) => <blockquote style={{ borderLeft: '3px solid rgba(255,255,255,0.2)', paddingLeft: 12, marginLeft: 0, fontStyle: 'italic', color: 'rgba(255,255,255,0.6)' }} {...props} />,
-                code: ({className, children, ...props}: any) => {
-                  const match = /language-(\w+)/.exec(className || '');
-                  const isInline = !match && !className; 
-                  return isInline 
-                    ? <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, fontSize: '0.85em', fontFamily: 'monospace' }} {...props}>{children}</code>
-                    : <code style={{ display: 'block', background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 8, overflowX: 'auto', marginBottom: 12, fontFamily: 'monospace', fontSize: '0.85em' }} {...props}>{children}</code>
-                }
-              }}
-            >
-              {info.commitBody}
-            </ReactMarkdown>
-          </div>
-        )}
-      </div>
-    </motion.div>
   );
 }

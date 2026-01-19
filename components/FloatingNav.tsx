@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { motion, PanInfo } from 'framer-motion';
+import { useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Home, BarChart2, Settings, Trophy } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 
@@ -21,77 +21,22 @@ const navItems: { id: View; icon: React.ReactNode; label: string }[] = [
 ];
 
 export default function FloatingNav({ currentView, onNavigate, isHidden = false }: FloatingNavProps) {
-    const [dragTarget, setDragTarget] = useState<View | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
+    // Track if we're in the middle of a click to prevent double-triggers
+    const isNavigatingRef = useRef(false);
 
-    const calculateDragTarget = useCallback((x: number): View | null => {
-        const currentIndex = navItems.findIndex(item => item.id === currentView);
-        const itemWidth = 58; // 52px button + 6px gap
-        const threshold = 20;
-
-        // Calculate how many items to move based on drag distance
-        const itemsToMove = Math.round(x / itemWidth);
-
-        if (Math.abs(x) < threshold) {
-            return null;
-        }
-
-        const targetIndex = currentIndex + itemsToMove;
-
-        // Clamp to valid range
-        if (targetIndex < 0 || targetIndex >= navItems.length || targetIndex === currentIndex) {
-            // If out of bounds, return the edge item
-            if (x < -threshold && currentIndex > 0) {
-                return navItems[0].id;
-            } else if (x > threshold && currentIndex < navItems.length - 1) {
-                return navItems[navItems.length - 1].id;
-            }
-            return null;
-        }
-
-        return navItems[targetIndex].id;
-    }, [currentView]);
-
-    const handleDrag = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-        const target = calculateDragTarget(info.offset.x);
-        setDragTarget(target);
-    }, [calculateDragTarget]);
-
-    const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-        const currentIndex = navItems.findIndex(item => item.id === currentView);
-        const itemWidth = 58; // 52px button + 6px gap
-        const threshold = 20;
-        const velocity = info.velocity.x;
-        const offset = info.offset.x;
-
-        let targetView: View | null = null;
-
-        // Calculate target based on drag distance
-        const itemsToMove = Math.round(offset / itemWidth);
-
-        // Add velocity boost: fast swipe can add extra items
-        const velocityBoost = Math.abs(velocity) > 500 ? Math.sign(velocity) : 0;
-        const totalMove = itemsToMove + velocityBoost;
-
-        const targetIndex = currentIndex + totalMove;
-
-        if (Math.abs(offset) >= threshold || Math.abs(velocity) > 500) {
-            // Clamp to valid range
-            const clampedIndex = Math.max(0, Math.min(navItems.length - 1, targetIndex));
-            if (clampedIndex !== currentIndex) {
-                targetView = navItems[clampedIndex].id;
-            }
-        }
-
-        // Reset states first
-        setDragTarget(null);
-        setIsDragging(false);
-
-        // Navigate after state cleanup
-        if (targetView) {
-            hapticPatterns.swipe();
-            onNavigate(targetView);
-        }
+    const handleNavigate = useCallback((view: View) => {
+        // Prevent rapid double-clicks
+        if (isNavigatingRef.current) return;
+        if (view === currentView) return;
+        
+        isNavigatingRef.current = true;
+        hapticPatterns.navigate();
+        onNavigate(view);
+        
+        // Reset after navigation completes
+        setTimeout(() => {
+            isNavigatingRef.current = false;
+        }, 300);
     }, [currentView, onNavigate]);
 
     return (
@@ -144,24 +89,12 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
                 >
                     {navItems.map((item) => {
                         const isActive = currentView === item.id;
-                        const isDragHighlight = dragTarget === item.id;
 
                         return (
                             <motion.button
                                 key={item.id}
-                                onClick={() => {
-                                    if (!isDragging) {
-                                        hapticPatterns.navigate();
-                                        onNavigate(item.id);
-                                    }
-                                }}
-                                whileTap={{ scale: isDragging ? 1 : 0.85 }}
-                                drag={isActive ? "x" : false}
-                                dragConstraints={{ left: 0, right: 0 }}
-                                dragElastic={1}
-                                onDragStart={() => setIsDragging(true)}
-                                onDrag={isActive ? handleDrag : undefined}
-                                onDragEnd={isActive ? handleDragEnd : undefined}
+                                onClick={() => handleNavigate(item.id)}
+                                whileTap={{ scale: 0.85 }}
                                 aria-label={item.label}
                                 style={{
                                     position: 'relative',
@@ -173,9 +106,9 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
                                     border: 'none',
                                     borderRadius: 9999,
                                     background: 'transparent',
-                                    cursor: isActive ? 'grab' : 'pointer',
+                                    cursor: 'pointer',
                                     zIndex: isActive ? 2 : 1,
-                                    touchAction: 'none',
+                                    touchAction: 'manipulation',
                                 }}
                             >
                                 {isActive && (
@@ -205,25 +138,10 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
                                     />
                                 )}
 
-                                {isDragHighlight && !isActive && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.8 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.8 }}
-                                        style={{
-                                            position: 'absolute',
-                                            inset: 2,
-                                            borderRadius: 9999,
-                                            border: '2px solid rgba(255, 255, 255, 0.3)',
-                                            background: 'rgba(255, 255, 255, 0.05)',
-                                        }}
-                                    />
-                                )}
-
                                 <motion.div
                                     animate={{
-                                        scale: isActive ? 1.05 : isDragHighlight ? 1.1 : 0.9,
-                                        color: isActive ? '#ffffff' : isDragHighlight ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.35)',
+                                        scale: isActive ? 1.05 : 0.9,
+                                        color: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.35)',
                                     }}
                                     transition={{
                                         type: 'spring',

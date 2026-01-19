@@ -427,32 +427,58 @@ export function usePlayerManagement() {
     const addPlayer = useCallback(async (name: string) => {
         setSaving(true);
         try {
-            await createPlayer(name, []);
-            await refresh();
+            const newPlayer = await createPlayer(name, []);
+            // Optimistic update: add player immediately
+            setPlayers(prev => [...prev, newPlayer].sort((a, b) => a.name.localeCompare(b.name)));
+        } catch (e) {
+            console.error('Failed to add player:', e);
+            alert('Error adding player. Please try again.');
         } finally {
             setSaving(false);
         }
-    }, [refresh]);
+    }, []);
 
     const editPlayer = useCallback(async (id: number, name: string, teamIds: number[]) => {
         setSaving(true);
+        // Store previous state for rollback
+        const previousPlayers = players;
+
         try {
+            // Optimistic update: update player immediately
+            setPlayers(prev => prev.map(p =>
+                p.id === id ? { ...p, name, teamIds } : p
+            ).sort((a, b) => a.name.localeCompare(b.name)));
+
             await updatePlayer(id, { name, teamIds });
-            await refresh();
+        } catch (e) {
+            console.error('Failed to update player:', e);
+            // Rollback on error
+            setPlayers(previousPlayers);
+            alert('Error updating player. Please try again.');
         } finally {
             setSaving(false);
         }
-    }, [refresh]);
+    }, [players]);
 
     const removePlayer = useCallback(async (id: number) => {
         setSaving(true);
+        // Store previous state for rollback
+        const previousPlayers = players;
+
         try {
+            // Optimistic update: remove player immediately
+            setPlayers(prev => prev.filter(p => p.id !== id));
+
             await deletePlayer(id);
-            await refresh();
+        } catch (e) {
+            console.error('Failed to delete player:', e);
+            // Rollback on error
+            setPlayers(previousPlayers);
+            alert('Error deleting player. Please try again.');
         } finally {
             setSaving(false);
         }
-    }, [refresh]);
+    }, [players]);
 
     const toggleTeam = useCallback(async (player: Player, teamId: number) => {
         const newTeamIds = player.teamIds.includes(teamId)

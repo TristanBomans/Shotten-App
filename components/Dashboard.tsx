@@ -22,6 +22,7 @@ interface DashboardProps {
 
 // View order for determining slide position
 const viewOrder = ['home', 'stats', 'league', 'settings'] as const;
+type ViewType = typeof viewOrder[number];
 
 export default function Dashboard({ playerId, currentView, onLogout, onViewChange, onPlayerManagementOpenChange }: DashboardProps) {
     const { matches, loading, error, fetchMatches, setMatches } = useMatches(playerId);
@@ -29,8 +30,12 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
     const [isRefreshing, setIsRefreshing] = useState(false);
     const upcomingRef = useRef<HTMLElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const isProgrammaticScrollingRef = useRef(false);
-    const isUserScrollingRef = useRef(false);
+    
+    // Sync control refs - simplified approach
+    const scrollSourceRef = useRef<'nav' | 'swipe' | null>(null);
+    const lastViewRef = useRef<ViewType>(currentView);
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const scrollEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isInitialMount = useRef(true);
 
     useEffect(() => {
@@ -38,97 +43,147 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
         fetchAllPlayers();
     }, [fetchMatches, fetchAllPlayers]);
 
-    // Refs for observing intersection
-    const homeRef = useRef<HTMLDivElement>(null);
-    const statsRef = useRef<HTMLDivElement>(null);
-    const leagueRef = useRef<HTMLDivElement>(null);
-    const settingsRef = useRef<HTMLDivElement>(null);
+    // Get current view index from scroll position
+    const getViewIndexFromScroll = useCallback((): number => {
+        if (!scrollContainerRef.current) return 0;
+        const scrollLeft = scrollContainerRef.current.scrollLeft;
+        const viewWidth = scrollContainerRef.current.clientWidth || window.innerWidth;
+        return Math.round(scrollLeft / viewWidth);
+    }, []);
 
-    // Scroll to current view when it changes programmatically OR when loading finishes
-    // Using useLayoutEffect to prevent visual flash on initial load
-    useEffect(() => {
-        // If user is actively scrolling/swiping, DO NOT trigger programmatic scroll
-        // This prevents the pill update from forcing a scroll back/forth
-        if (isUserScrollingRef.current) return;
+    // Scroll to a specific view
+    const scrollToView = useCallback((view: ViewType, instant = false) => {
+        if (!scrollContainerRef.current) return;
+        
+        const viewIndex = viewOrder.indexOf(view);
+        const viewWidth = scrollContainerRef.current.clientWidth || window.innerWidth;
+        const scrollTarget = viewIndex * viewWidth;
+        
+        scrollContainerRef.current.scrollTo({
+            left: scrollTarget,
+            behavior: instant ? 'auto' : 'smooth',
+        });
+    }, []);
 
-        if (!loading && scrollContainerRef.current) {
-            // Mark as programmatic scrolling to prevent IntersectionObserver conflicts
-            isProgrammaticScrollingRef.current = true;
-
-            // Small timeout to ensure layout is stable
-            requestAnimationFrame(() => {
-                if (scrollContainerRef.current) {
-                    const viewIndex = viewOrder.indexOf(currentView);
-                    const scrollTarget = viewIndex * window.innerWidth;
-
-                    // Use 'auto' (instant) for the first positioning after loading, 'smooth' for navigation changes
-                    const behavior = isInitialMount.current ? 'auto' : 'smooth';
-
-                    scrollContainerRef.current.scrollTo({
-                        left: scrollTarget,
-                        behavior,
-                    });
-
-                    if (isInitialMount.current) {
-                        isInitialMount.current = false;
-                    }
-
-                    // Reset after scroll completes
-                    // Increased timeout slightly to ensure smooth scroll is fully done
-                    setTimeout(() => {
-                        isProgrammaticScrollingRef.current = false;
-                    }, 800);
-                }
-            });
-        }
-    }, [loading, currentView]);
-
-    // Intersection Observer for updating the pill during swipe
+    // Initial scroll to correct view when component mounts (handles URL params like ?view=settings)
     useEffect(() => {
         if (loading) return;
+        if (!scrollContainerRef.current) return;
+        if (!isInitialMount.current) return;
+        
+        // On initial mount, always scroll to the current view (instantly)
+        const currentScrollIndex = getViewIndexFromScroll();
+        const targetIndex = viewOrder.indexOf(currentView);
+        
+        if (currentScrollIndex !== targetIndex) {
+            scrollSourceRef.current = 'nav';
+            scrollToView(currentView, true); // instant scroll on initial mount
+        }
+        
+        lastViewRef.current = currentView;
+        isInitialMount.current = false;
+    }, [loading, currentView, getViewIndexFromScroll, scrollToView]);
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                // Don't update during programmatic scrolling (clicking nav items)
-                // BUT DO update during user scrolling (swiping)
-                if (isProgrammaticScrollingRef.current) return;
-
-                // Find the entry that is most visible
-                const visibleEntry = entries.find(entry => entry.isIntersecting);
-
-                if (visibleEntry) {
-                    const viewName = visibleEntry.target.getAttribute('data-view') as 'home' | 'stats' | 'league' | 'settings';
-                    if (viewName && viewName !== currentView) {
-                        hapticPatterns.swipe();
-                        onViewChange(viewName);
-                    }
-                }
-            },
-            {
-                root: scrollContainerRef.current,
-                threshold: 0.6, // Trigger when 60% visible
+    // Sync scroll position when currentView changes from nav click (after initial mount)
+    useEffect(() => {
+        if (loading) return;
+        if (!scrollContainerRef.current) return;
+        if (isInitialMount.current) return; // Skip on initial mount, handled above
+        
+        // If the view changed and we're not currently swiping, scroll to it
+        if (currentView !== lastViewRef.current) {
+            const currentScrollIndex = getViewIndexFromScroll();
+            const targetIndex = viewOrder.indexOf(currentView);
+            
+            // Only scroll if we're not already at the target (prevents fighting with swipe)
+            if (currentScrollIndex !== targetIndex) {
+                scrollSourceRef.current = 'nav';
+                scrollToView(currentView, false); // smooth scroll after initial
             }
-        );
+            
+            lastViewRef.current = currentView;
+        }
+    }, [loading, currentView, getViewIndexFromScroll, scrollToView]);
 
-        if (homeRef.current) observer.observe(homeRef.current);
-        if (statsRef.current) observer.observe(statsRef.current);
-        if (leagueRef.current) observer.observe(leagueRef.current);
-        if (settingsRef.current) observer.observe(settingsRef.current);
+    // Handle scroll events to detect swipe and update view
+    const handleScroll = useCallback(() => {
+        if (!scrollContainerRef.current) return;
+        
+        // Clear any pending end timeout
+        if (scrollEndTimeoutRef.current) {
+            clearTimeout(scrollEndTimeoutRef.current);
+        }
+        
+        // If this scroll was triggered by nav click, ignore updates
+        if (scrollSourceRef.current === 'nav') {
+            // Reset after scroll settles
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+            scrollTimeoutRef.current = setTimeout(() => {
+                scrollSourceRef.current = null;
+            }, 150);
+            return;
+        }
+        
+        // Calculate which view is most visible RIGHT NOW (no delay)
+        const viewIndex = getViewIndexFromScroll();
+        const newView = viewOrder[viewIndex];
+        
+        // Update immediately if view changed - this makes the pill feel responsive
+        if (newView && newView !== lastViewRef.current) {
+            hapticPatterns.swipe();
+            lastViewRef.current = newView;
+            onViewChange(newView);
+        }
+        
+        // Set a fallback timeout for final sync after scroll completely stops
+        scrollEndTimeoutRef.current = setTimeout(() => {
+            const finalViewIndex = getViewIndexFromScroll();
+            const finalView = viewOrder[finalViewIndex];
+            
+            if (finalView && finalView !== lastViewRef.current) {
+                lastViewRef.current = finalView;
+                onViewChange(finalView);
+            }
+            
+            scrollSourceRef.current = null;
+        }, 150);
+    }, [getViewIndexFromScroll, onViewChange]);
 
-        return () => observer.disconnect();
-    }, [loading, currentView, onViewChange]);
+    // Sync on app resume (visibility change)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && scrollContainerRef.current) {
+                // App resumed - sync scroll position to current view
+                requestAnimationFrame(() => {
+                    const currentScrollIndex = getViewIndexFromScroll();
+                    const stateIndex = viewOrder.indexOf(currentView);
+                    
+                    if (currentScrollIndex !== stateIndex) {
+                        // Scroll position doesn't match state - resync
+                        scrollSourceRef.current = 'nav';
+                        scrollToView(currentView, true);
+                    }
+                });
+            }
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [currentView, getViewIndexFromScroll, scrollToView]);
 
-    // Mark as manual scrolling when user touches
-    const handleTouchStart = () => {
-        isUserScrollingRef.current = true;
-    };
-
-    const handleTouchEnd = () => {
-        // Reset after a delay to allow snap to finish
-        setTimeout(() => {
-            isUserScrollingRef.current = false;
-        }, 500);
-    };
+    // Cleanup timeouts
+    useEffect(() => {
+        return () => {
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+            if (scrollEndTimeoutRef.current) {
+                clearTimeout(scrollEndTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleRefresh = useCallback(async () => {
         setIsRefreshing(true);
@@ -376,8 +431,7 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
     return (
         <div
             ref={scrollContainerRef}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            onScroll={handleScroll}
             style={{
                 display: 'flex',
                 width: '100vw',
@@ -394,7 +448,6 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
         >
             {/* Home View */}
             <div
-                ref={homeRef}
                 data-view="home"
                 style={{
                     width: '100vw',
@@ -412,7 +465,6 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
 
             {/* Stats View */}
             <div
-                ref={statsRef}
                 data-view="stats"
                 style={{
                     width: '100vw',
@@ -428,7 +480,6 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
 
             {/* League View */}
             <div
-                ref={leagueRef}
                 data-view="league"
                 style={{
                     width: '100vw',
@@ -444,7 +495,6 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
 
             {/* Settings View */}
             <div
-                ref={settingsRef}
                 data-view="settings"
                 style={{
                     width: '100vw',
