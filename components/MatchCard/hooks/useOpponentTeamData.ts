@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { findScraperTeamByName, fetchScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 
@@ -17,6 +17,10 @@ interface UseOpponentTeamDataResult {
     ownTeamData: ScraperTeam | null;
     loading: boolean;
     recentForm: ('W' | 'L' | 'D')[];
+    aiAnalysis: string | null;
+    aiLoading: boolean;
+    aiError: string | null;
+    fetchAIAnalysis: (force?: boolean) => Promise<void>;
 }
 
 export function useOpponentTeamData({
@@ -29,6 +33,18 @@ export function useOpponentTeamData({
     const [opponentMatches, setOpponentMatches] = useState<any[]>([]);
     const [ownTeamData, setOwnTeamData] = useState<ScraperTeam | null>(null);
     const [loading, setLoading] = useState(false);
+
+    // AI Analysis state
+    const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
+    const aiCacheRef = useRef<Map<string, string>>(new Map());
+
+    // Reset AI analysis when opponent changes
+    useEffect(() => {
+        setAiAnalysis(null);
+        setAiError(null);
+    }, [opponentTeam]);
 
     useEffect(() => {
         if (!opponentTeam || !enabled) return;
@@ -91,6 +107,81 @@ export function useOpponentTeamData({
         });
     }, [opponentData, opponentMatches]);
 
+    // Fetch AI analysis
+    const fetchAIAnalysis = useCallback(async (force: boolean = false) => {
+        if (!opponentData || !ownTeamData) return;
+
+        const cacheKey = `${opponentData.externalId}-${ownTeamData.externalId}`;
+
+        // Check cache first (unless forced)
+        if (!force) {
+            const cached = aiCacheRef.current.get(cacheKey);
+            if (cached) {
+                setAiAnalysis(cached);
+                return;
+            }
+        }
+
+        setAiLoading(true);
+        setAiError(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/ai/opponent-analysis`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ownTeam: {
+                        name: ownTeamData.name,
+                        rank: ownTeamData.rank,
+                        points: ownTeamData.points,
+                        wins: ownTeamData.wins,
+                        draws: ownTeamData.draws,
+                        losses: ownTeamData.losses,
+                        goalDifference: ownTeamData.goalDifference,
+                    },
+                    opponent: {
+                        name: opponentData.name,
+                        rank: opponentData.rank,
+                        points: opponentData.points,
+                        wins: opponentData.wins,
+                        draws: opponentData.draws,
+                        losses: opponentData.losses,
+                        goalDifference: opponentData.goalDifference,
+                    },
+                    opponentPlayers: opponentPlayers.map(p => ({
+                        name: p.name,
+                        goals: p.goals,
+                        assists: p.assists,
+                    })),
+                    recentForm,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to generate analysis');
+            }
+
+            const data = await response.json();
+            setAiAnalysis(data.analysis);
+            aiCacheRef.current.set(cacheKey, data.analysis);
+        } catch (error) {
+            console.error('AI analysis error:', error);
+            setAiError(error instanceof Error ? error.message : 'Failed to generate analysis');
+        } finally {
+            setAiLoading(false);
+        }
+    }, [opponentData, ownTeamData, opponentPlayers, recentForm]);
+
+    // Auto-fetch AI analysis when data is ready
+    useEffect(() => {
+        if (opponentData && ownTeamData && !aiAnalysis && !aiLoading && !aiError) {
+            fetchAIAnalysis();
+        }
+    }, [opponentData, ownTeamData, aiAnalysis, aiLoading, aiError, fetchAIAnalysis]);
+
+
+
     return {
         opponentData,
         opponentPlayers,
@@ -98,5 +189,9 @@ export function useOpponentTeamData({
         ownTeamData,
         loading,
         recentForm,
+        aiAnalysis,
+        aiLoading,
+        aiError,
+        fetchAIAnalysis,
     };
 }

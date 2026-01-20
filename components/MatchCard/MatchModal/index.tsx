@@ -89,7 +89,17 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
     )) || teams[0] || null;
 
     // Fetch opponent team data
-    const { opponentData, opponentPlayers, ownTeamData, recentForm, loading: loadingOpponent } = useOpponentTeamData({
+    const {
+        opponentData,
+        opponentPlayers,
+        ownTeamData,
+        recentForm,
+        loading: loadingOpponent,
+        aiAnalysis,
+        aiLoading,
+        aiError,
+        fetchAIAnalysis,
+    } = useOpponentTeamData({
         opponentTeam,
         ownTeam,
         enabled: activeTab === 'opponent',
@@ -252,6 +262,10 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                                 recentForm={recentForm}
                                 loading={loadingOpponent}
                                 onImageClick={() => setShowImage(true)}
+                                aiAnalysis={aiAnalysis}
+                                aiLoading={aiLoading}
+                                aiError={aiError}
+                                onGenerateAI={fetchAIAnalysis}
                             />
                         </div>
                     </div>
