@@ -1,3 +1,4 @@
+// Import without top-level await to avoid esbuild compatibility issues
 import { defineCloudflareConfig } from "@opennextjs/cloudflare/config";
 
 export default defineCloudflareConfig({
