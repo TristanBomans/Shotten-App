@@ -8,11 +8,9 @@
     "build": "bun scripts/generate-version.js && next build",
     "start": "next start",
     "lint": "eslint",
-    "opennext:build": "npx @opennextjs/cloudflare build",
-    "build:worker": "bun scripts/build-worker.mjs",
-    "preview": "bun run build:worker && wrangler dev",
-    "deploy": "bun run build:worker && wrangler deploy",
-    "build:cf": "bun run build && bun run build:worker"
+    "build:cf": "bun install && bun scripts/generate-version.js && bunx next build && bash scripts/build-opennext.sh && bash scripts/prepare-pages.sh",
+    "preview": "bun run build:cf && wrangler dev",
+    "deploy": "bun run build:cf && wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
