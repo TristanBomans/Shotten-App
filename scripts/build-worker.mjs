@@ -43,10 +43,14 @@ try {
     console.log("Generating version info...");
     runCommand("node scripts/generate-version.js");
 
-    // 2. Build the OpenNext Cloudflare worker
+    // 2. Install dependencies first to ensure @opennextjs/cloudflare is available
+    console.log("Installing dependencies...");
+    runCommand("bun install");
+
+    // 3. Build the OpenNext Cloudflare worker
     console.log("Building OpenNext Cloudflare worker...");
-    // Use explicit npx to ensure we use the local version
-    runCommand("npx opennextjs-cloudflare build");
+    // Use npx to run @opennextjs/cloudflare since it's not globally available
+    runCommand("npx @opennextjs/cloudflare build");
 
     // 3. Prepare destination
     if (!fs.existsSync(assetsDir)) {

@@ -16,8 +16,13 @@ async function main() {
 
   let releases;
 
-  if (!apiKey) {
-    console.warn('⚠️  MISTRAL_API_KEY not found - using basic changelog format');
+  // Check if Mistral AI is available and API key is present
+  const hasMistral = await checkMistralAvailability();
+  const hasApiKey = !!apiKey;
+
+  if (!hasMistral || !hasApiKey) {
+    const reason = !hasMistral ? 'Mistral AI package not available' : 'MISTRAL_API_KEY not found';
+    console.warn(`⚠️  ${reason} - using basic changelog format`);
     // Fallback: create basic changelog from commit messages
     releases = commits.map(commit => ({
       date: commit.date,
@@ -57,6 +62,17 @@ async function main() {
   console.log(`  Commit: ${commitHash}`);
   console.log(`  Releases: ${releases.length}`);
   console.log(`  Output: ${outputPath}`);
+}
+
+async function checkMistralAvailability() {
+  try {
+    // Try to import the package to check if it's available
+    await import('@mistralai/mistralai');
+    return true;
+  } catch (error) {
+    // Package not available - this is expected in Cloudflare build environment
+    return false;
+  }
 }
 
 function getVersion() {
