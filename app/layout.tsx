@@ -18,7 +18,7 @@ export const viewport: Viewport = {
     maximumScale: 1,
     userScalable: false,
     viewportFit: 'cover',
-    themeColor: '#050508',
+    themeColor: '#000000',
 };
 
 export default function RootLayout({
@@ -34,9 +34,6 @@ export default function RootLayout({
                 <meta name="mobile-web-app-capable" content="yes" />
             </head>
             <body>
-                {/* Ambient Background Layer */}
-                <div className="ambient-bg" aria-hidden="true" />
-
                 {/* Main Content */}
                 {children}
 

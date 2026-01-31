@@ -272,7 +272,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
 
                     {/* Bottom Action Bar */}
                     <div style={{ padding: '12px 16px 16px', borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
-                        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                        <div style={{ display: 'flex', gap: 8 }}>
                             {match.location && (
                                 <motion.button
                                     onClick={() => window.open(mapUrl!, '_blank')}

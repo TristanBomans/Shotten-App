@@ -116,23 +116,16 @@ export default function MatchCard({
                 onClick={() => { hapticPatterns.tap(); setShowModal(true); }}
                 whileTap={{ scale: 0.98 }}
                 style={{
-                    background: 'linear-gradient(165deg, rgba(40, 45, 55, 0.9) 0%, rgba(20, 22, 28, 0.95) 100%)',
+                    background: 'rgba(255, 255, 255, 0.06)',
                     backdropFilter: 'blur(40px)',
                     WebkitBackdropFilter: 'blur(40px)',
-                    borderRadius: 24,
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 20,
+                    border: '0.5px solid rgba(255, 255, 255, 0.1)',
                     overflow: 'hidden',
                     position: 'relative',
                     cursor: 'pointer',
                 }}
             >
-                {/* Subtle gradient overlay */}
-                <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'radial-gradient(ellipse at 50% 0%, rgba(48, 209, 88, 0.08) 0%, transparent 60%)',
-                    pointerEvents: 'none',
-                }} />
 
                 {/* Confetti */}
                 <AnimatePresence>
@@ -306,11 +299,11 @@ export default function MatchCard({
             onClick={() => { hapticPatterns.tap(); setShowModal(true); }}
             whileTap={{ scale: 0.98 }}
             style={{
-                background: 'linear-gradient(165deg, rgba(40, 45, 55, 0.9) 0%, rgba(20, 22, 28, 0.95) 100%)',
+                background: 'rgba(255, 255, 255, 0.06)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
-                borderRadius: 24,
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 20,
+                border: '0.5px solid rgba(255, 255, 255, 0.1)',
                 padding: 12,
                 height: '100%',
                 display: 'flex',

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { LogOut, Database, Wifi, WifiOff, Settings, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog } from 'lucide-react';
-import { getUseMockData, setUseMockData } from '@/lib/useData';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, Database, Wifi, WifiOff, Settings, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy } from 'lucide-react';
+import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
 import VersionChecker from './VersionChecker';
@@ -22,6 +22,9 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
     const [hapticFeedback, setHapticFeedback] = useState(true);
     const [showFullNames, setShowFullNames] = useState(true);
     const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
+    const [defaultLeague, setDefaultLeague] = useState<string>('');
+    const [leagues, setLeagues] = useState<string[]>([]);
+    const [showLeagueSelector, setShowLeagueSelector] = useState(false);
     const { hasUpdate, updateApp, isChecking } = useVersionChecker();
 
     useEffect(() => {
@@ -36,6 +39,20 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
         setHapticFeedback(hapticPref !== 'false');
         const fullNamesPref = localStorage.getItem('showFullNames');
         setShowFullNames(fullNamesPref === null ? true : fullNamesPref === 'true');
+        const savedLeague = localStorage.getItem('defaultLeague');
+        if (savedLeague) setDefaultLeague(savedLeague);
+
+        // Fetch leagues for the selector
+        const loadLeagues = async () => {
+            try {
+                const teams = await fetchAllScraperTeams();
+                const unique = Array.from(new Set(teams.map(t => t.leagueName).filter(Boolean))) as string[];
+                setLeagues(unique.sort());
+            } catch {
+                console.warn('Failed to load leagues for settings');
+            }
+        };
+        loadLeagues();
     }, []);
 
     useEffect(() => {
@@ -78,9 +95,26 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
         const newValue = !showFullNames;
         setShowFullNames(newValue);
         localStorage.setItem('showFullNames', newValue.toString());
-        
+
         // Dispatch custom event to notify other components
         window.dispatchEvent(new CustomEvent('showFullNamesChanged', { detail: newValue }));
+    };
+
+    const handleSelectLeague = (league: string) => {
+        hapticPatterns.tap();
+        setDefaultLeague(league);
+        localStorage.setItem('defaultLeague', league);
+        setShowLeagueSelector(false);
+        // Dispatch event to notify LeagueView
+        window.dispatchEvent(new CustomEvent('defaultLeagueChanged', { detail: league }));
+    };
+
+    const handleClearDefaultLeague = () => {
+        hapticPatterns.tap();
+        setDefaultLeague('');
+        localStorage.removeItem('defaultLeague');
+        setShowLeagueSelector(false);
+        window.dispatchEvent(new CustomEvent('defaultLeagueChanged', { detail: null }));
     };
 
     return (
@@ -174,6 +208,58 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                         toggleValue={showFullNames}
                         onToggle={handleToggleFullNames}
                     />
+                </motion.div>
+
+                {/* Default League */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.11 }}
+                    style={{
+                        background: 'rgba(255, 255, 255, 0.06)',
+                        backdropFilter: 'blur(40px)',
+                        WebkitBackdropFilter: 'blur(40px)',
+                        borderRadius: 20,
+                        border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                        overflow: 'hidden',
+                        marginBottom: 16,
+                    }}
+                >
+                    <motion.div
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setShowLeagueSelector(true);
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'rgba(255, 214, 10, 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#ffd60a',
+                            flexShrink: 0,
+                        }}>
+                            <Trophy size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'white' }}>Default League</div>
+                            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
+                                {defaultLeague || 'Auto-select (Mechelen preferred)'}
+                            </div>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    </motion.div>
                 </motion.div>
 
                 {/* Player Management */}
@@ -369,6 +455,138 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     </motion.button>
                 </motion.div>
             </motion.div>
+
+            {/* League Selector Modal */}
+            <AnimatePresence>
+                {showLeagueSelector && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowLeagueSelector(false)}
+                            style={{
+                                position: 'fixed',
+                                inset: 0,
+                                background: 'rgba(0,0,0,0.85)',
+                                backdropFilter: 'blur(10px)',
+                                zIndex: 10000,
+                            }}
+                        />
+                        <div style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 10001,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 20,
+                            pointerEvents: 'none',
+                        }}>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                style={{
+                                    width: '100%',
+                                    maxWidth: 320,
+                                    maxHeight: '70vh',
+                                    background: 'rgba(255, 255, 255, 0.06)',
+                                    backdropFilter: 'blur(40px)',
+                                    WebkitBackdropFilter: 'blur(40px)',
+                                    borderRadius: 20,
+                                    padding: 20,
+                                    border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                                    pointerEvents: 'auto',
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                }}
+                            >
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: 16,
+                                }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>
+                                        Select Default League
+                                    </div>
+                                    <button
+                                        onClick={() => setShowLeagueSelector(false)}
+                                        style={{
+                                            background: 'rgba(255,255,255,0.08)',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            width: 30,
+                                            height: 30,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'rgba(255,255,255,0.8)',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+
+                                <div style={{
+                                    overflowY: 'auto',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 8,
+                                }}>
+                                    {/* Auto option */}
+                                    <motion.button
+                                        onClick={handleClearDefaultLeague}
+                                        whileTap={{ scale: 0.98 }}
+                                        style={{
+                                            padding: '14px 16px',
+                                            background: defaultLeague === '' ? 'rgba(255, 214, 10, 0.15)' : 'rgba(255,255,255,0.05)',
+                                            border: `1px solid ${defaultLeague === '' ? 'rgba(255, 214, 10, 0.3)' : 'rgba(255,255,255,0.1)'}`,
+                                            borderRadius: 12,
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                        }}
+                                    >
+                                        <div style={{ fontWeight: 600, color: defaultLeague === '' ? '#ffd60a' : 'white' }}>
+                                            Auto-select
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+                                            Prefer Mechelen if available
+                                        </div>
+                                    </motion.button>
+
+                                    {leagues.map((league) => (
+                                        <motion.button
+                                            key={league}
+                                            onClick={() => handleSelectLeague(league)}
+                                            whileTap={{ scale: 0.98 }}
+                                            style={{
+                                                padding: '14px 16px',
+                                                background: defaultLeague === league ? 'rgba(10, 132, 255, 0.15)' : 'rgba(255,255,255,0.05)',
+                                                border: `1px solid ${defaultLeague === league ? 'rgba(10, 132, 255, 0.3)' : 'rgba(255,255,255,0.1)'}`,
+                                                borderRadius: 12,
+                                                cursor: 'pointer',
+                                                textAlign: 'left',
+                                            }}
+                                        >
+                                            <div style={{
+                                                fontWeight: 600,
+                                                color: defaultLeague === league ? '#0a84ff' : 'white',
+                                                fontSize: '0.95rem',
+                                            }}>
+                                                {league}
+                                            </div>
+                                        </motion.button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
 
             {/* Player Management Sheet */}
             <PlayerManagementSheet
