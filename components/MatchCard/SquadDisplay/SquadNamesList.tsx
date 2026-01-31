@@ -74,13 +74,14 @@ export default function SquadNamesList({
             </span>
             {renderNames(players, nameColor)}
             <span style={{
-                fontSize: '0.6rem',
-                fontWeight: 500,
+                fontSize: '0.7rem',
+                fontWeight: 700,
                 color,
-                opacity: 0.4,
                 flexShrink: 0,
                 marginLeft: 'auto',
                 paddingLeft: 6,
+                minWidth: 16,
+                textAlign: 'right',
             }}>
                 {count}
             </span>
@@ -100,7 +101,7 @@ export default function SquadNamesList({
                     count={present.length}
                     color="#30d158"
                     players={present}
-                    nameColor="rgba(255,255,255,0.7)"
+                    nameColor="#ffffff"
                 />
             )}
             {maybe.length > 0 && (
@@ -109,7 +110,7 @@ export default function SquadNamesList({
                     count={maybe.length}
                     color="#ffd60a"
                     players={maybe}
-                    nameColor="rgba(255,255,255,0.5)"
+                    nameColor="#ffffff"
                 />
             )}
             {notPresent.length > 0 && (
@@ -118,22 +119,22 @@ export default function SquadNamesList({
                     count={notPresent.length}
                     color="#ff453a"
                     players={notPresent}
-                    nameColor="rgba(255,255,255,0.4)"
+                    nameColor="#ffffff"
                 />
             )}
             {unknown.length > 0 && (
                 <SectionRow
                     label="TBD"
                     count={unknown.length}
-                    color="rgba(255,255,255,0.4)"
+                    color="#a0a0a0"
                     players={unknown}
-                    nameColor="rgba(255,255,255,0.35)"
+                    nameColor="#ffffff"
                 />
             )}
             {present.length === 0 && maybe.length === 0 && notPresent.length === 0 && unknown.length === 0 && (
                 <span style={{
                     fontSize: '0.65rem',
-                    color: 'rgba(255,255,255,0.4)',
+                    color: '#ffffff',
                 }}>
                     No responses yet
                 </span>

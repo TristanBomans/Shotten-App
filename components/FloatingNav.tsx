@@ -76,14 +76,12 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
                         alignItems: 'center',
                         gap: 6,
                         padding: 8,
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        backdropFilter: 'blur(30px) saturate(180%)',
-                        WebkitBackdropFilter: 'blur(30px) saturate(180%)',
+                        background: '#1a1a1a',
                         borderRadius: 9999,
-                        border: '0.5px solid rgba(255, 255, 255, 0.12)',
+                        border: '1px solid #333333',
                         boxShadow: `
-                            0 8px 32px rgba(0, 0, 0, 0.2),
-                            inset 0 0.5px 0 rgba(255, 255, 255, 0.08)
+                            0 8px 32px rgba(0, 0, 0, 0.4),
+                            inset 0 0.5px 0 rgba(255, 255, 255, 0.05)
                         `,
                     }}
                 >
@@ -124,16 +122,8 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
                                             position: 'absolute',
                                             inset: 0,
                                             borderRadius: 9999,
-                                            background: `linear-gradient(
-                                                180deg,
-                                                rgba(255, 255, 255, 0.16) 0%,
-                                                rgba(255, 255, 255, 0.08) 100%
-                                            )`,
-                                            border: '0.5px solid rgba(255, 255, 255, 0.15)',
-                                            boxShadow: `
-                                                0 0 20px rgba(255, 255, 255, 0.1),
-                                                inset 0 1px 0 rgba(255, 255, 255, 0.2)
-                                            `,
+                                            background: '#262626',
+                                            border: '1px solid #333333',
                                         }}
                                     />
                                 )}
@@ -141,7 +131,7 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
                                 <motion.div
                                     animate={{
                                         scale: isActive ? 1.05 : 0.9,
-                                        color: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.35)',
+                                        color: isActive ? '#ffffff' : '#666666',
                                     }}
                                     transition={{
                                         type: 'spring',

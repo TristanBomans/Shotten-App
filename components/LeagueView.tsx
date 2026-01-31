@@ -24,12 +24,35 @@ export default function LeagueView() {
         return unique.sort();
     }, [teams]);
 
-    // Set default league on load
+    // Set default league on load (check saved preference first, then prefer Mechelen)
     useEffect(() => {
         if (leagues.length > 0 && !selectedLeague) {
-            setSelectedLeague(leagues[0]);
+            const savedLeague = localStorage.getItem('defaultLeague');
+            if (savedLeague && leagues.includes(savedLeague)) {
+                setSelectedLeague(savedLeague);
+            } else {
+                const mechelenLeague = leagues.find(l => l.toLowerCase().includes('mechelen'));
+                setSelectedLeague(mechelenLeague || leagues[0]);
+            }
         }
     }, [leagues, selectedLeague]);
+
+    // Listen for default league changes from settings
+    useEffect(() => {
+        const handleDefaultLeagueChanged = (event: Event) => {
+            const customEvent = event as CustomEvent<string | null>;
+            if (customEvent.detail && leagues.includes(customEvent.detail)) {
+                setSelectedLeague(customEvent.detail);
+            } else if (customEvent.detail === null) {
+                // Reset to auto-select
+                const mechelenLeague = leagues.find(l => l.toLowerCase().includes('mechelen'));
+                setSelectedLeague(mechelenLeague || leagues[0]);
+            }
+        };
+
+        window.addEventListener('defaultLeagueChanged', handleDefaultLeagueChanged);
+        return () => window.removeEventListener('defaultLeagueChanged', handleDefaultLeagueChanged);
+    }, [leagues]);
 
     // Reset visible players limit when changing tabs or leagues
     useEffect(() => {
@@ -130,13 +153,13 @@ export default function LeagueView() {
             <div style={{
                 padding: '16px 20px',
                 paddingTop: 'max(16px, env(safe-area-inset-top))',
-                background: 'rgba(28, 28, 30, 0.8)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
+                background: 'rgba(255, 255, 255, 0.06)',
+                backdropFilter: 'blur(40px)',
+                WebkitBackdropFilter: 'blur(40px)',
                 position: 'sticky',
                 top: 0,
                 zIndex: 10,
-                borderBottom: '0.5px solid rgba(255,255,255,0.08)',
+                borderBottom: '0.5px solid rgba(255, 255, 255, 0.1)',
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
@@ -161,7 +184,7 @@ export default function LeagueView() {
                             League
                         </h1>
                     </div>
-                    
+
                     {/* Mini Stats */}
                     {!loading && (
                         <div style={{
@@ -188,10 +211,11 @@ export default function LeagueView() {
                 {/* Tabs */}
                 <div style={{
                     display: 'flex',
-                    background: 'rgba(118, 118, 128, 0.2)',
+                    background: 'rgba(255, 255, 255, 0.06)',
                     borderRadius: 10,
                     padding: 3,
                     marginTop: 12,
+                    border: '0.5px solid rgba(255, 255, 255, 0.1)',
                 }}>
                     {([
                         { id: 'standings', icon: TrendingUp, label: 'Standings' },
@@ -246,10 +270,12 @@ export default function LeagueView() {
                                 style={{ padding: 16 }}
                             >
                                 <div style={{
-                                    background: '#1c1c1e',
-                                    borderRadius: 16,
+                                    background: 'rgba(255, 255, 255, 0.06)',
+                                    backdropFilter: 'blur(40px)',
+                                    WebkitBackdropFilter: 'blur(40px)',
+                                    borderRadius: 20,
+                                    border: '0.5px solid rgba(255, 255, 255, 0.1)',
                                     overflow: 'hidden',
-                                    border: '0.5px solid rgba(255,255,255,0.08)',
                                 }}>
                                     {/* Table Header */}
                                     <div style={{
@@ -438,13 +464,15 @@ export default function LeagueView() {
                                                         onClick={() => handlePlayerClick(player)}
                                                         style={{
                                                             background: isHighlighted ? 'rgba(10, 132, 255, 0.12)' :
-                                                                       isTop3 ? 'rgba(255, 214, 10, 0.06)' : '#1c1c1e',
+                                                                       isTop3 ? 'rgba(255, 214, 10, 0.06)' : 'rgba(255, 255, 255, 0.06)',
+                                                            backdropFilter: isHighlighted || isTop3 ? 'none' : 'blur(40px)',
+                                                            WebkitBackdropFilter: isHighlighted || isTop3 ? 'none' : 'blur(40px)',
                                                             borderRadius: 14,
                                                             padding: '12px 14px',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'space-between',
-                                                            border: isTop3 ? '0.5px solid rgba(255, 214, 10, 0.15)' : '0.5px solid rgba(255,255,255,0.05)',
+                                                            border: isTop3 ? '0.5px solid rgba(255, 214, 10, 0.15)' : '0.5px solid rgba(255,255,255,0.1)',
                                                             position: 'relative',
                                                             overflow: 'hidden',
                                                             cursor: playerTeams.length > 0 ? 'pointer' : 'default',
@@ -539,8 +567,10 @@ export default function LeagueView() {
                                                     whileTap={{ scale: 0.98 }}
                                                     style={{
                                                         padding: '14px',
-                                                        background: 'rgba(255,255,255,0.06)',
-                                                        border: '0.5px solid rgba(255,255,255,0.1)',
+                                                        background: 'rgba(255, 255, 255, 0.06)',
+                                                        backdropFilter: 'blur(40px)',
+                                                        WebkitBackdropFilter: 'blur(40px)',
+                                                        border: '0.5px solid rgba(255, 255, 255, 0.1)',
                                                         borderRadius: 12,
                                                         color: 'white',
                                                         fontSize: '0.9rem',
@@ -603,12 +633,12 @@ export default function LeagueView() {
                                 style={{
                                     width: '100%',
                                     maxWidth: 320,
-                                    background: 'rgba(28, 28, 30, 0.95)',
+                                    background: 'rgba(255, 255, 255, 0.06)',
                                     backdropFilter: 'blur(40px)',
                                     WebkitBackdropFilter: 'blur(40px)',
                                     borderRadius: 20,
                                     padding: 20,
-                                    border: '0.5px solid rgba(255,255,255,0.1)',
+                                    border: '0.5px solid rgba(255, 255, 255, 0.1)',
                                     boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
                                     pointerEvents: 'auto',
                                 }}
