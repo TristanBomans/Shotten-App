@@ -53,7 +53,7 @@ export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
                             width: 72,
                             height: 72,
                             borderRadius: 'var(--radius-xl)',
-                            background: 'linear-gradient(135deg, var(--color-accent), #34d399)',
+                            background: 'linear-gradient(135deg, var(--color-accent), var(--color-success))',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -61,7 +61,7 @@ export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
                             boxShadow: '0 0 40px var(--color-accent-glow)',
                         }}
                     >
-                        <span style={{ fontSize: '2rem', fontWeight: 800, color: 'white' }}>S</span>
+                        <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>S</span>
                     </motion.div>
 
                     <span className="text-label" style={{
@@ -203,7 +203,7 @@ function PlayerCard({ player, index, isSelected, isDisabled, onSelect }: PlayerC
                     style={{
                         background: isSelected
                             ? 'var(--color-accent)'
-                            : 'linear-gradient(135deg, #374151, #1f2937)',
+                            : 'var(--color-surface)',
                         color: isSelected ? 'white' : 'var(--color-text-secondary)',
                     }}
                 >
@@ -227,8 +227,8 @@ function PlayerCard({ player, index, isSelected, isDisabled, onSelect }: PlayerC
                         width: 32,
                         height: 32,
                         borderRadius: '50%',
-                        background: 'white',
-                        color: 'var(--color-accent)',
+                        background: 'var(--color-text-primary)',
+                        color: 'var(--color-bg)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',

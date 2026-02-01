@@ -286,11 +286,11 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                     gap: 8,
                     marginBottom: 8,
                 }}>
-                    <Calendar size={16} style={{ color: '#0a84ff' }} />
+                    <Calendar size={16} style={{ color: 'var(--color-accent)' }} />
                     <span style={{
                         fontSize: '0.75rem',
                         fontWeight: 600,
-                        color: '#0a84ff',
+                        color: 'var(--color-accent)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                     }}>
@@ -300,7 +300,7 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                 <h1 style={{
                     fontSize: '1.75rem',
                     fontWeight: 700,
-                    color: 'white',
+                    color: 'var(--color-text-primary)',
                     margin: 0,
                 }}>
                     Matches
@@ -333,11 +333,11 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                     gap: 8,
                     marginBottom: 8,
                 }}>
-                    <Calendar size={16} style={{ color: '#0a84ff' }} />
+                    <Calendar size={16} style={{ color: 'var(--color-accent)' }} />
                     <span style={{
                         fontSize: '0.75rem',
                         fontWeight: 600,
-                        color: '#0a84ff',
+                        color: 'var(--color-accent)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                     }}>
@@ -347,7 +347,7 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                 <h1 style={{
                     fontSize: '1.75rem',
                     fontWeight: 700,
-                    color: 'white',
+                    color: 'var(--color-text-primary)',
                     margin: 0,
                 }}>
                     Matches

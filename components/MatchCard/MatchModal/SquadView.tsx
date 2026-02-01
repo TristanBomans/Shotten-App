@@ -25,14 +25,14 @@ export default function SquadView({ statusGroups, currentPlayerId }: SquadViewPr
                                 <div key={player.id} style={{
                                     display: 'flex', alignItems: 'center', gap: 12,
                                     padding: '10px 12px',
-                                    background: player.id === currentPlayerId ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                                    background: player.id === currentPlayerId ? 'var(--color-surface-hover)' : 'var(--color-bg-elevated)',
                                     borderRadius: 12,
-                                    border: player.id === currentPlayerId ? '0.5px solid rgba(255, 255, 255, 0.15)' : '0.5px solid transparent',
+                                    border: player.id === currentPlayerId ? '0.5px solid var(--color-border)' : '0.5px solid var(--color-border-subtle)',
                                 }}>
                                     <div style={{
                                         width: 32, height: 32, borderRadius: '50%',
                                         background: color,
-                                        color: title === 'No Response' ? 'white' : 'black',
+                                        color: title === 'No Response' ? 'var(--color-text-primary)' : 'black',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         fontSize: '0.85rem', fontWeight: 700, flexShrink: 0,
                                     }}>
@@ -41,10 +41,10 @@ export default function SquadView({ statusGroups, currentPlayerId }: SquadViewPr
                                     <span style={{
                                         fontSize: '0.9rem',
                                         fontWeight: player.id === currentPlayerId ? 600 : 400,
-                                        color: 'white',
+                                        color: 'var(--color-text-primary)',
                                     }}>
                                         {player.name}
-                                        {player.id === currentPlayerId && <span style={{ marginLeft: 6, fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>(you)</span>}
+                                        {player.id === currentPlayerId && <span style={{ marginLeft: 6, fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>(you)</span>}
                                     </span>
                                 </div>
                             ))}

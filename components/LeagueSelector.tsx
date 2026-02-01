@@ -63,11 +63,11 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '0.5px solid rgba(255,255,255,0.1)',
+                    background: 'var(--color-surface)',
+                    border: '0.5px solid var(--color-border)',
                     borderRadius: 10,
                     padding: '10px 14px',
-                    color: 'white',
+                    color: 'var(--color-text-primary)',
                     fontSize: '0.9rem',
                     fontWeight: 500,
                     cursor: 'pointer',
@@ -94,7 +94,7 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
                             style={{
                                 position: 'fixed',
                                 inset: 0,
-                                background: 'rgba(0,0,0,0.85)',
+                                background: 'var(--color-overlay)',
                                 backdropFilter: 'blur(20px)',
                                 WebkitBackdropFilter: 'blur(20px)',
                                 zIndex: 10000,
@@ -125,25 +125,25 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
                                     display: 'flex',
                                     flexDirection: 'column',
                                     pointerEvents: 'auto',
-                                    background: 'rgba(25, 25, 30, 0.98)',
+                                    background: 'var(--color-glass-heavy)',
                                     backdropFilter: 'blur(60px)',
                                     WebkitBackdropFilter: 'blur(60px)',
                                     borderRadius: 24,
-                                    border: '0.5px solid rgba(255, 255, 255, 0.12)',
-                                    boxShadow: '0 24px 80px rgba(0, 0, 0, 0.8)',
+                                    border: '0.5px solid var(--color-border)',
+                                    boxShadow: 'var(--shadow-lg)',
                                     overflow: 'hidden',
                                 }}
                             >
                                 {/* Header */}
                                 <div style={{
                                     padding: '20px 20px 16px',
-                                    borderBottom: '0.5px solid rgba(255,255,255,0.1)',
+                                    borderBottom: '0.5px solid var(--color-border)',
                                 }}>
                                     <h2 style={{
                                         fontSize: '1.1rem',
                                         fontWeight: 700,
                                         margin: 0,
-                                        color: 'white',
+                                        color: 'var(--color-text-primary)',
                                     }}>
                                         Select League
                                     </h2>
@@ -184,11 +184,11 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
                                                         padding: '14px 16px',
                                                         marginBottom: 8,
                                                         background: isSelected
-                                                            ? 'rgba(255,255,255,0.1)'
-                                                            : 'rgba(255,255,255,0.04)',
+                                                            ? 'var(--color-surface-hover)'
+                                                            : 'var(--color-surface)',
                                                         border: isSelected
-                                                            ? '0.5px solid rgba(255,255,255,0.2)'
-                                                            : '0.5px solid rgba(255,255,255,0.08)',
+                                                            ? '0.5px solid var(--color-border)'
+                                                            : '0.5px solid var(--color-border-subtle)',
                                                         borderRadius: 12,
                                                         cursor: 'pointer',
                                                         transition: 'all 0.2s',
@@ -198,23 +198,23 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
                                                         <div style={{
                                                             fontSize: '0.95rem',
                                                             fontWeight: 600,
-                                                            color: isSelected ? 'white' : 'rgba(255,255,255,0.9)',
+                                                            color: isSelected ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                                                             marginBottom: 4,
                                                         }}>
                                                             {league}
                                                         </div>
                                                         <div style={{
                                                             fontSize: '0.75rem',
-                                                            color: 'rgba(255,255,255,0.5)',
+                                                            color: 'var(--color-text-tertiary)',
                                                         }}>
                                                             {stats.teamCount} {stats.teamCount === 1 ? 'team' : 'teams'}
                                                         </div>
                                                     </div>
 
                                                     {isSelected ? (
-                                                        <Check size={20} style={{ color: 'white' }} />
+                                                        <Check size={20} style={{ color: 'var(--color-accent)' }} />
                                                     ) : (
-                                                        <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                                                        <ChevronRight size={20} style={{ color: 'var(--color-text-tertiary)' }} />
                                                     )}
                                                 </motion.button>
                                             );

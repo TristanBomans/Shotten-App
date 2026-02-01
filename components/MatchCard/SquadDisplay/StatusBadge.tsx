@@ -9,9 +9,9 @@ interface StatusBadgeProps {
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
     const config: Record<string, { icon: React.ReactNode; color: string }> = {
-        Present: { icon: <Check size={12} />, color: '#30d158' },
-        Maybe: { icon: <HelpCircle size={12} />, color: '#ffd60a' },
-        NotPresent: { icon: <X size={12} />, color: '#ff453a' },
+        Present: { icon: <Check size={12} />, color: 'var(--color-success)' },
+        Maybe: { icon: <HelpCircle size={12} />, color: 'var(--color-warning)' },
+        NotPresent: { icon: <X size={12} />, color: 'var(--color-danger)' },
     };
 
     const cfg = config[status];
@@ -20,7 +20,7 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
             width: 24,
             height: 24,
             borderRadius: '50%',
-            background: 'rgba(255,255,255,0.1)',
+            background: 'var(--color-surface-hover)',
         }} />
     );
 
@@ -33,7 +33,7 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: status === 'Present' ? 'black' : 'white',
+            color: status === 'Present' ? 'var(--color-bg)' : 'var(--color-text-primary)',
         }}>
             {cfg.icon}
         </div>

@@ -69,10 +69,10 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
     const unknown = roster.filter(p => p.status === 'Unknown');
 
     const statusGroups: StatusGroup[] = [
-        { title: 'Coming', players: present, color: '#30d158', emoji: '✅' },
-        { title: 'Maybe', players: maybe, color: '#ffd60a', emoji: '🤔' },
-        { title: 'Not Coming', players: absent, color: '#ff453a', emoji: '❌' },
-        { title: 'No Response', players: unknown, color: 'rgba(255,255,255,0.4)', emoji: '❓' },
+        { title: 'Coming', players: present, color: 'var(--color-success)', emoji: '✅' },
+        { title: 'Maybe', players: maybe, color: 'var(--color-warning)', emoji: '🤔' },
+        { title: 'Not Coming', players: absent, color: 'var(--color-danger)', emoji: '❌' },
+        { title: 'No Response', players: unknown, color: 'var(--color-text-tertiary)', emoji: '❓' },
     ];
 
     // Current user status for calendar
@@ -122,7 +122,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                 }}
                 style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0, 0, 0, 0.85)',
+                    background: 'var(--color-overlay)',
                     backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
                     zIndex: 10000,
                 }}
@@ -143,27 +143,27 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                         height: '90vh', maxHeight: 'calc(100dvh - 60px)',
                         display: 'flex', flexDirection: 'column',
                         pointerEvents: 'auto',
-                        background: 'rgba(25, 25, 30, 0.98)',
+                        background: 'var(--color-surface)',
                         backdropFilter: 'blur(60px)', WebkitBackdropFilter: 'blur(60px)',
-                        borderRadius: 24, border: '0.5px solid rgba(255, 255, 255, 0.12)',
-                        boxShadow: '0 24px 80px rgba(0, 0, 0, 0.8)', overflow: 'hidden',
+                        borderRadius: 24, border: '1px solid var(--color-border)',
+                        boxShadow: 'var(--shadow-lg)', overflow: 'hidden',
                     }}
                 >
                     {/* Header */}
                     <div style={{
                         padding: '20px 20px 16px',
-                        borderBottom: '0.5px solid rgba(255, 255, 255, 0.1)',
+                        borderBottom: '0.5px solid var(--color-border)',
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'white', marginBottom: 6 }}>
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)', marginBottom: 6 }}>
                                     {match.name.replace(/-/g, ' vs ')}
                                 </h2>
-                                <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: 0 }}>
                                     {dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} • {dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                                 {match.location && (
-                                    <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', margin: 0, marginTop: 4 }}>
+                                    <p style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', margin: 0, marginTop: 4 }}>
                                         {match.location}
                                     </p>
                                 )}
@@ -176,7 +176,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                                 whileTap={{ scale: 0.9 }}
                                 style={{
                                     width: 32, height: 32, borderRadius: 9999, border: 'none',
-                                    background: 'rgba(255, 255, 255, 0.08)', color: 'rgba(255, 255, 255, 0.6)',
+                                    background: 'var(--color-surface-hover)', color: 'var(--color-text-secondary)',
                                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     flexShrink: 0,
                                 }}
@@ -189,7 +189,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                     {/* Tabs */}
                     <div style={{
                         display: 'flex', padding: '12px 16px', gap: 8,
-                        borderBottom: '0.5px solid rgba(255, 255, 255, 0.08)',
+                        borderBottom: '0.5px solid var(--color-border)',
                     }}>
                         {(['squad', 'opponent'] as const).map(tab => (
                             <motion.button
@@ -201,9 +201,9 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                                 whileTap={{ scale: 0.95 }}
                                 style={{
                                     flex: 1, padding: '10px 16px',
-                                    background: activeTab === tab ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                                    background: activeTab === tab ? 'var(--color-surface-hover)' : 'transparent',
                                     border: 'none', borderRadius: 10,
-                                    color: activeTab === tab ? 'white' : 'rgba(255,255,255,0.5)',
+                                    color: activeTab === tab ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                                     fontSize: '0.85rem', fontWeight: 600,
                                     cursor: 'pointer',
                                     transition: 'all 0.2s',
@@ -271,8 +271,8 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                     </div>
 
                     {/* Bottom Action Bar */}
-                    <div style={{ padding: '12px 16px 16px', borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
-                        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                    <div style={{ padding: '12px 16px 16px', borderTop: '0.5px solid var(--color-border)' }}>
+                        <div style={{ display: 'flex', gap: 8 }}>
                             {match.location && (
                                 <motion.button
                                     onClick={() => window.open(mapUrl!, '_blank')}
@@ -284,10 +284,10 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                                         justifyContent: 'center',
                                         gap: 6,
                                         padding: '10px 12px',
-                                        background: 'rgba(255, 255, 255, 0.05)',
-                                        border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                                        background: 'var(--color-surface-hover)',
+                                        border: '0.5px solid var(--color-border)',
                                         borderRadius: 10,
-                                        color: 'rgba(255,255,255,0.7)',
+                                        color: 'var(--color-text-secondary)',
                                         fontSize: '0.8rem',
                                         fontWeight: 500,
                                         cursor: 'pointer',
@@ -307,10 +307,10 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                                     justifyContent: 'center',
                                     gap: 6,
                                     padding: '10px 12px',
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                                    background: 'var(--color-surface-hover)',
+                                    border: '0.5px solid var(--color-border)',
                                     borderRadius: 10,
-                                    color: 'rgba(255,255,255,0.7)',
+                                    color: 'var(--color-text-secondary)',
                                     fontSize: '0.8rem',
                                     fontWeight: 500,
                                     cursor: 'pointer',
@@ -339,7 +339,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                             position: 'fixed',
                             inset: 0,
                             zIndex: 10002,
-                            background: 'rgba(0,0,0,0.9)',
+                            background: 'var(--color-overlay)',
                             backdropFilter: 'blur(10px)',
                             display: 'flex',
                             alignItems: 'center',
@@ -369,12 +369,12 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                                 position: 'absolute',
                                 top: 20,
                                 right: 20,
-                                background: 'rgba(255,255,255,0.1)',
+                                background: 'var(--color-surface-hover)',
                                 border: 'none',
                                 borderRadius: '50%',
                                 width: 36,
                                 height: 36,
-                                color: 'white',
+                                color: 'var(--color-text-primary)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',

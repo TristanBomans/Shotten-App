@@ -118,7 +118,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                             position: 'fixed',
                             inset: 0,
                             zIndex: 50,
-                            background: 'rgba(0, 0, 0, 0.6)',
+                            background: 'var(--color-overlay)',
                             backdropFilter: 'blur(8px)',
                             WebkitBackdropFilter: 'blur(8px)',
                         }}
@@ -136,13 +136,13 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                             left: 0,
                             right: 0,
                             zIndex: 51,
-                            background: '#1c1c1e',
+                            background: 'var(--color-bg-elevated)',
                             borderTopLeftRadius: 20,
                             borderTopRightRadius: 20,
                             maxHeight: '85vh',
                             display: 'flex',
                             flexDirection: 'column',
-                            boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+                            boxShadow: 'var(--shadow-lg)',
                         }}
                     >
                         {/* Handle bar */}
@@ -155,7 +155,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                 width: 36,
                                 height: 5,
                                 borderRadius: 3,
-                                background: 'rgba(255,255,255,0.3)',
+                                background: 'var(--color-text-tertiary)',
                             }} />
                         </div>
 
@@ -165,13 +165,13 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                             justifyContent: 'space-between',
                             alignItems: 'center',
                             padding: '8px 20px 16px',
-                            borderBottom: '0.5px solid rgba(255,255,255,0.1)',
+                            borderBottom: '0.5px solid var(--color-border)',
                         }}>
                             <h2 style={{
                                 margin: 0,
                                 fontSize: '1.25rem',
                                 fontWeight: 700,
-                                color: 'white',
+                                color: 'var(--color-text-primary)',
                             }}>
                                 Manage Players
                             </h2>
@@ -182,13 +182,13 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                     width: 32,
                                     height: 32,
                                     borderRadius: '50%',
-                                    background: 'rgba(255,255,255,0.1)',
+                                    background: 'var(--color-surface)',
                                     border: 'none',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     cursor: 'pointer',
-                                    color: 'rgba(255,255,255,0.6)',
+                                    color: 'var(--color-text-secondary)',
                                 }}
                             >
                                 <X size={18} />
@@ -204,7 +204,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                 justifyContent: 'center',
                                 padding: 40,
                             }}>
-                                <Loader2 size={32} style={{ color: '#0a84ff', animation: 'spin 1s linear infinite' }} />
+                                <Loader2 size={32} style={{ color: 'var(--color-accent)', animation: 'spin 1s linear infinite' }} />
                             </div>
                         ) : (
                             <>
@@ -214,15 +214,15 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                     gridTemplateColumns: `1fr ${teams.map(() => '60px').join(' ')} 44px`,
                                     gap: 8,
                                     padding: '12px 20px',
-                                    background: 'rgba(0,0,0,0.2)',
-                                    borderBottom: '0.5px solid rgba(255,255,255,0.1)',
+                                    background: 'var(--color-surface)',
+                                    borderBottom: '0.5px solid var(--color-border)',
                                     position: 'sticky',
                                     top: 0,
                                 }}>
                                     <div style={{
                                         fontSize: '0.75rem',
                                         fontWeight: 600,
-                                        color: 'rgba(255,255,255,0.5)',
+                                        color: 'var(--color-text-tertiary)',
                                         textTransform: 'uppercase',
                                     }}>
                                         Name
@@ -233,7 +233,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                             style={{
                                                 fontSize: '0.65rem',
                                                 fontWeight: 600,
-                                                color: 'rgba(255,255,255,0.5)',
+                                                color: 'var(--color-text-tertiary)',
                                                 textTransform: 'uppercase',
                                                 textAlign: 'center',
                                                 overflow: 'hidden',
@@ -263,7 +263,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                                 gap: 8,
                                                 alignItems: 'center',
                                                 padding: '14px 0',
-                                                borderBottom: '0.5px solid rgba(255,255,255,0.06)',
+                                                borderBottom: '0.5px solid var(--color-border-subtle)',
                                             }}
                                         >
                                             {/* Name cell */}
@@ -282,11 +282,11 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                                         }
                                                     }}
                                                     style={{
-                                                        background: 'rgba(255,255,255,0.1)',
-                                                        border: '1px solid #0a84ff',
+                                                        background: 'var(--color-input-bg)',
+                                                        border: '1px solid var(--color-accent)',
                                                         borderRadius: 8,
                                                         padding: '8px 12px',
-                                                        color: 'white',
+                                                        color: 'var(--color-text-primary)',
                                                         fontSize: '1rem',
                                                         outline: 'none',
                                                         width: '100%',
@@ -296,7 +296,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                                 <div
                                                     onClick={() => handleStartEdit(player)}
                                                     style={{
-                                                        color: 'white',
+                                                        color: 'var(--color-text-primary)',
                                                         fontSize: '1rem',
                                                         fontWeight: 500,
                                                         cursor: 'pointer',
@@ -322,8 +322,8 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                                             borderRadius: 10,
                                                             border: 'none',
                                                             background: isInTeam 
-                                                                ? 'rgba(48, 209, 88, 0.2)' 
-                                                                : 'rgba(255,255,255,0.05)',
+                                                                ? 'var(--color-success-glow)' 
+                                                                : 'var(--color-surface)',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
@@ -332,7 +332,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                                         }}
                                                     >
                                                         {isInTeam && (
-                                                            <Check size={20} style={{ color: '#30d158' }} />
+                                                            <Check size={20} style={{ color: 'var(--color-success)' }} />
                                                         )}
                                                     </motion.button>
                                                 );
@@ -348,12 +348,12 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                                         height: 44,
                                                         borderRadius: 10,
                                                         border: 'none',
-                                                        background: '#ff453a',
+                                                        background: 'var(--color-danger)',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
                                                         cursor: 'pointer',
-                                                        color: 'white',
+                                                        color: 'var(--color-text-primary)',
                                                     }}
                                                 >
                                                     <Check size={18} />
@@ -371,12 +371,12 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                                         height: 44,
                                                         borderRadius: 10,
                                                         border: 'none',
-                                                        background: 'rgba(255, 69, 58, 0.15)',
+                                                        background: 'var(--color-danger-glow)',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
                                                         cursor: 'pointer',
-                                                        color: '#ff453a',
+                                                        color: 'var(--color-danger)',
                                                     }}
                                                 >
                                                     <Trash2 size={18} />
@@ -411,39 +411,39 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                                     }
                                                 }}
                                                 style={{
-                                                    background: 'rgba(255,255,255,0.1)',
-                                                    border: '1px solid #0a84ff',
+                                                    background: 'var(--color-input-bg)',
+                                                    border: '1px solid var(--color-accent)',
                                                     borderRadius: 8,
                                                     padding: '8px 12px',
-                                                    color: 'white',
+                                                    color: 'var(--color-text-primary)',
                                                     fontSize: '1rem',
                                                     outline: 'none',
                                                     width: '100%',
                                                 }}
                                             />
                                         ) : (
-                                            <motion.button
-                                                onClick={() => {
-                                                    hapticPatterns.tap();
-                                                    setIsAddingNew(true);
-                                                }}
-                                                whileTap={{ scale: 0.98 }}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 8,
-                                                    padding: '10px 0',
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    cursor: 'pointer',
-                                                    color: '#0a84ff',
-                                                    fontSize: '1rem',
-                                                    fontWeight: 500,
-                                                }}
-                                            >
-                                                <UserPlus size={18} />
-                                                Add new player...
-                                            </motion.button>
+                                        <motion.button
+                                            onClick={() => {
+                                                hapticPatterns.tap();
+                                                setIsAddingNew(true);
+                                            }}
+                                            whileTap={{ scale: 0.98 }}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                padding: '10px 0',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                color: 'var(--color-accent)',
+                                                fontSize: '1rem',
+                                                fontWeight: 500,
+                                            }}
+                                        >
+                                            <UserPlus size={18} />
+                                            Add new player...
+                                        </motion.button>
                                         )}
                                         
                                         {/* Empty cells for alignment */}
@@ -460,12 +460,12 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                                     height: 44,
                                                     borderRadius: 10,
                                                     border: 'none',
-                                                    background: '#30d158',
+                                                    background: 'var(--color-success)',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     cursor: 'pointer',
-                                                    color: 'white',
+                                                    color: 'var(--color-text-primary)',
                                                 }}
                                             >
                                                 <Check size={18} />
@@ -479,7 +479,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                 {/* Safe area padding for iOS */}
                                 <div style={{ 
                                     height: 'env(safe-area-inset-bottom, 20px)',
-                                    background: '#1c1c1e',
+                                    background: 'var(--color-bg-elevated)',
                                 }} />
                             </>
                         )}

@@ -24,12 +24,35 @@ export default function LeagueView() {
         return unique.sort();
     }, [teams]);
 
-    // Set default league on load
+    // Set default league on load (check saved preference first, then prefer Mechelen)
     useEffect(() => {
         if (leagues.length > 0 && !selectedLeague) {
-            setSelectedLeague(leagues[0]);
+            const savedLeague = localStorage.getItem('defaultLeague');
+            if (savedLeague && leagues.includes(savedLeague)) {
+                setSelectedLeague(savedLeague);
+            } else {
+                const mechelenLeague = leagues.find(l => l.toLowerCase().includes('mechelen'));
+                setSelectedLeague(mechelenLeague || leagues[0]);
+            }
         }
     }, [leagues, selectedLeague]);
+
+    // Listen for default league changes from settings
+    useEffect(() => {
+        const handleDefaultLeagueChanged = (event: Event) => {
+            const customEvent = event as CustomEvent<string | null>;
+            if (customEvent.detail && leagues.includes(customEvent.detail)) {
+                setSelectedLeague(customEvent.detail);
+            } else if (customEvent.detail === null) {
+                // Reset to auto-select
+                const mechelenLeague = leagues.find(l => l.toLowerCase().includes('mechelen'));
+                setSelectedLeague(mechelenLeague || leagues[0]);
+            }
+        };
+
+        window.addEventListener('defaultLeagueChanged', handleDefaultLeagueChanged);
+        return () => window.removeEventListener('defaultLeagueChanged', handleDefaultLeagueChanged);
+    }, [leagues]);
 
     // Reset visible players limit when changing tabs or leagues
     useEffect(() => {
@@ -125,18 +148,18 @@ export default function LeagueView() {
     }, [filteredPlayers, filteredTeams]);
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#000' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
             {/* Header */}
             <div style={{
                 padding: '16px 20px',
                 paddingTop: 'max(16px, env(safe-area-inset-top))',
-                background: 'rgba(28, 28, 30, 0.8)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
+                background: 'var(--color-surface)',
+                backdropFilter: 'blur(40px)',
+                WebkitBackdropFilter: 'blur(40px)',
                 position: 'sticky',
                 top: 0,
                 zIndex: 10,
-                borderBottom: '0.5px solid rgba(255,255,255,0.08)',
+                borderBottom: '0.5px solid var(--color-border)',
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
@@ -146,29 +169,29 @@ export default function LeagueView() {
                             gap: 8,
                             marginBottom: 4,
                         }}>
-                            <Trophy size={16} style={{ color: '#ffd60a' }} />
+                            <Trophy size={16} style={{ color: 'var(--color-warning)' }} />
                             <span style={{
                                 fontSize: '0.75rem',
                                 fontWeight: 600,
-                                color: '#ffd60a',
+                                color: 'var(--color-warning)',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.05em',
                             }}>
                                 LZV Cup
                             </span>
                         </div>
-                        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, color: 'white' }}>
+                        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, color: 'var(--color-text-primary)' }}>
                             League
                         </h1>
                     </div>
-                    
+
                     {/* Mini Stats */}
                     {!loading && (
                         <div style={{
                             fontSize: '0.75rem',
-                            color: 'rgba(255,255,255,0.5)',
+                            color: 'var(--color-text-secondary)',
                         }}>
-                            <span><strong style={{ color: 'white' }}>{leagueStats.teamCount}</strong> teams</span>
+                            <span><strong style={{ color: 'var(--color-text-primary)' }}>{leagueStats.teamCount}</strong> teams</span>
                         </div>
                     )}
                 </div>
@@ -188,10 +211,11 @@ export default function LeagueView() {
                 {/* Tabs */}
                 <div style={{
                     display: 'flex',
-                    background: 'rgba(118, 118, 128, 0.2)',
+                    background: 'var(--color-surface)',
                     borderRadius: 10,
                     padding: 3,
                     marginTop: 12,
+                    border: '0.5px solid var(--color-border)',
                 }}>
                     {([
                         { id: 'standings', icon: TrendingUp, label: 'Standings' },
@@ -207,8 +231,8 @@ export default function LeagueView() {
                             style={{
                                 flex: 1,
                                 border: 'none',
-                                background: activeTab === tab.id ? 'rgba(99, 99, 102, 0.8)' : 'transparent',
-                                color: activeTab === tab.id ? 'white' : 'rgba(255,255,255,0.5)',
+                                background: activeTab === tab.id ? 'var(--color-surface-hover)' : 'transparent',
+                                color: activeTab === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
                                 padding: '8px 0',
                                 borderRadius: 8,
                                 fontSize: '0.85rem',
@@ -232,7 +256,7 @@ export default function LeagueView() {
             <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 100 }}>
                 {loading ? (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: 60 }}>
-                        <Loader2 className="animate-spin" size={24} color="rgba(255,255,255,0.5)" />
+                        <Loader2 className="animate-spin" size={24} color="var(--color-text-secondary)" />
                     </div>
                 ) : (
                     <AnimatePresence mode="wait">
@@ -246,10 +270,12 @@ export default function LeagueView() {
                                 style={{ padding: 16 }}
                             >
                                 <div style={{
-                                    background: '#1c1c1e',
-                                    borderRadius: 16,
+                                    background: 'var(--color-surface)',
+                                    backdropFilter: 'blur(40px)',
+                                    WebkitBackdropFilter: 'blur(40px)',
+                                    borderRadius: 20,
+                                    border: '0.5px solid var(--color-border)',
                                     overflow: 'hidden',
-                                    border: '0.5px solid rgba(255,255,255,0.08)',
                                 }}>
                                     {/* Table Header */}
                                     <div style={{
@@ -257,10 +283,10 @@ export default function LeagueView() {
                                         gridTemplateColumns: '28px 1fr 32px 32px 38px 38px',
                                         gap: 6,
                                         padding: '10px 12px',
-                                        borderBottom: '0.5px solid rgba(255,255,255,0.08)',
+                                        borderBottom: '0.5px solid var(--color-border-subtle)',
                                         fontSize: '0.65rem',
                                         fontWeight: 700,
-                                        color: 'rgba(255,255,255,0.35)',
+                                        color: 'var(--color-text-tertiary)',
                                         textTransform: 'uppercase',
                                         letterSpacing: '0.03em',
                                     }}>
@@ -285,18 +311,18 @@ export default function LeagueView() {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: index * 0.02, duration: 0.2 }}
-                                                whileTap={{ scale: 0.99, background: 'rgba(255,255,255,0.06)' }}
+                                                whileTap={{ scale: 0.99, background: 'var(--color-surface-hover)' }}
                                                 style={{
                                                     display: 'grid',
                                                     gridTemplateColumns: '28px 1fr 32px 32px 38px 38px',
                                                     gap: 6,
                                                     padding: '12px',
-                                                    borderBottom: '0.5px solid rgba(255,255,255,0.04)',
+                                                    borderBottom: '0.5px solid var(--color-border-subtle)',
                                                     fontSize: '0.85rem',
-                                                    color: 'white',
+                                                    color: 'var(--color-text-primary)',
                                                     alignItems: 'center',
                                                     cursor: 'pointer',
-                                                    background: isHighlighted ? 'rgba(10, 132, 255, 0.12)' : 'transparent',
+                                                    background: isHighlighted ? 'rgba(var(--color-accent-rgb), 0.12)' : 'transparent',
                                                     position: 'relative',
                                                 }}
                                             >
@@ -306,7 +332,7 @@ export default function LeagueView() {
                                                         position: 'absolute',
                                                         left: 0, top: 0, bottom: 0,
                                                         width: 3,
-                                                        background: '#0a84ff',
+                                                        background: 'var(--color-accent)',
                                                         borderRadius: '0 2px 2px 0',
                                                     }} />
                                                 )}
@@ -316,7 +342,7 @@ export default function LeagueView() {
                                                     textAlign: 'center',
                                                     fontWeight: 700,
                                                     fontSize: '0.8rem',
-                                                    color: isFirst ? '#ffd60a' : isLast ? '#ff453a' : 'rgba(255,255,255,0.4)',
+                                                    color: isFirst ? 'var(--color-warning)' : isLast ? 'var(--color-danger)' : 'var(--color-text-tertiary)',
                                                 }}>
                                                     {team.rank}
                                                 </div>
@@ -338,13 +364,13 @@ export default function LeagueView() {
                                                         <div style={{
                                                             width: 26, height: 26,
                                                             borderRadius: 6,
-                                                            background: isFirst ? 'linear-gradient(135deg, #ffd60a, #ff9500)' : '#3a3a3c',
+                                                            background: isFirst ? 'linear-gradient(135deg, var(--color-warning), var(--color-warning-secondary))' : 'var(--color-surface-hover)',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
                                                             fontSize: '0.6rem',
                                                             fontWeight: 700,
-                                                            color: isFirst ? 'black' : 'white',
+                                                            color: isFirst ? 'var(--color-bg)' : 'var(--color-text-primary)',
                                                             flexShrink: 0,
                                                         }}>
                                                             {team.name.charAt(0)}
@@ -361,14 +387,14 @@ export default function LeagueView() {
                                                 </div>
                                                 
                                                 {/* MP */}
-                                                <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
+                                                <div style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: '0.8rem' }}>
                                                     {team.matchesPlayed}
                                                 </div>
                                                 
                                                 {/* GD */}
                                                 <div style={{
                                                     textAlign: 'center',
-                                                    color: (team.goalDifference || 0) > 0 ? '#30d158' : (team.goalDifference || 0) < 0 ? '#ff453a' : 'rgba(255,255,255,0.4)',
+                                                    color: (team.goalDifference || 0) > 0 ? 'var(--color-success)' : (team.goalDifference || 0) < 0 ? 'var(--color-danger)' : 'var(--color-text-tertiary)',
                                                     fontSize: '0.8rem',
                                                     fontWeight: 600,
                                                 }}>
@@ -387,7 +413,7 @@ export default function LeagueView() {
                                                 {/* PPM */}
                                                 <div style={{
                                                     textAlign: 'center',
-                                                    color: '#0a84ff',
+                                                    color: 'var(--color-accent)',
                                                     fontSize: '0.75rem',
                                                     fontWeight: 600,
                                                 }}>
@@ -396,7 +422,7 @@ export default function LeagueView() {
                                             </motion.div>
                                         );
                                     }) : (
-                                        <div style={{ padding: 24, textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>
+                                        <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-tertiary)' }}>
                                             No teams found for this league
                                         </div>
                                     )}
@@ -413,7 +439,7 @@ export default function LeagueView() {
                             >
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                     {filteredPlayers.length === 0 ? (
-                                        <div style={{ textAlign: 'center', padding: 40, color: 'rgba(255,255,255,0.4)' }}>
+                                        <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-tertiary)' }}>
                                             No player data available for this league
                                         </div>
                                     ) : (
@@ -437,14 +463,16 @@ export default function LeagueView() {
                                                         transition={{ delay: Math.min(index * 0.015, 0.3), duration: 0.2 }}
                                                         onClick={() => handlePlayerClick(player)}
                                                         style={{
-                                                            background: isHighlighted ? 'rgba(10, 132, 255, 0.12)' :
-                                                                       isTop3 ? 'rgba(255, 214, 10, 0.06)' : '#1c1c1e',
+                                                            background: isHighlighted ? 'var(--color-accent-glow)' :
+                                                                       isTop3 ? 'var(--color-top3-bg)' : 'var(--color-surface)',
+                                                            backdropFilter: 'blur(40px)',
+                                                            WebkitBackdropFilter: 'blur(40px)',
                                                             borderRadius: 14,
                                                             padding: '12px 14px',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'space-between',
-                                                            border: isTop3 ? '0.5px solid rgba(255, 214, 10, 0.15)' : '0.5px solid rgba(255,255,255,0.05)',
+                                                            border: isTop3 ? '1px solid var(--color-top3-border)' : '1px solid var(--color-border)',
                                                             position: 'relative',
                                                             overflow: 'hidden',
                                                             cursor: playerTeams.length > 0 ? 'pointer' : 'default',
@@ -453,7 +481,7 @@ export default function LeagueView() {
                                                         {isHighlighted && (
                                                             <div style={{
                                                                 position: 'absolute', left: 0, top: 0, bottom: 0,
-                                                                width: 3, background: '#0a84ff',
+                                                                width: 3, background: 'var(--color-accent)',
                                                             }} />
                                                         )}
                                                         
@@ -464,29 +492,37 @@ export default function LeagueView() {
                                                                 textAlign: 'center',
                                                                 fontSize: '0.85rem',
                                                                 fontWeight: 700,
-                                                                color: isTop3 ? '#ffd60a' : 'rgba(255,255,255,0.35)',
+                                                                color: isTop3 ? 'var(--color-warning)' : 'var(--color-text-tertiary)',
                                                             }}>
                                                                 {index + 1}
                                                             </div>
                                                             
-                                                            <div>
+                                                            <div style={{ minWidth: 0, flex: 1 }}>
                                                                 <div style={{
                                                                     fontWeight: 600,
-                                                                    color: 'white',
+                                                                    color: 'var(--color-text-primary)',
                                                                     fontSize: '0.9rem',
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     gap: 6,
                                                                 }}>
-                                                                    {player.name}
+                                                                    <span style={{
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap',
+                                                                    }}>
+                                                                        {player.name}
+                                                                    </span>
                                                                     {isMultiTeam && (
                                                                         <span style={{
                                                                             fontSize: '0.6rem',
                                                                             padding: '2px 5px',
-                                                                            background: 'rgba(94, 92, 230, 0.3)',
-                                                                            color: '#a5a4f3',
+                                                                            background: 'rgba(var(--color-accent-rgb), 0.3)',
+                                                                            color: 'var(--color-accent-secondary)',
                                                                             borderRadius: 4,
                                                                             fontWeight: 600,
+                                                                            whiteSpace: 'nowrap',
+                                                                            flexShrink: 0,
                                                                         }}>
                                                                             {playerTeams.length} teams
                                                                         </span>
@@ -494,36 +530,44 @@ export default function LeagueView() {
                                                                 </div>
                                                                 <div style={{
                                                                     fontSize: '0.75rem',
-                                                                    color: 'rgba(255,255,255,0.4)',
+                                                                    color: 'var(--color-text-tertiary)',
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     gap: 6,
+                                                                    flexWrap: 'nowrap',
                                                                 }}>
-                                                                    {isMultiTeam 
-                                                                        ? playerTeams.map(t => t.name).join(' & ')
-                                                                        : primaryTeam?.name || 'Unknown Team'
-                                                                    }
-                                                                    <span style={{ opacity: 0.5 }}>•</span>
-                                                                    <span>{player.gamesPlayed}g</span>
+                                                                    <span style={{
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap',
+                                                                        maxWidth: isMultiTeam ? 140 : 180,
+                                                                    }}>
+                                                                        {isMultiTeam
+                                                                            ? playerTeams.map(t => t.name).join(' & ')
+                                                                            : primaryTeam?.name || 'Unknown Team'
+                                                                        }
+                                                                    </span>
+                                                                    <span style={{ opacity: 0.5, flexShrink: 0 }}>•</span>
+                                                                    <span style={{ flexShrink: 0 }}>{player.gamesPlayed}g</span>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         
                                                         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#30d158' }}>
+                                                                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-success)' }}>
                                                                     {player.goals}
                                                                 </div>
-                                                                <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>
+                                                                <div style={{ fontSize: '0.55rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>
                                                                     Goals
                                                                 </div>
                                                             </div>
-                                                            <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
+                                                            <div style={{ width: 1, height: 24, background: 'var(--color-border)' }} />
                                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0a84ff' }}>
+                                                                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-accent)' }}>
                                                                     {player.assists}
                                                                 </div>
-                                                                <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>
+                                                                <div style={{ fontSize: '0.55rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>
                                                                     Asts
                                                                 </div>
                                                             </div>
@@ -539,10 +583,12 @@ export default function LeagueView() {
                                                     whileTap={{ scale: 0.98 }}
                                                     style={{
                                                         padding: '14px',
-                                                        background: 'rgba(255,255,255,0.06)',
-                                                        border: '0.5px solid rgba(255,255,255,0.1)',
+                                                        background: 'var(--color-surface)',
+                                                        backdropFilter: 'blur(40px)',
+                                                        WebkitBackdropFilter: 'blur(40px)',
+                                                        border: '0.5px solid var(--color-border)',
                                                         borderRadius: 12,
-                                                        color: 'white',
+                                                        color: 'var(--color-text-primary)',
                                                         fontSize: '0.9rem',
                                                         fontWeight: 600,
                                                         cursor: 'pointer',
@@ -580,7 +626,7 @@ export default function LeagueView() {
                             }}
                             style={{
                                 position: 'fixed', inset: 0,
-                                background: 'rgba(0,0,0,0.85)',
+                                background: 'var(--color-overlay)',
                                 backdropFilter: 'blur(10px)',
                                 zIndex: 10000,
                             }}
@@ -603,18 +649,18 @@ export default function LeagueView() {
                                 style={{
                                     width: '100%',
                                     maxWidth: 320,
-                                    background: 'rgba(28, 28, 30, 0.95)',
+                                    background: 'var(--color-surface)',
                                     backdropFilter: 'blur(40px)',
                                     WebkitBackdropFilter: 'blur(40px)',
                                     borderRadius: 20,
                                     padding: 20,
-                                    border: '0.5px solid rgba(255,255,255,0.1)',
-                                    boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                                    border: '1px solid var(--color-border)',
+                                    boxShadow: 'var(--shadow-lg)',
                                     pointerEvents: 'auto',
                                 }}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
                                         Select Team
                                     </div>
                                     <button
@@ -623,11 +669,11 @@ export default function LeagueView() {
                                             setTeamSelection(null);
                                         }}
                                         style={{
-                                            background: 'rgba(255,255,255,0.08)',
+                                            background: 'var(--color-surface-hover)',
                                             border: 'none', borderRadius: '50%',
                                             width: 30, height: 30,
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            color: 'rgba(255,255,255,0.8)', cursor: 'pointer',
+                                            color: 'var(--color-text-secondary)', cursor: 'pointer',
                                             transition: 'background 0.2s',
                                         }}
                                     >
@@ -647,8 +693,8 @@ export default function LeagueView() {
                                             style={{
                                                 display: 'flex', alignItems: 'center', gap: 12,
                                                 padding: '12px 14px',
-                                                background: 'rgba(255,255,255,0.05)',
-                                                border: '0.5px solid rgba(255,255,255,0.05)',
+                                                background: 'var(--color-surface-hover)',
+                                                border: '0.5px solid var(--color-border-subtle)',
                                                 borderRadius: 14,
                                                 cursor: 'pointer',
                                                 textAlign: 'left',
@@ -659,14 +705,14 @@ export default function LeagueView() {
                                             ) : (
                                                 <div style={{
                                                     width: 36, height: 36, borderRadius: 10,
-                                                    background: 'linear-gradient(135deg, #ffd60a, #ff9500)',
+                                                    background: 'linear-gradient(135deg, var(--color-warning), var(--color-warning-secondary))',
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    fontWeight: 700, fontSize: '0.9rem', color: 'black'
+                                                    fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-bg)'
                                                 }}>
                                                     {team.name.charAt(0)}
                                                 </div>
                                             )}
-                                            <div style={{ color: 'white', fontWeight: 600, fontSize: '0.95rem' }}>
+                                            <div style={{ color: 'var(--color-text-primary)', fontWeight: 600, fontSize: '0.95rem' }}>
                                                 {team.name}
                                             </div>
                                         </motion.button>

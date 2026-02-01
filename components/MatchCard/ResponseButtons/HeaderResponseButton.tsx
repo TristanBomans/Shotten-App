@@ -15,18 +15,18 @@ interface HeaderResponseButtonProps {
 const config = {
     yes: {
         icon: <Check size={12} />,
-        color: '#30d158',
-        bg: 'rgba(48, 209, 88, 0.25)',
+        color: 'var(--color-success)',
+        bg: 'rgba(var(--color-success-rgb), 0.25)',
     },
     maybe: {
         icon: <HelpCircle size={12} />,
-        color: '#ffd60a',
-        bg: 'rgba(255, 214, 10, 0.2)',
+        color: 'var(--color-warning)',
+        bg: 'rgba(var(--color-warning-rgb), 0.2)',
     },
     no: {
         icon: <X size={12} />,
-        color: '#ff453a',
-        bg: 'rgba(255, 69, 58, 0.2)',
+        color: 'var(--color-danger)',
+        bg: 'rgba(var(--color-danger-rgb), 0.2)',
     },
 };
 
@@ -51,8 +51,8 @@ export default function HeaderResponseButton({
                 height: 28,
                 border: 'none',
                 borderRadius: 8,
-                background: selected ? bg : 'rgba(255, 255, 255, 0.08)',
-                color: selected ? color : 'rgba(255, 255, 255, 0.35)',
+                background: selected ? bg : 'var(--color-surface-hover)',
+                color: selected ? color : 'var(--color-text-tertiary)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -65,7 +65,7 @@ export default function HeaderResponseButton({
                 <div style={{
                     width: 10,
                     height: 10,
-                    border: '2px solid rgba(255,255,255,0.2)',
+                    border: '2px solid var(--color-border-subtle)',
                     borderTopColor: color,
                     borderRadius: '50%',
                     animation: 'spin 0.8s linear infinite',

@@ -36,13 +36,13 @@ export default function SquadNamesList({
                     return (
                         <span key={player.id} style={{
                             fontSize: '0.65rem',
-                            color: isMe ? 'rgba(255,255,255,0.95)' : nameColor,
+                            color: isMe ? 'var(--color-text-primary)' : nameColor,
                             fontStyle: isMe ? 'italic' : 'normal',
                             fontWeight: isMe ? 500 : 400,
                             letterSpacing: isMe ? '0.02em' : undefined,
                         }}>
                             {isMe ? 'you' : player.name}{i < players.length - 1 && (
-                                <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 1px' }}>&middot;</span>
+                                <span style={{ color: 'var(--color-border)', margin: '0 1px' }}>&middot;</span>
                             )}
                         </span>
                     );
@@ -74,13 +74,14 @@ export default function SquadNamesList({
             </span>
             {renderNames(players, nameColor)}
             <span style={{
-                fontSize: '0.6rem',
-                fontWeight: 500,
+                fontSize: '0.7rem',
+                fontWeight: 700,
                 color,
-                opacity: 0.4,
                 flexShrink: 0,
                 marginLeft: 'auto',
                 paddingLeft: 6,
+                minWidth: 16,
+                textAlign: 'right',
             }}>
                 {count}
             </span>
@@ -98,42 +99,42 @@ export default function SquadNamesList({
                 <SectionRow
                     label="In"
                     count={present.length}
-                    color="#30d158"
+                    color="var(--color-success)"
                     players={present}
-                    nameColor="rgba(255,255,255,0.7)"
+                    nameColor="var(--color-text-secondary)"
                 />
             )}
             {maybe.length > 0 && (
                 <SectionRow
                     label="Maybe"
                     count={maybe.length}
-                    color="#ffd60a"
+                    color="var(--color-warning)"
                     players={maybe}
-                    nameColor="rgba(255,255,255,0.5)"
+                    nameColor="var(--color-text-secondary)"
                 />
             )}
             {notPresent.length > 0 && (
                 <SectionRow
                     label="Out"
                     count={notPresent.length}
-                    color="#ff453a"
+                    color="var(--color-danger)"
                     players={notPresent}
-                    nameColor="rgba(255,255,255,0.4)"
+                    nameColor="var(--color-text-secondary)"
                 />
             )}
             {unknown.length > 0 && (
                 <SectionRow
                     label="TBD"
                     count={unknown.length}
-                    color="rgba(255,255,255,0.4)"
+                    color="var(--color-text-tertiary)"
                     players={unknown}
-                    nameColor="rgba(255,255,255,0.35)"
+                    nameColor="var(--color-text-secondary)"
                 />
             )}
             {present.length === 0 && maybe.length === 0 && notPresent.length === 0 && unknown.length === 0 && (
                 <span style={{
                     fontSize: '0.65rem',
-                    color: 'rgba(255,255,255,0.4)',
+                    color: 'var(--color-text-secondary)',
                 }}>
                     No responses yet
                 </span>

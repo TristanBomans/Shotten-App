@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { LogOut, Database, Wifi, WifiOff, Settings, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog } from 'lucide-react';
-import { getUseMockData, setUseMockData } from '@/lib/useData';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, Database, Wifi, WifiOff, Settings, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette } from 'lucide-react';
+import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
 import VersionChecker from './VersionChecker';
@@ -22,6 +22,11 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
     const [hapticFeedback, setHapticFeedback] = useState(true);
     const [showFullNames, setShowFullNames] = useState(true);
     const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
+    const [defaultLeague, setDefaultLeague] = useState<string>('');
+    const [leagues, setLeagues] = useState<string[]>([]);
+    const [showLeagueSelector, setShowLeagueSelector] = useState(false);
+    const [theme, setTheme] = useState<string>('original');
+    const [showThemeSelector, setShowThemeSelector] = useState(false);
     const { hasUpdate, updateApp, isChecking } = useVersionChecker();
 
     useEffect(() => {
@@ -36,6 +41,22 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
         setHapticFeedback(hapticPref !== 'false');
         const fullNamesPref = localStorage.getItem('showFullNames');
         setShowFullNames(fullNamesPref === null ? true : fullNamesPref === 'true');
+        const savedLeague = localStorage.getItem('defaultLeague');
+        if (savedLeague) setDefaultLeague(savedLeague);
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) setTheme(savedTheme);
+
+        // Fetch leagues for the selector
+        const loadLeagues = async () => {
+            try {
+                const teams = await fetchAllScraperTeams();
+                const unique = Array.from(new Set(teams.map(t => t.leagueName).filter(Boolean))) as string[];
+                setLeagues(unique.sort());
+            } catch {
+                console.warn('Failed to load leagues for settings');
+            }
+        };
+        loadLeagues();
     }, []);
 
     useEffect(() => {
@@ -78,9 +99,52 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
         const newValue = !showFullNames;
         setShowFullNames(newValue);
         localStorage.setItem('showFullNames', newValue.toString());
-        
+
         // Dispatch custom event to notify other components
         window.dispatchEvent(new CustomEvent('showFullNamesChanged', { detail: newValue }));
+    };
+
+    const handleSelectLeague = (league: string) => {
+        hapticPatterns.tap();
+        setDefaultLeague(league);
+        localStorage.setItem('defaultLeague', league);
+        setShowLeagueSelector(false);
+        // Dispatch event to notify LeagueView
+        window.dispatchEvent(new CustomEvent('defaultLeagueChanged', { detail: league }));
+    };
+
+    const handleClearDefaultLeague = () => {
+        hapticPatterns.tap();
+        setDefaultLeague('');
+        localStorage.removeItem('defaultLeague');
+        setShowLeagueSelector(false);
+        window.dispatchEvent(new CustomEvent('defaultLeagueChanged', { detail: null }));
+    };
+
+    const handleSelectTheme = (newTheme: string) => {
+        hapticPatterns.tap();
+        setTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+        document.documentElement.setAttribute('data-theme', newTheme);
+        // Update meta theme-color
+        const themeColors: Record<string, string> = {
+            original: '#050508',
+            oled: '#000000',
+            white: '#ffffff'
+        };
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) {
+            meta.setAttribute('content', themeColors[newTheme]);
+        }
+        // Dispatch custom event for other components
+        window.dispatchEvent(new CustomEvent('themeChanged', { detail: newTheme }));
+        setShowThemeSelector(false);
+    };
+
+    const themeLabels: Record<string, string> = {
+        original: 'Original (Purple)',
+        oled: 'OLED Black',
+        white: 'White'
     };
 
     return (
@@ -99,11 +163,11 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                             gap: 8,
                             marginBottom: 8,
                         }}>
-                            <Settings size={16} style={{ color: '#0a84ff' }} />
+                            <Settings size={16} style={{ color: 'var(--color-accent)' }} />
                             <span style={{
                                 fontSize: '0.75rem',
                                 fontWeight: 600,
-                                color: '#0a84ff',
+                                color: 'var(--color-accent)',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.05em',
                             }}>
@@ -113,7 +177,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                         <h1 style={{
                             fontSize: '1.75rem',
                             fontWeight: 700,
-                            color: 'white',
+                            color: 'var(--color-text-primary)',
                             margin: 0,
                         }}>
                             Settings
@@ -128,33 +192,35 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.1 }}
                     style={{
-                        background: 'rgba(255, 255, 255, 0.06)',
+                        background: 'var(--color-surface)',
                         backdropFilter: 'blur(40px)',
                         WebkitBackdropFilter: 'blur(40px)',
                         borderRadius: 20,
-                        border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                        border: '0.5px solid var(--color-border)',
                         overflow: 'hidden',
                         marginBottom: 16,
                     }}
                 >
-                    {/* Notifications Toggle */}
-                    <SettingRow
-                        icon={<Bell size={20} />}
-                        iconBg="rgba(255, 159, 10, 0.15)"
-                        iconColor="#ff9f0a"
-                        title="Notifications"
-                        subtitle={notificationsEnabled ? 'Enabled' : 'Disabled'}
-                        toggle
-                        toggleValue={notificationsEnabled}
-                        onToggle={handleToggleNotifications}
-                        hasBorder
-                    />
+                    {/* Notifications Toggle - Disabled until future update */}
+                    <div style={{ opacity: 0.5, pointerEvents: 'none' }}>
+                        <SettingRow
+                            icon={<Bell size={20} />}
+                            iconBg="rgba(var(--color-warning-rgb), 0.15)"
+                            iconColor="var(--color-warning)"
+                            title="Notifications"
+                            subtitle="Coming in future update"
+                            toggle
+                            toggleValue={false}
+                            onToggle={() => {}}
+                            hasBorder
+                        />
+                    </div>
 
                     {/* Haptic Feedback */}
                     <SettingRow
                         icon={<Smartphone size={20} />}
-                        iconBg="rgba(175, 82, 222, 0.15)"
-                        iconColor="#af52de"
+                        iconBg="rgba(var(--color-accent-rgb), 0.15)"
+                        iconColor="var(--color-accent)"
                         title="Haptic Feedback"
                         subtitle="Vibration on actions"
                         toggle
@@ -166,14 +232,104 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     {/* Show Full Names */}
                     <SettingRow
                         icon={<Users size={20} />}
-                        iconBg="rgba(10, 132, 255, 0.15)"
-                        iconColor="#0a84ff"
+                        iconBg="rgba(var(--color-accent-rgb), 0.15)"
+                        iconColor="var(--color-accent)"
                         title="Show Full Names"
                         subtitle={showFullNames ? 'Names visible on cards' : 'Avatars only'}
                         toggle
                         toggleValue={showFullNames}
                         onToggle={handleToggleFullNames}
+                        hasBorder
                     />
+
+                    {/* Appearance / Theme */}
+                    <motion.div
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setShowThemeSelector(true);
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'rgba(var(--color-accent-rgb), 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-accent)',
+                            flexShrink: 0,
+                        }}>
+                            <Palette size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>Appearance</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                {themeLabels[theme]}
+                            </div>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                    </motion.div>
+                </motion.div>
+
+                {/* Default League */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.11 }}
+                    style={{
+                        background: 'var(--color-surface)',
+                        backdropFilter: 'blur(40px)',
+                        WebkitBackdropFilter: 'blur(40px)',
+                        borderRadius: 20,
+                        border: '0.5px solid var(--color-border)',
+                        overflow: 'hidden',
+                        marginBottom: 16,
+                    }}
+                >
+                    <motion.div
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setShowLeagueSelector(true);
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'rgba(var(--color-warning-rgb), 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-warning)',
+                            flexShrink: 0,
+                        }}>
+                            <Trophy size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>Default League</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                {defaultLeague || 'Auto-select (Mechelen preferred)'}
+                            </div>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                    </motion.div>
                 </motion.div>
 
                 {/* Player Management */}
@@ -182,11 +338,11 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.12 }}
                     style={{
-                        background: 'rgba(255, 255, 255, 0.06)',
+                        background: 'var(--color-surface)',
                         backdropFilter: 'blur(40px)',
                         WebkitBackdropFilter: 'blur(40px)',
                         borderRadius: 20,
-                        border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                        border: '0.5px solid var(--color-border)',
                         overflow: 'hidden',
                         marginBottom: 16,
                     }}
@@ -209,22 +365,22 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                             width: 40,
                             height: 40,
                             borderRadius: 10,
-                            background: 'rgba(100, 210, 80, 0.15)',
+                            background: 'rgba(var(--color-success-rgb), 0.15)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: '#64d250',
+                            color: 'var(--color-success)',
                             flexShrink: 0,
                         }}>
                             <UserCog size={20} />
                         </div>
                         <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'white' }}>Manage Players</div>
-                            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>Manage Players</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                                 Add, edit or remove players
                             </div>
                         </div>
-                        <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
                     </motion.div>
                 </motion.div>
 
@@ -235,11 +391,11 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.15 }}
                         style={{
-                            background: 'rgba(255, 255, 255, 0.06)',
+                            background: 'var(--color-surface)',
                             backdropFilter: 'blur(40px)',
                             WebkitBackdropFilter: 'blur(40px)',
                             borderRadius: 20,
-                            border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                            border: '0.5px solid var(--color-border)',
                             overflow: 'hidden',
                             marginBottom: 16,
                         }}
@@ -248,7 +404,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                             padding: '12px 16px 8px',
                             fontSize: '0.7rem',
                             fontWeight: 600,
-                            color: 'rgba(255,255,255,0.4)',
+                            color: 'var(--color-text-tertiary)',
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                         }}>
@@ -258,13 +414,13 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                         {/* Data Source Toggle */}
                         <SettingRow
                             icon={useMock ? <Database size={20} /> : <Wifi size={20} />}
-                            iconBg={useMock ? 'rgba(255, 214, 10, 0.15)' : 'rgba(48, 209, 88, 0.15)'}
-                            iconColor={useMock ? '#ffd60a' : '#30d158'}
+                            iconBg={useMock ? 'rgba(var(--color-warning-rgb), 0.15)' : 'rgba(var(--color-success-rgb), 0.15)'}
+                            iconColor={useMock ? 'var(--color-warning)' : 'var(--color-success)'}
                             title="Data Source"
                             subtitle={useMock ? 'Mock data' : 'Live backend'}
                             toggle
                             toggleValue={!useMock}
-                            toggleColor={useMock ? '#ffd60a' : '#30d158'}
+                            toggleColor={useMock ? 'var(--color-warning)' : 'var(--color-success)'}
                             onToggle={handleToggleMock}
                             hasBorder
                         />
@@ -272,8 +428,8 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                         {/* Connection Status */}
                         <SettingRow
                             icon={useMock ? <WifiOff size={20} /> : <Wifi size={20} />}
-                            iconBg={useMock ? 'rgba(255, 69, 58, 0.15)' : 'rgba(48, 209, 88, 0.15)'}
-                            iconColor={useMock ? '#ff453a' : '#30d158'}
+                            iconBg={useMock ? 'rgba(var(--color-danger-rgb), 0.15)' : 'rgba(var(--color-success-rgb), 0.15)'}
+                            iconColor={useMock ? 'var(--color-danger)' : 'var(--color-success)'}
                             title="Backend Status"
                             subtitle={useMock ? 'Offline' : 'Connected'}
                         />
@@ -286,19 +442,19 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
                     style={{
-                        background: 'rgba(255, 255, 255, 0.06)',
+                        background: 'var(--color-surface)',
                         backdropFilter: 'blur(40px)',
                         WebkitBackdropFilter: 'blur(40px)',
                         borderRadius: 20,
-                        border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                        border: '0.5px solid var(--color-border)',
                         overflow: 'hidden',
                         marginBottom: 16,
                     }}
                 >
                     <VersionRow
                         icon={<Info size={20} />}
-                        iconBg="rgba(10, 132, 255, 0.15)"
-                        iconColor="#0a84ff"
+                        iconBg="rgba(var(--color-accent-rgb), 0.15)"
+                        iconColor="var(--color-accent)"
                         title="About Shotten"
                         hasUpdate={hasUpdate}
                         onUpdate={updateApp}
@@ -307,8 +463,8 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     <Link href="/version/?from=settings" style={{ textDecoration: 'none', color: 'inherit' }}>
                         <VersionInfoRow
                             icon={<RefreshCw size={18} />}
-                            iconBg="rgba(255, 255, 255, 0.08)"
-                            iconColor="rgba(255,255,255,0.4)"
+                            iconBg="var(--color-surface-hover)"
+                            iconColor="var(--color-text-tertiary)"
                             label="Version Details"
                             value="View build info"
                             hasChevron
@@ -322,11 +478,11 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.25 }}
                     style={{
-                        background: 'rgba(255, 255, 255, 0.06)',
+                        background: 'var(--color-surface)',
                         backdropFilter: 'blur(40px)',
                         WebkitBackdropFilter: 'blur(40px)',
                         borderRadius: 20,
-                        border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                        border: '0.5px solid var(--color-border)',
                         overflow: 'hidden',
                     }}
                 >
@@ -351,24 +507,348 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                             width: 40,
                             height: 40,
                             borderRadius: 10,
-                            background: 'rgba(255, 69, 58, 0.15)',
+                            background: 'rgba(var(--color-danger-rgb), 0.15)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: '#ff453a',
+                            color: 'var(--color-danger)',
                             flexShrink: 0,
                         }}>
                             <LogOut size={20} />
                         </div>
                         <div style={{ textAlign: 'left' }}>
-                            <div style={{ fontWeight: 600, fontSize: '1rem', color: '#ff453a' }}>Sign Out</div>
-                            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-danger)' }}>Sign Out</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                                 Switch to a different player
                             </div>
                         </div>
                     </motion.button>
                 </motion.div>
             </motion.div>
+
+            {/* League Selector Modal */}
+            <AnimatePresence>
+                {showLeagueSelector && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowLeagueSelector(false)}
+                            style={{
+                                position: 'fixed',
+                                inset: 0,
+                                background: 'var(--color-overlay)',
+                                backdropFilter: 'blur(10px)',
+                                zIndex: 10000,
+                            }}
+                        />
+                        <div style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 10001,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 20,
+                            pointerEvents: 'none',
+                        }}>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                style={{
+                                    width: '100%',
+                                    maxWidth: 320,
+                                    maxHeight: '70vh',
+                                    background: 'var(--color-surface)',
+                                    backdropFilter: 'blur(40px)',
+                                    WebkitBackdropFilter: 'blur(40px)',
+                                    borderRadius: 20,
+                                    padding: 20,
+                                    border: '0.5px solid var(--color-border)',
+                                    pointerEvents: 'auto',
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                }}
+                            >
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: 16,
+                                }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                                        Select Default League
+                                    </div>
+                                    <button
+                                        onClick={() => setShowLeagueSelector(false)}
+                                        style={{
+                                            background: 'var(--color-surface-hover)',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            width: 30,
+                                            height: 30,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'var(--color-text-secondary)',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+
+                                <div style={{
+                                    overflowY: 'auto',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 8,
+                                }}>
+                                    {/* Auto option */}
+                                    <motion.button
+                                        onClick={handleClearDefaultLeague}
+                                        whileTap={{ scale: 0.98 }}
+                                        style={{
+                                            padding: '14px 16px',
+                                            background: defaultLeague === '' ? 'rgba(var(--color-warning-rgb), 0.15)' : 'var(--color-surface-hover)',
+                                            border: `1px solid ${defaultLeague === '' ? 'rgba(var(--color-warning-rgb), 0.3)' : 'var(--color-border)'}`,
+                                            borderRadius: 12,
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                        }}
+                                    >
+                                        <div style={{ fontWeight: 600, color: defaultLeague === '' ? 'var(--color-warning)' : 'var(--color-text-primary)' }}>
+                                            Auto-select
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                                            Prefer Mechelen if available
+                                        </div>
+                                    </motion.button>
+
+                                    {leagues.map((league) => (
+                                        <motion.button
+                                            key={league}
+                                            onClick={() => handleSelectLeague(league)}
+                                            whileTap={{ scale: 0.98 }}
+                                            style={{
+                                                padding: '14px 16px',
+                                                background: defaultLeague === league ? 'rgba(var(--color-accent-rgb), 0.15)' : 'var(--color-surface-hover)',
+                                                border: `1px solid ${defaultLeague === league ? 'rgba(var(--color-accent-rgb), 0.3)' : 'var(--color-border)'}`,
+                                                borderRadius: 12,
+                                                cursor: 'pointer',
+                                                textAlign: 'left',
+                                            }}
+                                        >
+                                            <div style={{
+                                                fontWeight: 600,
+                                                color: defaultLeague === league ? 'var(--color-accent)' : 'var(--color-text-primary)',
+                                                fontSize: '0.95rem',
+                                            }}>
+                                                {league}
+                                            </div>
+                                        </motion.button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Theme Selector Modal */}
+            <AnimatePresence>
+                {showThemeSelector && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowThemeSelector(false)}
+                            style={{
+                                position: 'fixed',
+                                inset: 0,
+                                background: 'var(--color-overlay)',
+                                backdropFilter: 'blur(10px)',
+                                zIndex: 10000,
+                            }}
+                        />
+                        <div style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 10001,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 20,
+                            pointerEvents: 'none',
+                        }}>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                style={{
+                                    width: '100%',
+                                    maxWidth: 320,
+                                    background: 'var(--color-surface)',
+                                    backdropFilter: 'blur(40px)',
+                                    WebkitBackdropFilter: 'blur(40px)',
+                                    borderRadius: 20,
+                                    padding: 20,
+                                    border: '1px solid var(--color-border)',
+                                    pointerEvents: 'auto',
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                }}
+                            >
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: 16,
+                                }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                                        Select Theme
+                                    </div>
+                                    <button
+                                        onClick={() => setShowThemeSelector(false)}
+                                        style={{
+                                            background: 'var(--color-surface-hover)',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            width: 30,
+                                            height: 30,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'var(--color-text-secondary)',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 12,
+                                }}>
+                                    {/* Original Theme */}
+                                    <motion.button
+                                        onClick={() => handleSelectTheme('original')}
+                                        whileTap={{ scale: 0.98 }}
+                                        style={{
+                                            padding: 16,
+                                            background: theme === 'original' ? 'rgba(var(--color-accent-rgb), 0.15)' : 'var(--color-surface-hover)',
+                                            border: `1px solid ${theme === 'original' ? 'rgba(var(--color-accent-rgb), 0.3)' : 'var(--color-border)'}`,
+                                            borderRadius: 12,
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 12,
+                                        }}
+                                    >
+                                        <div style={{
+                                            width: 48,
+                                            height: 48,
+                                            borderRadius: 10,
+                                            background: '#050508',
+                                            border: '1px solid rgba(255, 255, 255, 0.12)',
+                                            position: 'relative',
+                                            overflow: 'hidden',
+                                        }}>
+                                            <div style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: 'radial-gradient(ellipse at 30% 30%, rgba(175, 82, 222, 0.4) 0%, transparent 60%)',
+                                            }}/>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: 600, color: theme === 'original' ? 'var(--color-accent)' : 'var(--color-text-primary)' }}>
+                                                Original
+                                            </div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                                                Purple ethereal with gradient
+                                            </div>
+                                        </div>
+                                    </motion.button>
+
+                                    {/* OLED Black Theme */}
+                                    <motion.button
+                                        onClick={() => handleSelectTheme('oled')}
+                                        whileTap={{ scale: 0.98 }}
+                                        style={{
+                                            padding: 16,
+                                            background: theme === 'oled' ? 'rgba(10, 132, 255, 0.15)' : 'var(--color-surface-hover)',
+                                            border: `1px solid ${theme === 'oled' ? 'rgba(10, 132, 255, 0.3)' : 'var(--color-border)'}`,
+                                            borderRadius: 12,
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 12,
+                                        }}
+                                    >
+                                        <div style={{
+                                            width: 48,
+                                            height: 48,
+                                            borderRadius: 10,
+                                            background: '#000000',
+                                            border: '1px solid #333333',
+                                        }}/>
+                                        <div>
+                                            <div style={{ fontWeight: 600, color: theme === 'oled' ? 'var(--color-accent)' : 'var(--color-text-primary)' }}>
+                                                OLED Black
+                                            </div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                                                Pure black for OLED displays
+                                            </div>
+                                        </div>
+                                    </motion.button>
+
+                                    {/* White Theme */}
+                                    <motion.button
+                                        onClick={() => handleSelectTheme('white')}
+                                        whileTap={{ scale: 0.98 }}
+                                        style={{
+                                            padding: 16,
+                                            background: theme === 'white' ? 'rgba(var(--color-accent-rgb), 0.15)' : 'var(--color-surface-hover)',
+                                            border: `1px solid ${theme === 'white' ? 'rgba(var(--color-accent-rgb), 0.3)' : 'var(--color-border)'}`,
+                                            borderRadius: 12,
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 12,
+                                        }}
+                                    >
+                                        <div style={{
+                                            width: 48,
+                                            height: 48,
+                                            borderRadius: 10,
+                                            background: '#ffffff',
+                                            border: '1px solid var(--color-border)',
+                                        }}/>
+                                        <div>
+                                            <div style={{ fontWeight: 600, color: theme === 'white' ? 'var(--color-accent)' : 'var(--color-text-primary)' }}>
+                                                White
+                                            </div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                                                Clean light theme
+                                            </div>
+                                        </div>
+                                    </motion.button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
 
             {/* Player Management Sheet */}
             <PlayerManagementSheet
@@ -404,7 +884,7 @@ function SettingRow({
                 alignItems: 'center',
                 gap: 12,
                 cursor: toggle ? 'pointer' : 'default',
-                borderBottom: hasBorder ? '0.5px solid rgba(255, 255, 255, 0.06)' : 'none',
+                borderBottom: hasBorder ? '0.5px solid var(--color-border-subtle)' : 'none',
             }}
         >
             <div style={{
@@ -421,8 +901,8 @@ function SettingRow({
                 {icon}
             </div>
             <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '1rem', color: 'white' }}>{title}</div>
-                <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{subtitle}</div>
+                <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>{title}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{subtitle}</div>
             </div>
 
             {toggle && (
@@ -430,10 +910,11 @@ function SettingRow({
                     width: 48,
                     height: 28,
                     borderRadius: 9999,
-                    background: toggleValue ? (toggleColor || '#30d158') : 'rgba(255,255,255,0.2)',
+                    background: toggleValue ? (toggleColor || 'var(--color-success)') : 'var(--color-text-tertiary)',
+                    opacity: toggleValue ? 1 : 0.4,
                     padding: 2,
                     flexShrink: 0,
-                    transition: 'background 0.2s',
+                    transition: 'background 0.2s, opacity 0.2s',
                 }}>
                     <motion.div
                         animate={{ x: toggleValue ? 20 : 0 }}
@@ -442,15 +923,15 @@ function SettingRow({
                             width: 24,
                             height: 24,
                             borderRadius: '50%',
-                            background: 'white',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                            background: 'var(--color-bg)',
+                            boxShadow: '0 2px 4px var(--color-overlay)',
                         }}
                     />
                 </div>
             )}
 
             {chevron && (
-                <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
             )}
         </motion.div>
     );
@@ -488,8 +969,8 @@ function VersionRow({
                 {icon}
             </div>
             <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '1rem', color: 'white' }}>{title}</div>
-                <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
+                <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>{title}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                     {hasUpdate ? 'New version available' : 'Up to date'}
                 </div>
             </div>
@@ -505,8 +986,8 @@ function VersionRow({
                         padding: '8px 16px',
                         fontSize: '0.8rem',
                         fontWeight: 600,
-                        color: '#000',
-                        background: '#30d158',
+                        color: 'var(--color-bg)',
+                        background: 'var(--color-success)',
                         border: 'none',
                         borderRadius: 8,
                         cursor: isChecking ? 'wait' : 'pointer',
@@ -537,7 +1018,7 @@ function VersionInfoRow({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                borderTop: '0.5px solid rgba(255, 255, 255, 0.06)',
+                borderTop: '0.5px solid var(--color-border-subtle)',
                 cursor: 'pointer',
             }}
         >
@@ -555,11 +1036,11 @@ function VersionInfoRow({
                 {icon}
             </div>
             <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>{label}</div>
-                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>{value}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>{label}</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{value}</div>
             </div>
             {hasChevron && (
-                <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
             )}
         </motion.div>
     );
