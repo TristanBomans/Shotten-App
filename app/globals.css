@@ -1,11 +1,14 @@
 /* ==========================================================================
-   SHOTTEN - VisionOS Spatial Design System
+   SHOTTEN - Multi-Theme Design System
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
    CSS Variables & Design Tokens
    -------------------------------------------------------------------------- */
-:root {
+
+/* Default (Original theme - VisionOS Ethereal) */
+:root,
+[data-theme="original"] {
   /* Colors - Ethereal visionOS palette */
   --color-bg: #050508;
   --color-bg-elevated: rgba(255, 255, 255, 0.03);
@@ -29,6 +32,33 @@
   --color-danger: #ff453a;
   --color-danger-glow: rgba(255, 69, 58, 0.4);
 
+  /* Top 3 ranks - subtle for dark themes */
+  --color-top3-bg: rgba(255, 214, 10, 0.08);
+  --color-top3-border: rgba(255, 214, 10, 0.2);
+
+  /* RGB values for use in rgba() - Original theme */
+  --color-accent-rgb: 10, 132, 255;
+  --color-success-rgb: 48, 209, 88;
+  --color-warning-rgb: 255, 214, 10;
+  --color-danger-rgb: 255, 69, 58;
+  --color-text-tertiary-rgb: 255, 255, 255;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 40px var(--color-accent-glow);
+
+  /* Overlay */
+  --color-overlay: rgba(0, 0, 0, 0.7);
+
+  /* Specific component colors */
+  --color-nav-bg: rgba(30, 30, 35, 0.95);
+  --color-nav-border: rgba(255, 255, 255, 0.15);
+  --color-nav-active: rgba(60, 60, 70, 0.98);
+  --color-input-bg: rgba(255, 255, 255, 0.05);
+  --color-glass-heavy: rgba(20, 20, 25, 0.85);
+
   /* Spacing */
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
@@ -44,12 +74,6 @@
   --radius-xl: 2.5rem;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 40px var(--color-accent-glow);
-
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -60,6 +84,121 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
+
+  /* Ambient gradient visibility */
+  --ambient-opacity: 1;
+}
+
+/* OLED Black Theme */
+[data-theme="oled"] {
+  /* Colors - Pure Black palette */
+  --color-bg: #000000;
+  --color-bg-elevated: #0a0a0a;
+  --color-surface: rgba(255, 255, 255, 0.06);
+  --color-surface-hover: rgba(255, 255, 255, 0.1);
+  --color-border: #333333;
+  --color-border-subtle: #262626;
+
+  /* Text */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a0a0a0;
+  --color-text-tertiary: #666666;
+
+  /* Accents - iOS Blue */
+  --color-accent: #0a84ff;
+  --color-accent-glow: rgba(10, 132, 255, 0.4);
+  --color-success: #30d158;
+  --color-success-glow: rgba(48, 209, 88, 0.4);
+  --color-warning: #ffd60a;
+  --color-warning-glow: rgba(255, 214, 10, 0.4);
+  --color-danger: #ff453a;
+  --color-danger-glow: rgba(255, 69, 58, 0.4);
+
+  /* Top 3 ranks - subtle for dark themes */
+  --color-top3-bg: rgba(255, 214, 10, 0.08);
+  --color-top3-border: rgba(255, 214, 10, 0.2);
+
+  /* RGB values for use in rgba() - OLED theme (same as original) */
+  --color-accent-rgb: 10, 132, 255;
+  --color-success-rgb: 48, 209, 88;
+  --color-warning-rgb: 255, 214, 10;
+  --color-danger-rgb: 255, 69, 58;
+  --color-text-tertiary-rgb: 255, 255, 255;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.7);
+  --shadow-glow: 0 0 40px var(--color-accent-glow);
+
+  /* Overlay */
+  --color-overlay: rgba(0, 0, 0, 0.85);
+
+  /* Specific component colors */
+  --color-nav-bg: rgba(26, 26, 26, 0.98);
+  --color-nav-border: rgba(255, 255, 255, 0.12);
+  --color-nav-active: rgba(45, 45, 45, 0.95);
+  --color-input-bg: rgba(255, 255, 255, 0.05);
+  --color-glass-heavy: rgba(20, 20, 20, 0.95);
+
+  /* Ambient gradient visibility - hidden for OLED */
+  --ambient-opacity: 0;
+}
+
+/* White Theme */
+[data-theme="white"] {
+  /* Colors - Clean White palette */
+  --color-bg: #f2f2f7;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f5f5f5;
+  --color-border: #c5c5c9;
+  --color-border-subtle: #d1d1d6;
+
+  /* Text */
+  --color-text-primary: #000000;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+
+  /* Accents - iOS Blue */
+  --color-accent: #007aff;
+  --color-accent-glow: rgba(0, 122, 255, 0.3);
+  --color-success: #34c759;
+  --color-success-glow: rgba(52, 199, 89, 0.3);
+  --color-warning: #ff9500;
+  --color-warning-glow: rgba(255, 149, 0, 0.3);
+  --color-danger: #ff3b30;
+  --color-danger-glow: rgba(255, 59, 48, 0.3);
+
+  /* Top 3 ranks - subtle for white theme */
+  --color-top3-bg: rgba(255, 149, 0, 0.12);
+  --color-top3-border: rgba(255, 149, 0, 0.25);
+
+  /* RGB values for use in rgba() - White theme */
+  --color-accent-rgb: 0, 122, 255;
+  --color-success-rgb: 52, 199, 89;
+  --color-warning-rgb: 255, 149, 0;
+  --color-danger-rgb: 255, 59, 48;
+  --color-text-tertiary-rgb: 153, 153, 153;
+
+  /* Shadows - lighter for white theme */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
+  --shadow-glow: 0 0 30px var(--color-accent-glow);
+
+  /* Overlay - darker for white theme */
+  --color-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Specific component colors */
+  --color-nav-bg: #ffffff;
+  --color-nav-border: #e5e5ea;
+  --color-nav-active: #f2f2f7;
+  --color-input-bg: #f2f2f7;
+  --color-glass-heavy: rgba(255, 255, 255, 0.98);
+
+  /* Ambient gradient visibility - hidden for white */
+  --ambient-opacity: 0;
 }
 
 /* --------------------------------------------------------------------------
@@ -102,6 +241,9 @@ body {
 
   /* Disable pull-to-refresh on PWA */
   overscroll-behavior-y: contain;
+
+  /* Theme transition */
+  transition: background-color var(--transition-base), color var(--transition-fast);
 }
 
 /* Allow text selection in inputs */
@@ -120,6 +262,7 @@ textarea {
   z-index: -1;
   overflow: hidden;
   background: var(--color-bg);
+  transition: background var(--transition-base);
 }
 
 .ambient-bg::before {
@@ -133,6 +276,7 @@ textarea {
     radial-gradient(ellipse at 20% 30%, rgba(10, 132, 255, 0.15) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 70%, rgba(48, 209, 88, 0.1) 0%, transparent 40%),
     radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 60%);
+  opacity: var(--ambient-opacity);
   animation: ambient-drift 30s ease-in-out infinite;
 }
 
@@ -166,19 +310,21 @@ textarea {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
+  transition: background var(--transition-base), border-color var(--transition-base);
 }
 
 .glass-panel-heavy {
-  background: rgba(20, 20, 25, 0.85);
+  background: var(--color-glass-heavy);
   backdrop-filter: blur(60px);
   -webkit-backdrop-filter: blur(60px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
+  transition: background var(--transition-base), border-color var(--transition-base);
 }
 
 .glass-nav {
-  background: rgba(30, 30, 35, 0.75);
+  background: var(--color-nav-bg);
   backdrop-filter: blur(50px);
   -webkit-backdrop-filter: blur(50px);
   border: 1px solid var(--color-border);
@@ -186,10 +332,11 @@ textarea {
   box-shadow:
     var(--shadow-lg),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: background var(--transition-base), border-color var(--transition-base);
 }
 
 .glass-input {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-input-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--color-border-subtle);
@@ -679,10 +826,11 @@ textarea {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--color-overlay);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   z-index: 900;
+  transition: background var(--transition-base);
 }
 
 .modal {
@@ -739,6 +887,15 @@ textarea {
   color: white;
 }
 
+/* White theme adjustments for attendance buttons */
+[data-theme="white"] .attendance-btn.selected {
+  color: white;
+}
+
+[data-theme="white"] .attendance-btn.selected.status-maybe {
+  color: black;
+}
+
 /* --------------------------------------------------------------------------
    Player Grid
    -------------------------------------------------------------------------- */
@@ -778,4 +935,83 @@ textarea {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* --------------------------------------------------------------------------
+   White Theme Specific Overrides
+   -------------------------------------------------------------------------- */
+
+/* Better contrast for cards in white theme */
+[data-theme="white"] .glass-panel,
+[data-theme="white"] .glass-panel-heavy {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Remove backdrop blur for cleaner look on white theme */
+[data-theme="white"] .glass-panel,
+[data-theme="white"] .glass-panel-heavy,
+[data-theme="white"] .glass-nav {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Modal/Dialog specific for white theme */
+[data-theme="white"] .modal {
+  background: var(--color-bg-elevated);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+/* Skeleton loading animation adjustment for white theme */
+[data-theme="white"] .skeleton {
+  background: linear-gradient(90deg,
+      rgba(0, 0, 0, 0.05) 25%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.05) 75%);
+  background-size: 200% 100%;
+}
+
+/* Ensure text is always readable on white backgrounds */
+[data-theme="white"] [style*="background: var(--color-surface)"],
+[data-theme="white"] [style*="background:var(--color-surface)"] {
+  color: var(--color-text-primary);
+}
+
+/* Better card visibility in white theme - add subtle background tint */
+[data-theme="white"] .card,
+[data-theme="white"] [style*="background: var(--color-surface)"][style*="borderRadius"] {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 0.5px var(--color-border);
+}
+
+/* League view player items need clearer borders */
+[data-theme="white"] [style*="background: var(--color-surface)"][style*="backdropFilter"] {
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Match card compact variant improvements */
+[data-theme="white"] [style*="background: var(--color-surface)"][style*="border: 0.5px solid"] {
+  border: 1px solid var(--color-border-subtle) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Team Detail Modal matches need visible borders */
+[data-theme="white"] [style*="background: var(--color-surface-hover)"][style*="borderRadius: 12"],
+[data-theme="white"] [style*="background: var(--color-surface)"][style*="borderRadius: 12"] {
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Fix all 0.5px borders in white theme - make them 1px */
+[data-theme="white"] [style*="border: 0.5px solid"] {
+  border-width: 1px !important;
+}
+
+[data-theme="white"] [style*="borderBottom: 0.5px solid"] {
+  border-bottom-width: 1px !important;
+}
+
+[data-theme="white"] [style*="borderTop: 0.5px solid"] {
+  border-top-width: 1px !important;
 }

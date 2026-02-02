@@ -18,7 +18,6 @@ export const viewport: Viewport = {
     maximumScale: 1,
     userScalable: false,
     viewportFit: 'cover',
-    themeColor: '#050508',
 };
 
 export default function RootLayout({
@@ -27,15 +26,41 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <head>
                 <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
                 <meta name="apple-mobile-web-app-capable" content="yes" />
                 <meta name="mobile-web-app-capable" content="yes" />
+                {/* Theme loader - runs before any rendering to prevent flash */}
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                            (function() {
+                                const theme = localStorage.getItem('theme') || 'original';
+                                document.documentElement.setAttribute('data-theme', theme);
+                                // Set meta theme-color based on theme
+                                const themeColors = {
+                                    original: '#050508',
+                                    oled: '#000000',
+                                    white: '#ffffff'
+                                };
+                                const meta = document.querySelector('meta[name="theme-color"]');
+                                if (meta) {
+                                    meta.setAttribute('content', themeColors[theme] || '#050508');
+                                } else {
+                                    const newMeta = document.createElement('meta');
+                                    newMeta.setAttribute('name', 'theme-color');
+                                    newMeta.setAttribute('content', themeColors[theme] || '#050508');
+                                    document.head.appendChild(newMeta);
+                                }
+                            })();
+                        `,
+                    }}
+                />
             </head>
             <body>
-                {/* Ambient Background Layer */}
-                <div className="ambient-bg" aria-hidden="true" />
+                {/* Ambient Background - theme-aware gradient for Original theme */}
+                <div className="ambient-bg" />
 
                 {/* Main Content */}
                 {children}

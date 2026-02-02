@@ -17,12 +17,12 @@ interface StatsViewProps {
 
 // Rank configuration
 const RANKS = [
-    { name: 'Club Legend', icon: Trophy, minScore: 1300, color: '#ffd700', bg: 'rgba(255, 215, 0, 0.15)' },
-    { name: 'Ultra', icon: Megaphone, minScore: 1100, color: '#ff9f0a', bg: 'rgba(255, 159, 10, 0.15)' },
-    { name: 'Plastic Fan', icon: Sparkles, minScore: 1000, color: '#0a84ff', bg: 'rgba(10, 132, 255, 0.15)' },
-    { name: 'Bench Warmer', icon: Armchair, minScore: 800, color: '#8e8e93', bg: 'rgba(142, 142, 147, 0.15)' },
-    { name: 'Casual', icon: Beer, minScore: 500, color: '#ff9f0a', bg: 'rgba(255, 159, 10, 0.15)' },
-    { name: 'Professional Ghost', icon: Ghost, minScore: 0, color: '#bf5af2', bg: 'rgba(191, 90, 242, 0.15)' },
+    { name: 'Club Legend', icon: Trophy, minScore: 1300, color: 'var(--color-warning)', bg: 'rgba(var(--color-warning-rgb), 0.15)' },
+    { name: 'Ultra', icon: Megaphone, minScore: 1100, color: 'var(--color-warning-secondary)', bg: 'rgba(var(--color-warning-rgb), 0.15)' },
+    { name: 'Plastic Fan', icon: Sparkles, minScore: 1000, color: 'var(--color-accent)', bg: 'rgba(var(--color-accent-rgb), 0.15)' },
+    { name: 'Bench Warmer', icon: Armchair, minScore: 800, color: 'var(--color-text-tertiary)', bg: 'rgba(var(--color-text-tertiary-rgb), 0.15)' },
+    { name: 'Casual', icon: Beer, minScore: 500, color: 'var(--color-warning-secondary)', bg: 'rgba(var(--color-warning-rgb), 0.15)' },
+    { name: 'Professional Ghost', icon: Ghost, minScore: 0, color: 'var(--color-accent-secondary)', bg: 'rgba(var(--color-accent-rgb), 0.15)' },
 ];
 
 const POINTS = {
@@ -210,7 +210,7 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                         <span style={{
                             fontSize: '0.75rem',
                             fontWeight: 600,
-                            color: '#0a84ff',
+                            color: 'var(--color-accent)',
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                         }}>
@@ -227,10 +227,10 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                                 alignItems: 'center',
                                 gap: 4,
                                 padding: '6px 12px',
-                                background: 'rgba(255, 255, 255, 0.08)',
+                                background: 'var(--color-surface-hover)',
                                 border: 'none',
                                 borderRadius: 20,
-                                color: 'rgba(255,255,255,0.6)',
+                                color: 'var(--color-text-secondary)',
                                 fontSize: '0.75rem',
                                 cursor: 'pointer',
                             }}
@@ -242,7 +242,7 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                     <h1 style={{
                         fontSize: '1.75rem',
                         fontWeight: 700,
-                        color: 'white',
+                        color: 'var(--color-text-primary)',
                         margin: 0,
                     }}>
                         Leaderboard
@@ -267,11 +267,11 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.1 }}
                     style={{
-                        background: 'rgba(255, 255, 255, 0.06)',
+                        background: 'var(--color-surface)',
                         backdropFilter: 'blur(40px)',
                         WebkitBackdropFilter: 'blur(40px)',
                         borderRadius: 20,
-                        border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                        border: '0.5px solid var(--color-border)',
                         overflow: 'hidden',
                     }}
                 >
@@ -292,14 +292,14 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                                 gap: 12,
                                 padding: '14px 16px',
                                 background: player.id === currentPlayerId
-                                    ? 'rgba(10, 132, 255, 0.15)'
+                                    ? 'rgba(var(--color-accent-rgb), 0.15)'
                                     : 'transparent',
                                 borderLeft: player.id === currentPlayerId
-                                    ? '3px solid #0a84ff'
+                                    ? '3px solid var(--color-accent)'
                                     : '3px solid transparent',
                                 cursor: 'pointer',
                                 borderBottom: i < playerStats.length - 1
-                                    ? '0.5px solid rgba(255, 255, 255, 0.06)'
+                                    ? '0.5px solid var(--color-border-subtle)'
                                     : 'none',
                             }}
                         >
@@ -308,7 +308,7 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                                 width: 28,
                                 fontSize: i < 3 ? '1.1rem' : '0.9rem',
                                 fontWeight: 600,
-                                color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : 'rgba(255,255,255,0.4)',
+                                color: i === 0 ? 'var(--color-warning)' : i === 1 ? 'var(--color-text-secondary)' : i === 2 ? 'var(--color-warning-secondary)' : 'var(--color-text-tertiary)',
                                 textAlign: 'center',
                             }}>
                                 {i < 3 ? ['🥇', '🥈', '🥉'][i] : `#${i + 1}`}
@@ -334,7 +334,7 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                                 <div style={{
                                     fontSize: '1rem',
                                     fontWeight: 600,
-                                    color: 'white',
+                                    color: 'var(--color-text-primary)',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
@@ -350,10 +350,10 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                                                 width: 8,
                                                 height: 8,
                                                 borderRadius: '50%',
-                                                background: status === 'present' ? '#30d158' :
-                                                    status === 'maybe' ? '#ffd60a' :
-                                                        status === 'notPresent' ? '#ff453a' :
-                                                            '#8e8e93',
+                                                background: status === 'present' ? 'var(--color-success)' :
+                                                    status === 'maybe' ? 'var(--color-warning)' :
+                                                        status === 'notPresent' ? 'var(--color-danger)' :
+                                                            'var(--color-text-tertiary)',
                                             }}
                                         />
                                     ))}
@@ -364,7 +364,7 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                             <div style={{
                                 fontSize: '1.25rem',
                                 fontWeight: 700,
-                                color: 'white',
+                                color: 'var(--color-text-primary)',
                             }}>
                                 {player.stats.score}
                             </div>
@@ -395,9 +395,9 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
 function HighlightCard({ icon, title, player }: { icon: string; title: string; player?: string }) {
     return (
         <div style={{
-            background: 'rgba(255, 255, 255, 0.06)',
+            background: 'var(--color-surface)',
             borderRadius: 14,
-            border: '0.5px solid rgba(255, 255, 255, 0.08)',
+            border: '0.5px solid var(--color-border)',
             padding: '12px 10px',
             textAlign: 'center',
         }}>
@@ -405,7 +405,7 @@ function HighlightCard({ icon, title, player }: { icon: string; title: string; p
             <div style={{
                 fontSize: '0.55rem',
                 fontWeight: 700,
-                color: 'rgba(255,255,255,0.4)',
+                color: 'var(--color-text-tertiary)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.03em',
                 marginBottom: 4,
@@ -415,7 +415,7 @@ function HighlightCard({ icon, title, player }: { icon: string; title: string; p
             <div style={{
                 fontSize: '0.9rem',
                 fontWeight: 600,
-                color: 'white',
+                color: 'var(--color-text-primary)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -446,7 +446,7 @@ function PlayerDetailModal({ player, rank, onClose }: {
                 style={{
                     position: 'fixed',
                     top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0, 0, 0, 0.85)',
+                    background: 'var(--color-overlay)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
                     zIndex: 10000,
@@ -465,20 +465,20 @@ function PlayerDetailModal({ player, rank, onClose }: {
                     style={{
                         width: '100%', maxWidth: 360, maxHeight: 'calc(100dvh - 120px)',
                         display: 'flex', flexDirection: 'column', pointerEvents: 'auto',
-                        background: 'rgba(25, 25, 30, 0.98)',
+                        background: 'var(--color-surface)',
                         backdropFilter: 'blur(60px)', WebkitBackdropFilter: 'blur(60px)',
-                        borderRadius: 24, border: '0.5px solid rgba(255, 255, 255, 0.12)',
-                        boxShadow: '0 24px 80px rgba(0, 0, 0, 0.8)', overflow: 'hidden',
+                        borderRadius: 24, border: '0.5px solid var(--color-border)',
+                        boxShadow: '0 24px 80px var(--color-overlay)', overflow: 'hidden',
                     }}
                 >
                     {/* Header */}
-                    <div style={{ padding: '20px 20px 16px', borderBottom: '0.5px solid rgba(255, 255, 255, 0.1)', flexShrink: 0 }}>
+                    <div style={{ padding: '20px 20px 16px', borderBottom: '0.5px solid var(--color-border)', flexShrink: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                                <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                                     #{rank} · <player.stats.rank.icon size={12} style={{ color: player.stats.rank.color }} /> {player.stats.rank.name}
                                 </div>
-                                <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0, color: 'white' }}>
+                                <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
                                     {player.name}
                                 </h2>
                             </div>
@@ -490,7 +490,7 @@ function PlayerDetailModal({ player, rank, onClose }: {
                                 whileTap={{ scale: 0.9 }}
                                 style={{
                                     width: 32, height: 32, borderRadius: 9999, border: 'none',
-                                    background: 'rgba(255, 255, 255, 0.08)', color: 'rgba(255, 255, 255, 0.6)',
+                                    background: 'var(--color-surface-hover)', color: 'var(--color-text-secondary)',
                                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 }}
                             >
@@ -500,13 +500,13 @@ function PlayerDetailModal({ player, rank, onClose }: {
 
                         {/* Score */}
                         <div style={{
-                            marginTop: 16, padding: 14, background: 'rgba(255,255,255,0.04)',
+                            marginTop: 16, padding: 14, background: 'var(--color-bg-elevated)',
                             borderRadius: 14, textAlign: 'center',
                         }}>
                             <div style={{ fontSize: '2.25rem', fontWeight: 800, color: player.stats.rank.color }}>
                                 {player.stats.score}
                             </div>
-                            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>
                                 Shotten Points
                             </div>
 
@@ -516,7 +516,7 @@ function PlayerDetailModal({ player, rank, onClose }: {
                                     <ScoreSparkline history={player.stats.scoreHistory} />
                                     <div style={{
                                         fontSize: '0.6rem',
-                                        color: 'rgba(255,255,255,0.3)',
+                                        color: 'var(--color-text-tertiary)',
                                         marginTop: 4,
                                     }}>
                                         Season trend
@@ -527,16 +527,16 @@ function PlayerDetailModal({ player, rank, onClose }: {
 
                         {/* Stats */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 12 }}>
-                            <StatMini label="Present" value={player.stats.presentCount} color="#30d158" />
-                            <StatMini label="Maybe" value={player.stats.maybeCount} color="#ffd60a" />
-                            <StatMini label="Absent" value={player.stats.absentCount} color="#ff453a" />
-                            <StatMini label="Ghost" value={player.stats.ghostCount} color="#8e8e93" />
+                            <StatMini label="Present" value={player.stats.presentCount} color="var(--color-success)" />
+                            <StatMini label="Maybe" value={player.stats.maybeCount} color="var(--color-warning)" />
+                            <StatMini label="Absent" value={player.stats.absentCount} color="var(--color-danger)" />
+                            <StatMini label="Ghost" value={player.stats.ghostCount} color="var(--color-text-tertiary)" />
                         </div>
                     </div>
 
                     {/* Match History */}
                     <div style={{ padding: '12px 16px 20px', overflowY: 'auto', flex: 1 }}>
-                        <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: 10 }}>
+                        <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', marginBottom: 10 }}>
                             Match History
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -545,17 +545,17 @@ function PlayerDetailModal({ player, rank, onClose }: {
                                     key={result.matchId}
                                     style={{
                                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                        padding: '10px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 10,
+                                        padding: '10px 12px', background: 'var(--color-bg-elevated)', borderRadius: 10,
                                     }}
                                 >
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{
-                                            fontSize: '0.85rem', color: 'white', fontWeight: 500,
+                                            fontSize: '0.85rem', color: 'var(--color-text-primary)', fontWeight: 500,
                                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
                                         }}>
                                             {result.matchName.replace(/-/g, ' – ')}
                                         </div>
-                                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)' }}>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>
                                             {result.date.toLocaleDateString()}
                                         </div>
                                     </div>
@@ -567,7 +567,7 @@ function PlayerDetailModal({ player, rank, onClose }: {
                                         </span>
                                         <span style={{
                                             fontWeight: 700, fontSize: '0.9rem',
-                                            color: result.points > 0 ? '#30d158' : '#ff453a',
+                                            color: result.points > 0 ? 'var(--color-success)' : 'var(--color-danger)',
                                         }}>
                                             {result.points > 0 ? '+' : ''}{result.points}
                                         </span>
@@ -588,7 +588,7 @@ function StatMini({ label, value, color }: { label: string; value: number; color
     return (
         <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '1rem', fontWeight: 700, color }}>{value}</div>
-            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{label}</div>
+            <div style={{ fontSize: '0.55rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>{label}</div>
         </div>
     );
 }
@@ -608,7 +608,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                 }}
                 style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(20px)',
+                    background: 'var(--color-overlay)', backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)', zIndex: 10000,
                 }}
             />
@@ -624,14 +624,14 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                     style={{
                         width: '100%', maxWidth: 340, maxHeight: 'calc(100dvh - 120px)',
                         overflowY: 'auto', pointerEvents: 'auto',
-                        background: 'rgba(25, 25, 30, 0.98)', backdropFilter: 'blur(60px)',
+                        background: 'var(--color-surface)', backdropFilter: 'blur(60px)',
                         WebkitBackdropFilter: 'blur(60px)', borderRadius: 24,
-                        border: '0.5px solid rgba(255, 255, 255, 0.12)',
-                        boxShadow: '0 24px 80px rgba(0, 0, 0, 0.8)', padding: 20,
+                        border: '0.5px solid var(--color-border)',
+                        boxShadow: '0 24px 80px var(--color-overlay)', padding: 20,
                     }}
                 >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'white' }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
                             How it works 🤡
                         </h2>
                         <motion.button
@@ -642,7 +642,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                             whileTap={{ scale: 0.9 }}
                             style={{
                                 width: 32, height: 32, borderRadius: 9999, border: 'none',
-                                background: 'rgba(255, 255, 255, 0.08)', color: 'rgba(255, 255, 255, 0.6)',
+                                background: 'var(--color-surface-hover)', color: 'var(--color-text-secondary)',
                                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}
                         >
@@ -651,22 +651,22 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                     </div>
 
                     <div style={{ marginBottom: 20 }}>
-                        <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 10 }}>
+                        <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', marginBottom: 10 }}>
                             Points
                         </h3>
-                        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: 12 }}>
-                            Start with <strong style={{ color: 'white' }}>1000</strong> points.
+                        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: 12 }}>
+                            Start with <strong style={{ color: 'var(--color-text-primary)' }}>1000</strong> points.
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <PointRow emoji="✅" label="Present" points="+50" color="#30d158" />
-                            <PointRow emoji="⚠️" label="Maybe" points="-20" color="#ffd60a" />
-                            <PointRow emoji="❌" label="Absent" points="-50" color="#ff453a" />
-                            <PointRow emoji="👻" label="Ghost" points="-100" color="#8e8e93" />
+                            <PointRow emoji="✅" label="Present" points="+50" color="var(--color-success)" />
+                            <PointRow emoji="⚠️" label="Maybe" points="-20" color="var(--color-warning)" />
+                            <PointRow emoji="❌" label="Absent" points="-50" color="var(--color-danger)" />
+                            <PointRow emoji="👻" label="Ghost" points="-100" color="var(--color-text-tertiary)" />
                         </div>
                     </div>
 
                     <div>
-                        <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 10 }}>
+                        <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', marginBottom: 10 }}>
                             Ranks
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -679,7 +679,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                                         <rank.icon size={16} style={{ color: rank.color }} />
                                         <span style={{ color: rank.color, fontWeight: 500, fontSize: '0.85rem' }}>{rank.name}</span>
                                     </div>
-                                    <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>{rank.minScore}+</span>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{rank.minScore}+</span>
                                 </div>
                             ))}
                         </div>
@@ -693,8 +693,8 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                         whileTap={{ scale: 0.98 }}
                         style={{
                             width: '100%', marginTop: 20, padding: '12px',
-                            background: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: 12,
-                            color: 'white', fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
+                            background: 'var(--color-surface-hover)', border: 'none', borderRadius: 12,
+                            color: 'var(--color-text-primary)', fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
                         }}
                     >
                         Got it
@@ -712,14 +712,14 @@ function ScoreSparkline({ history }: { history: ScoreHistoryPoint[] }) {
 
     const startScore = history[0].score;
     const endScore = history[history.length - 1].score;
-    const trendColor = endScore >= startScore ? '#30d158' : '#ff453a';
+    const trendColor = endScore >= startScore ? 'var(--color-success)' : 'var(--color-danger)';
     const trendArrow = endScore > startScore ? '↗' : endScore < startScore ? '↘' : '→';
 
     return (
         <div style={{ position: 'relative', width: '100%', height: 48 }}>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={history} margin={{ top: 8, right: 24, bottom: 8, left: 8 }}>
-                    <ReferenceLine y={1000} stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
+                    <ReferenceLine y={1000} stroke="var(--color-border-subtle)" strokeDasharray="3 3" />
                     <Line
                         type="monotone"
                         dataKey="score"
@@ -749,11 +749,11 @@ function PointRow({ emoji, label, points, color }: { emoji: string; label: strin
     return (
         <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '8px 10px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: 8,
+            padding: '8px 10px', background: 'var(--color-bg-elevated)', borderRadius: 8,
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>{emoji}</span>
-                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem' }}>{label}</span>
+                <span style={{ color: 'var(--color-text-primary)', fontSize: '0.85rem' }}>{label}</span>
             </div>
             <span style={{ fontWeight: 700, color, fontSize: '0.85rem' }}>{points}</span>
         </div>

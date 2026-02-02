@@ -154,7 +154,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                 style={{
                     position: 'fixed',
                     inset: 0,
-                    background: 'rgba(0,0,0,0.85)',
+                    background: 'var(--color-overlay)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
                     zIndex: 10000,
@@ -186,19 +186,19 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                         display: 'flex',
                         flexDirection: 'column',
                         pointerEvents: 'auto',
-                        background: 'rgba(25, 25, 30, 0.98)',
+                        background: 'var(--color-surface)',
                         backdropFilter: 'blur(60px)',
                         WebkitBackdropFilter: 'blur(60px)',
                         borderRadius: 24,
-                        border: '0.5px solid rgba(255, 255, 255, 0.12)',
-                        boxShadow: '0 24px 80px rgba(0, 0, 0, 0.8)',
+                        border: '1px solid var(--color-border)',
+                        boxShadow: 'var(--shadow-lg)',
                         overflow: 'hidden',
                     }}
                 >
                     {/* Header */}
                     <div style={{
                         padding: '16px 20px',
-                        borderBottom: '0.5px solid rgba(255,255,255,0.1)',
+                        borderBottom: '0.5px solid var(--color-border)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 12,
@@ -215,7 +215,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                     width: 48, height: 48,
                                     borderRadius: 12,
                                     objectFit: 'cover',
-                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    border: '1px solid var(--color-border)',
                                     cursor: 'zoom-in',
                                     flexShrink: 0,
                                 }}
@@ -224,9 +224,9 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             <div style={{
                                 width: 48, height: 48,
                                 borderRadius: 12,
-                                background: 'linear-gradient(135deg, #5e5ce6, #0a84ff)',
+                                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-secondary))',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '1.25rem', fontWeight: 700, color: 'white',
+                                fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary)',
                                 flexShrink: 0,
                             }}>
                                 {team.name.charAt(0)}
@@ -234,13 +234,13 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{
-                                fontSize: '1.1rem', fontWeight: 700, color: 'white',
+                                fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)',
                                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                             }}>
                                 {team.name}
                             </div>
                             {team.leagueName && (
-                                <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                                     {team.leagueName}
                                 </div>
                             )}
@@ -249,10 +249,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             hapticPatterns.tap();
                             onClose();
                         }} style={{
-                            background: 'rgba(255,255,255,0.1)', border: 'none',
+                            background: 'var(--color-surface-hover)', border: 'none',
                             borderRadius: '50%', width: 32, height: 32,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'white', cursor: 'pointer', flexShrink: 0,
+                            color: 'var(--color-text-primary)', cursor: 'pointer', flexShrink: 0,
                         }}>
                             <X size={16} />
                         </button>
@@ -263,8 +263,8 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                         display: 'flex',
                         padding: '10px 16px',
                         gap: 6,
-                        borderBottom: '0.5px solid rgba(255,255,255,0.08)',
-                        background: 'rgba(0,0,0,0.2)',
+                        borderBottom: '0.5px solid var(--color-border-subtle)',
+                        background: 'var(--color-surface-hover)',
                     }}>
                         {([
                             { id: 'overview', icon: TrendingUp, label: 'Overview' },
@@ -281,10 +281,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 style={{
                                     flex: 1,
                                     padding: '8px 12px',
-                                    background: activeTab === tab.id ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                    background: activeTab === tab.id ? 'var(--color-surface-hover)' : 'transparent',
                                     border: 'none',
                                     borderRadius: 10,
-                                    color: activeTab === tab.id ? 'white' : 'rgba(255,255,255,0.5)',
+                                    color: activeTab === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                                     fontSize: '0.8rem',
                                     fontWeight: 600,
                                     cursor: 'pointer',
@@ -332,7 +332,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 <div style={{ marginBottom: 16 }}>
                                     <div style={{
                                         fontSize: '0.7rem', fontWeight: 600,
-                                        color: 'rgba(255,255,255,0.4)',
+                                        color: 'var(--color-text-tertiary)',
                                         textTransform: 'uppercase',
                                         marginBottom: 8,
                                     }}>
@@ -345,11 +345,11 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                                 style={{
                                                     width: 32, height: 32,
                                                     borderRadius: 8,
-                                                    background: result === 'W' ? 'rgba(48, 209, 88, 0.2)' :
-                                                        result === 'L' ? 'rgba(255, 69, 58, 0.2)' :
-                                                            'rgba(255, 214, 10, 0.2)',
-                                                    color: result === 'W' ? '#30d158' :
-                                                        result === 'L' ? '#ff453a' : '#ffd60a',
+                                                    background: result === 'W' ? 'rgba(var(--color-success-rgb), 0.2)' :
+                                                        result === 'L' ? 'rgba(var(--color-danger-rgb), 0.2)' :
+                                                            'rgba(var(--color-warning-rgb), 0.2)',
+                                                    color: result === 'W' ? 'var(--color-success)' :
+                                                        result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
@@ -370,29 +370,29 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                     display: 'grid',
                                     gridTemplateColumns: 'repeat(4, 1fr)',
                                     gap: 1,
-                                    background: 'rgba(255,255,255,0.1)',
+                                    background: 'var(--color-surface-hover)',
                                     borderRadius: 12,
                                     overflow: 'hidden',
                                     marginBottom: 16,
                                 }}>
-                                    <StatBox label="RANK" value={`#${team.rank}`} color="#ffd60a" />
+                                    <StatBox label="RANK" value={`#${team.rank}`} color="var(--color-warning)" />
                                     <StatBox label="PTS" value={team.points || 0} />
                                     <StatBox
                                         label="W/D/L"
                                         value={
                                             <span>
-                                                <span style={{ color: '#30d158' }}>{team.wins || 0}</span>
-                                                <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
-                                                <span style={{ color: '#ffd60a' }}>{team.draws || 0}</span>
-                                                <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
-                                                <span style={{ color: '#ff453a' }}>{team.losses || 0}</span>
+                                                <span style={{ color: 'var(--color-success)' }}>{team.wins || 0}</span>
+                                                <span style={{ color: 'var(--color-text-tertiary)' }}>/</span>
+                                                <span style={{ color: 'var(--color-warning)' }}>{team.draws || 0}</span>
+                                                <span style={{ color: 'var(--color-text-tertiary)' }}>/</span>
+                                                <span style={{ color: 'var(--color-danger)' }}>{team.losses || 0}</span>
                                             </span>
                                         }
                                     />
                                     <StatBox
                                         label="GD"
                                         value={`${(team.goalDifference || 0) >= 0 ? '+' : ''}${team.goalDifference || 0}`}
-                                        color={(team.goalDifference || 0) >= 0 ? '#30d158' : '#ff453a'}
+                                        color={(team.goalDifference || 0) >= 0 ? 'var(--color-success)' : 'var(--color-danger)'}
                                     />
                                 </div>
                             )}
@@ -405,15 +405,15 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 marginBottom: 16,
                             }}>
                                 <MiniStat label="Played" value={team.matchesPlayed || 0} />
-                                <MiniStat label="Goals For" value={team.goalsFor || 0} color="#30d158" />
-                                <MiniStat label="Goals Agst" value={team.goalsAgainst || 0} color="#ff453a" />
+                                <MiniStat label="Goals For" value={team.goalsFor || 0} color="var(--color-success)" />
+                                <MiniStat label="Goals Agst" value={team.goalsAgainst || 0} color="var(--color-danger)" />
                             </div>
 
                             {/* Team Info */}
                             {(team.colors || team.manager || team.description) && (
                                 <div style={{
                                     padding: 14,
-                                    background: 'rgba(255,255,255,0.04)',
+                                    background: 'var(--color-surface-hover)',
                                     borderRadius: 12,
                                     marginBottom: 16,
                                 }}>
@@ -423,7 +423,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                             marginBottom: (team.manager || team.description) ? 10 : 0,
                                         }}>
                                             <span style={{ fontSize: '0.9rem' }}>🎨</span>
-                                            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                                                 {team.colors}
                                             </span>
                                         </div>
@@ -433,8 +433,8 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                             display: 'flex', alignItems: 'center', gap: 8,
                                             marginBottom: team.description ? 10 : 0,
                                         }}>
-                                            <UserCircle size={16} style={{ color: 'rgba(255,255,255,0.4)' }} />
-                                            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
+                                            <UserCircle size={16} style={{ color: 'var(--color-text-tertiary)' }} />
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                                                 {team.manager}
                                             </span>
                                         </div>
@@ -442,7 +442,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                     {team.description && (
                                         <div style={{
                                             fontSize: '0.85rem',
-                                            color: 'rgba(255,255,255,0.5)',
+                                            color: 'var(--color-text-secondary)',
                                             fontStyle: 'italic',
                                             lineHeight: 1.5,
                                         }}>
@@ -460,9 +460,9 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     padding: 14, gap: 8,
-                                    background: 'rgba(10,132,255,0.15)',
+                                    background: 'rgba(var(--color-accent-rgb), 0.15)',
                                     borderRadius: 12,
-                                    color: '#0a84ff', fontSize: '0.9rem', fontWeight: 600,
+                                    color: 'var(--color-accent)', fontSize: '0.9rem', fontWeight: 600,
                                     textDecoration: 'none',
                                 }}
                             >
@@ -485,14 +485,14 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             {loadingMatches ? (
                                 <div style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    padding: 40, color: 'rgba(255,255,255,0.5)',
+                                    padding: 40, color: 'var(--color-text-secondary)',
                                 }}>
                                     <div className="spinner" style={{ width: 24, height: 24 }} />
                                 </div>
                             ) : matches.length === 0 ? (
                                 <div style={{
                                     textAlign: 'center', padding: 40,
-                                    color: 'rgba(255,255,255,0.4)',
+                                    color: 'var(--color-text-tertiary)',
                                 }}>
                                     No matches available
                                 </div>
@@ -503,7 +503,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                         <div style={{ marginBottom: 20 }}>
                                             <div style={{
                                                 fontSize: '0.7rem', fontWeight: 600,
-                                                color: 'rgba(255,255,255,0.4)',
+                                                color: 'var(--color-text-tertiary)',
                                                 textTransform: 'uppercase',
                                                 marginBottom: 10,
                                             }}>
@@ -522,7 +522,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                         <div>
                                             <div style={{
                                                 fontSize: '0.7rem', fontWeight: 600,
-                                                color: 'rgba(255,255,255,0.4)',
+                                                color: 'var(--color-text-tertiary)',
                                                 textTransform: 'uppercase',
                                                 marginBottom: 10,
                                             }}>
@@ -557,14 +557,14 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                         <div key={player.externalId} style={{
                                             display: 'flex', alignItems: 'center', gap: 12,
                                             padding: '10px 12px',
-                                            background: i < 3 ? 'rgba(255,214,10,0.08)' : 'rgba(255,255,255,0.03)',
+                                            background: i < 3 ? 'rgba(var(--color-warning-rgb), 0.08)' : 'var(--color-surface-hover)',
                                             borderRadius: 12,
-                                            border: '0.5px solid rgba(255,255,255,0.05)',
+                                            border: '0.5px solid var(--color-border-subtle)',
                                         }}>
                                             <div style={{
                                                 width: 32, height: 32, borderRadius: '50%',
-                                                background: i < 3 ? '#ffd60a' : 'rgba(255,255,255,0.1)',
-                                                color: i < 3 ? 'black' : 'white',
+                                                background: i < 3 ? 'var(--color-warning)' : 'var(--color-surface-hover)',
+                                                color: i < 3 ? 'var(--color-bg)' : 'var(--color-text-primary)',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 fontSize: '0.8rem', fontWeight: 700, flexShrink: 0,
                                             }}>
@@ -572,18 +572,18 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                             </div>
                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                 <div style={{
-                                                    fontSize: '0.9rem', color: 'white', fontWeight: 500,
+                                                    fontSize: '0.9rem', color: 'var(--color-text-primary)', fontWeight: 500,
                                                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                                                 }}>
                                                     {player.name}
                                                 </div>
-                                                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>
                                                     {player.gamesPlayed} games
                                                 </div>
                                             </div>
                                             <div style={{ display: 'flex', gap: 12, fontSize: '0.9rem' }}>
-                                                <span style={{ color: '#30d158', fontWeight: 600 }}>⚽ {player.goals}</span>
-                                                <span style={{ color: '#0a84ff', fontWeight: 600 }}>🎯 {player.assists}</span>
+                                                <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>⚽ {player.goals}</span>
+                                                <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>🎯 {player.assists}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -591,7 +591,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             ) : (
                                 <div style={{
                                     textAlign: 'center', padding: 40,
-                                    color: 'rgba(255,255,255,0.4)',
+                                    color: 'var(--color-text-tertiary)',
                                 }}>
                                     No player stats available
                                 </div>
@@ -616,7 +616,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             position: 'fixed',
                             inset: 0,
                             zIndex: 10002,
-                            background: 'rgba(0,0,0,0.95)',
+                            background: 'var(--color-overlay)',
                             backdropFilter: 'blur(10px)',
                             display: 'flex',
                             alignItems: 'center',
@@ -644,10 +644,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             style={{
                                 position: 'absolute',
                                 top: 20, right: 20,
-                                background: 'rgba(255,255,255,0.15)',
+                                background: 'var(--color-surface-hover)',
                                 border: 'none', borderRadius: '50%',
                                 width: 40, height: 40,
-                                color: 'white',
+                                color: 'var(--color-text-primary)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 cursor: 'pointer',
                             }}
@@ -666,14 +666,14 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
 // Sub-components
 function StatBox({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
     return (
-        <div style={{ background: 'rgba(35,35,40,0.8)', padding: 12, textAlign: 'center' }}>
+        <div style={{ background: 'var(--color-surface-hover)', padding: 12, textAlign: 'center' }}>
             <div style={{
                 fontSize: '1.1rem', fontWeight: 700,
-                color: color || 'white',
+                color: color || 'var(--color-text-primary)',
             }}>
                 {value}
             </div>
-            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', marginTop: 2 }}>
                 {label}
             </div>
         </div>
@@ -684,14 +684,14 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
     return (
         <div style={{
             padding: '10px 12px',
-            background: 'rgba(255,255,255,0.04)',
+            background: 'var(--color-surface-hover)',
             borderRadius: 10,
             textAlign: 'center',
         }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: color || 'white' }}>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: color || 'var(--color-text-primary)' }}>
                 {value}
             </div>
-            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', marginTop: 2 }}>
                 {label}
             </div>
         </div>
@@ -706,7 +706,7 @@ function MatchRow({ match, teamName, isPlayed }: { match: ScraperMatch; teamName
     const opponentScore = isHome ? match.awayScore : match.homeScore;
 
     const result = teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D';
-    const resultColor = result === 'W' ? '#30d158' : result === 'L' ? '#ff453a' : '#ffd60a';
+    const resultColor = result === 'W' ? 'var(--color-success)' : result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)';
 
     const dateStr = formatDateSafe(match.date, { day: 'numeric', month: 'short' }, 'TBD');
     const timeStr = formatTimeSafe(match.date, { hour: '2-digit', minute: '2-digit' }, 'TBD');
@@ -717,9 +717,9 @@ function MatchRow({ match, teamName, isPlayed }: { match: ScraperMatch; teamName
             alignItems: 'center',
             gap: 10,
             padding: '10px 12px',
-            background: isPlayed ? 'rgba(255,255,255,0.03)' : 'rgba(10,132,255,0.08)',
+            background: isPlayed ? 'var(--color-surface-hover)' : 'var(--color-surface)',
             borderRadius: 12,
-            border: `0.5px solid ${isPlayed ? 'rgba(255,255,255,0.05)' : 'rgba(10,132,255,0.2)'}`,
+            border: `1px solid ${isPlayed ? 'var(--color-border)' : 'var(--color-border-subtle)'}`
         }}>
             {/* Result indicator for played matches */}
             {isPlayed && (
@@ -741,12 +741,12 @@ function MatchRow({ match, teamName, isPlayed }: { match: ScraperMatch; teamName
 
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                    fontSize: '0.85rem', fontWeight: 500, color: 'white',
+                    fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
                     {isHome ? 'vs' : '@'} {opponent}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>
                     {dateStr} • {timeStr}
                     {match.location && ` • ${match.location}`}
                 </div>

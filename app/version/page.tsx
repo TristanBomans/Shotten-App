@@ -99,7 +99,7 @@ function VersionPageContent() {
             alignItems: 'center',
             gap: 8,
             marginBottom: 24,
-            color: 'rgba(255,255,255,0.6)',
+            color: 'var(--color-text-secondary)',
             textDecoration: 'none',
           }}
         >
@@ -114,11 +114,11 @@ function VersionPageContent() {
             gap: 8,
             marginBottom: 8,
           }}>
-            <Sparkles size={16} style={{ color: '#0a84ff' }} />
+            <Sparkles size={16} style={{ color: 'var(--color-accent)' }} />
             <span style={{
               fontSize: '0.75rem',
               fontWeight: 600,
-              color: '#0a84ff',
+              color: 'var(--color-accent)',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
             }}>
@@ -128,7 +128,7 @@ function VersionPageContent() {
           <h1 style={{
             fontSize: '1.75rem',
             fontWeight: 700,
-            color: 'white',
+            color: 'var(--color-text-primary)',
             margin: 0,
           }}>
             Version History
@@ -136,7 +136,7 @@ function VersionPageContent() {
         </div>
 
         {loading ? (
-          <div style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: 40 }}>
+          <div style={{ color: 'var(--color-text-tertiary)', textAlign: 'center', padding: 40 }}>
             Loading...
           </div>
         ) : versionInfo && versionInfo.releases && versionInfo.releases.length > 0 ? (
@@ -158,13 +158,13 @@ function VersionPageContent() {
                   <span style={{
                     fontSize: '1rem',
                     fontWeight: 600,
-                    color: 'white',
+                    color: 'var(--color-text-primary)',
                   }}>
                     {formatDate(release.date)}
                   </span>
                   <span style={{
                     fontSize: '0.85rem',
-                    color: 'rgba(255,255,255,0.4)',
+                    color: 'var(--color-text-tertiary)',
                   }}>
                     {formatRelativeTime(release.date)}
                   </span>
@@ -185,7 +185,7 @@ function VersionPageContent() {
                       style={{
                         fontSize: '0.95rem',
                         lineHeight: 1.5,
-                        color: 'rgba(255, 255, 255, 0.7)',
+                        color: 'var(--color-text-secondary)',
                       }}
                     >
                       {change}
@@ -197,10 +197,10 @@ function VersionPageContent() {
           </div>
         ) : (
           <div style={{
-            color: 'rgba(255,255,255,0.5)',
+            color: 'var(--color-text-tertiary)',
             textAlign: 'center',
             padding: 40,
-            background: 'rgba(255, 255, 255, 0.06)',
+            background: 'var(--color-surface)',
             borderRadius: 20,
           }}>
             No changes available
@@ -218,7 +218,7 @@ function VersionPageContent() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
-            color: 'rgba(255,255,255,0.35)',
+            color: 'var(--color-text-tertiary)',
             fontSize: '0.75rem',
           }}
         >
@@ -231,7 +231,7 @@ function VersionPageContent() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              color: 'rgba(255,255,255,0.5)',
+              color: 'var(--color-text-secondary)',
               textDecoration: 'none',
               fontWeight: 500,
             }}

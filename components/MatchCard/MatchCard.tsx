@@ -116,23 +116,16 @@ export default function MatchCard({
                 onClick={() => { hapticPatterns.tap(); setShowModal(true); }}
                 whileTap={{ scale: 0.98 }}
                 style={{
-                    background: 'linear-gradient(165deg, rgba(40, 45, 55, 0.9) 0%, rgba(20, 22, 28, 0.95) 100%)',
+                    background: 'var(--color-surface)',
                     backdropFilter: 'blur(40px)',
                     WebkitBackdropFilter: 'blur(40px)',
-                    borderRadius: 24,
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 20,
+                    border: '0.5px solid var(--color-border)',
                     overflow: 'hidden',
                     position: 'relative',
                     cursor: 'pointer',
                 }}
             >
-                {/* Subtle gradient overlay */}
-                <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'radial-gradient(ellipse at 50% 0%, rgba(48, 209, 88, 0.08) 0%, transparent 60%)',
-                    pointerEvents: 'none',
-                }} />
 
                 {/* Confetti */}
                 <AnimatePresence>
@@ -144,11 +137,11 @@ export default function MatchCard({
                     {/* Match Header - Same layout as compact: date left, buttons right */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'white' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
                                 {dayName.slice(0, 3)} {dateNum} {monthName}
                             </span>
-                            <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.3)' }} />
-                            <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>
+                            <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--color-text-tertiary)' }} />
+                            <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
                                 {timeStr}
                             </span>
                         </div>
@@ -168,16 +161,16 @@ export default function MatchCard({
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: 8,
-                                background: 'rgba(0, 0, 0, 0.15)',
+                                background: 'var(--color-bg-elevated)',
                                 borderRadius: 20,
                                 padding: '10px 14px',
-                                border: '0.5px solid rgba(255, 255, 255, 0.06)',
+                                border: '0.5px solid var(--color-border-subtle)',
                             }}>
                                 {/* Team 1 */}
                                 <div style={{
                                     fontSize: '1.1rem',
                                     fontWeight: 700,
-                                    color: 'white',
+                                    color: 'var(--color-text-primary)',
                                     textAlign: 'center',
                                     lineHeight: 1.3,
                                     overflow: 'hidden',
@@ -191,7 +184,7 @@ export default function MatchCard({
 
                                 {/* VS Divider */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <div style={{ flex: 1, height: '0.5px', background: 'rgba(255, 255, 255, 0.1)' }} />
+                                    <div style={{ flex: 1, height: '0.5px', background: 'var(--color-border)' }} />
                                     <div style={{
                                         padding: '5px 12px',
                                         borderRadius: 8,
@@ -200,14 +193,14 @@ export default function MatchCard({
                                     }}>
                                         <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'white', letterSpacing: '0.05em' }}>VS</span>
                                     </div>
-                                    <div style={{ flex: 1, height: '0.5px', background: 'rgba(255, 255, 255, 0.1)' }} />
+                                    <div style={{ flex: 1, height: '0.5px', background: 'var(--color-border)' }} />
                                 </div>
 
                                 {/* Team 2 */}
                                 <div style={{
                                     fontSize: '1.1rem',
                                     fontWeight: 700,
-                                    color: 'white',
+                                    color: 'var(--color-text-primary)',
                                     textAlign: 'center',
                                     lineHeight: 1.3,
                                     overflow: 'hidden',
@@ -225,7 +218,7 @@ export default function MatchCard({
                             marginBottom: 16,
                             fontSize: '1.3rem',
                             fontWeight: 700,
-                            color: 'white',
+                            color: 'var(--color-text-primary)',
                             textAlign: 'center',
                             lineHeight: 1.3,
                         }}>
@@ -263,7 +256,7 @@ export default function MatchCard({
 
                     {/* Squad Preview - Conditional based on showFullNames setting */}
                     {showFullNames ? (
-                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '0.5px solid var(--color-border-subtle)' }}>
                             <SquadNamesList
                                 present={present}
                                 maybe={maybe}
@@ -273,20 +266,20 @@ export default function MatchCard({
                             />
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 8, borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 8, borderTop: '0.5px solid var(--color-border-subtle)' }}>
                             <PlayerAvatars players={[...present, ...maybe].slice(0, 4)} currentPlayerId={currentPlayerId} size="sm" />
                             {present.length > 0 && (
-                                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>{present.length} in</span>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>{present.length} in</span>
                             )}
                             {maybe.length > 0 && (
-                                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>+{maybe.length}</span>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>+{maybe.length}</span>
                             )}
                         </div>
                     )}
 
                     {/* Tap hint - Bottom right like compact variant */}
                     <div style={{ marginTop: 4, textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Tap for details</span>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>Tap for details</span>
                     </div>
                 </div>
 
@@ -306,11 +299,11 @@ export default function MatchCard({
             onClick={() => { hapticPatterns.tap(); setShowModal(true); }}
             whileTap={{ scale: 0.98 }}
             style={{
-                background: 'linear-gradient(165deg, rgba(40, 45, 55, 0.9) 0%, rgba(20, 22, 28, 0.95) 100%)',
+                background: 'var(--color-surface)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
-                borderRadius: 24,
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 20,
+                border: '1px solid var(--color-border)',
                 padding: 12,
                 height: '100%',
                 display: 'flex',
@@ -320,7 +313,7 @@ export default function MatchCard({
         >
             {/* Header - Compact */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#30d158', letterSpacing: '0.03em', flexShrink: 0 }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--color-success)', letterSpacing: '0.03em', flexShrink: 0 }}>
                     {compactDateStr} · {timeStr}
                 </span>
 
@@ -334,7 +327,7 @@ export default function MatchCard({
 
             {/* Title - Compact */}
             <h3 style={{
-                fontSize: '0.95rem', fontWeight: 600, color: 'white', margin: 0, marginBottom: 6,
+                fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-primary)', margin: 0, marginBottom: 6,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
                 {match.name.replace(/-/g, ' – ')}
@@ -342,7 +335,7 @@ export default function MatchCard({
 
             {/* Squad count - Compact (with showFullNames support) */}
             {showFullNames ? (
-                <div style={{ marginTop: 4, paddingTop: 6, borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ marginTop: 4, paddingTop: 6, borderTop: '0.5px solid var(--color-border-subtle)' }}>
                     <SquadNamesList
                         present={present}
                         maybe={maybe}
@@ -352,20 +345,20 @@ export default function MatchCard({
                     />
                 </div>
             ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, paddingTop: 6, borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, paddingTop: 6, borderTop: '0.5px solid var(--color-border-subtle)' }}>
                     <PlayerAvatars players={present.slice(0, 3)} currentPlayerId={currentPlayerId} size="sm" />
                     {present.length > 0 && (
-                        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>{present.length} in</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>{present.length} in</span>
                     )}
                     {maybe.length > 0 && (
-                        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>+{maybe.length}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>+{maybe.length}</span>
                     )}
                 </div>
             )}
 
             {/* Tap hint - Compact */}
             <div style={{ marginTop: 4, textAlign: 'right' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Tap for details</span>
+                <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>Tap for details</span>
             </div>
 
             {/* Modal */}

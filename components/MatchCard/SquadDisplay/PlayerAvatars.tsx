@@ -20,7 +20,7 @@ export default function PlayerAvatars({
     return (
         <div style={{ display: 'flex', marginLeft: 4 }}>
             {players.map((player, i) => {
-                const color = player.status === 'Present' ? '#30d158' : '#ffd60a';
+                const color = player.status === 'Present' ? 'var(--color-success)' : 'var(--color-warning)';
                 const isMe = player.id === currentPlayerId;
 
                 return (
@@ -34,15 +34,15 @@ export default function PlayerAvatars({
                             height: dimensions,
                             borderRadius: '50%',
                             background: color,
-                            color: 'black',
+                            color: 'var(--color-bg)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontSize,
                             fontWeight: 700,
                             marginLeft: i > 0 ? -10 : 0,
-                            border: isMe ? '2px solid white' : '2px solid rgba(20,20,25,0.9)',
-                            boxShadow: isMe ? '0 0 12px rgba(255,255,255,0.3)' : 'none',
+                            border: isMe ? '2px solid var(--color-text-primary)' : '2px solid var(--color-surface)',
+                            boxShadow: isMe ? '0 0 12px var(--color-border)' : 'none',
                         }}
                         title={player.name}
                     >

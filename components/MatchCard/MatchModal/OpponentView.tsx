@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, UserCircle, ChevronRight, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
+import { Loader2, UserCircle, ChevronRight, Sparkles, AlertCircle, TrendingUp, Trophy, Users, Zap } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 
@@ -43,6 +43,57 @@ interface OpponentViewProps {
     onGenerateAI: (force?: boolean) => void;
 }
 
+// Section Card Component - Consistent container for all sections
+const SectionCard = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) => (
+    <div style={{
+        background: 'var(--color-bg-elevated)',
+        backdropFilter: 'blur(40px)',
+        WebkitBackdropFilter: 'blur(40px)',
+        borderRadius: 16,
+        border: '0.5px solid var(--color-border)',
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        ...style,
+    }}>
+        {children}
+    </div>
+);
+
+// Section Header Component - Consistent header with icon
+const SectionHeader = ({ icon: Icon, title, color = 'var(--color-text-tertiary)', rightContent }: {
+    icon: React.ElementType;
+    title: string;
+    color?: string;
+    rightContent?: React.ReactNode;
+}) => (
+    <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    }}>
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+        }}>
+            <Icon size={14} style={{ color }} />
+            <span style={{
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                color: 'var(--color-text-secondary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+            }}>
+                {title}
+            </span>
+        </div>
+        {rightContent}
+    </div>
+);
+
 export default function OpponentView({
     opponentTeam,
     opponentData,
@@ -60,7 +111,7 @@ export default function OpponentView({
 
     if (loading) {
         return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, color: 'rgba(255,255,255,0.5)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, color: 'var(--color-text-secondary)' }}>
                 <Loader2 className="animate-spin" size={20} style={{ marginRight: 8 }} /> Loading team data...
             </div>
         );
@@ -70,7 +121,7 @@ export default function OpponentView({
         return (
             <div style={{
                 padding: 16, textAlign: 'center',
-                color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem'
+                color: 'var(--color-text-tertiary)', fontSize: '0.85rem'
             }}>
                 Team data not available
             </div>
@@ -99,115 +150,100 @@ export default function OpponentView({
             if (themAhead) themWins++;
         });
 
-        let verdict = { text: 'Even match', emoji: '🤝', color: '#ffd60a', bg: 'rgba(255, 214, 10, 0.15)' };
+        let verdict = { text: 'Even match', emoji: '🤝', color: 'var(--color-warning)', bg: 'rgba(var(--color-warning-rgb), 0.15)' };
         if (usWins === 4) {
-            verdict = { text: 'Easy pickings', emoji: '🔥', color: '#30d158', bg: 'rgba(48, 209, 88, 0.2)' };
+            verdict = { text: 'Easy pickings', emoji: '🔥', color: 'var(--color-success)', bg: 'rgba(var(--color-success-rgb), 0.2)' };
         } else if (usWins >= 3) {
-            verdict = { text: 'Looking good', emoji: '💪', color: '#30d158', bg: 'rgba(48, 209, 88, 0.15)' };
+            verdict = { text: 'Looking good', emoji: '💪', color: 'var(--color-success)', bg: 'rgba(var(--color-success-rgb), 0.15)' };
         } else if (themWins === 4) {
-            verdict = { text: 'Major challenge', emoji: '🚨', color: '#ff453a', bg: 'rgba(255, 69, 58, 0.15)' };
+            verdict = { text: 'Major challenge', emoji: '🚨', color: 'var(--color-danger)', bg: 'rgba(var(--color-danger-rgb), 0.2)' };
         } else if (themWins >= 3) {
-            verdict = { text: 'Tough match', emoji: '⚠️', color: '#ff9f0a', bg: 'rgba(255, 159, 10, 0.15)' };
+            verdict = { text: 'Tough match', emoji: '⚠️', color: 'var(--color-warning-secondary)', bg: 'rgba(var(--color-warning-rgb), 0.15)' };
         }
 
         return (
-            <div>
-                {/* Section Title + Verdict */}
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: 10,
-                }}>
-                    <div style={{
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        color: 'rgba(255,255,255,0.4)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                    }}>
-                        Head to Head
-                    </div>
-                    <div style={{
-                        padding: '4px 10px',
-                        borderRadius: 12,
-                        background: verdict.bg,
-                        color: verdict.color,
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                    }}>
-                        <span>{verdict.emoji}</span>
-                        <span>{verdict.text}</span>
-                    </div>
-                </div>
+            <SectionCard>
+                <SectionHeader
+                    icon={Zap}
+                    title="Head to Head"
+                    color="var(--color-warning)"
+                    rightContent={(
+                        <div style={{
+                            padding: '4px 10px',
+                            borderRadius: 10,
+                            background: verdict.bg,
+                            color: verdict.color,
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                        }}>
+                            <span>{verdict.emoji}</span>
+                            <span>{verdict.text}</span>
+                        </div>
+                    )}
+                />
 
                 {/* Comparison Table */}
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr auto auto',
-                    gap: '6px 8px',
+                    gap: '8px 12px',
                 }}>
                     {comparisons.map((stat) => {
                         const usAhead = stat.lowerIsBetter ? stat.us < stat.them : stat.us > stat.them;
                         const themAhead = stat.lowerIsBetter ? stat.them < stat.us : stat.them > stat.us;
 
                         return (
-                            <div key={stat.label} style={{ display: 'contents' }}>
-                                <div
-                                    style={{
-                                        fontSize: '0.8rem',
-                                        color: 'rgba(255,255,255,0.5)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }}
-                                >
+                            <React.Fragment key={stat.label}>
+                                <div style={{
+                                    fontSize: '0.85rem',
+                                    color: 'var(--color-text-secondary)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                }}>
                                     {stat.label}
                                 </div>
-                                <div
-                                    style={{
-                                        padding: '6px 12px',
-                                        borderRadius: 8,
-                                        background: usAhead ? 'rgba(48, 209, 88, 0.15)' : 'transparent',
-                                        border: usAhead ? '1px solid rgba(48, 209, 88, 0.3)' : '1px solid transparent',
-                                        fontSize: '0.85rem',
-                                        fontWeight: 600,
-                                        color: usAhead ? '#30d158' : 'rgba(255,255,255,0.6)',
-                                        textAlign: 'center',
-                                        minWidth: 50,
-                                    }}
-                                >
+                                <div style={{
+                                    padding: '6px 14px',
+                                    borderRadius: 8,
+                                    background: usAhead ? 'rgba(var(--color-success-rgb), 0.15)' : 'var(--color-surface-hover)',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 700,
+                                    color: usAhead ? 'var(--color-success)' : 'var(--color-text-primary)',
+                                    textAlign: 'center',
+                                    minWidth: 50,
+                                    border: usAhead ? '1px solid rgba(var(--color-success-rgb), 0.25)' : '1px solid transparent',
+                                }}>
                                     {stat.label === 'Goal Diff' && stat.us > 0 ? '+' : ''}{stat.us}
                                 </div>
-                                <div
-                                    style={{
-                                        padding: '6px 12px',
-                                        borderRadius: 8,
-                                        background: themAhead ? 'rgba(255, 69, 58, 0.15)' : 'transparent',
-                                        border: themAhead ? '1px solid rgba(255, 69, 58, 0.3)' : '1px solid transparent',
-                                        fontSize: '0.85rem',
-                                        fontWeight: 600,
-                                        color: themAhead ? '#ff453a' : 'rgba(255,255,255,0.6)',
-                                        textAlign: 'center',
-                                        minWidth: 50,
-                                    }}
-                                >
+                                <div style={{
+                                    padding: '6px 14px',
+                                    borderRadius: 8,
+                                    background: themAhead ? 'rgba(var(--color-danger-rgb), 0.15)' : 'var(--color-surface-hover)',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 700,
+                                    color: themAhead ? 'var(--color-danger)' : 'var(--color-text-primary)',
+                                    textAlign: 'center',
+                                    minWidth: 50,
+                                    border: themAhead ? '1px solid rgba(var(--color-danger-rgb), 0.25)' : '1px solid transparent',
+                                }}>
                                     {stat.label === 'Goal Diff' && stat.them > 0 ? '+' : ''}{stat.them}
                                 </div>
-                            </div>
+                            </React.Fragment>
                         );
                     })}
                 </div>
-            </div>
+            </SectionCard>
         );
     };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Team Header with Image */}
-            <div style={{ display: 'flex', gap: 12 }}>
+            {/* Team Header Card */}
+            <SectionCard style={{ padding: 20 }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                     {opponentData.imageBase64 ? (
                         <img
                             src={opponentData.imageBase64}
@@ -217,237 +253,227 @@ export default function OpponentView({
                                 onImageClick();
                             }}
                             style={{
-                                width: 64, height: 64,
-                                borderRadius: 12,
+                                width: 72, height: 72,
+                                borderRadius: 14,
                                 objectFit: 'cover',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                cursor: 'pointer'
+                                border: '1px solid var(--color-border)',
+                                cursor: 'pointer',
+                                flexShrink: 0,
                             }}
                         />
                     ) : (
                         <div style={{
-                            width: 64, height: 64,
-                            borderRadius: 12,
-                            background: 'linear-gradient(135deg, #5e5ce6, #0a84ff)',
+                            width: 72, height: 72,
+                            borderRadius: 14,
+                            background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-secondary))',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '1.5rem', fontWeight: 700, color: 'white'
+                            fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary)',
+                            flexShrink: 0,
                         }}>
                             {opponentData.name.charAt(0)}
                         </div>
                     )}
-                <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'white' }}>
-                        {opponentData.name}
-                    </div>
-                    {opponentData.leagueName && (
-                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
-                            {opponentData.leagueName}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                            fontSize: '1.25rem',
+                            fontWeight: 700,
+                            color: 'var(--color-text-primary)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}>
+                            {opponentData.name}
                         </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Recent Form */}
-            {recentForm.length > 0 && (
-                <div style={{ marginBottom: 0 }}>
-                    <div style={{
-                        fontSize: '0.7rem', fontWeight: 600,
-                        color: 'rgba(255,255,255,0.4)',
-                        textTransform: 'uppercase',
-                        marginBottom: 8,
-                    }}>
-                        Recent Form
+                        {opponentData.leagueName && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                marginTop: 4,
+                            }}>
+                                <Trophy size={12} style={{ color: 'var(--color-text-tertiary)' }} />
+                                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                    {opponentData.leagueName}
+                                </span>
+                            </div>
+                        )}
                     </div>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                </div>
+            </SectionCard>
+
+            {/* Stats Overview Card */}
+            {opponentData.rank !== undefined && (
+                <SectionCard>
+                    <SectionHeader
+                        icon={TrendingUp}
+                        title="Season Stats"
+                        color="var(--color-accent)"
+                    />
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 0',
+                    }}>
+                        <StatItem label="Rank" value={`#${opponentData.rank}`} color={opponentData.rank === 1 ? 'var(--color-warning)' : 'var(--color-text-primary)'} />
+                        <StatItem label="Points" value={opponentData.points || 0} />
+                        <StatItem label="Record" value={`${opponentData.wins || 0}-${opponentData.draws || 0}-${opponentData.losses || 0}`} />
+                        <StatItem
+                            label="Goal Diff"
+                            value={`${(opponentData.goalDifference || 0) >= 0 ? '+' : ''}${opponentData.goalDifference || 0}`}
+                            color={(opponentData.goalDifference || 0) >= 0 ? 'var(--color-success)' : 'var(--color-danger)'}
+                        />
+                    </div>
+                </SectionCard>
+            )}
+
+            {/* Recent Form Card */}
+            {recentForm.length > 0 && (
+                <SectionCard>
+                    <SectionHeader
+                        icon={TrendingUp}
+                        title="Recent Form"
+                        color="var(--color-success)"
+                    />
+                    <div style={{ display: 'flex', gap: 8 }}>
                         {recentForm.map((result, i) => (
-                            <div
+                            <motion.div
                                 key={i}
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay: i * 0.05 }}
                                 style={{
-                                    width: 32, height: 32,
-                                    borderRadius: 8,
-                                    background: result === 'W' ? 'rgba(48, 209, 88, 0.2)' :
-                                        result === 'L' ? 'rgba(255, 69, 58, 0.2)' :
-                                            'rgba(255, 214, 10, 0.2)',
-                                    color: result === 'W' ? '#30d158' :
-                                        result === 'L' ? '#ff453a' : '#ffd60a',
+                                    width: 36, height: 36,
+                                    borderRadius: 10,
+                                    background: result === 'W' ? 'rgba(var(--color-success-rgb), 0.2)' :
+                                        result === 'L' ? 'rgba(var(--color-danger-rgb), 0.2)' :
+                                            'rgba(var(--color-warning-rgb), 0.2)',
+                                    border: `1px solid ${result === 'W' ? 'rgba(var(--color-success-rgb), 0.3)' :
+                                        result === 'L' ? 'rgba(var(--color-danger-rgb), 0.3)' :
+                                            'rgba(var(--color-warning-rgb), 0.3)'}`,
+                                    color: result === 'W' ? 'var(--color-success)' :
+                                        result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '0.85rem',
-                                    fontWeight: 700,
+                                    fontSize: '0.9rem',
+                                    fontWeight: 800,
                                 }}
                             >
                                 {result}
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
-                </div>
+                </SectionCard>
             )}
 
-            {/* Stats Grid */}
-            {opponentData.rank !== undefined && (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: 1,
-                    background: 'rgba(255,255,255,0.1)',
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                }}>
-                    <div style={{ background: 'rgba(35,35,40,0.8)', padding: 12, textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffd60a' }}>#{opponentData.rank}</div>
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>RANK</div>
-                    </div>
-                    <div style={{ background: 'rgba(35,35,40,0.8)', padding: 12, textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>{opponentData.points || 0}</div>
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>PTS</div>
-                    </div>
-                    <div style={{ background: 'rgba(35,35,40,0.8)', padding: 12, textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'white' }}>
-                            <span style={{ color: '#30d158' }}>{opponentData.wins || 0}</span>
-                            <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
-                            <span style={{ color: '#ffd60a' }}>{opponentData.draws || 0}</span>
-                            <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
-                            <span style={{ color: '#ff453a' }}>{opponentData.losses || 0}</span>
-                        </div>
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>W/D/L</div>
-                    </div>
-                    <div style={{ background: 'rgba(35,35,40,0.8)', padding: 12, textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: (opponentData.goalDifference || 0) >= 0 ? '#30d158' : '#ff453a' }}>
-                            {(opponentData.goalDifference || 0) >= 0 ? '+' : ''}{opponentData.goalDifference || 0}
-                        </div>
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>GD</div>
-                    </div>
-                </div>
-            )}
-
-            {/* Manager & Description */}
+            {/* Manager & Description Card */}
             {(opponentData.manager || opponentData.description || opponentData.colors) && (
-                <div style={{
-                    padding: 14,
-                    background: 'rgba(255,255,255,0.04)',
-                    borderRadius: 12,
-                }}>
-                    {opponentData.colors && (
-                        <div style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            marginBottom: (opponentData.manager || opponentData.description) ? 10 : 0,
-                        }}>
-                            <span style={{ fontSize: '0.9rem' }}>🎨</span>
-                            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
-                                {opponentData.colors}
-                            </span>
-                        </div>
-                    )}
-                    {opponentData.manager && (
-                        <div style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            marginBottom: opponentData.description ? 10 : 0,
-                        }}>
-                            <UserCircle size={16} style={{ color: 'rgba(255,255,255,0.4)' }} />
-                            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
-                                {opponentData.manager}
-                            </span>
-                        </div>
-                    )}
-                    {opponentData.description && (
-                        <div style={{
-                            fontSize: '0.85rem',
-                            color: 'rgba(255,255,255,0.5)',
-                            fontStyle: 'italic',
-                            lineHeight: 1.5,
-                        }}>
-                            "{opponentData.description}"
-                        </div>
-                    )}
-                </div>
+                <SectionCard>
+                    <SectionHeader
+                        icon={UserCircle}
+                        title="Team Info"
+                        color="var(--color-accent)"
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {opponentData.colors && (
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: 10,
+                            }}>
+                                <span style={{ fontSize: '1rem' }}>🎨</span>
+                                <span style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
+                                    {opponentData.colors}
+                                </span>
+                            </div>
+                        )}
+                        {opponentData.manager && (
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: 10,
+                            }}>
+                                <UserCircle size={16} style={{ color: 'var(--color-text-tertiary)' }} />
+                                <span style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
+                                    {opponentData.manager}
+                                </span>
+                            </div>
+                        )}
+                        {opponentData.description && (
+                            <div style={{
+                                fontSize: '0.85rem',
+                                color: 'var(--color-text-secondary)',
+                                fontStyle: 'italic',
+                                lineHeight: 1.5,
+                                paddingTop: opponentData.manager || opponentData.colors ? 8 : 0,
+                                borderTop: opponentData.manager || opponentData.colors ? '1px solid var(--color-border-subtle)' : 'none',
+                            }}>
+                                "{opponentData.description}"
+                            </div>
+                        )}
+                    </div>
+                </SectionCard>
             )}
 
-            {/* Top Players */}
+            {/* Top Players Card */}
             {opponentPlayers.length > 0 && (
-                <div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginBottom: 8, textTransform: 'uppercase' }}>
-                        Top Scorers
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {opponentPlayers.map((player, i) => (
+                <SectionCard>
+                    <SectionHeader
+                        icon={Users}
+                        title="Top Scorers"
+                        color="var(--color-danger)"
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {opponentPlayers.slice(0, 5).map((player, i) => (
                             <div key={player.externalId} style={{
                                 display: 'flex', alignItems: 'center', gap: 12,
-                                padding: '10px 12px',
-                                background: i < 3 ? 'rgba(255,214,10,0.08)' : 'rgba(255,255,255,0.03)',
-                                borderRadius: 12,
-                                border: '0.5px solid rgba(255,255,255,0.05)',
+                                padding: '12px 0',
+                                borderBottom: i < 4 ? '1px solid var(--color-border-subtle)' : 'none',
                             }}>
                                 <div style={{
-                                    width: 32, height: 32, borderRadius: '50%',
-                                    background: i < 3 ? '#ffd60a' : 'rgba(255,255,255,0.1)',
-                                    color: i < 3 ? 'black' : 'white',
+                                    width: 24, height: 24,
+                                    color: i === 0 ? 'var(--color-warning)' :
+                                        i === 1 ? 'var(--color-text-secondary)' :
+                                            i === 2 ? 'var(--color-warning-secondary)' :
+                                                'var(--color-text-tertiary)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.8rem', fontWeight: 700, flexShrink: 0
+                                    fontSize: '0.85rem', fontWeight: 800, flexShrink: 0,
                                 }}>
-                                    {player.number || i + 1}
+                                    {i + 1}
                                 </div>
-                                <div style={{ flex: 1, fontSize: '0.9rem', color: 'white', fontWeight: 500 }}>
+                                <div style={{
+                                    width: 28, height: 28, borderRadius: '50%',
+                                    background: 'var(--color-surface-hover)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-secondary)', flexShrink: 0,
+                                }}>
+                                    {player.number || '-'}
+                                </div>
+                                <div style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>
                                     {player.name}
                                 </div>
-                                <div style={{ display: 'flex', gap: 12, fontSize: '0.9rem' }}>
-                                    <span style={{ color: '#30d158', fontWeight: 600 }}>⚽ {player.goals}</span>
-                                    <span style={{ color: '#0a84ff', fontWeight: 600 }}>🎯 {player.assists}</span>
+                                <div style={{ display: 'flex', gap: 12, fontSize: '0.85rem', alignItems: 'center' }}>
+                                    <span style={{ color: 'var(--color-text-secondary)' }}>
+                                        <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>{player.goals}</span> ⚽
+                                    </span>
+                                    <span style={{ color: 'var(--color-text-secondary)' }}>
+                                        <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>{player.assists}</span> 🎯
+                                    </span>
                                 </div>
                             </div>
                         ))}
                     </div>
-                </div>
+                </SectionCard>
             )}
 
-                {/* Head-to-Head Comparison */}
-                {renderHeadToHead()}
+            {/* Head-to-Head Comparison */}
+            {renderHeadToHead()}
 
             {/* AI Scouting Report */}
             {ownTeamData && opponentData && (
-                <div>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginBottom: 10,
-                    }}>
-                        <div style={{
-                            fontSize: '0.7rem',
-                            fontWeight: 600,
-                            color: 'rgba(255,255,255,0.4)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                        }}>
-                            <Sparkles size={12} style={{ color: '#bf5af2' }} />
-                            AI Scouting Report
-                        </div>
-                        {aiAnalysis && (
-                            <motion.button
-                                onClick={() => {
-                                    hapticPatterns.tap();
-                                    onGenerateAI(true); // Force regenerate
-                                }}
-                                whileTap={{ scale: 0.95 }}
-                                disabled={aiLoading}
-                                style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    color: 'rgba(255,255,255,0.4)',
-                                    cursor: aiLoading ? 'not-allowed' : 'pointer',
-                                    padding: 4,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    opacity: aiLoading ? 0.5 : 1,
-                                }}
-                            >
-                                <RefreshCw size={14} className={aiLoading ? 'animate-spin' : ''} />
-                            </motion.button>
-                        )}
-                    </div>
+                <SectionCard>
+                    <SectionHeader
+                        icon={Sparkles}
+                        title="AI Scouting Report"
+                        color="var(--color-accent-secondary)"
+                    />
 
                     {!aiAnalysis && !aiLoading && !aiError && (
                         <motion.button
@@ -458,12 +484,12 @@ export default function OpponentView({
                             whileTap={{ scale: 0.97 }}
                             style={{
                                 width: '100%',
-                                padding: '12px 16px',
-                                background: 'linear-gradient(135deg, rgba(191, 90, 242, 0.2), rgba(10, 132, 255, 0.2))',
-                                border: '1px solid rgba(191, 90, 242, 0.3)',
+                                padding: '14px 16px',
+                                background: 'rgba(var(--color-accent-rgb), 0.12)',
+                                border: '1px solid rgba(var(--color-accent-rgb), 0.2)',
                                 borderRadius: 12,
-                                color: '#bf5af2',
-                                fontSize: '0.85rem',
+                                color: 'var(--color-accent)',
+                                fontSize: '0.9rem',
                                 fontWeight: 600,
                                 cursor: 'pointer',
                                 display: 'flex',
@@ -472,8 +498,8 @@ export default function OpponentView({
                                 gap: 8,
                             }}
                         >
-                            <Sparkles size={16} />
-                            Generate AI Report
+                            <Sparkles size={18} />
+                            Generate AI Analysis
                         </motion.button>
                     )}
 
@@ -482,31 +508,32 @@ export default function OpponentView({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            padding: 20,
-                            color: 'rgba(255,255,255,0.5)',
-                            gap: 8,
+                            padding: 24,
+                            color: 'var(--color-text-secondary)',
+                            gap: 10,
+                            flexDirection: 'column',
                         }}>
-                            <Loader2 className="animate-spin" size={16} />
-                            <span style={{ fontSize: '0.85rem' }}>Analyzing opponent...</span>
+                            <Loader2 className="animate-spin" size={24} style={{ color: 'var(--color-accent)' }} />
+                            <span style={{ fontSize: '0.85rem' }}>Analyzing opponent data...</span>
                         </div>
                     )}
 
                     {aiError && (
                         <div style={{
-                            padding: '12px',
-                            background: 'rgba(255, 69, 58, 0.1)',
-                            border: '1px solid rgba(255, 69, 58, 0.2)',
+                            padding: '14px',
+                            background: 'rgba(var(--color-danger-rgb), 0.1)',
+                            border: '1px solid rgba(var(--color-danger-rgb), 0.2)',
                             borderRadius: 10,
                             display: 'flex',
                             alignItems: 'flex-start',
-                            gap: 8,
+                            gap: 10,
                         }}>
-                            <AlertCircle size={16} style={{ color: '#ff453a', flexShrink: 0, marginTop: 2 }} />
-                            <div>
-                                <div style={{ fontSize: '0.8rem', color: '#ff453a', fontWeight: 500 }}>
+                            <AlertCircle size={18} style={{ color: 'var(--color-danger)', flexShrink: 0, marginTop: 2 }} />
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--color-danger)', fontWeight: 600 }}>
                                     Analysis failed
                                 </div>
-                                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
                                     {aiError}
                                 </div>
                                 <motion.button
@@ -516,17 +543,18 @@ export default function OpponentView({
                                     }}
                                     whileTap={{ scale: 0.95 }}
                                     style={{
-                                        marginTop: 8,
-                                        padding: '6px 12px',
-                                        background: 'rgba(255,255,255,0.1)',
+                                        marginTop: 10,
+                                        padding: '8px 16px',
+                                        background: 'var(--color-surface-hover)',
                                         border: 'none',
-                                        borderRadius: 6,
-                                        color: 'white',
-                                        fontSize: '0.75rem',
+                                        borderRadius: 8,
+                                        color: 'var(--color-text-primary)',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
                                         cursor: 'pointer',
                                     }}
                                 >
-                                    Try again
+                                    Try Again
                                 </motion.button>
                             </div>
                         </div>
@@ -537,52 +565,48 @@ export default function OpponentView({
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                         >
-                            <div style={{
-                                padding: '14px',
-                                background: 'linear-gradient(135deg, rgba(191, 90, 242, 0.08), rgba(10, 132, 255, 0.08))',
-                                border: '1px solid rgba(191, 90, 242, 0.15)',
-                                borderRadius: 12,
+                            <p style={{
+                                margin: 0,
+                                fontSize: '0.9rem',
+                                lineHeight: 1.7,
+                                color: 'var(--color-text-primary)',
+                                whiteSpace: 'pre-line',
                             }}>
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '0.85rem',
-                                    lineHeight: 1.7,
-                                    color: 'rgba(255,255,255,0.85)',
-                                    whiteSpace: 'pre-line',
-                                }}>
-                                    {aiAnalysis}
-                                </p>
-                            </div>
-                            {/* Powered by Mistral */}
-                            <div style={{
-                                marginTop: 10,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'flex-end',
-                                gap: 6,
-                                color: 'rgba(255,255,255,0.3)',
-                                fontSize: '0.65rem',
-                            }}>
-                                <span>Powered by</span>
-                                <a
-                                    href="https://mistral.ai"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 4,
-                                        color: 'rgba(255,255,255,0.4)',
-                                        textDecoration: 'none',
-                                    }}
-                                >
-                                    <MistralLogo size={12} />
-                                    <span>Mistral</span>
-                                </a>
-                            </div>
+                                {aiAnalysis}
+                            </p>
                         </motion.div>
                     )}
-                </div>
+
+                    {/* Powered by Mistral */}
+                    {(aiAnalysis || aiLoading) && (
+                        <div style={{
+                            marginTop: 12,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: 6,
+                            color: 'var(--color-text-tertiary)',
+                            fontSize: '0.65rem',
+                        }}>
+                            <span>Powered by</span>
+                            <a
+                                href="https://mistral.ai"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    color: 'var(--color-text-secondary)',
+                                    textDecoration: 'none',
+                                }}
+                            >
+                                <MistralLogo size={12} />
+                                <span>Mistral</span>
+                            </a>
+                        </div>
+                    )}
+                </SectionCard>
             )}
 
             {/* Link to LZV */}
@@ -592,15 +616,49 @@ export default function OpponentView({
                 rel="noopener noreferrer"
                 style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: 14, gap: 8,
-                    background: 'rgba(10,132,255,0.15)',
-                    borderRadius: 12,
-                    color: '#0a84ff', fontSize: '0.9rem', fontWeight: 600,
-                    textDecoration: 'none'
+                    padding: 16, gap: 8,
+                    background: 'rgba(var(--color-accent-rgb), 0.12)',
+                    borderRadius: 14,
+                    border: '1px solid rgba(var(--color-accent-rgb), 0.2)',
+                    color: 'var(--color-accent)', fontSize: '0.95rem', fontWeight: 600,
+                    textDecoration: 'none',
                 }}
             >
-                View on LZV Cup <ChevronRight size={16} />
+                View on LZV Cup <ChevronRight size={18} />
             </a>
+        </div>
+    );
+}
+
+// Stat Item Component - Simple inline stat
+function StatItem({ label, value, color = 'var(--color-text-primary)' }: {
+    label: string;
+    value: React.ReactNode;
+    color?: string;
+}) {
+    return (
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+        }}>
+            <div style={{
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                color: color,
+            }}>
+                {value}
+            </div>
+            <div style={{
+                fontSize: '0.65rem',
+                color: 'var(--color-text-tertiary)',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+            }}>
+                {label}
+            </div>
         </div>
     );
 }
