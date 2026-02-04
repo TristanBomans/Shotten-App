@@ -64,7 +64,7 @@ loadEnvFile();
 
 const SUPABASE_URL = process.env.SUPABASE_URL?.trim() || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY?.trim() || "";
-const CONVEX_PROD_URL = process.env.CONVEX_PROD_URL?.trim() || "";
+const CONVEX_PROD_URL = process.env.CONVEX_PROD_URL?.trim() || "https://your-app.convex.cloud";
 
 // =============================================================================
 // TYPES (matching Supabase schema)
