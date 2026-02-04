@@ -4,7 +4,6 @@
   "compatibility_flags": ["nodejs_compat"],
   "pages_build_output_dir": ".open-next/assets",
   "vars": {
-    "NEXT_PUBLIC_SUPABASE_URL": "https://bvwjoptvnxpttwkstiue.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_YaWg2zCaLJqZrVYv0K-9sQ_vXXYEImm"
+    "NEXT_PUBLIC_CONVEX_URL": "https://determined-shrimp-745.convex.cloud"
   }
 }

@@ -44,6 +44,7 @@ export const getMatches = query({
     matches.sort((a, b) => a.date - b.date);
 
     return matches.map(m => ({
+      _id: m._id,
       externalId: m.externalId,
       date: new Date(m.date).toISOString(),
       homeTeam: m.homeTeam,

@@ -387,9 +387,10 @@ export function useScraperTeams() {
 
 // Hook for LZV matches
 export function useScraperMatches(teamId?: number) {
+  const args = teamId ? { teamId } : {};
   const convexMatches = useQuery(
     api.queries.lzv.getMatches,
-    teamId && !getUseMockData() ? { teamId } : "skip"
+    !getUseMockData() ? args : "skip"
   );
 
   const fetchScraperMatches = useCallback(async () => {
@@ -405,9 +406,10 @@ export function useScraperMatches(teamId?: number) {
 
 // Hook for LZV players
 export function useScraperPlayers(teamId?: number) {
+  const args = teamId ? { teamId } : {};
   const convexPlayers = useQuery(
     api.queries.lzv.getPlayers,
-    teamId && !getUseMockData() ? { teamId } : "skip"
+    !getUseMockData() ? args : "skip"
   );
 
   const fetchScraperPlayersHook = useCallback(async () => {
