@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchAllScraperTeams, fetchAllScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
+import { useScraperTeams, useScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useConvexData';
 import { Loader2, ChevronDown, Trophy, Users, TrendingUp, X } from 'lucide-react';
 import TeamDetailModal from './TeamDetailModal';
 import LeagueSelector from './LeagueSelector';
@@ -10,13 +10,15 @@ import { hapticPatterns } from '@/lib/haptic';
 
 export default function LeagueView() {
     const [activeTab, setActiveTab] = useState<'standings' | 'players'>('standings');
-    const [teams, setTeams] = useState<ScraperTeam[]>([]);
-    const [allPlayers, setAllPlayers] = useState<ScraperPlayer[]>([]);
-    const [loading, setLoading] = useState(true);
     const [selectedTeam, setSelectedTeam] = useState<{ team: ScraperTeam, players: ScraperPlayer[] } | null>(null);
     const [selectedLeague, setSelectedLeague] = useState<string>('');
     const [visiblePlayers, setVisiblePlayers] = useState(50);
     const [teamSelection, setTeamSelection] = useState<{ player: ScraperPlayer, teams: ScraperTeam[] } | null>(null);
+
+    // Use Convex hooks
+    const { teams, loading: teamsLoading } = useScraperTeams();
+    const { players: allPlayers, loading: playersLoading } = useScraperPlayers();
+    const loading = teamsLoading || playersLoading;
 
     // Extract unique leagues
     const leagues = useMemo(() => {
@@ -58,25 +60,6 @@ export default function LeagueView() {
     useEffect(() => {
         setVisiblePlayers(50);
     }, [activeTab, selectedLeague]);
-
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                const [teamsData, playersData] = await Promise.all([
-                    fetchAllScraperTeams(),
-                    fetchAllScraperPlayers()
-                ]);
-                setTeams(teamsData);
-                setAllPlayers(playersData);
-            } catch (err) {
-                console.error('Failed to load league data:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadData();
-    }, []);
 
     const handleTeamClick = (team: ScraperTeam) => {
         hapticPatterns.tap();
@@ -127,7 +110,7 @@ export default function LeagueView() {
             .filter(p => {
                 // Check teamIds array first (multi-team support)
                 if (p.teamIds && p.teamIds.length > 0) {
-                    return p.teamIds.some(tid => validTeamIds.has(tid));
+                    return p.teamIds.some((tid: number) => validTeamIds.has(tid));
                 }
                 // Fallback to single teamId
                 return validTeamIds.has(p.teamId);

@@ -12,7 +12,7 @@ import { hapticPatterns } from '@/lib/haptic';
 interface StatsViewProps {
     matches: Match[];
     players: Player[];
-    currentPlayerId: number;
+    currentPlayerId: string;
 }
 
 // Rank configuration
@@ -38,7 +38,7 @@ function getRank(score: number) {
 }
 
 interface MatchResult {
-    matchId: number;
+    matchId: string;
     matchName: string;
     date: Date;
     status: 'present' | 'maybe' | 'notPresent' | 'ghost';

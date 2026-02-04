@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, Database, Wifi, WifiOff, Settings, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette } from 'lucide-react';
-import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
+import { getUseMockData, setUseMockData, useScraperTeams } from '@/lib/useConvexData';
 import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
 import VersionChecker from './VersionChecker';
@@ -28,6 +28,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
     const [theme, setTheme] = useState<string>('original');
     const [showThemeSelector, setShowThemeSelector] = useState(false);
     const { hasUpdate, updateApp, isChecking } = useVersionChecker();
+    const { teams: scraperTeams, loading: scraperTeamsLoading } = useScraperTeams();
 
     useEffect(() => {
         setUseMock(getUseMockData());
@@ -46,18 +47,15 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) setTheme(savedTheme);
 
-        // Fetch leagues for the selector
-        const loadLeagues = async () => {
-            try {
-                const teams = await fetchAllScraperTeams();
-                const unique = Array.from(new Set(teams.map(t => t.leagueName).filter(Boolean))) as string[];
-                setLeagues(unique.sort());
-            } catch {
-                console.warn('Failed to load leagues for settings');
-            }
-        };
-        loadLeagues();
     }, []);
+
+    // Update leagues when scraper teams load
+    useEffect(() => {
+        if (scraperTeams.length > 0) {
+            const unique = Array.from(new Set(scraperTeams.map(t => t.leagueName).filter(Boolean))) as string[];
+            setLeagues(unique.sort());
+        }
+    }, [scraperTeams.length]);
 
     useEffect(() => {
         onPlayerManagementOpenChange?.(isPlayerManagementOpen);

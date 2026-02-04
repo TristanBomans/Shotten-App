@@ -132,7 +132,7 @@ export async function fetchAllPlayersData(): Promise<Player[]> {
     return data.sort((a: Player, b: Player) => a.name.localeCompare(b.name));
 }
 
-export async function fetchPlayerMatchesData(playerId: number): Promise<Match[]> {
+export async function fetchPlayerMatchesData(playerId: string): Promise<Match[]> {
     if (getUseMockData()) {
         await new Promise(r => setTimeout(r, 400));
         return getMatchesForPlayer(playerId);
@@ -186,7 +186,7 @@ export function usePlayers() {
 /**
  * Hook to fetch matches for a player
  */
-export function useMatches(playerId: number | null) {
+export function useMatches(playerId: string | null) {
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -259,8 +259,8 @@ export function useUpdateAttendance() {
     const [updating, setUpdating] = useState<string | null>(null);
 
     const updateAttendance = useCallback(async (
-        matchId: number,
-        playerId: number,
+        matchId: string,
+        playerId: string,
         status: 'Present' | 'NotPresent' | 'Maybe',
         onSuccess?: () => void
     ) => {
@@ -330,11 +330,11 @@ export function useTeams() {
 /**
  * Create a new player
  */
-export async function createPlayer(name: string, teamIds: number[] = []): Promise<Player> {
+export async function createPlayer(name: string, teamIds: string[] = []): Promise<Player> {
     if (getUseMockData()) {
         await new Promise(r => setTimeout(r, 300));
         const newPlayer: Player = {
-            id: Math.max(...MOCK_PLAYERS.map(p => p.id), 0) + 1,
+            id: String(Math.max(...MOCK_PLAYERS.map(p => parseInt(p.id)), 0) + 1),
             name,
             teamIds,
         };
@@ -355,7 +355,7 @@ export async function createPlayer(name: string, teamIds: number[] = []): Promis
 /**
  * Update an existing player
  */
-export async function updatePlayer(id: number, data: { name: string; teamIds: number[] }): Promise<Player> {
+export async function updatePlayer(id: string, data: { name: string; teamIds: string[] }): Promise<Player> {
     if (getUseMockData()) {
         await new Promise(r => setTimeout(r, 300));
         const player = MOCK_PLAYERS.find(p => p.id === id);
@@ -378,7 +378,7 @@ export async function updatePlayer(id: number, data: { name: string; teamIds: nu
 /**
  * Delete a player
  */
-export async function deletePlayer(id: number): Promise<void> {
+export async function deletePlayer(id: string): Promise<void> {
     if (getUseMockData()) {
         await new Promise(r => setTimeout(r, 300));
         const idx = MOCK_PLAYERS.findIndex(p => p.id === id);
@@ -438,7 +438,7 @@ export function usePlayerManagement() {
         }
     }, []);
 
-    const editPlayer = useCallback(async (id: number, name: string, teamIds: number[]) => {
+    const editPlayer = useCallback(async (id: string, name: string, teamIds: string[]) => {
         setSaving(true);
         // Store previous state for rollback
         const previousPlayers = players;
@@ -460,7 +460,7 @@ export function usePlayerManagement() {
         }
     }, [players]);
 
-    const removePlayer = useCallback(async (id: number) => {
+    const removePlayer = useCallback(async (id: string) => {
         setSaving(true);
         // Store previous state for rollback
         const previousPlayers = players;
@@ -480,7 +480,7 @@ export function usePlayerManagement() {
         }
     }, [players]);
 
-    const toggleTeam = useCallback(async (player: Player, teamId: number) => {
+    const toggleTeam = useCallback(async (player: Player, teamId: string) => {
         const newTeamIds = player.teamIds.includes(teamId)
             ? player.teamIds.filter(t => t !== teamId)
             : [...player.teamIds, teamId];

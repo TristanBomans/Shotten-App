@@ -4,8 +4,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 interface PlayerAvatarsProps {
-    players: { id: number; name: string; status: string }[];
-    currentPlayerId: number;
+    players: { id: string; name: string; status: string }[];
+    currentPlayerId: string;
     size?: 'sm' | 'md';
 }
 

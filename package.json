@@ -12,12 +12,15 @@
     "lint": "eslint",
     "build:cf": "bun install && bun scripts/generate-version.js && bunx next build && bash scripts/build-opennext.sh && bash scripts/prepare-pages.sh",
     "preview": "bun run build:cf && wrangler dev",
-    "deploy": "bun run build:cf && wrangler deploy"
+    "deploy": "bun run build:cf && wrangler deploy",
+    "migrate": "bun run scripts/migrate.ts",
+    "reset:db": "bun run scripts/reset-db.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
     "@tailwindcss/postcss": "^4.1.17",
     "clsx": "^2.1.1",
+    "convex": "^1.31.7",
     "framer-motion": "^12.23.25",
     "lucide-react": "^0.556.0",
     "next": "^14.2.23",

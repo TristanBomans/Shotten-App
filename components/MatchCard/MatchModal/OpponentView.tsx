@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, UserCircle, ChevronRight, Sparkles, AlertCircle, TrendingUp, Trophy, Users, Zap } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
-import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
+import type { ScraperTeam, ScraperPlayer } from '@/lib/useConvexData';
 
 // Mistral AI logo
 function MistralLogo({ size = 14 }: { size?: number }) {

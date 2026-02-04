@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Trash2, UserPlus, Loader2 } from 'lucide-react';
-import { usePlayerManagement } from '@/lib/useData';
+import { usePlayerManagement } from '@/lib/useConvexData';
 import { hapticPatterns } from '@/lib/haptic';
 import type { Player } from '@/lib/mockData';
 
@@ -25,11 +25,11 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
         editPlayer,
     } = usePlayerManagement();
 
-    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState('');
     const [newPlayerName, setNewPlayerName] = useState('');
     const [isAddingNew, setIsAddingNew] = useState(false);
-    const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const newInputRef = useRef<HTMLInputElement>(null);
 
@@ -78,7 +78,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
         setEditingName('');
     };
 
-    const handleToggleTeam = async (player: Player, teamId: number) => {
+    const handleToggleTeam = async (player: Player, teamId: string) => {
         hapticPatterns.toggle();
         await toggleTeam(player, teamId);
     };
@@ -92,7 +92,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
         }
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: string) => {
         hapticPatterns.error();
         await removePlayer(id);
         setDeleteConfirmId(null);

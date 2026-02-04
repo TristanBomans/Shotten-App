@@ -1,23 +1,19 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronRight } from 'lucide-react';
-import { usePlayers } from '@/lib/useData';
+import { usePlayers } from '@/lib/useConvexData';
 import type { Player } from '@/lib/mockData';
 
 interface PlayerSelectProps {
-    onSelect: (id: number) => void;
+    onSelect: (id: string) => void;
 }
 
 export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
-    const { players, loading, fetchPlayers } = usePlayers();
+    const { players, loading } = usePlayers();
     const [search, setSearch] = useState('');
-    const [selectedId, setSelectedId] = useState<number | null>(null);
-
-    useEffect(() => {
-        fetchPlayers();
-    }, [fetchPlayers]);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
 
     const filteredPlayers = useMemo(() => {
         return players.filter(p =>
@@ -25,7 +21,7 @@ export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
         );
     }, [players, search]);
 
-    const handleSelect = (id: number) => {
+    const handleSelect = (id: string) => {
         setSelectedId(id);
         setTimeout(() => onSelect(id), 500);
     };
@@ -165,37 +161,39 @@ interface PlayerCardProps {
     onSelect: () => void;
 }
 
-function PlayerCard({ player, index, isSelected, isDisabled, onSelect }: PlayerCardProps) {
-    return (
-        <motion.button
-            layout
-            initial={{ opacity: 0, x: -20 }}
-            animate={{
-                opacity: isDisabled ? 0.3 : 1,
-                x: 0,
-                scale: isSelected ? 1.02 : 1,
-                filter: isDisabled ? 'blur(2px)' : 'none',
-            }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{
-                delay: index * 0.03,
-                layout: { type: 'spring', stiffness: 400, damping: 30 }
-            }}
-            onClick={onSelect}
-            disabled={isSelected || isDisabled}
-            className={`glass-panel touch-target ${isSelected ? 'animate-pulse-glow status-present' : ''}`}
-            style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 'var(--space-md) var(--space-lg)',
-                marginBottom: 'var(--space-sm)',
-                border: isSelected ? '1px solid var(--color-accent)' : undefined,
-                boxShadow: isSelected ? 'var(--shadow-glow)' : undefined,
-                cursor: isSelected || isDisabled ? 'default' : 'pointer',
-            }}
-        >
+const PlayerCard = React.forwardRef<HTMLButtonElement, PlayerCardProps>(
+    ({ player, index, isSelected, isDisabled, onSelect }, ref) => {
+        return (
+            <motion.button
+                ref={ref}
+                layout
+                initial={{ opacity: 0, x: -20 }}
+                animate={{
+                    opacity: isDisabled ? 0.3 : 1,
+                    x: 0,
+                    scale: isSelected ? 1.02 : 1,
+                    filter: isDisabled ? 'blur(2px)' : 'none',
+                }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{
+                    delay: index * 0.03,
+                    layout: { type: 'spring', stiffness: 400, damping: 30 }
+                }}
+                onClick={onSelect}
+                disabled={isSelected || isDisabled}
+                className={`glass-panel touch-target ${isSelected ? 'animate-pulse-glow status-present' : ''}`}
+                style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: 'var(--space-md) var(--space-lg)',
+                    marginBottom: 'var(--space-sm)',
+                    border: isSelected ? '1px solid var(--color-accent)' : undefined,
+                    boxShadow: isSelected ? 'var(--shadow-glow)' : undefined,
+                    cursor: isSelected || isDisabled ? 'default' : 'pointer',
+                }}
+            >
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                 {/* Avatar */}
                 <div
@@ -240,5 +238,7 @@ function PlayerCard({ player, index, isSelected, isDisabled, onSelect }: PlayerC
                 <ChevronRight size={20} style={{ color: 'var(--color-text-tertiary)' }} />
             )}
         </motion.button>
-    );
-}
+        );
+    }
+);
+PlayerCard.displayName = 'PlayerCard';

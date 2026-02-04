@@ -15,7 +15,7 @@ interface MatchModalProps {
     match: Match;
     dateObj: Date;
     roster: RosterPlayer[];
-    currentPlayerId: number;
+    currentPlayerId: string;
     onClose: () => void;
 }
 

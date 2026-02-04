@@ -5,7 +5,7 @@ import type { RosterPlayer, StatusGroup } from '../types';
 
 interface SquadViewProps {
     statusGroups: StatusGroup[];
-    currentPlayerId: number;
+    currentPlayerId: string;
 }
 
 export default function SquadView({ statusGroups, currentPlayerId }: SquadViewProps) {

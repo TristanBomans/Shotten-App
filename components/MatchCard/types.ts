@@ -1,19 +1,19 @@
 import type { Match, Player } from '@/lib/mockData';
-import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
+import type { ScraperTeam, ScraperPlayer } from '@/lib/useConvexData';
 
 export interface MatchCardProps {
     match: Match;
-    currentPlayerId: number;
+    currentPlayerId: string;
     allPlayers: Player[];
-    onUpdate: (matchId: number, newStatus: AttendanceStatus) => void;
+    onUpdate: (matchId: string, newStatus: AttendanceStatus) => void;
     variant: 'hero' | 'compact';
 }
 
 export interface RosterPlayer {
-    id: number;
+    id: string;
     name: string;
     status: string;
-    teamIds?: number[];
+    teamIds?: string[];
 }
 
 export interface StatusGroup {
@@ -57,7 +57,7 @@ export const RESPONSE_CONFIG = {
 export interface MatchModalProps {
     matchName: string;
     roster: RosterPlayer[];
-    currentPlayerId: number;
+    currentPlayerId: string;
     match: Match;
     onClose: () => void;
 }

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp } from 'lucide-react';
 import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
-import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
+import type { ScraperTeam, ScraperPlayer } from '@/lib/useConvexData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
 

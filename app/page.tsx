@@ -12,7 +12,7 @@ type View = 'home' | 'stats' | 'league' | 'settings';
 const views: View[] = ['home', 'stats', 'league', 'settings'];
 
 function HomeContent() {
-    const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
+    const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
     const searchParams = useSearchParams();
@@ -33,7 +33,15 @@ function HomeContent() {
     useEffect(() => {
         const stored = localStorage.getItem('selectedPlayerId');
         if (stored) {
-            setSelectedPlayerId(parseInt(stored, 10));
+            // Validate that the stored ID is a valid Convex ID (20+ character alphanumeric string)
+            // Old Supabase integer IDs like "7" or short strings should be cleared
+            const isValidConvexId = /^[a-z0-9]{20,}$/.test(stored);
+            if (isValidConvexId) {
+                setSelectedPlayerId(stored);
+            } else {
+                console.log('Clearing invalid player ID from localStorage:', stored);
+                localStorage.removeItem('selectedPlayerId');
+            }
         }
 
         // Check for view parameter in URL to handle navigation from version page
@@ -46,8 +54,8 @@ function HomeContent() {
         setLoading(false);
     }, [searchParams]);
 
-    const handlePlayerSelect = (id: number) => {
-        localStorage.setItem('selectedPlayerId', id.toString());
+    const handlePlayerSelect = (id: string) => {
+        localStorage.setItem('selectedPlayerId', id);
         setSelectedPlayerId(id);
     };
 

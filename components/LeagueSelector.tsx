@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronRight, Check } from 'lucide-react';
-import type { ScraperTeam } from '@/lib/useData';
+import type { ScraperTeam } from '@/lib/useConvexData';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface LeagueSelectorProps {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { findScraperTeamByName, fetchScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
+import { findScraperTeamByName, fetchScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useConvexData';
 import { API_BASE_URL } from '@/lib/config';
 
 interface UseOpponentTeamDataProps {
@@ -55,6 +55,7 @@ export function useOpponentTeamData({
             try {
                 // Fetch opponent team
                 const team = await findScraperTeamByName(opponentTeam);
+
                 if (team) {
                     setOpponentData(team);
                     // Fetch players

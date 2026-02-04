@@ -3,7 +3,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar } from 'lucide-react';
-import { useMatches, useAllPlayers } from '@/lib/useData';
+import { useMatches, useAllPlayers } from '@/lib/useConvexData';
+import type { Match } from '@/lib/mockData';
 import { hapticPatterns } from '@/lib/haptic';
 import MatchCard from './MatchCard';
 import StatsView from './StatsView';
@@ -13,7 +14,7 @@ import PullToRefresh from './PullToRefresh';
 import { parseDateToTimestamp } from '@/lib/dateUtils';
 
 interface DashboardProps {
-    playerId: number;
+    playerId: string;
     currentView: 'home' | 'stats' | 'league' | 'settings';
     onLogout: () => void;
     onViewChange: (view: 'home' | 'stats' | 'league' | 'settings') => void;
@@ -25,9 +26,29 @@ const viewOrder = ['home', 'stats', 'league', 'settings'] as const;
 type ViewType = typeof viewOrder[number];
 
 export default function Dashboard({ playerId, currentView, onLogout, onViewChange, onPlayerManagementOpenChange }: DashboardProps) {
-    const { matches, loading, error, fetchMatches, setMatches } = useMatches(playerId);
-    const { players, fetchAllPlayers } = useAllPlayers();
+    const { matches: convexMatches, loading, error } = useMatches(playerId);
+    const { players } = useAllPlayers();
+    const [matches, setMatches] = useState<Match[]>([]);
     const [isRefreshing, setIsRefreshing] = useState(false);
+
+    // Sync local matches with Convex data (only when data actually changes)
+    useEffect(() => {
+        setMatches(prev => {
+            // Deep compare to prevent unnecessary updates
+            if (prev.length !== convexMatches.length) return convexMatches;
+            // Check if any match has different attendance
+            const hasChanges = convexMatches.some((m, i) => {
+                const prevM = prev[i];
+                if (!prevM) return true;
+                if (m.id !== prevM.id) return true;
+                const prevAtt = JSON.stringify(prevM.attendances?.sort((a, b) => a.playerId.localeCompare(b.playerId)));
+                const newAtt = JSON.stringify(m.attendances?.sort((a, b) => a.playerId.localeCompare(b.playerId)));
+                return prevAtt !== newAtt;
+            });
+            return hasChanges ? convexMatches : prev;
+        });
+    }, [convexMatches]);
+
     const upcomingRef = useRef<HTMLElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     
@@ -37,11 +58,6 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const scrollEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isInitialMount = useRef(true);
-
-    useEffect(() => {
-        fetchMatches();
-        fetchAllPlayers();
-    }, [fetchMatches, fetchAllPlayers]);
 
     // Get current view index from scroll position
     const getViewIndexFromScroll = useCallback((): number => {
@@ -187,17 +203,13 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
 
     const handleRefresh = useCallback(async () => {
         setIsRefreshing(true);
-        try {
-            await Promise.all([fetchMatches(), fetchAllPlayers()]);
-            hapticPatterns.success();
-        } catch (err) {
-            hapticPatterns.error();
-        } finally {
-            setIsRefreshing(false);
-        }
-    }, [fetchMatches, fetchAllPlayers]);
+        // Convex auto-refetches, just give haptic feedback
+        await new Promise(resolve => setTimeout(resolve, 500));
+        hapticPatterns.success();
+        setIsRefreshing(false);
+    }, []);
 
-    const handleUpdate = async (matchId?: number, newStatus?: 'Present' | 'NotPresent' | 'Maybe') => {
+    const handleUpdate = async (matchId?: string, newStatus?: 'Present' | 'NotPresent' | 'Maybe') => {
         if (matchId !== undefined && newStatus !== undefined) {
             setMatches(prevMatches =>
                 prevMatches.map(match => {
@@ -216,9 +228,8 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                     return match;
                 })
             );
-        } else {
-            await fetchMatches();
         }
+        // Convex auto-refetches after mutations
     };
 
     // Split matches
@@ -267,7 +278,7 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                     <p className="text-body" style={{ marginBottom: 'var(--space-lg)' }}>
                         Unable to reach the server. Check your connection.
                     </p>
-                    <button className="btn btn-primary touch-target" onClick={() => fetchMatches()}>
+                    <button className="btn btn-primary touch-target" onClick={() => window.location.reload()}>
                         Try Again
                     </button>
                 </motion.div>

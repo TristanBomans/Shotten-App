@@ -3,7 +3,7 @@
 import React from 'react';
 
 interface Player {
-    id: number;
+    id: string;
     name: string;
     status: string;
 }
@@ -13,7 +13,7 @@ interface SquadNamesListProps {
     maybe: Player[];
     notPresent: Player[];
     unknown: Player[];
-    currentPlayerId: number;
+    currentPlayerId: string;
 }
 
 export default function SquadNamesList({

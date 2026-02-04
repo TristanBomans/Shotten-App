@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
+import { ConvexClientProvider } from '@/components/ConvexClientProvider';
 
 export const metadata: Metadata = {
     title: 'Shotten - Team Tracker',
@@ -63,7 +64,9 @@ export default function RootLayout({
                 <div className="ambient-bg" />
 
                 {/* Main Content */}
-                {children}
+                <ConvexClientProvider>
+                    {children}
+                </ConvexClientProvider>
 
                 {/* Service Worker */}
                 <ServiceWorkerRegistration />
