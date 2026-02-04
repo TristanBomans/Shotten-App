@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp } from 'lucide-react';
 import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useConvexData';
-import { API_BASE_URL } from '@/lib/config';
+import { useScraperMatches } from '@/lib/useConvexData';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface ScraperMatch {
@@ -31,32 +31,29 @@ interface TeamDetailModalProps {
 export default function TeamDetailModal({ team, players, onClose }: TeamDetailModalProps) {
     const [showImage, setShowImage] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'squad'>('overview');
-    const [matches, setMatches] = useState<ScraperMatch[]>([]);
-    const [loadingMatches, setLoadingMatches] = useState(false);
+
+    // Use Convex hook for matches
+    const { matches: convexMatches, loading: loadingMatches } = useScraperMatches(team.externalId);
+
+    const matches = useMemo(() => {
+        return convexMatches.map(m => ({
+            _id: m._id,
+            externalId: m.externalId,
+            date: m.date,
+            homeTeam: m.homeTeam,
+            awayTeam: m.awayTeam,
+            homeScore: m.homeScore,
+            awayScore: m.awayScore,
+            location: m.location,
+            teamId: m.teamId,
+            status: m.status,
+        }));
+    }, [convexMatches]);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const overviewRef = useRef<HTMLDivElement>(null);
     const matchesRef = useRef<HTMLDivElement>(null);
     const squadRef = useRef<HTMLDivElement>(null);
-
-    // Fetch matches for this team
-    useEffect(() => {
-        const fetchMatches = async () => {
-            setLoadingMatches(true);
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setMatches(data);
-                }
-            } catch (error) {
-                console.warn('Failed to fetch team matches:', error);
-            } finally {
-                setLoadingMatches(false);
-            }
-        };
-        fetchMatches();
-    }, [team.externalId]);
 
     // Intersection Observer for tab sync
     useEffect(() => {

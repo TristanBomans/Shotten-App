@@ -14,6 +14,7 @@
     "preview": "bun run build:cf && wrangler dev",
     "deploy": "bun run build:cf && wrangler deploy",
     "migrate": "bun run scripts/migrate.ts",
+    "migrate:prod": "bun run scripts/migrate-prod.ts",
     "reset:db": "bun run scripts/reset-db.ts"
   },
   "dependencies": {

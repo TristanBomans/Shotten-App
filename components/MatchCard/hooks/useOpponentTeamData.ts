@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { findScraperTeamByName, fetchScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useConvexData';
+import { useScraperTeams, useScraperPlayers, useScraperMatches, type ScraperTeam, type ScraperPlayer } from '@/lib/useConvexData';
 import { API_BASE_URL } from '@/lib/config';
 
 interface UseOpponentTeamDataProps {
@@ -28,17 +28,44 @@ export function useOpponentTeamData({
     ownTeam,
     enabled,
 }: UseOpponentTeamDataProps): UseOpponentTeamDataResult {
-    const [opponentData, setOpponentData] = useState<ScraperTeam | null>(null);
-    const [opponentPlayers, setOpponentPlayers] = useState<ScraperPlayer[]>([]);
-    const [opponentMatches, setOpponentMatches] = useState<any[]>([]);
-    const [ownTeamData, setOwnTeamData] = useState<ScraperTeam | null>(null);
-    const [loading, setLoading] = useState(false);
+    // Use Convex hooks for data
+    const { teams, loading: teamsLoading } = useScraperTeams();
+    const [opponentTeamId, setOpponentTeamId] = useState<number | undefined>(undefined);
+    const { players: opponentPlayersRaw, loading: playersLoading } = useScraperPlayers(opponentTeamId);
+    const { matches: opponentMatchesRaw, loading: matchesLoading } = useScraperMatches(opponentTeamId);
 
-    // AI Analysis state
     const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
     const [aiLoading, setAiLoading] = useState(false);
     const [aiError, setAiError] = useState<string | null>(null);
     const aiCacheRef = useRef<Map<string, string>>(new Map());
+
+    // Find opponent and own team from teams list
+    const opponentData = useMemo(() => {
+        if (!opponentTeam || teams.length === 0) return null;
+        const normalizedOpponent = opponentTeam.toLowerCase().replace(/\s+/g, ' ').trim();
+        return teams.find(t => {
+            const normalizedTeam = t.name.toLowerCase().replace(/\s+/g, ' ').trim();
+            return normalizedOpponent.includes(normalizedTeam.slice(0, 8)) ||
+                   normalizedTeam.includes(normalizedOpponent.slice(0, 8));
+        }) || null;
+    }, [opponentTeam, teams]);
+
+    const ownTeamData = useMemo(() => {
+        if (!ownTeam || teams.length === 0) return null;
+        const normalizedOwn = ownTeam.toLowerCase().replace(/\s+/g, ' ').trim();
+        return teams.find(t => {
+            const normalizedTeam = t.name.toLowerCase().replace(/\s+/g, ' ').trim();
+            return normalizedOwn.includes(normalizedTeam.slice(0, 8)) ||
+                   normalizedTeam.includes(normalizedOwn.slice(0, 8));
+        }) || null;
+    }, [ownTeam, teams]);
+
+    // Update opponentTeamId when opponentData changes
+    useEffect(() => {
+        if (opponentData?.externalId) {
+            setOpponentTeamId(opponentData.externalId);
+        }
+    }, [opponentData]);
 
     // Reset AI analysis when opponent changes
     useEffect(() => {
@@ -46,46 +73,24 @@ export function useOpponentTeamData({
         setAiError(null);
     }, [opponentTeam]);
 
-    useEffect(() => {
-        if (!opponentTeam || !enabled) return;
+    // Memoize processed data
+    const opponentPlayers = useMemo(() => {
+        return opponentPlayersRaw.slice(0, 5); // Top 5 players
+    }, [opponentPlayersRaw]);
 
-        setLoading(true);
-
-        const fetchTeamData = async () => {
-            try {
-                // Fetch opponent team
-                const team = await findScraperTeamByName(opponentTeam);
-
-                if (team) {
-                    setOpponentData(team);
-                    // Fetch players
-                    const players = await fetchScraperPlayers(team.externalId);
-                    setOpponentPlayers(players.slice(0, 5)); // Top 5 players
-
-                    // Fetch matches for recent form
-                    const matchesRes = await fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`);
-                    if (matchesRes.ok) {
-                        const matchesData = await matchesRes.json();
-                        setOpponentMatches(matchesData);
-                    }
-                }
-
-                // Fetch own team data for comparison
-                if (ownTeam) {
-                    const ownTeamResult = await findScraperTeamByName(ownTeam);
-                    if (ownTeamResult) {
-                        setOwnTeamData(ownTeamResult);
-                    }
-                }
-            } catch (error) {
-                console.warn('Failed to fetch team data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTeamData();
-    }, [opponentTeam, ownTeam, enabled]);
+    const opponentMatches = useMemo(() => {
+        return opponentMatchesRaw.map(m => ({
+            externalId: m.externalId,
+            date: m.date,
+            homeTeam: m.homeTeam,
+            awayTeam: m.awayTeam,
+            homeScore: m.homeScore,
+            awayScore: m.awayScore,
+            location: m.location,
+            teamId: m.teamId,
+            status: m.status,
+        }));
+    }, [opponentMatchesRaw]);
 
     // Calculate recent form from opponent matches
     const recentForm = useMemo(() => {
@@ -107,6 +112,9 @@ export function useOpponentTeamData({
             return 'D' as const;
         });
     }, [opponentData, opponentMatches]);
+
+    // Loading state
+    const loading = teamsLoading || (opponentTeamId !== undefined && (playersLoading || matchesLoading));
 
     // Fetch AI analysis
     const fetchAIAnalysis = useCallback(async (force: boolean = false) => {
@@ -180,8 +188,6 @@ export function useOpponentTeamData({
             fetchAIAnalysis();
         }
     }, [opponentData, ownTeamData, aiAnalysis, aiLoading, aiError, fetchAIAnalysis]);
-
-
 
     return {
         opponentData,
