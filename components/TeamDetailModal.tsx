@@ -17,7 +17,7 @@ interface ScraperMatch {
     awayTeam: string;
     homeScore: number;
     awayScore: number;
-    location: string;
+    location?: string;
     teamId: number;
     status: 'Scheduled' | 'Played' | 'Postponed';
 }
@@ -456,7 +456,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     padding: 14, gap: 8,
-                                    background: 'rgba(var(--color-accent-rgb), 0.15)',
+                                    background: 'rgb(var(--color-accent-rgb) / 0.15)',
                                     borderRadius: 12,
                                     color: 'var(--color-accent)', fontSize: '0.9rem', fontWeight: 600,
                                     textDecoration: 'none',
@@ -553,7 +553,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                         <div key={player.externalId} style={{
                                             display: 'flex', alignItems: 'center', gap: 12,
                                             padding: '10px 12px',
-                                            background: i < 3 ? 'rgba(var(--color-warning-rgb), 0.08)' : 'var(--color-surface-hover)',
+                                            background: i < 3 ? 'rgb(var(--color-warning-rgb) / 0.08)' : 'var(--color-surface-hover)',
                                             borderRadius: 12,
                                             border: '0.5px solid var(--color-border-subtle)',
                                         }}>

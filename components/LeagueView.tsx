@@ -305,7 +305,7 @@ export default function LeagueView() {
                                                     color: 'var(--color-text-primary)',
                                                     alignItems: 'center',
                                                     cursor: 'pointer',
-                                                    background: isHighlighted ? 'rgba(var(--color-accent-rgb), 0.12)' : 'transparent',
+                                                    background: isHighlighted ? 'rgb(var(--color-accent-rgb) / 0.12)' : 'transparent',
                                                     position: 'relative',
                                                 }}
                                             >
@@ -500,7 +500,7 @@ export default function LeagueView() {
                                                                         <span style={{
                                                                             fontSize: '0.6rem',
                                                                             padding: '2px 5px',
-                                                                            background: 'rgba(var(--color-accent-rgb), 0.3)',
+                                                                            background: 'rgb(var(--color-accent-rgb) / 0.3)',
                                                                             color: 'var(--color-accent-secondary)',
                                                                             borderRadius: 4,
                                                                             fontWeight: 600,

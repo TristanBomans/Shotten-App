@@ -17,12 +17,12 @@ interface StatsViewProps {
 
 // Rank configuration
 const RANKS = [
-    { name: 'Club Legend', icon: Trophy, minScore: 1300, color: 'var(--color-warning)', bg: 'rgba(var(--color-warning-rgb), 0.15)' },
-    { name: 'Ultra', icon: Megaphone, minScore: 1100, color: 'var(--color-warning-secondary)', bg: 'rgba(var(--color-warning-rgb), 0.15)' },
-    { name: 'Plastic Fan', icon: Sparkles, minScore: 1000, color: 'var(--color-accent)', bg: 'rgba(var(--color-accent-rgb), 0.15)' },
-    { name: 'Bench Warmer', icon: Armchair, minScore: 800, color: 'var(--color-text-tertiary)', bg: 'rgba(var(--color-text-tertiary-rgb), 0.15)' },
-    { name: 'Casual', icon: Beer, minScore: 500, color: 'var(--color-warning-secondary)', bg: 'rgba(var(--color-warning-rgb), 0.15)' },
-    { name: 'Professional Ghost', icon: Ghost, minScore: 0, color: 'var(--color-accent-secondary)', bg: 'rgba(var(--color-accent-rgb), 0.15)' },
+    { name: 'Club Legend', icon: Trophy, minScore: 1300, color: 'var(--color-warning)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
+    { name: 'Ultra', icon: Megaphone, minScore: 1100, color: 'var(--color-warning-secondary)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
+    { name: 'Plastic Fan', icon: Sparkles, minScore: 1000, color: 'var(--color-accent)', bg: 'rgb(var(--color-accent-rgb) / 0.15)' },
+    { name: 'Bench Warmer', icon: Armchair, minScore: 800, color: 'var(--color-text-tertiary)', bg: 'rgb(var(--color-text-tertiary-rgb) / 0.15)' },
+    { name: 'Casual', icon: Beer, minScore: 500, color: 'var(--color-warning-secondary)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
+    { name: 'Professional Ghost', icon: Ghost, minScore: 0, color: 'var(--color-accent-secondary)', bg: 'rgb(var(--color-accent-rgb) / 0.15)' },
 ];
 
 const POINTS = {
@@ -292,7 +292,7 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                                 gap: 12,
                                 padding: '14px 16px',
                                 background: player.id === currentPlayerId
-                                    ? 'rgba(var(--color-accent-rgb), 0.15)'
+                                    ? 'rgb(var(--color-accent-rgb) / 0.15)'
                                     : 'transparent',
                                 borderLeft: player.id === currentPlayerId
                                     ? '3px solid var(--color-accent)'
