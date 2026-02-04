@@ -264,7 +264,6 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                         padding: '10px 16px',
                         gap: 6,
                         borderBottom: '0.5px solid var(--color-border-subtle)',
-                        background: 'var(--color-surface-hover)',
                     }}>
                         {([
                             { id: 'overview', icon: TrendingUp, label: 'Overview' },
@@ -345,9 +344,9 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                                 style={{
                                                     width: 32, height: 32,
                                                     borderRadius: 8,
-                                                    background: result === 'W' ? 'rgba(var(--color-success-rgb), 0.2)' :
-                                                        result === 'L' ? 'rgba(var(--color-danger-rgb), 0.2)' :
-                                                            'rgba(var(--color-warning-rgb), 0.2)',
+                                                    background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.25)' :
+                                                        result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.25)' :
+                                                            'rgb(var(--color-warning-rgb) / 0.25)',
                                                     color: result === 'W' ? 'var(--color-success)' :
                                                         result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
                                                     display: 'flex',
@@ -412,9 +411,9 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             {/* Team Info */}
                             {(team.colors || team.manager || team.description) && (
                                 <div style={{
-                                    padding: 14,
-                                    background: 'var(--color-surface-hover)',
-                                    borderRadius: 12,
+                                    padding: '12px 16px',
+                                    borderTop: '0.5px solid var(--color-border-subtle)',
+                                    borderBottom: '0.5px solid var(--color-border-subtle)',
                                     marginBottom: 16,
                                 }}>
                                     {team.colors && (
@@ -511,7 +510,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                 {upcomingMatches.slice(0, 5).map(match => (
-                                                    <MatchRow key={match._id} match={match} teamName={team.name} />
+                                                    <MatchRow key={match.externalId} match={match} teamName={team.name} />
                                                 ))}
                                             </div>
                                         </div>
@@ -530,7 +529,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                 {pastMatches.slice(0, 10).map(match => (
-                                                    <MatchRow key={match._id} match={match} teamName={team.name} isPlayed />
+                                                    <MatchRow key={match.externalId} match={match} teamName={team.name} isPlayed />
                                                 ))}
                                             </div>
                                         </div>

@@ -20,6 +20,17 @@ export default function LeagueView() {
     const { players: allPlayers, loading: playersLoading } = useScraperPlayers();
     const loading = teamsLoading || playersLoading;
 
+    // Debug logging
+    useEffect(() => {
+        console.log('LeagueView debug:', {
+            teamsLoading,
+            playersLoading,
+            teamsCount: teams.length,
+            playersCount: allPlayers.length,
+            useMockData: typeof window !== 'undefined' ? localStorage.getItem('useMockData') : 'N/A'
+        });
+    }, [teamsLoading, playersLoading, teams, allPlayers]);
+
     // Extract unique leagues
     const leagues = useMemo(() => {
         const unique = Array.from(new Set(teams.map(t => t.leagueName).filter(Boolean))) as string[];
