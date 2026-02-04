@@ -543,6 +543,7 @@ function PlayerDetailModal({ player, rank, onClose }: {
                             {player.stats.matchResults.map((result) => (
                                 <div
                                     key={result.matchId}
+                                    className="match-history-item"
                                     style={{
                                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                                         padding: '10px 12px', background: 'var(--color-bg-elevated)', borderRadius: 10,
