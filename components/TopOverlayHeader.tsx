@@ -85,7 +85,8 @@ export default function TopOverlayHeader({
                     margin: '0 auto',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 12,
+                    gap: 'clamp(8px, 2.8vw, 12px)',
+                    minWidth: 0,
                 }}
             >
                 <motion.div
@@ -110,7 +111,12 @@ export default function TopOverlayHeader({
                         fontWeight: 700,
                         letterSpacing: '0.01em',
                         pointerEvents: 'auto',
-                        maxWidth: showLeagueControls || showStatsControls ? 'calc(100% - 108px)' : undefined,
+                        flex: showLeagueControls || showStatsControls ? '0 1 auto' : '0 0 auto',
+                        minWidth: showLeagueControls || showStatsControls ? 0 : undefined,
+                        maxWidth: showLeagueControls || showStatsControls
+                            ? 'calc(100% - clamp(56px, 14vw, 66px) - clamp(8px, 2.8vw, 12px))'
+                            : undefined,
+                        overflow: showLeagueControls || showStatsControls ? 'hidden' : undefined,
                     }}
                 >
                     {showLeagueControls ? (
@@ -123,9 +129,11 @@ export default function TopOverlayHeader({
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: 6,
-                                    overflowX: 'visible',
+                                    overflowX: 'auto',
                                     minWidth: 0,
                                     flex: '1 1 auto',
+                                    WebkitOverflowScrolling: 'touch',
+                                    paddingRight: 2,
                                 }}
                             >
                                 <button
@@ -141,6 +149,7 @@ export default function TopOverlayHeader({
                                         minWidth: 88,
                                         justifyContent: 'flex-start',
                                         opacity: leagueHeaderControls?.hasLeagues ? 1 : 0.5,
+                                        flexShrink: 0,
                                     }}
                                 >
                                     <Trophy size={13} />
@@ -161,8 +170,8 @@ export default function TopOverlayHeader({
                                     aria-pressed={leagueHeaderControls?.activeTab === 'standings'}
                                     style={{
                                         ...compactControlStyle,
-                                        width: 34,
-                                        minWidth: 34,
+                                        width: 'clamp(30px, 8.2vw, 34px)',
+                                        minWidth: 'clamp(30px, 8.2vw, 34px)',
                                         padding: 0,
                                         background: leagueHeaderControls?.activeTab === 'standings'
                                             ? 'var(--color-nav-active)'
@@ -178,8 +187,8 @@ export default function TopOverlayHeader({
                                     aria-pressed={leagueHeaderControls?.activeTab === 'players'}
                                     style={{
                                         ...compactControlStyle,
-                                        width: 34,
-                                        minWidth: 34,
+                                        width: 'clamp(30px, 8.2vw, 34px)',
+                                        minWidth: 'clamp(30px, 8.2vw, 34px)',
                                         padding: 0,
                                         background: leagueHeaderControls?.activeTab === 'players'
                                             ? 'var(--color-nav-active)'
@@ -202,10 +211,11 @@ export default function TopOverlayHeader({
                                     padding: '0 12px',
                                     fontSize: '0.78rem',
                                     fontWeight: 600,
+                                    flexShrink: 0,
                                 }}
                             >
                                 <HelpCircle size={13} />
-                                
+                                Rules
                             </motion.button>
                         </>
                     ) : (
@@ -227,8 +237,8 @@ export default function TopOverlayHeader({
                     style={{
                         pointerEvents: 'auto',
                         height: 44,
-                        minWidth: 66,
-                        padding: '0 14px',
+                        minWidth: 'clamp(56px, 14vw, 66px)',
+                        padding: '0 clamp(10px, 3vw, 14px)',
                         border: '1px solid var(--color-nav-border)',
                         borderRadius: 999,
                         background: 'var(--color-nav-bg)',
