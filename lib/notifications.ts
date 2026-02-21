@@ -36,9 +36,9 @@ function getRankLabel(urgency: ReminderUrgency, reason: ReminderReason): string 
 }
 
 function getDaysText(daysLeft: number): string {
-    if (daysLeft <= 0) return 'vandaag';
-    if (daysLeft === 1) return 'morgen';
-    return `binnen ${daysLeft} dagen`;
+    if (daysLeft <= 0) return 'today';
+    if (daysLeft === 1) return 'tomorrow';
+    return `within ${daysLeft} days`;
 }
 
 function buildMessage(matchId: number, reason: ReminderReason, urgency: ReminderUrgency, daysLeft: number): string {
@@ -46,37 +46,37 @@ function buildMessage(matchId: number, reason: ReminderReason, urgency: Reminder
 
     const missingTemplates: Record<ReminderUrgency, string[]> = {
         high: [
-            `Je social credit staat op rood: reageer ${daysText}.`,
-            `De bank begint je naam te fluisteren. Antwoord ${daysText}.`,
-            `Noodmelding: zonder reactie ga je full-time bankzitter.`,
+            `Your social credit is in the red: respond ${daysText}.`,
+            `The bench is whispering your name. Answer ${daysText}.`,
+            `Emergency alert: no response means full-time bench warmer status.`,
         ],
         medium: [
-            `Reminder met liefde en lichte druk: reageer ${daysText}.`,
-            `Team wacht op jouw verdict. Niet ghosten ${daysText}.`,
-            `Status check: dit is je vriendelijke schop onder de kont.`,
+            `Reminder with love and gentle pressure: respond ${daysText}.`,
+            `Team awaits your verdict. Don't ghost ${daysText}.`,
+            `Status check: this is your friendly kick in the butt.`,
         ],
         low: [
-            `Rustige heads-up: plan deze match ${daysText}.`,
-            `Future-you bedankt je als je nu al reageert.`,
-            `Mini ping: eentje invullen en klaar.`,
+            `Friendly heads-up: plan for this match ${daysText}.`,
+            `Future-you will thank you if you respond now.`,
+            `Mini ping: fill in once and done.`,
         ],
     };
 
     const maybeTemplates: Record<ReminderUrgency, string[]> = {
         high: [
-            `'Maybe' is geen opstelling. Kies ${daysText}: in of out.`,
-            `Coach leest geen waarzeggerij. Zet je status ${daysText}.`,
-            `Final call: twijfelmodus uit, keuze aan ${daysText}.`,
+            `'Maybe' is not a lineup. Pick ${daysText}: in or out.`,
+            `Coach doesn't read tea leaves. Set your status ${daysText}.`,
+            `Final call: doubt mode off, decision due ${daysText}.`,
         ],
         medium: [
-            `Je staat op 'Maybe'. Tijd voor een echte keuze ${daysText}.`,
-            `Miss Maybe-level detected. Beslis ${daysText}.`,
-            `Kleine roast, grote waarheid: kies je status ${daysText}.`,
+            `You're on 'Maybe'. Time for a real choice ${daysText}.`,
+            `Miss Maybe-level detected. Decide ${daysText}.`,
+            `Small roast, big truth: pick your status ${daysText}.`,
         ],
         low: [
-            `Geen stress, wel graag een definitief antwoord ${daysText}.`,
-            `Twijfel mag, maar niet eeuwig. Kies rustig ${daysText}.`,
-            `Lichte ping: zet 'Maybe' om naar een echte keuze.`,
+            `No stress, but would love a definite answer ${daysText}.`,
+            `Doubt is fine, but not forever. Choose at your leisure ${daysText}.`,
+            `Gentle ping: turn 'Maybe' into a real choice.`,
         ],
     };
 

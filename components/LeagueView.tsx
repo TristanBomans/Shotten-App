@@ -3,18 +3,27 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAllScraperTeams, fetchAllScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
-import { Loader2, ChevronDown, Users, TrendingUp, X } from 'lucide-react';
+import { Loader2, ChevronDown, X } from 'lucide-react';
 import TeamDetailModal from './TeamDetailModal';
-import LeagueSelector from './LeagueSelector';
 import { hapticPatterns } from '@/lib/haptic';
 
-export default function LeagueView() {
-    const [activeTab, setActiveTab] = useState<'standings' | 'players'>('standings');
+interface LeagueViewProps {
+    activeTab: 'standings' | 'players';
+    selectedLeague: string;
+    onSelectedLeagueChange: (league: string) => void;
+    onLeagueDataChange?: (data: { leagues: string[]; teams: ScraperTeam[] }) => void;
+}
+
+export default function LeagueView({
+    activeTab,
+    selectedLeague,
+    onSelectedLeagueChange,
+    onLeagueDataChange,
+}: LeagueViewProps) {
     const [teams, setTeams] = useState<ScraperTeam[]>([]);
     const [allPlayers, setAllPlayers] = useState<ScraperPlayer[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedTeam, setSelectedTeam] = useState<{ team: ScraperTeam, players: ScraperPlayer[] } | null>(null);
-    const [selectedLeague, setSelectedLeague] = useState<string>('');
     const [visiblePlayers, setVisiblePlayers] = useState(50);
     const [teamSelection, setTeamSelection] = useState<{ player: ScraperPlayer, teams: ScraperTeam[] } | null>(null);
 
@@ -29,30 +38,34 @@ export default function LeagueView() {
         if (leagues.length > 0 && !selectedLeague) {
             const savedLeague = localStorage.getItem('defaultLeague');
             if (savedLeague && leagues.includes(savedLeague)) {
-                setSelectedLeague(savedLeague);
+                onSelectedLeagueChange(savedLeague);
             } else {
                 const mechelenLeague = leagues.find(l => l.toLowerCase().includes('mechelen'));
-                setSelectedLeague(mechelenLeague || leagues[0]);
+                onSelectedLeagueChange(mechelenLeague || leagues[0]);
             }
         }
-    }, [leagues, selectedLeague]);
+    }, [leagues, selectedLeague, onSelectedLeagueChange]);
 
     // Listen for default league changes from settings
     useEffect(() => {
         const handleDefaultLeagueChanged = (event: Event) => {
             const customEvent = event as CustomEvent<string | null>;
             if (customEvent.detail && leagues.includes(customEvent.detail)) {
-                setSelectedLeague(customEvent.detail);
+                onSelectedLeagueChange(customEvent.detail);
             } else if (customEvent.detail === null) {
                 // Reset to auto-select
                 const mechelenLeague = leagues.find(l => l.toLowerCase().includes('mechelen'));
-                setSelectedLeague(mechelenLeague || leagues[0]);
+                onSelectedLeagueChange(mechelenLeague || leagues[0]);
             }
         };
 
         window.addEventListener('defaultLeagueChanged', handleDefaultLeagueChanged);
         return () => window.removeEventListener('defaultLeagueChanged', handleDefaultLeagueChanged);
-    }, [leagues]);
+    }, [leagues, onSelectedLeagueChange]);
+
+    useEffect(() => {
+        onLeagueDataChange?.({ leagues, teams });
+    }, [leagues, teams, onLeagueDataChange]);
 
     // Reset visible players limit when changing tabs or leagues
     useEffect(() => {
@@ -140,13 +153,6 @@ export default function LeagueView() {
         setVisiblePlayers(prev => prev + 50);
     };
 
-    // Get league stats
-    const leagueStats = useMemo(() => {
-        const totalGoals = filteredPlayers.reduce((sum, p) => sum + p.goals, 0);
-        const totalAssists = filteredPlayers.reduce((sum, p) => sum + p.assists, 0);
-        return { totalGoals, totalAssists, teamCount: filteredTeams.length, playerCount: filteredPlayers.length };
-    }, [filteredPlayers, filteredTeams]);
-
     return (
         <div
             style={{
@@ -157,93 +163,6 @@ export default function LeagueView() {
                 paddingTop: 'var(--top-overlay-offset)',
             }}
         >
-            <div style={{
-                padding: '12px 20px 14px',
-                background: 'var(--color-surface)',
-                backdropFilter: 'blur(40px)',
-                WebkitBackdropFilter: 'blur(40px)',
-                zIndex: 10,
-                borderBottom: '0.5px solid var(--color-border)',
-            }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span
-                        style={{
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            letterSpacing: '0.05em',
-                            textTransform: 'uppercase',
-                            color: 'var(--color-text-tertiary)',
-                        }}
-                    >
-                        LZV Cup Intelligence
-                    </span>
-                    {!loading && (
-                        <span style={{
-                            fontSize: '0.72rem',
-                            color: 'var(--color-text-secondary)',
-                        }}>
-                            <strong style={{ color: 'var(--color-text-primary)' }}>{leagueStats.teamCount}</strong> teams · {leagueStats.playerCount} players
-                        </span>
-                    )}
-                </div>
-
-                {/* League Selector */}
-                {leagues.length > 0 && (
-                    <div>
-                        <LeagueSelector
-                            leagues={leagues}
-                            selectedLeague={selectedLeague}
-                            onSelect={setSelectedLeague}
-                            teamsData={teams}
-                        />
-                    </div>
-                )}
-
-                {/* Tabs */}
-                <div style={{
-                    display: 'flex',
-                    background: 'var(--color-surface)',
-                    borderRadius: 10,
-                    padding: 3,
-                    marginTop: 12,
-                    border: '0.5px solid var(--color-border)',
-                }}>
-                    {([
-                        { id: 'standings', icon: TrendingUp, label: 'Standings' },
-                        { id: 'players', icon: Users, label: 'Top Scorers' },
-                    ] as const).map((tab) => (
-                        <motion.button
-                            key={tab.id}
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                setActiveTab(tab.id);
-                            }}
-                            whileTap={{ scale: 0.98 }}
-                            style={{
-                                flex: 1,
-                                border: 'none',
-                                background: activeTab === tab.id ? 'var(--color-surface-hover)' : 'transparent',
-                                color: activeTab === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
-                                padding: '8px 0',
-                                borderRadius: 8,
-                                fontSize: '0.85rem',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: 6,
-                            }}
-                        >
-                            <tab.icon size={14} />
-                            {tab.label}
-                        </motion.button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Content */}
             <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 100 }}>
                 {loading ? (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: 60 }}>

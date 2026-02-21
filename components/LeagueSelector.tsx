@@ -12,10 +12,30 @@ interface LeagueSelectorProps {
     selectedLeague: string;
     onSelect: (league: string) => void;
     teamsData: ScraperTeam[];
+    showTrigger?: boolean;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export default function LeagueSelector({ leagues, selectedLeague, onSelect, teamsData }: LeagueSelectorProps) {
-    const [showModal, setShowModal] = useState(false);
+export default function LeagueSelector({
+    leagues,
+    selectedLeague,
+    onSelect,
+    teamsData,
+    showTrigger = true,
+    open,
+    onOpenChange,
+}: LeagueSelectorProps) {
+    const [internalOpen, setInternalOpen] = useState(false);
+    const isControlled = open !== undefined;
+    const showModal = isControlled ? open : internalOpen;
+
+    const setModalOpen = (next: boolean) => {
+        if (!isControlled) {
+            setInternalOpen(next);
+        }
+        onOpenChange?.(next);
+    };
 
     // Calculate stats per league
     const leagueStats = useMemo(() => {
@@ -30,7 +50,7 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
     const handleSelect = (league: string) => {
         hapticPatterns.tap();
         onSelect(league);
-        setShowModal(false);
+        setModalOpen(false);
     };
 
     // ESC key to close modal
@@ -39,44 +59,49 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
 
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                setShowModal(false);
+                if (!isControlled) {
+                    setInternalOpen(false);
+                }
+                onOpenChange?.(false);
             }
         };
 
         document.addEventListener('keydown', handleEsc);
         return () => document.removeEventListener('keydown', handleEsc);
-    }, [showModal]);
+    }, [showModal, isControlled, onOpenChange]);
 
     if (typeof document === 'undefined') return null;
 
     return (
         <>
             {/* Trigger Button */}
-            <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                    hapticPatterns.tap();
-                    setShowModal(true);
-                }}
-                style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: 'var(--color-surface)',
-                    border: '0.5px solid var(--color-border)',
-                    borderRadius: 10,
-                    padding: '10px 14px',
-                    color: 'var(--color-text-primary)',
-                    fontSize: '0.9rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                }}
-            >
-                <span>{selectedLeague || 'Select League'}</span>
-                <ChevronDown size={16} />
-            </motion.button>
+            {showTrigger && (
+                <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                        hapticPatterns.tap();
+                        setModalOpen(true);
+                    }}
+                    style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: 'var(--color-surface)',
+                        border: '0.5px solid var(--color-border)',
+                        borderRadius: 10,
+                        padding: '10px 14px',
+                        color: 'var(--color-text-primary)',
+                        fontSize: '0.9rem',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                    }}
+                >
+                    <span>{selectedLeague || 'Select League'}</span>
+                    <ChevronDown size={16} />
+                </motion.button>
+            )}
 
             {/* Modal */}
             {showModal && createPortal(
@@ -89,7 +114,7 @@ export default function LeagueSelector({ leagues, selectedLeague, onSelect, team
                             exit={{ opacity: 0 }}
                             onClick={() => {
                                 hapticPatterns.tap();
-                                setShowModal(false);
+                                setModalOpen(false);
                             }}
                             style={{
                                 position: 'fixed',

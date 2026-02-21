@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         // Format recent form string
         const formString = recentForm.length > 0
             ? recentForm.join('-')
-            : 'onbekend';
+            : 'unknown';
 
         // Format top scorers
         const topScorersString = opponentPlayers.length > 0
@@ -55,40 +55,40 @@ export async function POST(request: NextRequest) {
                 .slice(0, 3)
                 .map(p => `${p.name} (${p.goals} goals, ${p.assists} assists)`)
                 .join(', ')
-            : 'geen data';
+            : 'no data';
 
-        const prompt = `Je bent een futsal scout. Genereer een korte analyse (max 120 woorden, in het Nederlands).
+        const prompt = `You are a futsal scout. Generate a short analysis (max 120 words, in English).
 
-BELANGRIJK:
-- Gebruik GEEN markdown formatting zoals ** of _
-- Gebruik lege regels tussen elke sectie voor leesbaarheid
-- Schrijf in korte, krachtige zinnen
+IMPORTANT:
+- Do NOT use markdown formatting like ** or _
+- Use blank lines between each section for readability
+- Write in short, punchy sentences
 
-Format (met lege regel tussen elke sectie):
-[Vergelijking van beide teams - 1-2 zinnen]
+Format (with blank line between each section):
+[Comparison of both teams - 1-2 sentences]
 
-[Key players om op te letten - noem namen en waarom]
+[Key players to watch - mention names and why]
 
-[Tactisch advies - concreet en actionable]
+[Tactical advice - concrete and actionable]
 
-[Verdict - 1 zin conclusie]
+[Verdict - 1 sentence conclusion]
 
 Data:
-Eigen team "${ownTeam.name}":
-- Rang: #${ownTeam.rank ?? '?'}
-- Punten: ${ownTeam.points ?? 0}
-- Doelsaldo: ${(ownTeam.goalDifference ?? 0) >= 0 ? '+' : ''}${ownTeam.goalDifference ?? 0}
+Own team "${ownTeam.name}":
+- Rank: #${ownTeam.rank ?? '?'}
+- Points: ${ownTeam.points ?? 0}
+- Goal difference: ${(ownTeam.goalDifference ?? 0) >= 0 ? '+' : ''}${ownTeam.goalDifference ?? 0}
 - W/D/L: ${ownTeam.wins ?? 0}/${ownTeam.draws ?? 0}/${ownTeam.losses ?? 0}
 
-Tegenstander "${opponent.name}":
-- Rang: #${opponent.rank ?? '?'}
-- Punten: ${opponent.points ?? 0}
-- Doelsaldo: ${(opponent.goalDifference ?? 0) >= 0 ? '+' : ''}${opponent.goalDifference ?? 0}
+Opponent "${opponent.name}":
+- Rank: #${opponent.rank ?? '?'}
+- Points: ${opponent.points ?? 0}
+- Goal difference: ${(opponent.goalDifference ?? 0) >= 0 ? '+' : ''}${opponent.goalDifference ?? 0}
 - W/D/L: ${opponent.wins ?? 0}/${opponent.draws ?? 0}/${opponent.losses ?? 0}
-- Recente vorm: ${formString}
+- Recent form: ${formString}
 - Top scorers: ${topScorersString}
 
-Schrijf direct de analyse zonder inleiding. Wees concreet en specifiek.`;
+Write the analysis directly without introduction. Be concrete and specific.`;
 
         const { Mistral } = await import('@mistralai/mistralai');
         const client = new Mistral({ apiKey });

@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useMatches, useAllPlayers } from '@/lib/useData';
+import { useMatches, useAllPlayers, type ScraperTeam } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import MatchCard from './MatchCard';
 import StatsView from './StatsView';
 import SettingsView from './SettingsView';
 import LeagueView from './LeagueView';
+import LeagueSelector from './LeagueSelector';
 import PullToRefresh from './PullToRefresh';
 import { parseDateToTimestamp } from '@/lib/dateUtils';
 import TopOverlayHeader from './TopOverlayHeader';
@@ -32,11 +33,24 @@ const viewTitles: Record<ViewType, string> = {
     settings: 'Settings',
 };
 
+const getLeagueAlias = (league: string) => {
+    const lower = league.toLowerCase();
+    if (lower.includes('mechelen')) return 'Mechelen';
+    if (lower.includes('leuven')) return 'Leuven';
+    return league;
+};
+
 export default function Dashboard({ playerId, currentView, onLogout, onViewChange, onPlayerManagementOpenChange }: DashboardProps) {
     const { matches, loading, error, fetchMatches, setMatches } = useMatches(playerId);
     const { players, fetchAllPlayers } = useAllPlayers();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isNotificationSheetOpen, setIsNotificationSheetOpen] = useState(false);
+    const [isStatsRulesOpen, setIsStatsRulesOpen] = useState(false);
+    const [leagueTab, setLeagueTab] = useState<'standings' | 'players'>('standings');
+    const [selectedLeague, setSelectedLeague] = useState('');
+    const [leagueOptions, setLeagueOptions] = useState<string[]>([]);
+    const [leagueTeams, setLeagueTeams] = useState<ScraperTeam[]>([]);
+    const [isLeagueSelectorOpen, setIsLeagueSelectorOpen] = useState(false);
     const [highlightedMatchId, setHighlightedMatchId] = useState<number | null>(null);
     const upcomingRef = useRef<HTMLElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -63,6 +77,21 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
         fetchMatches();
         fetchAllPlayers();
     }, [fetchMatches, fetchAllPlayers]);
+
+    useEffect(() => {
+        if (currentView !== 'league') {
+            setIsLeagueSelectorOpen(false);
+        }
+        if (currentView !== 'stats') {
+            setIsStatsRulesOpen(false);
+        }
+    }, [currentView]);
+
+    useEffect(() => {
+        if (selectedLeague && !leagueOptions.includes(selectedLeague)) {
+            setSelectedLeague('');
+        }
+    }, [selectedLeague, leagueOptions]);
 
     // Get current view index from scroll position
     const getViewIndexFromScroll = useCallback((): number => {
@@ -263,6 +292,10 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
         [matches, playerId]
     );
     const currentTitle = viewTitles[currentView];
+    const selectedLeagueAlias = useMemo(
+        () => (selectedLeague ? getLeagueAlias(selectedLeague) : ''),
+        [selectedLeague]
+    );
 
     const openNotificationSheet = () => {
         hapticPatterns.tap();
@@ -272,6 +305,55 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
     const closeNotificationSheet = () => {
         setIsNotificationSheetOpen(false);
     };
+
+    const handleLeagueDataChange = useCallback((data: { leagues: string[]; teams: ScraperTeam[] }) => {
+        setLeagueOptions(prev => (
+            prev.length === data.leagues.length &&
+            prev.every((league, index) => league === data.leagues[index])
+        ) ? prev : data.leagues);
+
+        setLeagueTeams(prev => (prev === data.teams ? prev : data.teams));
+    }, []);
+
+    const handleCycleLeague = useCallback(() => {
+        if (leagueOptions.length === 0) return;
+
+        hapticPatterns.tap();
+
+        if (!selectedLeague || !leagueOptions.includes(selectedLeague)) {
+            setSelectedLeague(leagueOptions[0]);
+            return;
+        }
+
+        const currentIndex = leagueOptions.indexOf(selectedLeague);
+        const nextIndex = (currentIndex + 1) % leagueOptions.length;
+        setSelectedLeague(leagueOptions[nextIndex]);
+    }, [leagueOptions, selectedLeague]);
+
+    const openLeagueSelector = useCallback(() => {
+        if (leagueOptions.length === 0) return;
+        hapticPatterns.tap();
+        setIsLeagueSelectorOpen(true);
+    }, [leagueOptions.length]);
+
+    const openStatsRules = useCallback(() => {
+        hapticPatterns.tap();
+        setIsStatsRulesOpen(true);
+    }, []);
+
+    const topLeagueControls = currentView === 'league'
+        ? {
+            activeTab: leagueTab,
+            selectedLeague: selectedLeagueAlias,
+            hasLeagues: leagueOptions.length > 0,
+            onCycleLeague: handleCycleLeague,
+            onOpenLeagueSelector: openLeagueSelector,
+            onSelectTab: setLeagueTab,
+        }
+        : undefined;
+    const topStatsControls = currentView === 'stats'
+        ? { onOpenRules: openStatsRules }
+        : undefined;
 
     const handleReminderSelect = useCallback((matchId: number) => {
         setIsNotificationSheetOpen(false);
@@ -318,6 +400,8 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                     title={currentTitle}
                     notificationCount={notificationSummary.count}
                     onNotificationPress={openNotificationSheet}
+                    leagueControls={topLeagueControls}
+                    statsControls={topStatsControls}
                 />
                 <NotificationSheet
                     open={isNotificationSheetOpen}
@@ -346,6 +430,8 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                     title={currentTitle}
                     notificationCount={notificationSummary.count}
                     onNotificationPress={openNotificationSheet}
+                    leagueControls={topLeagueControls}
+                    statsControls={topStatsControls}
                 />
                 <NotificationSheet
                     open={isNotificationSheetOpen}
@@ -513,6 +599,8 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                 title={currentTitle}
                 notificationCount={notificationSummary.count}
                 onNotificationPress={openNotificationSheet}
+                leagueControls={topLeagueControls}
+                statsControls={topStatsControls}
             />
             <NotificationSheet
                 open={isNotificationSheetOpen}
@@ -521,6 +609,17 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                 onReminderSelect={handleReminderSelect}
                 onClose={closeNotificationSheet}
             />
+            {currentView === 'league' && leagueOptions.length > 0 && (
+                <LeagueSelector
+                    leagues={leagueOptions}
+                    selectedLeague={selectedLeague}
+                    onSelect={setSelectedLeague}
+                    teamsData={leagueTeams}
+                    showTrigger={false}
+                    open={isLeagueSelectorOpen}
+                    onOpenChange={setIsLeagueSelectorOpen}
+                />
+            )}
             <div
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
@@ -567,7 +666,13 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                         overflowY: 'auto',
                     }}
                 >
-                    <StatsView matches={matches} players={players} currentPlayerId={playerId} />
+                    <StatsView
+                        matches={matches}
+                        players={players}
+                        currentPlayerId={playerId}
+                        showRules={isStatsRulesOpen}
+                        onShowRulesChange={setIsStatsRulesOpen}
+                    />
                 </div>
 
                 {/* League View */}
@@ -582,7 +687,12 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                         overflowY: 'hidden', // LeagueView handles its own scrolling
                     }}
                 >
-                    <LeagueView />
+                    <LeagueView
+                        activeTab={leagueTab}
+                        selectedLeague={selectedLeague}
+                        onSelectedLeagueChange={setSelectedLeague}
+                        onLeagueDataChange={handleLeagueDataChange}
+                    />
                 </div>
 
                 {/* Settings View */}

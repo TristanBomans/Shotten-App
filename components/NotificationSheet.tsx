@@ -115,7 +115,7 @@ export default function NotificationSheet({ open, reminders, totalCount, onRemin
                                             color: 'var(--color-text-primary)',
                                         }}
                                     >
-                                        {totalCount > 0 ? `${totalCount} open reminders` : 'Alles onder controle'}
+                                        {totalCount > 0 ? `${totalCount} open reminders` : 'All good here'}
                                     </h3>
                                 </div>
 
@@ -182,10 +182,10 @@ export default function NotificationSheet({ open, reminders, totalCount, onRemin
                                         </div>
                                         <div>
                                             <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                                                Geen chaos vandaag
+                                                No chaos today
                                             </div>
                                             <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                                Je bent voorlopig veilig voor de social credit roast.
+                                                You're temporarily safe from the social credit roast.
                                             </div>
                                         </div>
                                     </div>
@@ -272,7 +272,7 @@ export default function NotificationSheet({ open, reminders, totalCount, onRemin
                                                     fontWeight: 600,
                                                 }}
                                             >
-                                                Tik om naar deze match te springen.
+                                                Tap to jump to this match.
                                             </div>
                                         </motion.button>
                                     ))
@@ -287,7 +287,7 @@ export default function NotificationSheet({ open, reminders, totalCount, onRemin
                                             paddingTop: 4,
                                         }}
                                     >
-                                        +{totalCount - reminders.length} extra reminders verborgen voor je mentale rust.
+                                        +{totalCount - reminders.length} extra reminders hidden for your mental well-being.
                                     </div>
                                 )}
                             </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, X, Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
+import { X, Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, ReferenceLine } from 'recharts';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
@@ -13,6 +13,8 @@ interface StatsViewProps {
     matches: Match[];
     players: Player[];
     currentPlayerId: number;
+    showRules?: boolean;
+    onShowRulesChange?: (open: boolean) => void;
 }
 
 // Rank configuration
@@ -175,9 +177,23 @@ function calculatePlayerScore(player: Player, allMatches: Match[]) {
 
 type PlayerWithStats = Player & { stats: ReturnType<typeof calculatePlayerScore> };
 
-export default function StatsView({ matches, players, currentPlayerId }: StatsViewProps) {
-    const [showRules, setShowRules] = useState(false);
+export default function StatsView({
+    matches,
+    players,
+    currentPlayerId,
+    showRules,
+    onShowRulesChange,
+}: StatsViewProps) {
+    const [internalShowRules, setInternalShowRules] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null);
+    const isRulesOpen = showRules ?? internalShowRules;
+
+    const setRulesOpen = (open: boolean) => {
+        if (showRules === undefined) {
+            setInternalShowRules(open);
+        }
+        onShowRulesChange?.(open);
+    };
 
     const playerStats = players.map(player => ({
         ...player,
@@ -199,32 +215,6 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
             >
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-                    <motion.button
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            setShowRules(true);
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            padding: '6px 12px',
-                            background: 'var(--color-surface)',
-                            border: '0.5px solid var(--color-border)',
-                            borderRadius: 20,
-                            color: 'var(--color-text-primary)',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <HelpCircle size={14} />
-                        Rules
-                    </motion.button>
-                </div>
-
                 {/* Highlights */}
                 <div style={{
                     display: 'grid',
@@ -351,7 +341,7 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
 
             {/* Rules Modal */}
             <AnimatePresence>
-                {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+                {isRulesOpen && <RulesModal onClose={() => setRulesOpen(false)} />}
             </AnimatePresence>
 
             {/* Player Detail Modal */}
