@@ -368,13 +368,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 <div style={{
                                     display: 'grid',
                                     gridTemplateColumns: 'repeat(4, 1fr)',
-                                    gap: 1,
-                                    background: 'var(--color-surface-hover)',
-                                    borderRadius: 12,
-                                    overflow: 'hidden',
+                                    gap: 8,
                                     marginBottom: 16,
                                 }}>
-                                    <StatBox label="RANK" value={`#${team.rank}`} color="var(--color-warning)" />
+                                    <StatBox label="RANK" value={`#${team.rank}`} />
                                     <StatBox label="PTS" value={team.points || 0} />
                                     <StatBox
                                         label="W/D/L"
@@ -391,7 +388,6 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                     <StatBox
                                         label="GD"
                                         value={`${(team.goalDifference || 0) >= 0 ? '+' : ''}${team.goalDifference || 0}`}
-                                        color={(team.goalDifference || 0) >= 0 ? 'var(--color-success)' : 'var(--color-danger)'}
                                     />
                                 </div>
                             )}
@@ -404,8 +400,8 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 marginBottom: 16,
                             }}>
                                 <MiniStat label="Played" value={team.matchesPlayed || 0} />
-                                <MiniStat label="Goals For" value={team.goalsFor || 0} color="var(--color-success)" />
-                                <MiniStat label="Goals Agst" value={team.goalsAgainst || 0} color="var(--color-danger)" />
+                                <MiniStat label="Goals For" value={team.goalsFor || 0} />
+                                <MiniStat label="Goals Agst" value={team.goalsAgainst || 0} />
                             </div>
 
                             {/* Team Info */}
@@ -663,16 +659,37 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
 }
 
 // Sub-components
+const statCardStyle = {
+    padding: '10px 8px',
+    minHeight: 68,
+    background: 'var(--color-bg-elevated)',
+    borderRadius: 12,
+    border: '0.5px solid var(--color-border)',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+} as const;
+
+const statLabelStyle = {
+    fontSize: '0.65rem',
+    color: 'var(--color-text-tertiary)',
+    marginTop: 2,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+} as const;
+
 function StatBox({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
     return (
-        <div style={{ background: 'var(--color-surface-hover)', padding: 12, textAlign: 'center' }}>
+        <div style={statCardStyle}>
             <div style={{
                 fontSize: '1.1rem', fontWeight: 700,
                 color: color || 'var(--color-text-primary)',
             }}>
                 {value}
             </div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', marginTop: 2 }}>
+            <div style={statLabelStyle}>
                 {label}
             </div>
         </div>
@@ -681,16 +698,11 @@ function StatBox({ label, value, color }: { label: string; value: React.ReactNod
 
 function MiniStat({ label, value, color }: { label: string; value: number; color?: string }) {
     return (
-        <div style={{
-            padding: '10px 12px',
-            background: 'var(--color-surface-hover)',
-            borderRadius: 10,
-            textAlign: 'center',
-        }}>
+        <div style={statCardStyle}>
             <div style={{ fontSize: '1.1rem', fontWeight: 700, color: color || 'var(--color-text-primary)' }}>
                 {value}
             </div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', marginTop: 2 }}>
+            <div style={statLabelStyle}>
                 {label}
             </div>
         </div>

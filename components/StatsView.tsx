@@ -227,11 +227,12 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
                                 alignItems: 'center',
                                 gap: 4,
                                 padding: '6px 12px',
-                                background: 'var(--color-surface-hover)',
-                                border: 'none',
+                                background: 'var(--color-surface)',
+                                border: '0.5px solid var(--color-border)',
                                 borderRadius: 20,
-                                color: 'var(--color-text-secondary)',
+                                color: 'var(--color-text-primary)',
                                 fontSize: '0.75rem',
+                                fontWeight: 600,
                                 cursor: 'pointer',
                             }}
                         >
@@ -545,7 +546,10 @@ function PlayerDetailModal({ player, rank, onClose }: {
                                     key={result.matchId}
                                     style={{
                                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                        padding: '10px 12px', background: 'var(--color-bg-elevated)', borderRadius: 10,
+                                        padding: '10px 12px',
+                                        background: 'var(--color-bg-elevated)',
+                                        borderRadius: 10,
+                                        border: '0.5px solid var(--color-border-subtle)',
                                     }}
                                 >
                                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -749,7 +753,10 @@ function PointRow({ emoji, label, points, color }: { emoji: string; label: strin
     return (
         <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '8px 10px', background: 'var(--color-bg-elevated)', borderRadius: 8,
+            padding: '8px 10px',
+            background: 'var(--color-bg-elevated)',
+            borderRadius: 8,
+            border: '0.5px solid var(--color-border-subtle)',
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>{emoji}</span>

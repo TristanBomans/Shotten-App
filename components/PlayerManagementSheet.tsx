@@ -211,7 +211,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                 {/* Table Header */}
                                 <div style={{
                                     display: 'grid',
-                                    gridTemplateColumns: `1fr ${teams.map(() => '60px').join(' ')} 44px`,
+                                    gridTemplateColumns: `1fr ${teams.map(() => '44px').join(' ')} 44px`,
                                     gap: 8,
                                     padding: '12px 20px',
                                     background: 'var(--color-surface)',
@@ -259,7 +259,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                             key={player.id}
                                             style={{
                                                 display: 'grid',
-                                                gridTemplateColumns: `1fr ${teams.map(() => '60px').join(' ')} 44px`,
+                                                gridTemplateColumns: `1fr ${teams.map(() => '44px').join(' ')} 44px`,
                                                 gap: 8,
                                                 alignItems: 'center',
                                                 padding: '14px 0',
@@ -388,7 +388,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                     {/* Add new player row */}
                                     <div style={{
                                         display: 'grid',
-                                        gridTemplateColumns: `1fr ${teams.map(() => '60px').join(' ')} 44px`,
+                                        gridTemplateColumns: `1fr ${teams.map(() => '44px').join(' ')} 44px`,
                                         gap: 8,
                                         alignItems: 'center',
                                         padding: '14px 0 24px',
