@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp } from 'lucide-react';
 import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
+import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
@@ -17,7 +18,7 @@ interface ScraperMatch {
     awayTeam: string;
     homeScore: number;
     awayScore: number;
-    location: string;
+    location?: string;
     teamId: number;
     status: 'Scheduled' | 'Played' | 'Postponed';
 }
@@ -97,8 +98,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
             .slice(0, 5);
 
         return playedMatches.map(m => {
-            const isHome = m.homeTeam.toLowerCase().includes(team.name.toLowerCase().slice(0, 5)) ||
-                team.name.toLowerCase().includes(m.homeTeam.toLowerCase().slice(0, 5));
+            const isHome = isHomeTeamForMatch(team.name, m.homeTeam, m.awayTeam);
             const teamScore = isHome ? m.homeScore : m.awayScore;
             const opponentScore = isHome ? m.awayScore : m.homeScore;
 
@@ -264,7 +264,6 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                         padding: '10px 16px',
                         gap: 6,
                         borderBottom: '0.5px solid var(--color-border-subtle)',
-                        background: 'var(--color-surface-hover)',
                     }}>
                         {([
                             { id: 'overview', icon: TrendingUp, label: 'Overview' },
@@ -345,9 +344,9 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                                 style={{
                                                     width: 32, height: 32,
                                                     borderRadius: 8,
-                                                    background: result === 'W' ? 'rgba(var(--color-success-rgb), 0.2)' :
-                                                        result === 'L' ? 'rgba(var(--color-danger-rgb), 0.2)' :
-                                                            'rgba(var(--color-warning-rgb), 0.2)',
+                                                    background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.25)' :
+                                                        result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.25)' :
+                                                            'rgb(var(--color-warning-rgb) / 0.25)',
                                                     color: result === 'W' ? 'var(--color-success)' :
                                                         result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
                                                     display: 'flex',
@@ -412,9 +411,9 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             {/* Team Info */}
                             {(team.colors || team.manager || team.description) && (
                                 <div style={{
-                                    padding: 14,
-                                    background: 'var(--color-surface-hover)',
-                                    borderRadius: 12,
+                                    padding: '12px 16px',
+                                    borderTop: '0.5px solid var(--color-border-subtle)',
+                                    borderBottom: '0.5px solid var(--color-border-subtle)',
                                     marginBottom: 16,
                                 }}>
                                     {team.colors && (
@@ -460,7 +459,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     padding: 14, gap: 8,
-                                    background: 'rgba(var(--color-accent-rgb), 0.15)',
+                                    background: 'rgb(var(--color-accent-rgb) / 0.15)',
                                     borderRadius: 12,
                                     color: 'var(--color-accent)', fontSize: '0.9rem', fontWeight: 600,
                                     textDecoration: 'none',
@@ -511,7 +510,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                 {upcomingMatches.slice(0, 5).map(match => (
-                                                    <MatchRow key={match._id} match={match} teamName={team.name} />
+                                                    <MatchRow key={match.externalId} match={match} teamName={team.name} />
                                                 ))}
                                             </div>
                                         </div>
@@ -530,7 +529,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                 {pastMatches.slice(0, 10).map(match => (
-                                                    <MatchRow key={match._id} match={match} teamName={team.name} isPlayed />
+                                                    <MatchRow key={match.externalId} match={match} teamName={team.name} isPlayed />
                                                 ))}
                                             </div>
                                         </div>
@@ -557,7 +556,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                         <div key={player.externalId} style={{
                                             display: 'flex', alignItems: 'center', gap: 12,
                                             padding: '10px 12px',
-                                            background: i < 3 ? 'rgba(var(--color-warning-rgb), 0.08)' : 'var(--color-surface-hover)',
+                                            background: i < 3 ? 'rgb(var(--color-warning-rgb) / 0.08)' : 'var(--color-surface-hover)',
                                             borderRadius: 12,
                                             border: '0.5px solid var(--color-border-subtle)',
                                         }}>
@@ -699,8 +698,7 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
 }
 
 function MatchRow({ match, teamName, isPlayed }: { match: ScraperMatch; teamName: string; isPlayed?: boolean }) {
-    const isHome = match.homeTeam.toLowerCase().includes(teamName.toLowerCase().slice(0, 5)) ||
-        teamName.toLowerCase().includes(match.homeTeam.toLowerCase().slice(0, 5));
+    const isHome = isHomeTeamForMatch(teamName, match.homeTeam, match.awayTeam);
     const opponent = isHome ? match.awayTeam : match.homeTeam;
     const teamScore = isHome ? match.homeScore : match.awayScore;
     const opponentScore = isHome ? match.awayScore : match.homeScore;

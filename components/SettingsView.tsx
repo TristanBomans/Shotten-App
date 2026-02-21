@@ -205,7 +205,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     <div style={{ opacity: 0.5, pointerEvents: 'none' }}>
                         <SettingRow
                             icon={<Bell size={20} />}
-                            iconBg="rgba(var(--color-warning-rgb), 0.15)"
+                            iconBg="rgb(var(--color-warning-rgb) / 0.15)"
                             iconColor="var(--color-warning)"
                             title="Notifications"
                             subtitle="Coming in future update"
@@ -219,7 +219,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     {/* Haptic Feedback */}
                     <SettingRow
                         icon={<Smartphone size={20} />}
-                        iconBg="rgba(var(--color-accent-rgb), 0.15)"
+                        iconBg="rgb(var(--color-accent-rgb) / 0.15)"
                         iconColor="var(--color-accent)"
                         title="Haptic Feedback"
                         subtitle="Vibration on actions"
@@ -232,7 +232,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                     {/* Show Full Names */}
                     <SettingRow
                         icon={<Users size={20} />}
-                        iconBg="rgba(var(--color-accent-rgb), 0.15)"
+                        iconBg="rgb(var(--color-accent-rgb) / 0.15)"
                         iconColor="var(--color-accent)"
                         title="Show Full Names"
                         subtitle={showFullNames ? 'Names visible on cards' : 'Avatars only'}
@@ -261,7 +261,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                             width: 40,
                             height: 40,
                             borderRadius: 10,
-                            background: 'rgba(var(--color-accent-rgb), 0.15)',
+                            background: 'rgb(var(--color-accent-rgb) / 0.15)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -313,7 +313,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                             width: 40,
                             height: 40,
                             borderRadius: 10,
-                            background: 'rgba(var(--color-warning-rgb), 0.15)',
+                            background: 'rgb(var(--color-warning-rgb) / 0.15)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -365,7 +365,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                             width: 40,
                             height: 40,
                             borderRadius: 10,
-                            background: 'rgba(var(--color-success-rgb), 0.15)',
+                            background: 'rgb(var(--color-success-rgb) / 0.15)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -414,7 +414,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                         {/* Data Source Toggle */}
                         <SettingRow
                             icon={useMock ? <Database size={20} /> : <Wifi size={20} />}
-                            iconBg={useMock ? 'rgba(var(--color-warning-rgb), 0.15)' : 'rgba(var(--color-success-rgb), 0.15)'}
+                            iconBg={useMock ? 'rgb(var(--color-warning-rgb) / 0.15)' : 'rgb(var(--color-success-rgb) / 0.15)'}
                             iconColor={useMock ? 'var(--color-warning)' : 'var(--color-success)'}
                             title="Data Source"
                             subtitle={useMock ? 'Mock data' : 'Live backend'}
@@ -428,7 +428,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                         {/* Connection Status */}
                         <SettingRow
                             icon={useMock ? <WifiOff size={20} /> : <Wifi size={20} />}
-                            iconBg={useMock ? 'rgba(var(--color-danger-rgb), 0.15)' : 'rgba(var(--color-success-rgb), 0.15)'}
+                            iconBg={useMock ? 'rgb(var(--color-danger-rgb) / 0.15)' : 'rgb(var(--color-success-rgb) / 0.15)'}
                             iconColor={useMock ? 'var(--color-danger)' : 'var(--color-success)'}
                             title="Backend Status"
                             subtitle={useMock ? 'Offline' : 'Connected'}
@@ -453,7 +453,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                 >
                     <VersionRow
                         icon={<Info size={20} />}
-                        iconBg="rgba(var(--color-accent-rgb), 0.15)"
+                        iconBg="rgb(var(--color-accent-rgb) / 0.15)"
                         iconColor="var(--color-accent)"
                         title="About Shotten"
                         hasUpdate={hasUpdate}
@@ -507,7 +507,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                             width: 40,
                             height: 40,
                             borderRadius: 10,
-                            background: 'rgba(var(--color-danger-rgb), 0.15)',
+                            background: 'rgb(var(--color-danger-rgb) / 0.15)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -613,8 +613,8 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                                         whileTap={{ scale: 0.98 }}
                                         style={{
                                             padding: '14px 16px',
-                                            background: defaultLeague === '' ? 'rgba(var(--color-warning-rgb), 0.15)' : 'var(--color-surface-hover)',
-                                            border: `1px solid ${defaultLeague === '' ? 'rgba(var(--color-warning-rgb), 0.3)' : 'var(--color-border)'}`,
+                                            background: defaultLeague === '' ? 'rgb(var(--color-warning-rgb) / 0.15)' : 'var(--color-surface-hover)',
+                                            border: `1px solid ${defaultLeague === '' ? 'rgb(var(--color-warning-rgb) / 0.3)' : 'var(--color-border)'}`,
                                             borderRadius: 12,
                                             cursor: 'pointer',
                                             textAlign: 'left',
@@ -635,8 +635,8 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                                             whileTap={{ scale: 0.98 }}
                                             style={{
                                                 padding: '14px 16px',
-                                                background: defaultLeague === league ? 'rgba(var(--color-accent-rgb), 0.15)' : 'var(--color-surface-hover)',
-                                                border: `1px solid ${defaultLeague === league ? 'rgba(var(--color-accent-rgb), 0.3)' : 'var(--color-border)'}`,
+                                                background: defaultLeague === league ? 'rgb(var(--color-accent-rgb) / 0.15)' : 'var(--color-surface-hover)',
+                                                border: `1px solid ${defaultLeague === league ? 'rgb(var(--color-accent-rgb) / 0.3)' : 'var(--color-border)'}`,
                                                 borderRadius: 12,
                                                 cursor: 'pointer',
                                                 textAlign: 'left',
@@ -743,8 +743,8 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                                         whileTap={{ scale: 0.98 }}
                                         style={{
                                             padding: 16,
-                                            background: theme === 'original' ? 'rgba(var(--color-accent-rgb), 0.15)' : 'var(--color-surface-hover)',
-                                            border: `1px solid ${theme === 'original' ? 'rgba(var(--color-accent-rgb), 0.3)' : 'var(--color-border)'}`,
+                                            background: theme === 'original' ? 'rgb(var(--color-accent-rgb) / 0.15)' : 'var(--color-surface-hover)',
+                                            border: `1px solid ${theme === 'original' ? 'rgb(var(--color-accent-rgb) / 0.3)' : 'var(--color-border)'}`,
                                             borderRadius: 12,
                                             cursor: 'pointer',
                                             textAlign: 'left',
@@ -817,8 +817,8 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                                         whileTap={{ scale: 0.98 }}
                                         style={{
                                             padding: 16,
-                                            background: theme === 'white' ? 'rgba(var(--color-accent-rgb), 0.15)' : 'var(--color-surface-hover)',
-                                            border: `1px solid ${theme === 'white' ? 'rgba(var(--color-accent-rgb), 0.3)' : 'var(--color-border)'}`,
+                                            background: theme === 'white' ? 'rgb(var(--color-accent-rgb) / 0.15)' : 'var(--color-surface-hover)',
+                                            border: `1px solid ${theme === 'white' ? 'rgb(var(--color-accent-rgb) / 0.3)' : 'var(--color-border)'}`,
                                             borderRadius: 12,
                                             cursor: 'pointer',
                                             textAlign: 'left',

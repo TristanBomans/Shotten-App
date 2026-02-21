@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { findScraperTeamByName, fetchScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
+import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 
 interface UseOpponentTeamDataProps {
     opponentTeam: string | null;
@@ -96,8 +97,7 @@ export function useOpponentTeamData({
             .slice(0, 5);
 
         return playedMatches.map((m: any) => {
-            const isHome = m.homeTeam.toLowerCase().includes(opponentData.name.toLowerCase().slice(0, 5)) ||
-                opponentData.name.toLowerCase().includes(m.homeTeam.toLowerCase().slice(0, 5));
+            const isHome = isHomeTeamForMatch(opponentData.name, m.homeTeam, m.awayTeam);
             const teamScore = isHome ? m.homeScore : m.awayScore;
             const opponentScore = isHome ? m.awayScore : m.homeScore;
 

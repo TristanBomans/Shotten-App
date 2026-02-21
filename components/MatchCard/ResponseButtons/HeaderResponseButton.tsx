@@ -16,17 +16,17 @@ const config = {
     yes: {
         icon: <Check size={12} />,
         color: 'var(--color-success)',
-        bg: 'rgba(var(--color-success-rgb), 0.25)',
+        bg: 'rgb(var(--color-success-rgb) / 0.25)',
     },
     maybe: {
         icon: <HelpCircle size={12} />,
         color: 'var(--color-warning)',
-        bg: 'rgba(var(--color-warning-rgb), 0.2)',
+        bg: 'rgb(var(--color-warning-rgb) / 0.2)',
     },
     no: {
         icon: <X size={12} />,
         color: 'var(--color-danger)',
-        bg: 'rgba(var(--color-danger-rgb), 0.2)',
+        bg: 'rgb(var(--color-danger-rgb) / 0.2)',
     },
 };
 
