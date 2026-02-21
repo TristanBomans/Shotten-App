@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Database, Wifi, WifiOff, Settings, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette } from 'lucide-react';
+import { LogOut, Database, Wifi, WifiOff, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette } from 'lucide-react';
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
@@ -148,41 +148,13 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
     };
 
     return (
-        <div className="container">
+        <div className="container content-under-top-overlay">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
             >
-                {/* Header */}
-                <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            marginBottom: 8,
-                        }}>
-                            <Settings size={16} style={{ color: 'var(--color-accent)' }} />
-                            <span style={{
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                color: 'var(--color-accent)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                            }}>
-                                Preferences
-                            </span>
-                        </div>
-                        <h1 style={{
-                            fontSize: '1.75rem',
-                            fontWeight: 700,
-                            color: 'var(--color-text-primary)',
-                            margin: 0,
-                        }}>
-                            Settings
-                        </h1>
-                    </div>
+                <div style={{ marginBottom: 18, display: 'flex', justifyContent: 'flex-end' }}>
                     <VersionChecker />
                 </div>
 

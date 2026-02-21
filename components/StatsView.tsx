@@ -193,61 +193,36 @@ export default function StatsView({ matches, players, currentPlayerId }: StatsVi
     ) : null;
 
     return (
-        <div className="container">
+        <div className="container content-under-top-overlay">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
             >
-                {/* Header */}
-                <div style={{ marginBottom: 20 }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginBottom: 8,
-                    }}>
-                        <span style={{
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                    <motion.button
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setShowRules(true);
+                        }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '6px 12px',
+                            background: 'var(--color-surface)',
+                            border: '0.5px solid var(--color-border)',
+                            borderRadius: 20,
+                            color: 'var(--color-text-primary)',
                             fontSize: '0.75rem',
                             fontWeight: 600,
-                            color: 'var(--color-accent)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                        }}>
-                            Social Credit
-                        </span>
-                        <motion.button
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                setShowRules(true);
-                            }}
-                            whileTap={{ scale: 0.95 }}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                padding: '6px 12px',
-                                background: 'var(--color-surface)',
-                                border: '0.5px solid var(--color-border)',
-                                borderRadius: 20,
-                                color: 'var(--color-text-primary)',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                            }}
-                        >
-                            <HelpCircle size={14} />
-                            Rules
-                        </motion.button>
-                    </div>
-                    <h1 style={{
-                        fontSize: '1.75rem',
-                        fontWeight: 700,
-                        color: 'var(--color-text-primary)',
-                        margin: 0,
-                    }}>
-                        Leaderboard
-                    </h1>
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <HelpCircle size={14} />
+                        Rules
+                    </motion.button>
                 </div>
 
                 {/* Highlights */}

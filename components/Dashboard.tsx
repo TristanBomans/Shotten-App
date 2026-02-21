@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar } from 'lucide-react';
 import { useMatches, useAllPlayers } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import MatchCard from './MatchCard';
@@ -11,6 +10,9 @@ import SettingsView from './SettingsView';
 import LeagueView from './LeagueView';
 import PullToRefresh from './PullToRefresh';
 import { parseDateToTimestamp } from '@/lib/dateUtils';
+import TopOverlayHeader from './TopOverlayHeader';
+import NotificationSheet from './NotificationSheet';
+import { buildMatchReminders } from '@/lib/notifications';
 
 interface DashboardProps {
     playerId: number;
@@ -23,13 +25,24 @@ interface DashboardProps {
 // View order for determining slide position
 const viewOrder = ['home', 'stats', 'league', 'settings'] as const;
 type ViewType = typeof viewOrder[number];
+const viewTitles: Record<ViewType, string> = {
+    home: 'Matches',
+    stats: 'Leaderboard',
+    league: 'League',
+    settings: 'Settings',
+};
 
 export default function Dashboard({ playerId, currentView, onLogout, onViewChange, onPlayerManagementOpenChange }: DashboardProps) {
     const { matches, loading, error, fetchMatches, setMatches } = useMatches(playerId);
     const { players, fetchAllPlayers } = useAllPlayers();
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isNotificationSheetOpen, setIsNotificationSheetOpen] = useState(false);
+    const [highlightedMatchId, setHighlightedMatchId] = useState<number | null>(null);
     const upcomingRef = useRef<HTMLElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const matchCardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
     // Sync control refs - simplified approach
     const scrollSourceRef = useRef<'nav' | 'swipe' | null>(null);
@@ -37,6 +50,14 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const scrollEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isInitialMount = useRef(true);
+
+    const setMatchCardRef = useCallback((matchId: number, node: HTMLDivElement | null) => {
+        if (!node) {
+            matchCardRefs.current.delete(matchId);
+            return;
+        }
+        matchCardRefs.current.set(matchId, node);
+    }, []);
 
     useEffect(() => {
         fetchMatches();
@@ -182,6 +203,12 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
             if (scrollEndTimeoutRef.current) {
                 clearTimeout(scrollEndTimeoutRef.current);
             }
+            if (highlightTimeoutRef.current) {
+                clearTimeout(highlightTimeoutRef.current);
+            }
+            if (focusTimeoutRef.current) {
+                clearTimeout(focusTimeoutRef.current);
+            }
         };
     }, []);
 
@@ -231,82 +258,132 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
     const pastMatches = remainingMatches
         .filter(m => parseDateToTimestamp(m.date) <= threshold)
         .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date));
+    const notificationSummary = useMemo(
+        () => buildMatchReminders(matches, playerId),
+        [matches, playerId]
+    );
+    const currentTitle = viewTitles[currentView];
+
+    const openNotificationSheet = () => {
+        hapticPatterns.tap();
+        setIsNotificationSheetOpen(true);
+    };
+
+    const closeNotificationSheet = () => {
+        setIsNotificationSheetOpen(false);
+    };
+
+    const handleReminderSelect = useCallback((matchId: number) => {
+        setIsNotificationSheetOpen(false);
+
+        if (currentView !== 'home') {
+            onViewChange('home');
+        }
+
+        const focusDelay = currentView === 'home' ? 220 : 520;
+
+        if (focusTimeoutRef.current) {
+            clearTimeout(focusTimeoutRef.current);
+        }
+
+        focusTimeoutRef.current = setTimeout(() => {
+            const targetNode = matchCardRefs.current.get(matchId);
+            if (!targetNode) return;
+
+            targetNode.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest',
+            });
+
+            setHighlightedMatchId(null);
+            requestAnimationFrame(() => setHighlightedMatchId(matchId));
+
+            if (highlightTimeoutRef.current) {
+                clearTimeout(highlightTimeoutRef.current);
+            }
+            highlightTimeoutRef.current = setTimeout(() => {
+                setHighlightedMatchId(null);
+            }, 1200);
+
+            focusTimeoutRef.current = null;
+        }, focusDelay);
+    }, [currentView, onViewChange]);
 
     // Loading state
     if (loading) {
         return (
-            <div className="container">
-                <div className="glass-panel-heavy skeleton" style={{ height: 320, marginBottom: 'var(--space-xl)' }} />
-                <div className="grid-cards">
-                    {[...Array(4)].map((_, i) => (
-                        <div key={i} className="glass-panel skeleton" style={{ height: 200 }} />
-                    ))}
+            <>
+                <TopOverlayHeader
+                    title={currentTitle}
+                    notificationCount={notificationSummary.count}
+                    onNotificationPress={openNotificationSheet}
+                />
+                <NotificationSheet
+                    open={isNotificationSheetOpen}
+                    reminders={notificationSummary.items}
+                    totalCount={notificationSummary.count}
+                    onReminderSelect={handleReminderSelect}
+                    onClose={closeNotificationSheet}
+                />
+                <div className="container content-under-top-overlay">
+                    <div className="glass-panel-heavy skeleton" style={{ height: 320, marginBottom: 'var(--space-xl)' }} />
+                    <div className="grid-cards">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="glass-panel skeleton" style={{ height: 200 }} />
+                        ))}
+                    </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     // Error state
     if (error) {
         return (
-            <div className="container flex-center" style={{ minHeight: '80dvh' }}>
-                <motion.div
-                    className="glass-panel-heavy"
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    style={{
-                        padding: 'var(--space-2xl)',
-                        textAlign: 'center',
-                        maxWidth: 400,
-                    }}
-                >
-                    <div style={{ fontSize: '4rem', marginBottom: 'var(--space-lg)' }}>👻</div>
-                    <h2 className="text-title" style={{ marginBottom: 'var(--space-sm)' }}>
-                        Connection Lost
-                    </h2>
-                    <p className="text-body" style={{ marginBottom: 'var(--space-lg)' }}>
-                        Unable to reach the server. Check your connection.
-                    </p>
-                    <button className="btn btn-primary touch-target" onClick={() => fetchMatches()}>
-                        Try Again
-                    </button>
-                </motion.div>
-            </div>
+            <>
+                <TopOverlayHeader
+                    title={currentTitle}
+                    notificationCount={notificationSummary.count}
+                    onNotificationPress={openNotificationSheet}
+                />
+                <NotificationSheet
+                    open={isNotificationSheetOpen}
+                    reminders={notificationSummary.items}
+                    totalCount={notificationSummary.count}
+                    onReminderSelect={handleReminderSelect}
+                    onClose={closeNotificationSheet}
+                />
+                <div className="container content-under-top-overlay flex-center" style={{ minHeight: '80dvh' }}>
+                    <motion.div
+                        className="glass-panel-heavy"
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        style={{
+                            padding: 'var(--space-2xl)',
+                            textAlign: 'center',
+                            maxWidth: 400,
+                        }}
+                    >
+                        <div style={{ fontSize: '4rem', marginBottom: 'var(--space-lg)' }}>👻</div>
+                        <h2 className="text-title" style={{ marginBottom: 'var(--space-sm)' }}>
+                            Connection Lost
+                        </h2>
+                        <p className="text-body" style={{ marginBottom: 'var(--space-lg)' }}>
+                            Unable to reach the server. Check your connection.
+                        </p>
+                        <button className="btn btn-primary touch-target" onClick={() => fetchMatches()}>
+                            Try Again
+                        </button>
+                    </motion.div>
+                </div>
+            </>
         );
     }
 
     // Skeleton loading component for refresh
     const SkeletonContent = (
-        <div className="container">
-            {/* Header - Keep visible during refresh */}
-            <div style={{ marginBottom: 20 }}>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    marginBottom: 8,
-                }}>
-                    <Calendar size={16} style={{ color: 'var(--color-accent)' }} />
-                    <span style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        color: 'var(--color-accent)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                    }}>
-                        Schedule
-                    </span>
-                </div>
-                <h1 style={{
-                    fontSize: '1.75rem',
-                    fontWeight: 700,
-                    color: 'var(--color-text-primary)',
-                    margin: 0,
-                }}>
-                    Matches
-                </h1>
-            </div>
-
+        <div className="container content-under-top-overlay">
             {/* Skeleton for hero match */}
             <div className="glass-panel-heavy skeleton" style={{ height: 320, marginBottom: 'var(--space-xl)' }} />
 
@@ -324,49 +401,30 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
 
     // Home content component
     const HomeContent = (
-        <div className="container">
-            {/* Header */}
-            <div style={{ marginBottom: 20 }}>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    marginBottom: 8,
-                }}>
-                    <Calendar size={16} style={{ color: 'var(--color-accent)' }} />
-                    <span style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        color: 'var(--color-accent)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                    }}>
-                        Schedule
-                    </span>
-                </div>
-                <h1 style={{
-                    fontSize: '1.75rem',
-                    fontWeight: 700,
-                    color: 'var(--color-text-primary)',
-                    margin: 0,
-                }}>
-                    Matches
-                </h1>
-            </div>
-
+        <div className="container content-under-top-overlay">
             {/* Hero Section */}
             {heroMatch ? (
                 <section style={{ marginBottom: 'var(--space-2xl)', position: 'relative' }}>
                     <h2 className="text-label" style={{ marginBottom: 'var(--space-md)' }}>
                         Next Match
                     </h2>
-                    <MatchCard
-                        match={heroMatch}
-                        currentPlayerId={playerId}
-                        allPlayers={players}
-                        onUpdate={handleUpdate}
-                        variant="hero"
-                    />
+                    <motion.div
+                        ref={(node) => setMatchCardRef(heroMatch.id, node)}
+                        className={highlightedMatchId === heroMatch.id ? 'match-focus-pulse' : undefined}
+                        style={{ borderRadius: 'var(--radius-xl)' }}
+                        animate={highlightedMatchId === heroMatch.id ? { scale: [1, 1.01, 1] } : { scale: 1 }}
+                        transition={highlightedMatchId === heroMatch.id
+                            ? { duration: 0.8, times: [0, 0.35, 1], ease: 'easeOut' }
+                            : { duration: 0.2 }}
+                    >
+                        <MatchCard
+                            match={heroMatch}
+                            currentPlayerId={playerId}
+                            allPlayers={players}
+                            onUpdate={handleUpdate}
+                            variant="hero"
+                        />
+                    </motion.div>
                 </section>
             ) : (
                 <div
@@ -393,7 +451,16 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                     </h2>
                     <div className="grid-cards">
                         {upcomingMatches.map((match) => (
-                            <div key={match.id} style={{ height: '100%', width: '100%' }}>
+                            <motion.div
+                                key={match.id}
+                                ref={(node) => setMatchCardRef(match.id, node)}
+                                className={highlightedMatchId === match.id ? 'match-focus-pulse' : undefined}
+                                style={{ height: '100%', width: '100%', borderRadius: 'var(--radius-lg)' }}
+                                animate={highlightedMatchId === match.id ? { scale: [1, 1.01, 1] } : { scale: 1 }}
+                                transition={highlightedMatchId === match.id
+                                    ? { duration: 0.8, times: [0, 0.35, 1], ease: 'easeOut' }
+                                    : { duration: 0.2 }}
+                            >
                                 <MatchCard
                                     match={match}
                                     currentPlayerId={playerId}
@@ -401,7 +468,7 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                                     onUpdate={handleUpdate}
                                     variant="compact"
                                 />
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 </section>
@@ -415,7 +482,16 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                     </h2>
                     <div className="grid-cards" style={{ opacity: 0.6 }}>
                         {pastMatches.slice(0, 4).map((match) => (
-                            <div key={match.id} style={{ height: '100%', width: '100%' }}>
+                            <motion.div
+                                key={match.id}
+                                ref={(node) => setMatchCardRef(match.id, node)}
+                                className={highlightedMatchId === match.id ? 'match-focus-pulse' : undefined}
+                                style={{ height: '100%', width: '100%', borderRadius: 'var(--radius-lg)' }}
+                                animate={highlightedMatchId === match.id ? { scale: [1, 1.01, 1] } : { scale: 1 }}
+                                transition={highlightedMatchId === match.id
+                                    ? { duration: 0.8, times: [0, 0.35, 1], ease: 'easeOut' }
+                                    : { duration: 0.2 }}
+                            >
                                 <MatchCard
                                     match={match}
                                     currentPlayerId={playerId}
@@ -423,7 +499,7 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                                     onUpdate={handleUpdate}
                                     variant="compact"
                                 />
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 </section>
@@ -432,84 +508,98 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
     );
 
     return (
-        <div
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-            style={{
-                display: 'flex',
-                width: '100vw',
-                height: '100dvh',
-                overflowX: 'auto',
-                overflowY: 'hidden',
-                scrollSnapType: 'x mandatory',
-                WebkitOverflowScrolling: 'touch',
-                // Hide scrollbar
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-            }}
-            className="scrollbar-hide"
-        >
-            {/* Home View */}
+        <>
+            <TopOverlayHeader
+                title={currentTitle}
+                notificationCount={notificationSummary.count}
+                onNotificationPress={openNotificationSheet}
+            />
+            <NotificationSheet
+                open={isNotificationSheetOpen}
+                reminders={notificationSummary.items}
+                totalCount={notificationSummary.count}
+                onReminderSelect={handleReminderSelect}
+                onClose={closeNotificationSheet}
+            />
             <div
-                data-view="home"
+                ref={scrollContainerRef}
+                onScroll={handleScroll}
                 style={{
+                    display: 'flex',
                     width: '100vw',
                     height: '100dvh',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    scrollSnapStop: 'always',
-                    overflowY: 'hidden', // Changed to hidden because PullToRefresh handles scrolling
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    scrollSnapType: 'x mandatory',
+                    WebkitOverflowScrolling: 'touch',
+                    // Hide scrollbar
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
                 }}
+                className="scrollbar-hide"
             >
-                <PullToRefresh onRefresh={handleRefresh}>
-                    {isRefreshing ? SkeletonContent : HomeContent}
-                </PullToRefresh>
-            </div>
+                {/* Home View */}
+                <div
+                    data-view="home"
+                    style={{
+                        width: '100vw',
+                        height: '100dvh',
+                        flexShrink: 0,
+                        scrollSnapAlign: 'start',
+                        scrollSnapStop: 'always',
+                        overflowY: 'hidden', // Changed to hidden because PullToRefresh handles scrolling
+                    }}
+                >
+                    <PullToRefresh onRefresh={handleRefresh}>
+                        {isRefreshing ? SkeletonContent : HomeContent}
+                    </PullToRefresh>
+                </div>
 
-            {/* Stats View */}
-            <div
-                data-view="stats"
-                style={{
-                    width: '100vw',
-                    height: '100dvh',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    scrollSnapStop: 'always',
-                    overflowY: 'auto',
-                }}
-            >
-                <StatsView matches={matches} players={players} currentPlayerId={playerId} />
-            </div>
+                {/* Stats View */}
+                <div
+                    data-view="stats"
+                    style={{
+                        width: '100vw',
+                        height: '100dvh',
+                        flexShrink: 0,
+                        scrollSnapAlign: 'start',
+                        scrollSnapStop: 'always',
+                        overflowY: 'auto',
+                    }}
+                >
+                    <StatsView matches={matches} players={players} currentPlayerId={playerId} />
+                </div>
 
-            {/* League View */}
-            <div
-                data-view="league"
-                style={{
-                    width: '100vw',
-                    height: '100dvh',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    scrollSnapStop: 'always',
-                    overflowY: 'hidden', // LeagueView handles its own scrolling
-                }}
-            >
-                <LeagueView />
-            </div>
+                {/* League View */}
+                <div
+                    data-view="league"
+                    style={{
+                        width: '100vw',
+                        height: '100dvh',
+                        flexShrink: 0,
+                        scrollSnapAlign: 'start',
+                        scrollSnapStop: 'always',
+                        overflowY: 'hidden', // LeagueView handles its own scrolling
+                    }}
+                >
+                    <LeagueView />
+                </div>
 
-            {/* Settings View */}
-            <div
-                data-view="settings"
-                style={{
-                    width: '100vw',
-                    height: '100dvh',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    scrollSnapStop: 'always',
-                    overflowY: 'auto',
-                }}
-            >
-                <SettingsView onLogout={onLogout} onPlayerManagementOpenChange={onPlayerManagementOpenChange} />
+                {/* Settings View */}
+                <div
+                    data-view="settings"
+                    style={{
+                        width: '100vw',
+                        height: '100dvh',
+                        flexShrink: 0,
+                        scrollSnapAlign: 'start',
+                        scrollSnapStop: 'always',
+                        overflowY: 'auto',
+                    }}
+                >
+                    <SettingsView onLogout={onLogout} onPlayerManagementOpenChange={onPlayerManagementOpenChange} />
+                </div>
             </div>
-        </div>
+        </>
     );
 }

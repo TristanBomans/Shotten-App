@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAllScraperTeams, fetchAllScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
-import { Loader2, ChevronDown, Trophy, Users, TrendingUp, X } from 'lucide-react';
+import { Loader2, ChevronDown, Users, TrendingUp, X } from 'lucide-react';
 import TeamDetailModal from './TeamDetailModal';
 import LeagueSelector from './LeagueSelector';
 import { hapticPatterns } from '@/lib/haptic';
@@ -148,57 +148,48 @@ export default function LeagueView() {
     }, [filteredPlayers, filteredTeams]);
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
-            {/* Header */}
+        <div
+            style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                background: 'var(--color-bg)',
+                paddingTop: 'var(--top-overlay-offset)',
+            }}
+        >
             <div style={{
-                padding: '16px 20px',
-                paddingTop: 'max(16px, env(safe-area-inset-top))',
+                padding: '12px 20px 14px',
                 background: 'var(--color-surface)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
-                position: 'sticky',
-                top: 0,
                 zIndex: 10,
                 borderBottom: '0.5px solid var(--color-border)',
             }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            marginBottom: 4,
-                        }}>
-                            <Trophy size={16} style={{ color: 'var(--color-warning)' }} />
-                            <span style={{
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                color: 'var(--color-warning)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                            }}>
-                                LZV Cup
-                            </span>
-                        </div>
-                        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, color: 'var(--color-text-primary)' }}>
-                            League
-                        </h1>
-                    </div>
-
-                    {/* Mini Stats */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span
+                        style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            letterSpacing: '0.05em',
+                            textTransform: 'uppercase',
+                            color: 'var(--color-text-tertiary)',
+                        }}
+                    >
+                        LZV Cup Intelligence
+                    </span>
                     {!loading && (
-                        <div style={{
-                            fontSize: '0.75rem',
+                        <span style={{
+                            fontSize: '0.72rem',
                             color: 'var(--color-text-secondary)',
                         }}>
-                            <span><strong style={{ color: 'var(--color-text-primary)' }}>{leagueStats.teamCount}</strong> teams</span>
-                        </div>
+                            <strong style={{ color: 'var(--color-text-primary)' }}>{leagueStats.teamCount}</strong> teams · {leagueStats.playerCount} players
+                        </span>
                     )}
                 </div>
 
                 {/* League Selector */}
                 {leagues.length > 0 && (
-                    <div style={{ marginTop: 12 }}>
+                    <div>
                         <LeagueSelector
                             leagues={leagues}
                             selectedLeague={selectedLeague}
