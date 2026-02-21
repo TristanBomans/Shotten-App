@@ -36,12 +36,12 @@
   --color-top3-bg: rgba(255, 214, 10, 0.08);
   --color-top3-border: rgba(255, 214, 10, 0.2);
 
-  /* RGB values for use in rgba() - Original theme */
-  --color-accent-rgb: 10, 132, 255;
-  --color-success-rgb: 48, 209, 88;
-  --color-warning-rgb: 255, 214, 10;
-  --color-danger-rgb: 255, 69, 58;
-  --color-text-tertiary-rgb: 255, 255, 255;
+  /* RGB values for use in rgb() - Original theme (space-separated for modern syntax) */
+  --color-accent-rgb: 10 132 255;
+  --color-success-rgb: 48 209 88;
+  --color-warning-rgb: 255 214 10;
+  --color-danger-rgb: 255 69 58;
+  --color-text-tertiary-rgb: 255 255 255;
 
   /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -118,12 +118,12 @@
   --color-top3-bg: rgba(255, 214, 10, 0.08);
   --color-top3-border: rgba(255, 214, 10, 0.2);
 
-  /* RGB values for use in rgba() - OLED theme (same as original) */
-  --color-accent-rgb: 10, 132, 255;
-  --color-success-rgb: 48, 209, 88;
-  --color-warning-rgb: 255, 214, 10;
-  --color-danger-rgb: 255, 69, 58;
-  --color-text-tertiary-rgb: 255, 255, 255;
+  /* RGB values for use in rgb() - OLED theme (space-separated for modern syntax) */
+  --color-accent-rgb: 10 132 255;
+  --color-success-rgb: 48 209 88;
+  --color-warning-rgb: 255 214 10;
+  --color-danger-rgb: 255 69 58;
+  --color-text-tertiary-rgb: 255 255 255;
 
   /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
@@ -174,12 +174,12 @@
   --color-top3-bg: rgba(255, 149, 0, 0.12);
   --color-top3-border: rgba(255, 149, 0, 0.25);
 
-  /* RGB values for use in rgba() - White theme */
-  --color-accent-rgb: 0, 122, 255;
-  --color-success-rgb: 52, 199, 89;
-  --color-warning-rgb: 255, 149, 0;
-  --color-danger-rgb: 255, 59, 48;
-  --color-text-tertiary-rgb: 153, 153, 153;
+  /* RGB values for use in rgb() - White theme (space-separated for modern syntax) */
+  --color-accent-rgb: 0 122 255;
+  --color-success-rgb: 52 199 89;
+  --color-warning-rgb: 255 149 0;
+  --color-danger-rgb: 255 59 48;
+  --color-text-tertiary-rgb: 153 153 153;
 
   /* Shadows - lighter for white theme */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);

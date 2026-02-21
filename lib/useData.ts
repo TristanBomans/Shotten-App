@@ -12,6 +12,7 @@ import {
 } from './mockData';
 import { API_BASE_URL } from './config';
 import { parseDateToTimestamp } from './dateUtils';
+import { isSameTeamName, normalizeTeamName } from './teamNameMatching';
 
 // =============================================================================
 // CONFIGURATION
@@ -110,11 +111,15 @@ export async function fetchScraperPlayers(teamId: number): Promise<ScraperPlayer
 // Find team by name (searches through all teams)
 export async function findScraperTeamByName(teamName: string): Promise<ScraperTeam | null> {
     const teams = await fetchAllScraperTeams();
-    const normalized = teamName.toLowerCase().trim();
-    return teams.find(t =>
-        t.name.toLowerCase().includes(normalized) ||
-        normalized.includes(t.name.toLowerCase())
-    ) || null;
+    const normalized = normalizeTeamName(teamName);
+
+    const exactOrNear = teams.find(t => isSameTeamName(t.name, teamName));
+    if (exactOrNear) return exactOrNear;
+
+    return teams.find(t => {
+        const normalizedTeamName = normalizeTeamName(t.name);
+        return normalizedTeamName.includes(normalized) || normalized.includes(normalizedTeamName);
+    }) || null;
 }
 
 // =============================================================================

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Calendar } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
+import { isSameTeamName } from '@/lib/teamNameMatching';
 import type { Match } from '@/lib/mockData';
 import type { RosterPlayer, StatusGroup } from '../types';
 import { useOpponentTeamData } from '../hooks/useOpponentTeamData';
@@ -82,10 +83,10 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
     // Determine opponent team (the team that isn't ours)
     const teams = match.name.split('-').map(t => t.trim());
     const opponentTeam = teams.find(t => !OWN_TEAMS.some(own =>
-        t.toLowerCase().includes(own.toLowerCase()) || own.toLowerCase().includes(t.toLowerCase())
+        isSameTeamName(t, own)
     )) || teams[1] || null;
     const ownTeam = teams.find(t => OWN_TEAMS.some(own =>
-        t.toLowerCase().includes(own.toLowerCase()) || own.toLowerCase().includes(t.toLowerCase())
+        isSameTeamName(t, own)
     )) || teams[0] || null;
 
     // Fetch opponent team data

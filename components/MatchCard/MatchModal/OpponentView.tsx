@@ -150,15 +150,15 @@ export default function OpponentView({
             if (themAhead) themWins++;
         });
 
-        let verdict = { text: 'Even match', emoji: '🤝', color: 'var(--color-warning)', bg: 'rgba(var(--color-warning-rgb), 0.15)' };
+        let verdict = { text: 'Even match', emoji: '🤝', color: 'var(--color-warning)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' };
         if (usWins === 4) {
-            verdict = { text: 'Easy pickings', emoji: '🔥', color: 'var(--color-success)', bg: 'rgba(var(--color-success-rgb), 0.2)' };
+            verdict = { text: 'Easy pickings', emoji: '🔥', color: 'var(--color-success)', bg: 'rgb(var(--color-success-rgb) / 0.2)' };
         } else if (usWins >= 3) {
-            verdict = { text: 'Looking good', emoji: '💪', color: 'var(--color-success)', bg: 'rgba(var(--color-success-rgb), 0.15)' };
+            verdict = { text: 'Looking good', emoji: '💪', color: 'var(--color-success)', bg: 'rgb(var(--color-success-rgb) / 0.15)' };
         } else if (themWins === 4) {
-            verdict = { text: 'Major challenge', emoji: '🚨', color: 'var(--color-danger)', bg: 'rgba(var(--color-danger-rgb), 0.2)' };
+            verdict = { text: 'Major challenge', emoji: '🚨', color: 'var(--color-danger)', bg: 'rgb(var(--color-danger-rgb) / 0.2)' };
         } else if (themWins >= 3) {
-            verdict = { text: 'Tough match', emoji: '⚠️', color: 'var(--color-warning-secondary)', bg: 'rgba(var(--color-warning-rgb), 0.15)' };
+            verdict = { text: 'Tough match', emoji: '⚠️', color: 'var(--color-warning-secondary)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' };
         }
 
         return (
@@ -208,26 +208,26 @@ export default function OpponentView({
                                 <div style={{
                                     padding: '6px 14px',
                                     borderRadius: 8,
-                                    background: usAhead ? 'rgba(var(--color-success-rgb), 0.15)' : 'var(--color-surface-hover)',
+                                    background: usAhead ? 'rgb(var(--color-success-rgb) / 0.15)' : 'var(--color-surface-hover)',
                                     fontSize: '0.9rem',
                                     fontWeight: 700,
                                     color: usAhead ? 'var(--color-success)' : 'var(--color-text-primary)',
                                     textAlign: 'center',
                                     minWidth: 50,
-                                    border: usAhead ? '1px solid rgba(var(--color-success-rgb), 0.25)' : '1px solid transparent',
+                                    border: usAhead ? '1px solid rgb(var(--color-success-rgb) / 0.25)' : '1px solid transparent',
                                 }}>
                                     {stat.label === 'Goal Diff' && stat.us > 0 ? '+' : ''}{stat.us}
                                 </div>
                                 <div style={{
                                     padding: '6px 14px',
                                     borderRadius: 8,
-                                    background: themAhead ? 'rgba(var(--color-danger-rgb), 0.15)' : 'var(--color-surface-hover)',
+                                    background: themAhead ? 'rgb(var(--color-danger-rgb) / 0.15)' : 'var(--color-surface-hover)',
                                     fontSize: '0.9rem',
                                     fontWeight: 700,
                                     color: themAhead ? 'var(--color-danger)' : 'var(--color-text-primary)',
                                     textAlign: 'center',
                                     minWidth: 50,
-                                    border: themAhead ? '1px solid rgba(var(--color-danger-rgb), 0.25)' : '1px solid transparent',
+                                    border: themAhead ? '1px solid rgb(var(--color-danger-rgb) / 0.25)' : '1px solid transparent',
                                 }}>
                                     {stat.label === 'Goal Diff' && stat.them > 0 ? '+' : ''}{stat.them}
                                 </div>
@@ -345,12 +345,12 @@ export default function OpponentView({
                                 style={{
                                     width: 36, height: 36,
                                     borderRadius: 10,
-                                    background: result === 'W' ? 'rgba(var(--color-success-rgb), 0.2)' :
-                                        result === 'L' ? 'rgba(var(--color-danger-rgb), 0.2)' :
-                                            'rgba(var(--color-warning-rgb), 0.2)',
-                                    border: `1px solid ${result === 'W' ? 'rgba(var(--color-success-rgb), 0.3)' :
-                                        result === 'L' ? 'rgba(var(--color-danger-rgb), 0.3)' :
-                                            'rgba(var(--color-warning-rgb), 0.3)'}`,
+                                    background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.2)' :
+                                        result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.2)' :
+                                            'rgb(var(--color-warning-rgb) / 0.2)',
+                                    border: `1px solid ${result === 'W' ? 'rgb(var(--color-success-rgb) / 0.3)' :
+                                        result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.3)' :
+                                            'rgb(var(--color-warning-rgb) / 0.3)'}`,
                                     color: result === 'W' ? 'var(--color-success)' :
                                         result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
                                     display: 'flex',
@@ -485,8 +485,8 @@ export default function OpponentView({
                             style={{
                                 width: '100%',
                                 padding: '14px 16px',
-                                background: 'rgba(var(--color-accent-rgb), 0.12)',
-                                border: '1px solid rgba(var(--color-accent-rgb), 0.2)',
+                                background: 'rgb(var(--color-accent-rgb) / 0.12)',
+                                border: '1px solid rgb(var(--color-accent-rgb) / 0.2)',
                                 borderRadius: 12,
                                 color: 'var(--color-accent)',
                                 fontSize: '0.9rem',
@@ -521,8 +521,8 @@ export default function OpponentView({
                     {aiError && (
                         <div style={{
                             padding: '14px',
-                            background: 'rgba(var(--color-danger-rgb), 0.1)',
-                            border: '1px solid rgba(var(--color-danger-rgb), 0.2)',
+                            background: 'rgb(var(--color-danger-rgb) / 0.1)',
+                            border: '1px solid rgb(var(--color-danger-rgb) / 0.2)',
                             borderRadius: 10,
                             display: 'flex',
                             alignItems: 'flex-start',
@@ -617,9 +617,9 @@ export default function OpponentView({
                 style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     padding: 16, gap: 8,
-                    background: 'rgba(var(--color-accent-rgb), 0.12)',
+                    background: 'rgb(var(--color-accent-rgb) / 0.12)',
                     borderRadius: 14,
-                    border: '1px solid rgba(var(--color-accent-rgb), 0.2)',
+                    border: '1px solid rgb(var(--color-accent-rgb) / 0.2)',
                     color: 'var(--color-accent)', fontSize: '0.95rem', fontWeight: 600,
                     textDecoration: 'none',
                 }}
