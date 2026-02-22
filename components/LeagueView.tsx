@@ -159,11 +159,9 @@ export default function LeagueView({
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                background: 'var(--color-bg)',
-                paddingTop: 'var(--top-overlay-offset)',
             }}
         >
-            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 100 }}>
+            <div style={{ flex: 1, overflowY: 'auto', paddingTop: 'var(--top-overlay-offset)', paddingBottom: 100 }}>
                 {loading ? (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: 60 }}>
                         <Loader2 className="animate-spin" size={24} color="var(--color-text-secondary)" />
