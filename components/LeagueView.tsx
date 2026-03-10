@@ -161,7 +161,10 @@ export default function LeagueView({
                 flexDirection: 'column',
             }}
         >
-            <div style={{ flex: 1, overflowY: 'auto', paddingTop: 'var(--top-overlay-offset)', paddingBottom: 100 }}>
+            <div
+                className="container content-under-top-overlay scrollbar-hide"
+                style={{ flex: 1, overflowY: 'auto' }}
+            >
                 {loading ? (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: 60 }}>
                         <Loader2 className="animate-spin" size={24} color="var(--color-text-secondary)" />
@@ -175,7 +178,7 @@ export default function LeagueView({
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 10 }}
                                 transition={{ duration: 0.15 }}
-                                style={{ padding: 16 }}
+                                style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
                             >
                                 <div style={{
                                     background: 'var(--color-surface)',
@@ -343,7 +346,7 @@ export default function LeagueView({
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.15 }}
-                                style={{ padding: 16 }}
+                                style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
                             >
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                     {filteredPlayers.length === 0 ? (

@@ -61,6 +61,23 @@ const SectionCard = ({ children, style }: { children: React.ReactNode; style?: R
     </div>
 );
 
+const SkeletonBlock = ({ height, width = '100%', radius = 12 }: { height: number; width?: React.CSSProperties['width']; radius?: number }) => (
+    <div
+        className="skeleton"
+        style={{
+            width,
+            height,
+            borderRadius: radius,
+        }}
+    />
+);
+
+const SkeletonSectionHeader = ({ width = 128 }: { width?: React.CSSProperties['width'] }) => (
+    <div style={{ marginBottom: 12 }}>
+        <SkeletonBlock height={14} width={width} radius={7} />
+    </div>
+);
+
 // Section Header Component - Consistent header with icon
 const SectionHeader = ({ icon: Icon, title, color = 'var(--color-text-tertiary)', rightContent }: {
     icon: React.ElementType;
@@ -109,28 +126,97 @@ export default function OpponentView({
 }: OpponentViewProps) {
     if (!opponentTeam) return null;
 
-    if (loading) {
+    if (loading && !opponentData) {
         return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, color: 'var(--color-text-secondary)' }}>
-                <Loader2 className="animate-spin" size={20} style={{ marginRight: 8 }} /> Loading team data...
-            </div>
-        );
-    }
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <SectionCard style={{ padding: 20 }}>
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                        <SkeletonBlock height={72} width={72} radius={14} />
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <SkeletonBlock height={24} width="72%" radius={10} />
+                            <SkeletonBlock height={14} width="48%" radius={8} />
+                        </div>
+                    </div>
+                </SectionCard>
 
-    if (!opponentData) {
-        return (
-            <div style={{
-                padding: 16, textAlign: 'center',
-                color: 'var(--color-text-tertiary)', fontSize: '0.85rem'
-            }}>
-                Team data not available
+                <SectionCard style={{ minHeight: 128 }}>
+                    <SkeletonSectionHeader width={132} />
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                        gap: 16,
+                        alignItems: 'end',
+                    }}>
+                        {[...Array(4)].map((_, index) => (
+                            <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                                <SkeletonBlock height={28} width={48} radius={10} />
+                                <SkeletonBlock height={12} width={44} radius={6} />
+                            </div>
+                        ))}
+                    </div>
+                </SectionCard>
+
+                <SectionCard>
+                    <SkeletonSectionHeader width={124} />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        {[...Array(5)].map((_, index) => (
+                            <SkeletonBlock key={index} height={36} width={36} radius={10} />
+                        ))}
+                    </div>
+                </SectionCard>
+
+                <SectionCard>
+                    <SkeletonSectionHeader width={104} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <SkeletonBlock height={18} width="42%" radius={8} />
+                        <SkeletonBlock height={18} width="58%" radius={8} />
+                        <SkeletonBlock height={48} width="100%" radius={10} />
+                    </div>
+                </SectionCard>
+
+                <SectionCard>
+                    <SkeletonSectionHeader width={118} />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {[...Array(4)].map((_, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                    padding: '12px 0',
+                                    borderBottom: index < 3 ? '1px solid var(--color-border-subtle)' : 'none',
+                                }}
+                            >
+                                <SkeletonBlock height={22} width={22} radius={8} />
+                                <SkeletonBlock height={28} width={28} radius={14} />
+                                <SkeletonBlock height={16} width="38%" radius={8} />
+                                <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+                                    <SkeletonBlock height={14} width={34} radius={7} />
+                                    <SkeletonBlock height={14} width={34} radius={7} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </SectionCard>
+
+                <SectionCard>
+                    <SkeletonSectionHeader width={136} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <SkeletonBlock height={16} width="100%" radius={8} />
+                        <SkeletonBlock height={16} width="92%" radius={8} />
+                        <SkeletonBlock height={16} width="86%" radius={8} />
+                    </div>
+                </SectionCard>
+
+                <SkeletonBlock height={54} width="100%" radius={14} />
             </div>
         );
     }
 
     // Head-to-Head Comparison
     const renderHeadToHead = () => {
-        if (!ownTeamData || opponentData.rank === undefined || ownTeamData.rank === undefined) {
+        if (!opponentData || !ownTeamData || opponentData.rank === undefined || ownTeamData.rank === undefined) {
             return null;
         }
 
@@ -239,9 +325,22 @@ export default function OpponentView({
         );
     };
 
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Team Header Card */}
+    const renderTeamHeader = () => {
+        if (!opponentData) {
+            return (
+                <SectionCard>
+                    <div style={{
+                        textAlign: 'center',
+                        color: 'var(--color-text-tertiary)',
+                        fontSize: '0.85rem',
+                    }}>
+                        Team data not available
+                    </div>
+                </SectionCard>
+            );
+        }
+
+        return (
             <SectionCard style={{ padding: 20 }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                     {opponentData.imageBase64 ? (
@@ -300,9 +399,16 @@ export default function OpponentView({
                     </div>
                 </div>
             </SectionCard>
+        );
+    };
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Team Header Card */}
+            {renderTeamHeader()}
 
             {/* Stats Overview Card */}
-            {opponentData.rank !== undefined && (
+            {opponentData?.rank !== undefined && (
                 <SectionCard>
                     <SectionHeader
                         icon={TrendingUp}
@@ -368,7 +474,7 @@ export default function OpponentView({
             )}
 
             {/* Manager & Description Card */}
-            {(opponentData.manager || opponentData.description || opponentData.colors) && (
+            {opponentData && (opponentData.manager || opponentData.description || opponentData.colors) && (
                 <SectionCard>
                     <SectionHeader
                         icon={UserCircle}
@@ -467,7 +573,7 @@ export default function OpponentView({
             {renderHeadToHead()}
 
             {/* AI Scouting Report */}
-            {ownTeamData && opponentData && (
+            {opponentData && (ownTeamData || loading || aiLoading || aiAnalysis || aiError) && (
                 <SectionCard>
                     <SectionHeader
                         icon={Sparkles}
@@ -475,7 +581,22 @@ export default function OpponentView({
                         color="var(--color-accent-secondary)"
                     />
 
-                    {!aiAnalysis && !aiLoading && !aiError && (
+                    {!ownTeamData && loading && (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 24,
+                            color: 'var(--color-text-secondary)',
+                            gap: 10,
+                            flexDirection: 'column',
+                        }}>
+                            <Loader2 className="animate-spin" size={24} style={{ color: 'var(--color-accent)' }} />
+                            <span style={{ fontSize: '0.85rem' }}>Preparing scouting data...</span>
+                        </div>
+                    )}
+
+                    {ownTeamData && !aiAnalysis && !aiLoading && !aiError && (
                         <motion.button
                             onClick={() => {
                                 hapticPatterns.tap();
@@ -578,7 +699,7 @@ export default function OpponentView({
                     )}
 
                     {/* Powered by Mistral */}
-                    {(aiAnalysis || aiLoading) && (
+                    {(aiAnalysis || aiLoading || (!ownTeamData && loading)) && (
                         <div style={{
                             marginTop: 12,
                             display: 'flex',
@@ -610,22 +731,30 @@ export default function OpponentView({
             )}
 
             {/* Link to LZV */}
-            <a
-                href={`https://www.lzvcup.be/teams/detail/${opponentData.externalId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: 16, gap: 8,
-                    background: 'rgb(var(--color-accent-rgb) / 0.12)',
-                    borderRadius: 14,
-                    border: '1px solid rgb(var(--color-accent-rgb) / 0.2)',
-                    color: 'var(--color-accent)', fontSize: '0.95rem', fontWeight: 600,
-                    textDecoration: 'none',
-                }}
-            >
-                View on LZV Cup <ChevronRight size={18} />
-            </a>
+            {opponentData && (
+                <a
+                    href={`https://www.lzvcup.be/teams/detail/${opponentData.externalId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        alignSelf: 'center',
+                        gap: 6,
+                        padding: '10px 14px',
+                        background: 'var(--color-surface-hover)',
+                        borderRadius: 10,
+                        border: '0.5px solid var(--color-border)',
+                        color: 'var(--color-text-secondary)',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                    }}
+                >
+                    View on LZV Cup <ChevronRight size={14} />
+                </a>
+            )}
         </div>
     );
 }

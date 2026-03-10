@@ -35,6 +35,9 @@ export default function TopOverlayHeader({
     statsControls,
 }: TopOverlayHeaderProps) {
     const displayCount = notificationCount > 9 ? '9+' : String(notificationCount);
+    const notificationButtonMinWidth = notificationCount > 0
+        ? 'clamp(74px, 18vw, 88px)'
+        : 'clamp(56px, 14vw, 66px)';
     const leagueHeaderControls = title.toLowerCase() === 'league' ? leagueControls : undefined;
     const statsHeaderControls = title.toLowerCase() === 'leaderboard' ? statsControls : undefined;
     const showLeagueControls = Boolean(leagueHeaderControls);
@@ -85,7 +88,7 @@ export default function TopOverlayHeader({
                     margin: '0 auto',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 'clamp(8px, 2.8vw, 12px)',
+                    gap: 'clamp(6px, 2vw, 10px)',
                     minWidth: 0,
                 }}
             >
@@ -98,8 +101,8 @@ export default function TopOverlayHeader({
                         height: 44,
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: showLeagueControls || showStatsControls ? 8 : 0,
-                        padding: showLeagueControls || showStatsControls ? '0 10px 0 14px' : '0 16px',
+                        gap: showLeagueControls || showStatsControls ? 6 : 0,
+                        padding: showLeagueControls || showStatsControls ? '0 8px 0 12px' : '0 16px',
                         borderRadius: 999,
                         border: '1px solid var(--color-nav-border)',
                         background: 'var(--color-nav-bg)',
@@ -114,26 +117,26 @@ export default function TopOverlayHeader({
                         flex: showLeagueControls || showStatsControls ? '0 1 auto' : '0 0 auto',
                         minWidth: showLeagueControls || showStatsControls ? 0 : undefined,
                         maxWidth: showLeagueControls || showStatsControls
-                            ? 'calc(100% - clamp(56px, 14vw, 66px) - clamp(8px, 2.8vw, 12px))'
+                            ? `calc(100% - ${notificationButtonMinWidth} - clamp(6px, 2vw, 10px))`
                             : undefined,
                         overflow: showLeagueControls || showStatsControls ? 'hidden' : undefined,
                     }}
                 >
                     {showLeagueControls ? (
                         <>
-                            <span style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>{title}</span>
-                            <div style={{ width: 1, height: 20, background: 'var(--color-nav-border)', opacity: 0.9 }} />
+                            <span style={{ fontSize: 'clamp(0.92rem, 4.8vw, 1rem)', whiteSpace: 'nowrap' }}>{title}</span>
+                            <div style={{ width: 1, height: 18, background: 'var(--color-nav-border)', opacity: 0.9 }} />
                             <div
                                 className="scrollbar-hide"
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: 6,
+                                    gap: 4,
                                     overflowX: 'auto',
                                     minWidth: 0,
                                     flex: '1 1 auto',
                                     WebkitOverflowScrolling: 'touch',
-                                    paddingRight: 2,
+                                    paddingRight: 8,
                                 }}
                             >
                                 <button
@@ -146,7 +149,9 @@ export default function TopOverlayHeader({
                                     aria-label={`Selected league ${leagueHeaderControls?.selectedLeague || 'none'}. Tap to cycle leagues.`}
                                     style={{
                                         ...compactControlStyle,
-                                        minWidth: 88,
+                                        minWidth: 'clamp(64px, 20vw, 84px)',
+                                        maxWidth: 'min(112px, 28vw)',
+                                        padding: '0 8px',
                                         justifyContent: 'flex-start',
                                         opacity: leagueHeaderControls?.hasLeagues ? 1 : 0.5,
                                         flexShrink: 0,
@@ -156,6 +161,8 @@ export default function TopOverlayHeader({
                                     <span
                                         style={{
                                             whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
                                             fontSize: '0.78rem',
                                             fontWeight: 600,
                                         }}
@@ -170,8 +177,8 @@ export default function TopOverlayHeader({
                                     aria-pressed={leagueHeaderControls?.activeTab === 'standings'}
                                     style={{
                                         ...compactControlStyle,
-                                        width: 'clamp(30px, 8.2vw, 34px)',
-                                        minWidth: 'clamp(30px, 8.2vw, 34px)',
+                                        width: 'clamp(26px, 7.2vw, 32px)',
+                                        minWidth: 'clamp(26px, 7.2vw, 32px)',
                                         padding: 0,
                                         background: leagueHeaderControls?.activeTab === 'standings'
                                             ? 'var(--color-nav-active)'
@@ -187,8 +194,8 @@ export default function TopOverlayHeader({
                                     aria-pressed={leagueHeaderControls?.activeTab === 'players'}
                                     style={{
                                         ...compactControlStyle,
-                                        width: 'clamp(30px, 8.2vw, 34px)',
-                                        minWidth: 'clamp(30px, 8.2vw, 34px)',
+                                        width: 'clamp(26px, 7.2vw, 32px)',
+                                        minWidth: 'clamp(26px, 7.2vw, 32px)',
                                         padding: 0,
                                         background: leagueHeaderControls?.activeTab === 'players'
                                             ? 'var(--color-nav-active)'
@@ -215,7 +222,6 @@ export default function TopOverlayHeader({
                                 }}
                             >
                                 <HelpCircle size={13} />
-                                Rules
                             </motion.button>
                         </>
                     ) : (
@@ -237,7 +243,7 @@ export default function TopOverlayHeader({
                     style={{
                         pointerEvents: 'auto',
                         height: 44,
-                        minWidth: 'clamp(56px, 14vw, 66px)',
+                        minWidth: notificationButtonMinWidth,
                         padding: '0 clamp(10px, 3vw, 14px)',
                         border: '1px solid var(--color-nav-border)',
                         borderRadius: 999,

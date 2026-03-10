@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
-import { LineChart, Line, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, ResponsiveContainer, ReferenceLine, YAxis } from 'recharts';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
@@ -478,12 +478,12 @@ function PlayerDetailModal({ player, rank, onClose }: {
 
                             {/* Score History Sparkline */}
                             {player.stats.scoreHistory && player.stats.scoreHistory.length > 1 && (
-                                <div style={{ marginTop: 12 }}>
+                                <div style={{ marginTop: 16 }}>
                                     <ScoreSparkline history={player.stats.scoreHistory} />
                                     <div style={{
                                         fontSize: '0.6rem',
                                         color: 'var(--color-text-tertiary)',
-                                        marginTop: 4,
+                                        marginTop: 8,
                                     }}>
                                         Season trend
                                     </div>
@@ -683,17 +683,25 @@ function ScoreSparkline({ history }: { history: ScoreHistoryPoint[] }) {
     const endScore = history[history.length - 1].score;
     const trendColor = endScore >= startScore ? 'var(--color-success)' : 'var(--color-danger)';
     const trendArrow = endScore > startScore ? '↗' : endScore < startScore ? '↘' : '→';
+    const scores = history.map((point) => point.score);
+    const visualMin = Math.min(...scores, POINTS.base);
+    const visualMax = Math.max(...scores, POINTS.base);
+    const scoreRange = Math.max(visualMax - visualMin, 40);
+    const yPadding = Math.max(28, Math.round(scoreRange * 0.45));
+    const chartMin = visualMin - yPadding;
+    const chartMax = visualMax + yPadding;
 
     return (
-        <div style={{ position: 'relative', width: '100%', height: 48 }}>
+        <div style={{ position: 'relative', width: '100%', height: 84 }}>
             <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={history} margin={{ top: 8, right: 24, bottom: 8, left: 8 }}>
+                <LineChart data={history} margin={{ top: 10, right: 24, bottom: 10, left: 6 }}>
+                    <YAxis hide domain={[chartMin, chartMax]} />
                     <ReferenceLine y={1000} stroke="var(--color-border-subtle)" strokeDasharray="3 3" />
                     <Line
                         type="monotone"
                         dataKey="score"
                         stroke={trendColor}
-                        strokeWidth={2}
+                        strokeWidth={3}
                         dot={false}
                         isAnimationActive={false}
                     />

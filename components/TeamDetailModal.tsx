@@ -448,21 +448,29 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             )}
 
                             {/* LZV Link */}
-                            <a
-                                href={`https://www.lzvcup.be/teams/detail/${team.externalId}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    padding: 14, gap: 8,
-                                    background: 'rgb(var(--color-accent-rgb) / 0.15)',
-                                    borderRadius: 12,
-                                    color: 'var(--color-accent)', fontSize: '0.9rem', fontWeight: 600,
-                                    textDecoration: 'none',
-                                }}
-                            >
-                                View on LZV Cup <ChevronRight size={16} />
-                            </a>
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <a
+                                    href={`https://www.lzvcup.be/teams/detail/${team.externalId}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        padding: '10px 14px',
+                                        gap: 6,
+                                        background: 'var(--color-surface-hover)',
+                                        borderRadius: 10,
+                                        border: '0.5px solid var(--color-border)',
+                                        color: 'var(--color-text-secondary)',
+                                        fontSize: '0.82rem',
+                                        fontWeight: 600,
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    View on LZV Cup <ChevronRight size={14} />
+                                </a>
+                            </div>
                         </div>
 
                         {/* Matches Tab */}
