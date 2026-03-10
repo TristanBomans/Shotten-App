@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Calendar } from 'lucide-react';
@@ -21,45 +21,40 @@ interface MatchModalProps {
 }
 
 const OWN_TEAMS = ['FC Degradé', 'Wille ma ni kunne'];
+const modalTabs = ['squad', 'opponent'] as const;
 
 export default function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: MatchModalProps) {
     const [activeTab, setActiveTab] = useState<'squad' | 'opponent'>('squad');
     const [showImage, setShowImage] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const squadRef = useRef<HTMLDivElement>(null);
-    const opponentRef = useRef<HTMLDivElement>(null);
+    const lastTabRef = useRef<'squad' | 'opponent'>('squad');
 
-    // Intersection Observer to update tabs on scroll
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const visible = entries.find((e) => e.isIntersecting);
-                if (visible) {
-                    const view = visible.target.getAttribute('data-view') as 'squad' | 'opponent';
-                    if (view && view !== activeTab) {
-                        hapticPatterns.tap();
-                        setActiveTab(view);
-                    }
-                }
-            },
-            {
-                root: scrollRef.current,
-                threshold: 0.6,
-            }
-        );
+    const getTabFromScroll = useCallback((): 'squad' | 'opponent' => {
+        if (!scrollRef.current) return 'squad';
 
-        if (squadRef.current) observer.observe(squadRef.current);
-        if (opponentRef.current) observer.observe(opponentRef.current);
+        const scrollLeft = scrollRef.current.scrollLeft;
+        const viewWidth = scrollRef.current.clientWidth || 1;
+        const tabIndex = Math.round(scrollLeft / viewWidth);
 
-        return () => observer.disconnect();
-    }, [activeTab]);
+        return modalTabs[tabIndex] || 'squad';
+    }, []);
 
-    const scrollToView = (view: 'squad' | 'opponent') => {
+    const scrollToView = useCallback((view: 'squad' | 'opponent') => {
         if (scrollRef.current) {
             const left = view === 'squad' ? 0 : scrollRef.current.clientWidth;
             scrollRef.current.scrollTo({ left, behavior: 'smooth' });
         }
-    };
+    }, []);
+
+    const handleScroll = useCallback(() => {
+        const nextTab = getTabFromScroll();
+
+        if (nextTab !== lastTabRef.current) {
+            hapticPatterns.swipe();
+            lastTabRef.current = nextTab;
+            setActiveTab(nextTab);
+        }
+    }, [getTabFromScroll]);
 
     if (typeof document === 'undefined') return null;
 
@@ -197,6 +192,8 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                                 key={tab}
                                 onClick={() => {
                                     hapticPatterns.tap();
+                                    lastTabRef.current = tab;
+                                    setActiveTab(tab);
                                     scrollToView(tab);
                                 }}
                                 whileTap={{ scale: 0.95 }}
@@ -218,6 +215,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                     {/* Scrollable Container */}
                     <div
                         ref={scrollRef}
+                        onScroll={handleScroll}
                         className="scrollbar-hide"
                         style={{
                             display: 'flex',
@@ -230,7 +228,6 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                     >
                         {/* Squad View */}
                         <div
-                            ref={squadRef}
                             data-view="squad"
                             style={{
                                 minWidth: '100%',
@@ -245,7 +242,6 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
 
                         {/* Opponent View */}
                         <div
-                            ref={opponentRef}
                             data-view="opponent"
                             style={{
                                 minWidth: '100%',

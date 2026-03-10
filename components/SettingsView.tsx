@@ -6,16 +6,24 @@ import { LogOut, Database, Wifi, WifiOff, Bell, Smartphone, Info, ChevronRight, 
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
-import VersionChecker from './VersionChecker';
 import PlayerManagementSheet from './PlayerManagementSheet';
-import Link from 'next/link';
+import VersionHistoryModal from './VersionHistoryModal';
 
 interface SettingsViewProps {
     onLogout: () => void;
     onPlayerManagementOpenChange?: (isOpen: boolean) => void;
+    onOpenVersion: () => void;
+    isVersionOpen: boolean;
+    onCloseVersion: () => void;
 }
 
-export default function SettingsView({ onLogout, onPlayerManagementOpenChange }: SettingsViewProps) {
+export default function SettingsView({
+    onLogout,
+    onPlayerManagementOpenChange,
+    onOpenVersion,
+    isVersionOpen,
+    onCloseVersion,
+}: SettingsViewProps) {
     const [useMock, setUseMock] = useState(true);
     const [isLocalhost, setIsLocalhost] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -154,10 +162,6 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
             >
-                <div style={{ marginBottom: 18, display: 'flex', justifyContent: 'flex-end' }}>
-                    <VersionChecker />
-                </div>
-
                 {/* Notifications & Feedback */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -432,7 +436,22 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                         onUpdate={updateApp}
                         isChecking={isChecking}
                     />
-                    <Link href="/version/?from=settings" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <motion.button
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            onOpenVersion();
+                        }}
+                        whileTap={{ scale: 0.995 }}
+                        style={{
+                            width: '100%',
+                            padding: 0,
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'inherit',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                        }}
+                    >
                         <VersionInfoRow
                             icon={<RefreshCw size={18} />}
                             iconBg="var(--color-surface-hover)"
@@ -441,7 +460,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                             value="View build info"
                             hasChevron
                         />
-                    </Link>
+                    </motion.button>
                 </motion.div>
 
                 {/* Account Section */}
@@ -827,6 +846,7 @@ export default function SettingsView({ onLogout, onPlayerManagementOpenChange }:
                 isOpen={isPlayerManagementOpen}
                 onClose={() => setIsPlayerManagementOpen(false)}
             />
+            <VersionHistoryModal open={isVersionOpen} onClose={onCloseVersion} />
         </div>
     );
 }

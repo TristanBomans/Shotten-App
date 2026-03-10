@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import PlayerSelect from '@/components/PlayerSelect';
@@ -8,8 +8,28 @@ import Dashboard from '@/components/Dashboard';
 import FloatingNav from '@/components/FloatingNav';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
+type Modal = 'version' | null;
 
 const views: View[] = ['home', 'stats', 'league', 'settings'];
+
+type SearchParamsLike = {
+    get: (name: string) => string | null;
+    toString: () => string;
+};
+
+const getViewFromParams = (params: SearchParamsLike | null): View => {
+    const viewParam = params?.get('view');
+    if (viewParam && views.includes(viewParam as View)) {
+        return viewParam as View;
+    }
+
+    return params?.get('modal') === 'version' ? 'settings' : 'home';
+};
+
+const getModalFromParams = (params: SearchParamsLike | null, resolvedView: View): Modal => {
+    if (resolvedView !== 'settings') return null;
+    return params?.get('modal') === 'version' ? 'version' : null;
+};
 
 function HomeContent() {
     const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
@@ -20,15 +40,20 @@ function HomeContent() {
     const pathname = usePathname();
 
     const [currentView, setCurrentView] = useState<View>(() => {
-        // Initialize state from URL param if present to avoid initial flash
         if (typeof window !== 'undefined') {
-            const viewParam = new URLSearchParams(window.location.search).get('view');
-            if (viewParam && views.includes(viewParam as View)) {
-                return viewParam as View;
-            }
+            return getViewFromParams(new URLSearchParams(window.location.search));
         }
         return 'home';
     });
+    const [currentModal, setCurrentModal] = useState<Modal>(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const resolvedView = getViewFromParams(params);
+            return getModalFromParams(params, resolvedView);
+        }
+        return null;
+    });
+    const versionModalOpenedFromDashboardRef = useRef(false);
 
     useEffect(() => {
         const stored = localStorage.getItem('selectedPlayerId');
@@ -36,15 +61,36 @@ function HomeContent() {
             setSelectedPlayerId(parseInt(stored, 10));
         }
 
-        // Check for view parameter in URL to handle navigation from version page
-        // Only update if different to avoid redundant state updates
-        const viewParam = searchParams?.get('view');
-        if (viewParam && views.includes(viewParam as View) && viewParam !== currentView) {
-            setCurrentView(viewParam as View);
+        const resolvedView = getViewFromParams(searchParams);
+        const resolvedModal = getModalFromParams(searchParams, resolvedView);
+
+        setCurrentView((prev) => (prev === resolvedView ? prev : resolvedView));
+        setCurrentModal((prev) => (prev === resolvedModal ? prev : resolvedModal));
+        if (!resolvedModal) {
+            versionModalOpenedFromDashboardRef.current = false;
         }
 
         setLoading(false);
     }, [searchParams]);
+
+    const buildAppUrl = useCallback((view: View, modal: Modal) => {
+        const params = new URLSearchParams(searchParams.toString());
+
+        if (view === 'home') {
+            params.delete('view');
+        } else {
+            params.set('view', view);
+        }
+
+        if (modal && view === 'settings') {
+            params.set('modal', modal);
+        } else {
+            params.delete('modal');
+        }
+
+        const query = params.toString();
+        return query ? `${pathname}?${query}` : pathname;
+    }, [pathname, searchParams]);
 
     const handlePlayerSelect = (id: number) => {
         localStorage.setItem('selectedPlayerId', id.toString());
@@ -55,6 +101,8 @@ function HomeContent() {
         localStorage.removeItem('selectedPlayerId');
         setSelectedPlayerId(null);
         setCurrentView('home');
+        setCurrentModal(null);
+        versionModalOpenedFromDashboardRef.current = false;
 
         // Reset URL when logging out
         router.replace(pathname, { scroll: false });
@@ -62,21 +110,40 @@ function HomeContent() {
 
     const handleNavChange = useCallback((view: View) => {
         setCurrentView(view);
-
-        // Update URL with view parameter
-        const params = new URLSearchParams(searchParams.toString());
-        if (view === 'home') {
-            params.delete('view'); // Clean URL for home view
-        } else {
-            params.set('view', view);
+        const nextModal = view === 'settings' ? currentModal : null;
+        setCurrentModal(nextModal);
+        if (!nextModal) {
+            versionModalOpenedFromDashboardRef.current = false;
         }
 
-        // Use router.replace to update URL without reloading
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        router.replace(buildAppUrl(view, nextModal), { scroll: false });
 
         // Scroll to top on view change
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [searchParams, router, pathname]);
+    }, [buildAppUrl, currentModal, router]);
+
+    const handleOpenVersion = useCallback(() => {
+        if (currentModal === 'version') return;
+
+        versionModalOpenedFromDashboardRef.current = true;
+        setCurrentView('settings');
+        setCurrentModal('version');
+        router.push(buildAppUrl('settings', 'version'), { scroll: false });
+    }, [buildAppUrl, currentModal, router]);
+
+    const handleCloseVersion = useCallback(() => {
+        if (currentModal !== 'version') return;
+
+        setCurrentModal(null);
+
+        if (versionModalOpenedFromDashboardRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+            versionModalOpenedFromDashboardRef.current = false;
+            router.back();
+            return;
+        }
+
+        router.replace(buildAppUrl('settings', null), { scroll: false });
+    }, [buildAppUrl, currentModal, router]);
 
     // Scroll to top on initial load
     useEffect(() => {
@@ -119,6 +186,9 @@ function HomeContent() {
                             onLogout={handleLogout}
                             onViewChange={handleNavChange}
                             onPlayerManagementOpenChange={setIsPlayerManagementOpen}
+                            onOpenVersion={handleOpenVersion}
+                            isVersionOpen={currentModal === 'version'}
+                            onCloseVersion={handleCloseVersion}
                         />
                     </motion.div>
                 )}

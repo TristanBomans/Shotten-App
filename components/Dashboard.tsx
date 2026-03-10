@@ -21,6 +21,9 @@ interface DashboardProps {
     onLogout: () => void;
     onViewChange: (view: 'home' | 'stats' | 'league' | 'settings') => void;
     onPlayerManagementOpenChange?: (isOpen: boolean) => void;
+    onOpenVersion: () => void;
+    isVersionOpen: boolean;
+    onCloseVersion: () => void;
 }
 
 // View order for determining slide position
@@ -40,7 +43,16 @@ const getLeagueAlias = (league: string) => {
     return league;
 };
 
-export default function Dashboard({ playerId, currentView, onLogout, onViewChange, onPlayerManagementOpenChange }: DashboardProps) {
+export default function Dashboard({
+    playerId,
+    currentView,
+    onLogout,
+    onViewChange,
+    onPlayerManagementOpenChange,
+    onOpenVersion,
+    isVersionOpen,
+    onCloseVersion,
+}: DashboardProps) {
     const { matches, loading, error, fetchMatches, setMatches } = useMatches(playerId);
     const { players, fetchAllPlayers } = useAllPlayers();
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -707,7 +719,13 @@ export default function Dashboard({ playerId, currentView, onLogout, onViewChang
                         overflowY: 'auto',
                     }}
                 >
-                    <SettingsView onLogout={onLogout} onPlayerManagementOpenChange={onPlayerManagementOpenChange} />
+                    <SettingsView
+                        onLogout={onLogout}
+                        onPlayerManagementOpenChange={onPlayerManagementOpenChange}
+                        onOpenVersion={onOpenVersion}
+                        isVersionOpen={isVersionOpen}
+                        onCloseVersion={onCloseVersion}
+                    />
                 </div>
             </div>
         </>
