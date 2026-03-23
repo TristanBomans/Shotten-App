@@ -13,6 +13,7 @@ import {
 import { API_BASE_URL } from './config';
 import { parseDateToTimestamp } from './dateUtils';
 import { isSameTeamName, normalizeTeamName } from './teamNameMatching';
+import type { RecentMatchesResponse } from './recentMatches';
 
 // =============================================================================
 // CONFIGURATION
@@ -59,12 +60,16 @@ export interface ScraperTeam {
 }
 
 export interface ScraperTeamStats {
+    id: number;
+    playerId: number;
     teamId: number;
     number?: number;
     gamesPlayed: number;
     goals: number;
     assists: number;
     fairplayRank?: number;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface ScraperPlayer {
@@ -105,6 +110,12 @@ export async function fetchAllScraperPlayers(): Promise<ScraperPlayer[]> {
 export async function fetchScraperPlayers(teamId: number): Promise<ScraperPlayer[]> {
     const res = await fetch(`${API_BASE_URL}/api/lzv/players?teamId=${teamId}`);
     if (!res.ok) return [];
+    return res.json();
+}
+
+export async function fetchRecentMatchesData(): Promise<RecentMatchesResponse> {
+    const res = await fetch(`${API_BASE_URL}/api/lzv/recent-matches`);
+    if (!res.ok) throw new Error('Failed to fetch recent matches');
     return res.json();
 }
 

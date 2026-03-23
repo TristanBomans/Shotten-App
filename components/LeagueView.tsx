@@ -3,8 +3,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAllScraperTeams, fetchAllScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
-import { Loader2, ChevronDown, X } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
 import TeamDetailModal from './TeamDetailModal';
+import PlayerStatsDialog from './PlayerStatsDialog';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface LeagueViewProps {
@@ -24,8 +25,8 @@ export default function LeagueView({
     const [allPlayers, setAllPlayers] = useState<ScraperPlayer[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedTeam, setSelectedTeam] = useState<{ team: ScraperTeam, players: ScraperPlayer[] } | null>(null);
+    const [selectedPlayer, setSelectedPlayer] = useState<ScraperPlayer | null>(null);
     const [visiblePlayers, setVisiblePlayers] = useState(50);
-    const [teamSelection, setTeamSelection] = useState<{ player: ScraperPlayer, teams: ScraperTeam[] } | null>(null);
 
     // Extract unique leagues
     const leagues = useMemo(() => {
@@ -106,16 +107,7 @@ export default function LeagueView({
 
     const handlePlayerClick = (player: ScraperPlayer) => {
         hapticPatterns.tap();
-        const playerTeamIds = player.teamIds || [player.teamId];
-        const playerTeams = teams.filter(t => playerTeamIds.includes(t.externalId));
-
-        if (playerTeams.length === 0) return;
-
-        if (playerTeams.length === 1) {
-            handleTeamClick(playerTeams[0]);
-        } else {
-            setTeamSelection({ player, teams: playerTeams });
-        }
+        setSelectedPlayer(player);
     };
 
     const isOwnTeam = (name: string) => {
@@ -374,7 +366,7 @@ export default function LeagueView({
                                                         transition={{ delay: Math.min(index * 0.015, 0.3), duration: 0.2 }}
                                                         onClick={() => handlePlayerClick(player)}
                                                         style={{
-                                                            background: isHighlighted ? 'var(--color-accent-glow)' :
+                                                            background: isHighlighted ? 'var(--color-multi-team-bg)' :
                                                                        isTop3 ? 'var(--color-top3-bg)' : 'var(--color-surface)',
                                                             backdropFilter: 'blur(40px)',
                                                             WebkitBackdropFilter: 'blur(40px)',
@@ -522,119 +514,6 @@ export default function LeagueView({
                     </AnimatePresence>
                 )}
             </div>
-
-            {/* Team Selection Modal */}
-            <AnimatePresence>
-                {teamSelection && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                setTeamSelection(null);
-                            }}
-                            style={{
-                                position: 'fixed', inset: 0,
-                                background: 'var(--color-overlay)',
-                                backdropFilter: 'blur(10px)',
-                                zIndex: 10000,
-                            }}
-                        />
-                        <div style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 10001,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            pointerEvents: 'none',
-                            padding: 20,
-                        }}>
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-                                style={{
-                                    width: '100%',
-                                    maxWidth: 320,
-                                    background: 'var(--color-surface)',
-                                    backdropFilter: 'blur(40px)',
-                                    WebkitBackdropFilter: 'blur(40px)',
-                                    borderRadius: 20,
-                                    padding: 20,
-                                    border: '1px solid var(--color-border)',
-                                    boxShadow: 'var(--shadow-lg)',
-                                    pointerEvents: 'auto',
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                                        Select Team
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            hapticPatterns.tap();
-                                            setTeamSelection(null);
-                                        }}
-                                        style={{
-                                            background: 'var(--color-surface-hover)',
-                                            border: 'none', borderRadius: '50%',
-                                            width: 30, height: 30,
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            color: 'var(--color-text-secondary)', cursor: 'pointer',
-                                            transition: 'background 0.2s',
-                                        }}
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                                
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    {teamSelection.teams.map(team => (
-                                        <motion.button
-                                            key={team.externalId}
-                                            onClick={() => {
-                                                handleTeamClick(team);
-                                                setTeamSelection(null);
-                                            }}
-                                            whileTap={{ scale: 0.97 }}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: 12,
-                                                padding: '12px 14px',
-                                                background: 'var(--color-surface-hover)',
-                                                border: '0.5px solid var(--color-border-subtle)',
-                                                borderRadius: 14,
-                                                cursor: 'pointer',
-                                                textAlign: 'left',
-                                            }}
-                                        >
-                                            {team.imageBase64 ? (
-                                                <img src={team.imageBase64} alt="" style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover' }} />
-                                            ) : (
-                                                <div style={{
-                                                    width: 36, height: 36, borderRadius: 10,
-                                                    background: 'linear-gradient(135deg, var(--color-warning), var(--color-warning-secondary))',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-bg)'
-                                                }}>
-                                                    {team.name.charAt(0)}
-                                                </div>
-                                            )}
-                                            <div style={{ color: 'var(--color-text-primary)', fontWeight: 600, fontSize: '0.95rem' }}>
-                                                {team.name}
-                                            </div>
-                                        </motion.button>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        </div>
-                    </>
-                )}
-            </AnimatePresence>
-
             {/* Modal */}
             <AnimatePresence>
                 {selectedTeam && (
@@ -645,6 +524,13 @@ export default function LeagueView({
                     />
                 )}
             </AnimatePresence>
+
+            <PlayerStatsDialog
+                open={Boolean(selectedPlayer)}
+                player={selectedPlayer}
+                teams={teams}
+                onClose={() => setSelectedPlayer(null)}
+            />
         </div>
     );
 }
