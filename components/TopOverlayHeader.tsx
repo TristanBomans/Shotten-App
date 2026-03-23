@@ -2,7 +2,7 @@
 
 import { type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, BellRing, HelpCircle, Trophy, TrendingUp, Users } from 'lucide-react';
+import { Bell, BellRing, Clock3, HelpCircle, Trophy, TrendingUp, Users } from 'lucide-react';
 
 type LeagueTab = 'standings' | 'players';
 
@@ -19,12 +19,19 @@ interface StatsHeaderControls {
     onOpenRules: () => void;
 }
 
+interface HomeHeaderControls {
+    recentCount: number;
+    hasRecentHighlight: boolean;
+    onOpenRecentMatches: () => void;
+}
+
 interface TopOverlayHeaderProps {
     title: string;
     notificationCount: number;
     onNotificationPress: () => void;
     leagueControls?: LeagueHeaderControls;
     statsControls?: StatsHeaderControls;
+    homeControls?: HomeHeaderControls;
 }
 
 export default function TopOverlayHeader({
@@ -33,6 +40,7 @@ export default function TopOverlayHeader({
     onNotificationPress,
     leagueControls,
     statsControls,
+    homeControls,
 }: TopOverlayHeaderProps) {
     const displayCount = notificationCount > 9 ? '9+' : String(notificationCount);
     const notificationButtonMinWidth = notificationCount > 0
@@ -40,8 +48,14 @@ export default function TopOverlayHeader({
         : 'clamp(56px, 14vw, 66px)';
     const leagueHeaderControls = title.toLowerCase() === 'league' ? leagueControls : undefined;
     const statsHeaderControls = title.toLowerCase() === 'leaderboard' ? statsControls : undefined;
+    const homeHeaderControls = title.toLowerCase() === 'matches' ? homeControls : undefined;
     const showLeagueControls = Boolean(leagueHeaderControls);
     const showStatsControls = Boolean(statsHeaderControls);
+    const showHomeControls = Boolean(homeHeaderControls);
+    const showInlineControls = showLeagueControls || showStatsControls || showHomeControls;
+    const recentDisplayCount = homeHeaderControls && homeHeaderControls.recentCount > 9
+        ? '9+'
+        : String(homeHeaderControls?.recentCount ?? 0);
 
     const compactControlStyle: CSSProperties = {
         height: 30,
@@ -101,8 +115,8 @@ export default function TopOverlayHeader({
                         height: 44,
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: showLeagueControls || showStatsControls ? 6 : 0,
-                        padding: showLeagueControls || showStatsControls ? '0 8px 0 12px' : '0 16px',
+                        gap: showInlineControls ? 6 : 0,
+                        padding: showInlineControls ? '0 8px 0 12px' : '0 16px',
                         borderRadius: 999,
                         border: '1px solid var(--color-nav-border)',
                         background: 'var(--color-nav-bg)',
@@ -114,12 +128,12 @@ export default function TopOverlayHeader({
                         fontWeight: 700,
                         letterSpacing: '0.01em',
                         pointerEvents: 'auto',
-                        flex: showLeagueControls || showStatsControls ? '0 1 auto' : '0 0 auto',
-                        minWidth: showLeagueControls || showStatsControls ? 0 : undefined,
-                        maxWidth: showLeagueControls || showStatsControls
+                        flex: showInlineControls ? '0 1 auto' : '0 0 auto',
+                        minWidth: showInlineControls ? 0 : undefined,
+                        maxWidth: showInlineControls
                             ? `calc(100% - ${notificationButtonMinWidth} - clamp(6px, 2vw, 10px))`
                             : undefined,
-                        overflow: showLeagueControls || showStatsControls ? 'hidden' : undefined,
+                        overflow: showInlineControls ? 'hidden' : undefined,
                     }}
                 >
                     {showLeagueControls ? (
@@ -222,6 +236,70 @@ export default function TopOverlayHeader({
                                 }}
                             >
                                 <HelpCircle size={13} />
+                            </motion.button>
+                        </>
+                    ) : showHomeControls ? (
+                        <>
+                            <span style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>{title}</span>
+                            <div style={{ width: 1, height: 20, background: 'var(--color-nav-border)', opacity: 0.9 }} />
+                            <motion.button
+                                onClick={homeHeaderControls?.onOpenRecentMatches}
+                                whileTap={{ scale: 0.95 }}
+                                aria-label={
+                                    homeHeaderControls?.hasRecentHighlight
+                                        ? `${homeHeaderControls.recentCount} recent matches in the last three days`
+                                        : 'Open recent matches'
+                                }
+                                style={{
+                                    ...compactControlStyle,
+                                    padding: homeHeaderControls?.recentCount
+                                        ? '0 10px 0 12px'
+                                        : '0 12px',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 700,
+                                    background: homeHeaderControls?.hasRecentHighlight
+                                        ? 'linear-gradient(135deg, rgb(var(--color-warning-rgb) / 0.22), rgb(var(--color-accent-rgb) / 0.14))'
+                                        : 'rgb(255 255 255 / 0.04)',
+                                    border: homeHeaderControls?.hasRecentHighlight
+                                        ? '1px solid rgb(var(--color-warning-rgb) / 0.28)'
+                                        : compactControlStyle.border,
+                                    color: homeHeaderControls?.hasRecentHighlight
+                                        ? 'var(--color-warning)'
+                                        : 'var(--color-text-primary)',
+                                    boxShadow: homeHeaderControls?.hasRecentHighlight
+                                        ? '0 0 0 1px rgb(var(--color-warning-rgb) / 0.08)'
+                                        : undefined,
+                                    flexShrink: 0,
+                                }}
+                            >
+                                <Clock3 size={13} />
+                                <span style={{ whiteSpace: 'nowrap' }}>Recent</span>
+                                {homeHeaderControls?.recentCount ? (
+                                    <span
+                                        style={{
+                                            minWidth: 18,
+                                            height: 18,
+                                            padding: '0 5px',
+                                            borderRadius: 999,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '0.68rem',
+                                            fontWeight: 800,
+                                            background: homeHeaderControls.hasRecentHighlight
+                                                ? 'rgb(var(--color-warning-rgb) / 0.16)'
+                                                : 'rgb(var(--color-text-tertiary-rgb) / 0.12)',
+                                            color: homeHeaderControls.hasRecentHighlight
+                                                ? 'var(--color-warning)'
+                                                : 'var(--color-text-secondary)',
+                                            border: homeHeaderControls.hasRecentHighlight
+                                                ? '1px solid rgb(var(--color-warning-rgb) / 0.26)'
+                                                : '1px solid var(--color-border-subtle)',
+                                        }}
+                                    >
+                                        {recentDisplayCount}
+                                    </span>
+                                ) : null}
                             </motion.button>
                         </>
                     ) : (

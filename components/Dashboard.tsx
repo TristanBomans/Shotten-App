@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useMatches, useAllPlayers, type ScraperTeam } from '@/lib/useData';
+import { fetchRecentMatchesData, useMatches, useAllPlayers, type ScraperTeam } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
+import type { RecentMatchesResponse } from '@/lib/recentMatches';
 import MatchCard from './MatchCard';
 import StatsView from './StatsView';
 import SettingsView from './SettingsView';
@@ -13,6 +14,7 @@ import PullToRefresh from './PullToRefresh';
 import { parseDateToTimestamp } from '@/lib/dateUtils';
 import TopOverlayHeader from './TopOverlayHeader';
 import NotificationSheet from './NotificationSheet';
+import RecentMatchesSheet from './RecentMatchesSheet';
 import { buildMatchReminders } from '@/lib/notifications';
 
 interface DashboardProps {
@@ -43,6 +45,12 @@ const getLeagueAlias = (league: string) => {
     return league;
 };
 
+const EMPTY_RECENT_MATCHES: RecentMatchesResponse = {
+    matches: [],
+    recentCount: 0,
+    hasRecentWithin3Days: false,
+};
+
 export default function Dashboard({
     playerId,
     currentView,
@@ -57,6 +65,7 @@ export default function Dashboard({
     const { players, fetchAllPlayers } = useAllPlayers();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isNotificationSheetOpen, setIsNotificationSheetOpen] = useState(false);
+    const [isRecentMatchesSheetOpen, setIsRecentMatchesSheetOpen] = useState(false);
     const [isStatsRulesOpen, setIsStatsRulesOpen] = useState(false);
     const [leagueTab, setLeagueTab] = useState<'standings' | 'players'>('standings');
     const [selectedLeague, setSelectedLeague] = useState('');
@@ -64,6 +73,8 @@ export default function Dashboard({
     const [leagueTeams, setLeagueTeams] = useState<ScraperTeam[]>([]);
     const [isLeagueSelectorOpen, setIsLeagueSelectorOpen] = useState(false);
     const [highlightedMatchId, setHighlightedMatchId] = useState<number | null>(null);
+    const [recentMatches, setRecentMatches] = useState<RecentMatchesResponse>(EMPTY_RECENT_MATCHES);
+    const [loadingRecentMatches, setLoadingRecentMatches] = useState(true);
     const upcomingRef = useRef<HTMLElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const matchCardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -85,10 +96,24 @@ export default function Dashboard({
         matchCardRefs.current.set(matchId, node);
     }, []);
 
+    const fetchRecentMatches = useCallback(async () => {
+        setLoadingRecentMatches(true);
+        try {
+            const data = await fetchRecentMatchesData();
+            setRecentMatches(data);
+        } catch (recentMatchesError) {
+            console.warn('Failed to fetch recent matches:', recentMatchesError);
+            setRecentMatches(EMPTY_RECENT_MATCHES);
+        } finally {
+            setLoadingRecentMatches(false);
+        }
+    }, []);
+
     useEffect(() => {
         fetchMatches();
         fetchAllPlayers();
-    }, [fetchMatches, fetchAllPlayers]);
+        fetchRecentMatches();
+    }, [fetchMatches, fetchAllPlayers, fetchRecentMatches]);
 
     useEffect(() => {
         if (currentView !== 'league') {
@@ -96,6 +121,9 @@ export default function Dashboard({
         }
         if (currentView !== 'stats') {
             setIsStatsRulesOpen(false);
+        }
+        if (currentView !== 'home') {
+            setIsRecentMatchesSheetOpen(false);
         }
     }, [currentView]);
 
@@ -256,14 +284,14 @@ export default function Dashboard({
     const handleRefresh = useCallback(async () => {
         setIsRefreshing(true);
         try {
-            await Promise.all([fetchMatches(), fetchAllPlayers()]);
+            await Promise.all([fetchMatches(), fetchAllPlayers(), fetchRecentMatches()]);
             hapticPatterns.success();
         } catch (err) {
             hapticPatterns.error();
         } finally {
             setIsRefreshing(false);
         }
-    }, [fetchMatches, fetchAllPlayers]);
+    }, [fetchMatches, fetchAllPlayers, fetchRecentMatches]);
 
     const handleUpdate = async (matchId?: number, newStatus?: 'Present' | 'NotPresent' | 'Maybe') => {
         if (matchId !== undefined && newStatus !== undefined) {
@@ -318,6 +346,15 @@ export default function Dashboard({
         setIsNotificationSheetOpen(false);
     };
 
+    const openRecentMatchesSheet = () => {
+        hapticPatterns.tap();
+        setIsRecentMatchesSheetOpen(true);
+    };
+
+    const closeRecentMatchesSheet = () => {
+        setIsRecentMatchesSheetOpen(false);
+    };
+
     const handleLeagueDataChange = useCallback((data: { leagues: string[]; teams: ScraperTeam[] }) => {
         setLeagueOptions(prev => (
             prev.length === data.leagues.length &&
@@ -366,6 +403,13 @@ export default function Dashboard({
     const topStatsControls = currentView === 'stats'
         ? { onOpenRules: openStatsRules }
         : undefined;
+    const topHomeControls = currentView === 'home'
+        ? {
+            recentCount: recentMatches.recentCount,
+            hasRecentHighlight: recentMatches.hasRecentWithin3Days,
+            onOpenRecentMatches: openRecentMatchesSheet,
+        }
+        : undefined;
 
     const handleReminderSelect = useCallback((matchId: number) => {
         setIsNotificationSheetOpen(false);
@@ -412,6 +456,7 @@ export default function Dashboard({
                     title={currentTitle}
                     notificationCount={notificationSummary.count}
                     onNotificationPress={openNotificationSheet}
+                    homeControls={topHomeControls}
                     leagueControls={topLeagueControls}
                     statsControls={topStatsControls}
                 />
@@ -421,6 +466,16 @@ export default function Dashboard({
                     totalCount={notificationSummary.count}
                     onReminderSelect={handleReminderSelect}
                     onClose={closeNotificationSheet}
+                />
+                <RecentMatchesSheet
+                    open={isRecentMatchesSheetOpen}
+                    loading={loadingRecentMatches}
+                    matches={recentMatches.matches}
+                    recentCount={recentMatches.recentCount}
+                    hasRecentWithin3Days={recentMatches.hasRecentWithin3Days}
+                    playerId={playerId}
+                    internalMatches={matches}
+                    onClose={closeRecentMatchesSheet}
                 />
                 <div className="container content-under-top-overlay">
                     <div className="glass-panel-heavy skeleton" style={{ height: 320, marginBottom: 'var(--space-xl)' }} />
@@ -442,6 +497,7 @@ export default function Dashboard({
                     title={currentTitle}
                     notificationCount={notificationSummary.count}
                     onNotificationPress={openNotificationSheet}
+                    homeControls={topHomeControls}
                     leagueControls={topLeagueControls}
                     statsControls={topStatsControls}
                 />
@@ -451,6 +507,16 @@ export default function Dashboard({
                     totalCount={notificationSummary.count}
                     onReminderSelect={handleReminderSelect}
                     onClose={closeNotificationSheet}
+                />
+                <RecentMatchesSheet
+                    open={isRecentMatchesSheetOpen}
+                    loading={loadingRecentMatches}
+                    matches={recentMatches.matches}
+                    recentCount={recentMatches.recentCount}
+                    hasRecentWithin3Days={recentMatches.hasRecentWithin3Days}
+                    playerId={playerId}
+                    internalMatches={matches}
+                    onClose={closeRecentMatchesSheet}
                 />
                 <div className="container content-under-top-overlay flex-center" style={{ minHeight: '80dvh' }}>
                     <motion.div
@@ -611,6 +677,7 @@ export default function Dashboard({
                 title={currentTitle}
                 notificationCount={notificationSummary.count}
                 onNotificationPress={openNotificationSheet}
+                homeControls={topHomeControls}
                 leagueControls={topLeagueControls}
                 statsControls={topStatsControls}
             />
@@ -620,6 +687,16 @@ export default function Dashboard({
                 totalCount={notificationSummary.count}
                 onReminderSelect={handleReminderSelect}
                 onClose={closeNotificationSheet}
+            />
+            <RecentMatchesSheet
+                open={isRecentMatchesSheetOpen}
+                loading={loadingRecentMatches}
+                matches={recentMatches.matches}
+                recentCount={recentMatches.recentCount}
+                hasRecentWithin3Days={recentMatches.hasRecentWithin3Days}
+                playerId={playerId}
+                internalMatches={matches}
+                onClose={closeRecentMatchesSheet}
             />
             {currentView === 'league' && leagueOptions.length > 0 && (
                 <LeagueSelector

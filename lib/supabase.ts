@@ -92,6 +92,8 @@ export interface LzvPlayerTeamStats {
     goals: number;
     assists: number;
     fairplay_rank: number | null;
+    created_at?: string;
+    updated_at?: string;
 }
 
 // ============================================================================
@@ -159,12 +161,16 @@ export interface ScraperPlayerResponse {
     fairplayRank?: number;
     teamIds?: number[];
     teamStats?: {
+        id: number;
+        playerId: number;
         teamId: number;
         number?: number;
         gamesPlayed: number;
         goals: number;
         assists: number;
         fairplayRank?: number;
+        createdAt?: string;
+        updatedAt?: string;
     }[];
 }
 
@@ -417,6 +423,30 @@ export async function getLzvMatches(teamId?: number): Promise<LzvMatch[]> {
     return data || [];
 }
 
+export async function getLzvMatchesForTeams(
+    teamIds: number[],
+    options?: {
+        status?: LzvMatch['status'];
+        ascending?: boolean;
+    }
+): Promise<LzvMatch[]> {
+    if (teamIds.length === 0) return [];
+
+    let query = getSupabaseClient()
+        .from('lzv_matches')
+        .select('*')
+        .in('team_id', teamIds)
+        .order('date', { ascending: options?.ascending ?? false });
+
+    if (options?.status) {
+        query = query.eq('status', options.status);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+}
+
 export async function getLzvPlayers(teamId?: number): Promise<ScraperPlayerResponse[]> {
     // Get all players with their team stats
     const { data: players, error: playersError } = await getSupabaseClient()
@@ -482,12 +512,16 @@ export async function getLzvPlayers(teamId?: number): Promise<ScraperPlayerRespo
                 assists: totalAssists,
                 teamIds: stats.map(s => s.team_id),
                 teamStats: stats.map(s => ({
+                    id: s.id ?? 0,
+                    playerId: s.player_id,
                     teamId: s.team_id,
                     number: s.jersey_number ?? undefined,
                     gamesPlayed: s.games_played,
                     goals: s.goals,
                     assists: s.assists,
-                    fairplayRank: s.fairplay_rank ?? undefined
+                    fairplayRank: s.fairplay_rank ?? undefined,
+                    createdAt: s.created_at ?? undefined,
+                    updatedAt: s.updated_at ?? undefined,
                 }))
             });
         }
