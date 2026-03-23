@@ -71,17 +71,34 @@ function formatRelativeTime(dateStr: string): string {
     return `${diffWeeks}w ago`;
 }
 
-function getAttendanceStatus(match: RecentMatchItem, internalMatches: Match[], playerId: number): 'present' | 'not-present' | 'maybe' | 'unknown' {
-    const recentMatchDate = new Date(match.date);
+function isSameCalendarDay(left: Date, right: Date): boolean {
+    return (
+        left.getFullYear() === right.getFullYear() &&
+        left.getMonth() === right.getMonth() &&
+        left.getDate() === right.getDate()
+    );
+}
 
-    const internalMatch = internalMatches.find(m => {
-        const internalDate = new Date(m.date);
-        return (
-            recentMatchDate.getFullYear() === internalDate.getFullYear() &&
-            recentMatchDate.getMonth() === internalDate.getMonth() &&
-            recentMatchDate.getDate() === internalDate.getDate()
+function getAttendanceStatus(match: RecentMatchItem, internalMatches: Match[], playerId: number): 'present' | 'not-present' | 'maybe' | 'unknown' {
+    const recentMatchDate = parseDate(match.date);
+    if (!recentMatchDate) return 'unknown';
+
+    const sameTeamMatches = internalMatches
+        .map(internalMatch => ({
+            internalMatch,
+            internalDate: parseDate(internalMatch.date),
+        }))
+        .filter(({ internalDate, internalMatch }) =>
+            internalDate !== null &&
+            internalMatch.teamId === match.teamId &&
+            isSameCalendarDay(recentMatchDate, internalDate)
+        )
+        .sort((left, right) =>
+            Math.abs(left.internalDate!.getTime() - recentMatchDate.getTime()) -
+            Math.abs(right.internalDate!.getTime() - recentMatchDate.getTime())
         );
-    });
+
+    const internalMatch = sameTeamMatches[0]?.internalMatch;
 
     if (!internalMatch) return 'unknown';
 
