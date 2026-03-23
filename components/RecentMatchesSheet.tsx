@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { parseDate } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
 import type { RecentMatchItem } from '@/lib/recentMatches';
+import { isSameTeamName } from '@/lib/teamNameMatching';
 import type { Match } from '@/lib/mockData';
 
 interface RecentMatchesSheetProps {
@@ -24,6 +25,11 @@ type StatusBadgeMeta = {
     color: string;
     background: string;
     border: string;
+};
+
+type InternalMatchLike = Match & {
+    teamId: number | null;
+    teamName?: string | null;
 };
 
 function resultMeta(result: RecentMatchItem['result']): StatusBadgeMeta {
@@ -79,7 +85,19 @@ function isSameCalendarDay(left: Date, right: Date): boolean {
     );
 }
 
-function getAttendanceStatus(match: RecentMatchItem, internalMatches: Match[], playerId: number): 'present' | 'not-present' | 'maybe' | 'unknown' {
+function matchesRecentTeam(match: RecentMatchItem, internalMatch: InternalMatchLike): boolean {
+    if (internalMatch.teamId === match.teamId) {
+        return true;
+    }
+
+    if (internalMatch.teamName) {
+        return isSameTeamName(internalMatch.teamName, match.teamName);
+    }
+
+    return false;
+}
+
+function getAttendanceStatus(match: RecentMatchItem, internalMatches: InternalMatchLike[], playerId: number): 'present' | 'not-present' | 'maybe' | 'unknown' {
     const recentMatchDate = parseDate(match.date);
     if (!recentMatchDate) return 'unknown';
 
@@ -90,7 +108,7 @@ function getAttendanceStatus(match: RecentMatchItem, internalMatches: Match[], p
         }))
         .filter(({ internalDate, internalMatch }) =>
             internalDate !== null &&
-            internalMatch.teamId === match.teamId &&
+            matchesRecentTeam(match, internalMatch) &&
             isSameCalendarDay(recentMatchDate, internalDate)
         )
         .sort((left, right) =>
