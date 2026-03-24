@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Target, Users, Calendar, TrendingUp, Award, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -24,6 +24,11 @@ function getTeamImage(teams: ScraperTeam[], teamId: number): string | undefined 
 
 export default function PlayerStatsDialog({ open, player, teams, onClose }: PlayerStatsDialogProps) {
     const [activeTeamIndex, setActiveTeamIndex] = useState(0);
+
+    // Reset carousel index when player changes
+    useEffect(() => {
+        setActiveTeamIndex(0);
+    }, [player?.externalId]);
 
     if (typeof document === 'undefined') return null;
     if (!player) return null;

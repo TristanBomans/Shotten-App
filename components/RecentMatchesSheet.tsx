@@ -90,7 +90,8 @@ function isRecentMatch(dateStr: string): boolean {
     if (!date) return false;
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
-    return diffMs <= 72 * 60 * 60 * 1000; // 72 hours
+    // Only highlight if within last 72h and not in the future
+    return diffMs >= 0 && diffMs <= 72 * 60 * 60 * 1000;
 }
 
 function matchesRecentTeam(match: RecentMatchItem, internalMatch: InternalMatchLike): boolean {
