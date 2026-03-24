@@ -85,6 +85,14 @@ function isSameCalendarDay(left: Date, right: Date): boolean {
     );
 }
 
+function isRecentMatch(dateStr: string): boolean {
+    const date = parseDate(dateStr);
+    if (!date) return false;
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    return diffMs <= 72 * 60 * 60 * 1000; // 72 hours
+}
+
 function matchesRecentTeam(match: RecentMatchItem, internalMatch: InternalMatchLike): boolean {
     if (internalMatch.teamId === match.teamId) {
         return true;
@@ -285,36 +293,6 @@ export default function RecentMatchesSheet({
                                     padding: '8px 12px 12px',
                                 }}
                             >
-                                {hasRecentWithin3Days && (
-                                    <div
-                                        style={{
-                                            padding: '8px 12px',
-                                            margin: '4px 0 6px',
-                                            borderRadius: 10,
-                                            background: 'rgb(var(--color-accent-rgb) / 0.06)',
-                                            border: '1px solid rgb(var(--color-accent-rgb) / 0.12)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 8,
-                                            fontSize: '0.78rem',
-                                            color: 'var(--color-text-secondary)',
-                                        }}
-                                    >
-                                        <span
-                                            style={{
-                                                width: 6,
-                                                height: 6,
-                                                borderRadius: '50%',
-                                                background: 'var(--color-accent)',
-                                                flexShrink: 0,
-                                                boxShadow: '0 0 6px var(--color-accent-glow)',
-                                            }}
-                                        />
-                                        <strong style={{ color: 'var(--color-text-primary)' }}>{recentCount}</strong>
-                                        <span>match{recentCount === 1 ? '' : 'es'} in 72h</span>
-                                    </div>
-                                )}
-
                                 {loading ? (
                                     <div
                                         style={{
@@ -349,6 +327,7 @@ export default function RecentMatchesSheet({
                                             const attStatus = getAttendanceStatus(match, internalMatches, playerId);
                                             const attColor = attendanceDotColor(attStatus);
                                             const attLabel = attendanceLabel(attStatus);
+                                            const isRecent = isRecentMatch(match.date);
 
                                             return (
                                                 <motion.div
@@ -364,12 +343,18 @@ export default function RecentMatchesSheet({
                                                         borderRadius: 14,
                                                         cursor: 'default',
                                                         transition: 'background 0.15s ease',
+                                                        border: isRecent ? '1px solid rgb(var(--color-accent-rgb) / 0.2)' : '1px solid transparent',
+                                                        background: isRecent ? 'rgb(var(--color-accent-rgb) / 0.04)' : 'transparent',
                                                     }}
                                                     onMouseEnter={(e) => {
-                                                        e.currentTarget.style.background = 'var(--color-surface-hover)';
+                                                        e.currentTarget.style.background = isRecent
+                                                            ? 'rgb(var(--color-accent-rgb) / 0.08)'
+                                                            : 'var(--color-surface-hover)';
                                                     }}
                                                     onMouseLeave={(e) => {
-                                                        e.currentTarget.style.background = 'transparent';
+                                                        e.currentTarget.style.background = isRecent
+                                                            ? 'rgb(var(--color-accent-rgb) / 0.04)'
+                                                            : 'transparent';
                                                     }}
                                                 >
                                                     {/* Result indicator */}
@@ -388,9 +373,24 @@ export default function RecentMatchesSheet({
                                                             color: result.color,
                                                             letterSpacing: '0.02em',
                                                             flexShrink: 0,
+                                                            position: 'relative',
                                                         }}
                                                     >
                                                         {result.label}
+                                                        {isRecent && (
+                                                            <span
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    top: -2,
+                                                                    right: -2,
+                                                                    width: 8,
+                                                                    height: 8,
+                                                                    borderRadius: '50%',
+                                                                    background: 'var(--color-accent)',
+                                                                    border: '2px solid var(--color-surface)',
+                                                                }}
+                                                            />
+                                                        )}
                                                     </div>
 
                                                     {/* Match info */}
@@ -404,13 +404,32 @@ export default function RecentMatchesSheet({
                                                                 textOverflow: 'ellipsis',
                                                                 whiteSpace: 'nowrap',
                                                                 lineHeight: 1.3,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 6,
                                                             }}
                                                         >
                                                             {match.teamName}
-                                                            <span style={{ fontWeight: 400, color: 'var(--color-text-tertiary)', margin: '0 5px', fontSize: '0.75rem' }}>
+                                                            <span style={{ fontWeight: 400, color: 'var(--color-text-tertiary)', fontSize: '0.75rem' }}>
                                                                 vs
                                                             </span>
                                                             {match.opponent}
+                                                            {isRecent && (
+                                                                <span
+                                                                    style={{
+                                                                        fontSize: '0.55rem',
+                                                                        fontWeight: 700,
+                                                                        color: 'var(--color-accent)',
+                                                                        background: 'rgb(var(--color-accent-rgb) / 0.12)',
+                                                                        padding: '1px 5px',
+                                                                        borderRadius: 4,
+                                                                        textTransform: 'uppercase',
+                                                                        letterSpacing: '0.03em',
+                                                                    }}
+                                                                >
+                                                                    New
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div
                                                             style={{
