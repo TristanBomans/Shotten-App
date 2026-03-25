@@ -1,37 +1,22 @@
 # Shotten App 🏆
 
-An app for our futsal team to track attendance at training sessions and matches. The app revolves around our two teams: **Fc Degradé** and **Wille Ma ni Kunnen** – everything is centered around these two teams.
+An app for our futsal team to track attendance at matches. The app revolves around our two teams: **Fc Degradé** and **Wille Ma ni Kunnen** – everything is centered around these two teams.
 
 ## What does the app do?
 
 - **Attendance**: Indicate whether you're attending matches
 - **Calendar**: Overview of all upcoming matches
-- **Statistics**: Check who has attended the most matches sessions
+- **Statistics**: Check who has attended the most matches
 
-## Architecture (High Level)
+## Project Structure
 
-The app is built as a modern web application with the following structure:
+The codebase is organized around a single Next.js App Router app:
 
-```
-app/                    # Next.js App Router
-├── (dashboard)/        # Authenticated routes (main app)
-│   ├── action/         # Indicate availability
-│   ├── admin/          # Admin functions (manage matches)
-│   ├── calendar/       # Calendar overview
-│   ├── lineup/         # View lineup
-│   ├── players/        # Player list with statistics
-│   └── settings/       # Profile & settings
-├── api/                # API routes (CRON jobs, etc.)
-├── auth/               # Login & authentication
-├── types/              # TypeScript types
-├── lib/                # Utilities & database client
-└── components/         # UI components (shadcn/ui)
-```
-
-### Database
-- **Supabase** as backend (PostgreSQL database)
-- Real-time updates for attendance
-- Authentication via Supabase Auth
+- `app/` for the page, layout, manifest, version screen, and API routes
+- `components/` for the dashboard and feature UI
+- `lib/` for Supabase access, data helpers, and shared utilities
+- `scripts/` for build, versioning, and Cloudflare deployment helpers
+- `open-next.config.ts` and `scripts/build-opennext.sh` for the Cloudflare/OpenNext build pipeline
 
 ### Data Sync
 The app automatically fetches data from external sources:
@@ -53,15 +38,20 @@ The app runs on **Cloudflare Pages** via the OpenNext adapter.
 
 | Technology | Purpose |
 |------------|---------|
-| [Next.js 15](https://nextjs.org/docs) | React framework with App Router |
-| [React 19](https://react.dev) | UI library |
+| [Next.js 14](https://nextjs.org/docs) | React framework with App Router and API routes |
+| [React 18](https://react.dev) | UI library |
 | [TypeScript](https://www.typescriptlang.org/) | Type safety |
-| [Tailwind CSS](https://tailwindcss.com/) | Styling |
-| [shadcn/ui](https://ui.shadcn.com/) | UI component library |
-| [Supabase](https://supabase.com/) | Database & Auth |
+| [Tailwind CSS 4](https://tailwindcss.com/) | Styling |
+| [Framer Motion](https://www.framer.com/motion/) | Animations |
+| [Lucide React](https://lucide.dev/) | Icons |
+| [Recharts](https://recharts.org/) | Charts and analytics |
+| [Supabase](https://supabase.com/) | Database and data access |
+| [Mistral AI](https://mistral.ai/) | Opponent analysis endpoint |
 | [Bun](https://bun.sh/) | Package manager & runtime |
-| [Cloudflare Workers](https://workers.cloudflare.com/) | Edge hosting |
+| [OpenNext](https://opennext.js.org/) | Cloudflare deployment adapter |
+| [Cloudflare Pages](https://pages.cloudflare.com/) | Hosting |
 | [Wrangler](https://developers.cloudflare.com/workers/wrangler/) | Cloudflare CLI |
+| `clsx`, `tailwind-merge`, `react-markdown`, `react-tooltip` | Supporting UI and content utilities |
 
 ## Local Development
 
