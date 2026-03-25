@@ -196,13 +196,13 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                             width: 80,
                                             height: 80,
                                             borderRadius: 24,
-                                            background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-secondary) 100%)',
+                                            background: 'var(--color-accent)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             fontSize: '2.5rem',
                                             fontWeight: 800,
-                                            color: 'var(--color-bg)',
+                                            color: '#ffffff',
                                             marginBottom: 16,
                                             boxShadow: '0 8px 32px rgb(var(--color-accent-rgb) / 0.3)',
                                         }}
@@ -378,13 +378,14 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                                                         width: 48,
                                                                         height: 48,
                                                                         borderRadius: 14,
-                                                                        background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-secondary))',
+                                                                        background: 'var(--color-accent)',
                                                                         display: 'flex',
                                                                         alignItems: 'center',
                                                                         justifyContent: 'center',
                                                                         fontSize: '1.25rem',
                                                                         fontWeight: 700,
-                                                                        color: 'var(--color-text-primary)',
+                                                                        color: '#ffffff',
+                                                                        boxShadow: '0 4px 12px rgb(var(--color-accent-rgb) / 0.25)',
                                                                     }}
                                                                 >
                                                                     {getTeamName(teams, teamStat.teamId).charAt(0)}
