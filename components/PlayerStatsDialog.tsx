@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Target, Users, Calendar, TrendingUp, Award, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -24,39 +24,72 @@ function getTeamImage(teams: ScraperTeam[], teamId: number): string | undefined 
 
 export default function PlayerStatsDialog({ open, player, teams, onClose }: PlayerStatsDialogProps) {
     const [activeTeamIndex, setActiveTeamIndex] = useState(0);
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const teamCardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
     // Reset carousel index when player changes
     useEffect(() => {
         setActiveTeamIndex(0);
+        if (scrollRef.current) {
+            scrollRef.current.scrollTo({ left: 0, behavior: 'instant' });
+        }
     }, [player?.externalId]);
 
-    if (typeof document === 'undefined') return null;
-    if (!player) return null;
+    // Intersection Observer to track active team card
+    useEffect(() => {
+        if (!player?.teamStats || player.teamStats.length <= 1) return;
 
-    const playerStats = player.teamStats || [];
-    const hasTeams = playerStats.length > 0;
-    
-    // Reset index if out of bounds
-    const safeIndex = hasTeams && activeTeamIndex < playerStats.length ? activeTeamIndex : 0;
-    const activeTeam = hasTeams ? playerStats[safeIndex] : null;
-    
-    const avgGoals = player.gamesPlayed > 0 ? (player.goals / player.gamesPlayed).toFixed(2) : '0.00';
-    const avgAssists = player.gamesPlayed > 0 ? (player.assists / player.gamesPlayed).toFixed(2) : '0.00';
-    const contribution = player.gamesPlayed > 0 ? ((player.goals + player.assists) / player.gamesPlayed).toFixed(2) : '0.00';
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const visible = entries.find(e => e.isIntersecting);
+                if (visible) {
+                    const index = parseInt(visible.target.getAttribute('data-index') || '0', 10);
+                    if (index !== activeTeamIndex) {
+                        hapticPatterns.tap();
+                        setActiveTeamIndex(index);
+                    }
+                }
+            },
+            { root: scrollRef.current, threshold: 0.6 }
+        );
+
+        teamCardRefs.current.forEach((ref) => {
+            if (ref) observer.observe(ref);
+        });
+
+        return () => observer.disconnect();
+    }, [activeTeamIndex, player?.teamStats]);
+
+    const scrollToTeam = (index: number) => {
+        if (scrollRef.current) {
+            const left = index * scrollRef.current.clientWidth;
+            scrollRef.current.scrollTo({ left, behavior: 'smooth' });
+        }
+    };
 
     const nextTeam = () => {
-        if (activeTeamIndex < playerStats.length - 1) {
+        if (activeTeamIndex < (player?.teamStats?.length || 0) - 1) {
             hapticPatterns.swipe();
-            setActiveTeamIndex(prev => prev + 1);
+            scrollToTeam(activeTeamIndex + 1);
         }
     };
 
     const prevTeam = () => {
         if (activeTeamIndex > 0) {
             hapticPatterns.swipe();
-            setActiveTeamIndex(prev => prev - 1);
+            scrollToTeam(activeTeamIndex - 1);
         }
     };
+
+    if (typeof document === 'undefined') return null;
+    if (!player) return null;
+
+    const playerStats = player.teamStats || [];
+    const hasTeams = playerStats.length > 0;
+
+    const avgGoals = player.gamesPlayed > 0 ? (player.goals / player.gamesPlayed).toFixed(2) : '0.00';
+    const avgAssists = player.gamesPlayed > 0 ? (player.assists / player.gamesPlayed).toFixed(2) : '0.00';
+    const contribution = player.gamesPlayed > 0 ? ((player.goals + player.assists) / player.gamesPlayed).toFixed(2) : '0.00';
 
     return createPortal(
         <AnimatePresence>
@@ -109,6 +142,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                 border: '1px solid var(--color-border)',
                                 boxShadow: '0 32px 96px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
                                 overflow: 'hidden',
+                                position: 'relative',
                             }}
                         >
                             {/* Close Button - Floating */}
@@ -162,13 +196,13 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                             width: 80,
                                             height: 80,
                                             borderRadius: 24,
-                                            background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-secondary) 100%)',
+                                            background: 'var(--color-accent)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             fontSize: '2.5rem',
                                             fontWeight: 800,
-                                            color: 'var(--color-bg)',
+                                            color: '#ffffff',
                                             marginBottom: 16,
                                             boxShadow: '0 8px 32px rgb(var(--color-accent-rgb) / 0.3)',
                                         }}
@@ -268,94 +302,127 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                 {/* Team Breakdown Section */}
                                 {hasTeams && (
                                     <div style={{ padding: '0 24px 24px' }}>
+                                        {/* Team Breakdown Header */}
                                         <div
                                             style={{
-                                                fontSize: '0.7rem',
-                                                fontWeight: 700,
-                                                color: 'var(--color-text-tertiary)',
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.08em',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
                                                 marginBottom: 12,
                                             }}
                                         >
-                                            Team Breakdown
-                                        </div>
-
-                                        {/* Team Card */}
-                                        <motion.div
-                                            key={activeTeam?.id}
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ duration: 0.2 }}
-                                            style={{
-                                                background: 'linear-gradient(135deg, var(--color-surface-hover) 0%, rgb(var(--color-accent-rgb) / 0.05) 100%)',
-                                                borderRadius: 20,
-                                                padding: 20,
-                                                border: '0.5px solid var(--color-border)',
-                                            }}
-                                        >
-                                            {/* Team Header */}
-                                            
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                                                {activeTeam && getTeamImage(teams, activeTeam.teamId) ? (
-                                                    <img
-                                                        src={getTeamImage(teams, activeTeam.teamId)}
-                                                        alt={getTeamName(teams, activeTeam.teamId)}
-                                                        style={{
-                                                            width: 48,
-                                                            height: 48,
-                                                            borderRadius: 14,
-                                                            objectFit: 'cover',
-                                                            border: '1px solid var(--color-border)',
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <div
-                                                        style={{
-                                                            width: 48,
-                                                            height: 48,
-                                                            borderRadius: 14,
-                                                            background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-secondary))',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            fontSize: '1.25rem',
-                                                            fontWeight: 700,
-                                                            color: 'var(--color-text-primary)',
-                                                        }}
-                                                    >
-                                                        {activeTeam ? getTeamName(teams, activeTeam.teamId).charAt(0) : '?'}
-                                                    </div>
-                                                )}
-                                                <div style={{ flex: 1 }}>
-                                                    <div
-                                                        style={{
-                                                            fontSize: '1.1rem',
-                                                            fontWeight: 700,
-                                                            color: 'var(--color-text-primary)',
-                                                        }}
-                                                    >
-                                                        {activeTeam ? getTeamName(teams, activeTeam.teamId) : 'Unknown Team'}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)' }}>
-                                                        Jersey #{activeTeam?.number || '-'}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Team Stats Grid */}
                                             <div
                                                 style={{
-                                                    display: 'grid',
-                                                    gridTemplateColumns: 'repeat(3, 1fr)',
-                                                    gap: 12,
+                                                    fontSize: '0.7rem',
+                                                    fontWeight: 700,
+                                                    color: 'var(--color-text-tertiary)',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.08em',
                                                 }}
                                             >
-                                                <TeamStat value={activeTeam?.gamesPlayed || 0} label="Games" />
-                                                <TeamStat value={activeTeam?.goals || 0} label="Goals" color="var(--color-success)" />
-                                                <TeamStat value={activeTeam?.assists || 0} label="Assists" color="var(--color-accent)" />
+                                                Team Breakdown
                                             </div>
-                                        </motion.div>
+                                        </div>
+
+                                        {/* Horizontal Scrollable Team Cards */}
+                                        <div
+                                            ref={scrollRef}
+                                            className="scrollbar-hide"
+                                            style={{
+                                                display: 'flex',
+                                                width: '100%',
+                                                overflowX: 'auto',
+                                                overflowY: 'hidden',
+                                                scrollSnapType: 'x mandatory',
+                                                scrollBehavior: 'smooth',
+                                                marginBottom: 16,
+                                            }}
+                                        >
+                                            {playerStats.map((teamStat, index) => (
+                                                <div
+                                                    key={teamStat.id}
+                                                    ref={(el) => { teamCardRefs.current[index] = el; }}
+                                                    data-index={index}
+                                                    style={{
+                                                        minWidth: '100%',
+                                                        scrollSnapAlign: 'center',
+                                                        scrollSnapStop: 'always',
+                                                        paddingRight: index < playerStats.length - 1 ? 12 : 0,
+                                                    }}
+                                                >
+                                                    <div
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, var(--color-surface-hover) 0%, rgb(var(--color-accent-rgb) / 0.05) 100%)',
+                                                            borderRadius: 20,
+                                                            padding: 20,
+                                                            border: '0.5px solid var(--color-border)',
+                                                        }}
+                                                    >
+                                                        {/* Team Header */}
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                                                            {getTeamImage(teams, teamStat.teamId) ? (
+                                                                <img
+                                                                    src={getTeamImage(teams, teamStat.teamId)}
+                                                                    alt={getTeamName(teams, teamStat.teamId)}
+                                                                    style={{
+                                                                        width: 48,
+                                                                        height: 48,
+                                                                        borderRadius: 14,
+                                                                        objectFit: 'cover',
+                                                                        border: '1px solid var(--color-border)',
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <div
+                                                                    style={{
+                                                                        width: 48,
+                                                                        height: 48,
+                                                                        borderRadius: 14,
+                                                                        background: 'var(--color-accent)',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        fontSize: '1.25rem',
+                                                                        fontWeight: 700,
+                                                                        color: '#ffffff',
+                                                                        boxShadow: '0 4px 12px rgb(var(--color-accent-rgb) / 0.25)',
+                                                                    }}
+                                                                >
+                                                                    {getTeamName(teams, teamStat.teamId).charAt(0)}
+                                                                </div>
+                                                            )}
+                                                            <div style={{ flex: 1 }}>
+                                                                <div
+                                                                    style={{
+                                                                        fontSize: '1.1rem',
+                                                                        fontWeight: 700,
+                                                                        color: 'var(--color-text-primary)',
+                                                                    }}
+                                                                >
+                                                                    {getTeamName(teams, teamStat.teamId)}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)' }}>
+                                                                    Jersey #{teamStat.number || '-'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Team Stats Grid */}
+                                                        <div
+                                                            style={{
+                                                                display: 'grid',
+                                                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                                                gap: 12,
+                                                            }}
+                                                        >
+                                                            <TeamStat value={teamStat.gamesPlayed || 0} label="Games" />
+                                                            <TeamStat value={teamStat.goals || 0} label="Goals" color="var(--color-success)" />
+                                                            <TeamStat value={teamStat.assists || 0} label="Assists" color="var(--color-accent)" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
 
                                         {/* Navigation */}
                                         {playerStats.length > 1 && (
@@ -364,7 +431,6 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'space-between',
-                                                    marginTop: 16,
                                                     gap: 12,
                                                 }}
                                             >
@@ -392,14 +458,21 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                                 {/* Dots */}
                                                 <div style={{ display: 'flex', gap: 6 }}>
                                                     {playerStats.map((_, idx) => (
-                                                        <div
+                                                        <button
                                                             key={idx}
+                                                            onClick={() => {
+                                                                hapticPatterns.tap();
+                                                                scrollToTeam(idx);
+                                                            }}
                                                             style={{
                                                                 width: 8,
                                                                 height: 8,
                                                                 borderRadius: 4,
                                                                 background: idx === activeTeamIndex ? 'var(--color-accent)' : 'var(--color-border)',
                                                                 transition: 'all 0.2s',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                padding: 0,
                                                             }}
                                                         />
                                                     ))}
