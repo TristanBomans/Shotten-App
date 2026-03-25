@@ -109,6 +109,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                 border: '1px solid var(--color-border)',
                                 boxShadow: '0 32px 96px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
                                 overflow: 'hidden',
+                                position: 'relative',
                             }}
                         >
                             {/* Close Button - Floating */}
