@@ -45,7 +45,6 @@ function MistralLogo({ size = 14 }: { size?: number }) {
 export default function VersionHistoryModal({ open, onClose }: VersionHistoryModalProps) {
     const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeRelease, setActiveRelease] = useState(0);
 
     useEffect(() => {
         if (!open) return;
@@ -66,7 +65,6 @@ export default function VersionHistoryModal({ open, onClose }: VersionHistoryMod
 
         let cancelled = false;
         setLoading(true);
-        setActiveRelease(0);
 
         fetch(`/version.json?t=${Date.now()}`, {
             cache: 'no-store',
@@ -120,7 +118,6 @@ export default function VersionHistoryModal({ open, onClose }: VersionHistoryMod
     if (typeof document === 'undefined') return null;
 
     const releases = versionInfo?.releases || [];
-    const currentRelease = releases[activeRelease];
 
     return createPortal(
         <AnimatePresence>
@@ -242,124 +239,91 @@ export default function VersionHistoryModal({ open, onClose }: VersionHistoryMod
                                     />
                                 </div>
                             ) : releases.length > 0 ? (
-                                <>
-                                    {/* Version Selector */}
-                                    <div
-                                        style={{
-                                            padding: '0 20px 20px',
-                                            borderBottom: '1px solid var(--color-border-subtle)',
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                gap: 8,
-                                                overflowX: 'auto',
-                                                paddingBottom: 4,
-                                            }}
-                                            className="scrollbar-hide"
-                                        >
-                                            {releases.map((release, idx) => (
-                                                <motion.button
-                                                    key={idx}
-                                                    onClick={() => {
-                                                        if (idx !== activeRelease) {
-                                                            hapticPatterns.tap();
-                                                            setActiveRelease(idx);
-                                                        }
-                                                    }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    style={{
-                                                        flexShrink: 0,
-                                                        padding: '10px 16px',
-                                                        borderRadius: 12,
-                                                        border: '1px solid',
-                                                        borderColor:
-                                                            idx === activeRelease
-                                                                ? 'var(--color-accent)'
-                                                                : 'var(--color-border)',
-                                                        background:
-                                                            idx === activeRelease
-                                                                ? 'var(--color-accent)'
-                                                                : 'var(--color-surface)',
-                                                        color:
-                                                            idx === activeRelease
-                                                                ? '#ffffff'
-                                                                : 'var(--color-text-primary)',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        alignItems: 'flex-start',
-                                                        gap: 2,
-                                                        minWidth: 100,
-                                                    }}
-                                                >
-                                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.8 }}>
-                                                        {idx === 0 ? 'Latest' : `v${releases.length - idx}`}
-                                                    </span>
-                                                    <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>
-                                                        {formatDate(release.date)}
-                                                    </span>
-                                                </motion.button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Changes Content */}
-                                    <div
-                                        style={{
-                                            flex: 1,
-                                            overflowY: 'auto',
-                                            padding: '20px',
-                                        }}
-                                    >
+                                <div
+                                    style={{
+                                        flex: 1,
+                                        overflowY: 'auto',
+                                        padding: '20px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 32,
+                                    }}
+                                >
+                                    {releases.map((release, releaseIdx) => (
                                         <motion.div
-                                            key={activeRelease}
+                                            key={releaseIdx}
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.3 }}
+                                            transition={{ delay: releaseIdx * 0.1 }}
                                         >
-                                            {/* Date Badge */}
+                                            {/* Release Header */}
                                             <div
                                                 style={{
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    gap: 8,
-                                                    marginBottom: 20,
+                                                    gap: 12,
+                                                    marginBottom: 16,
                                                 }}
                                             >
                                                 <div
                                                     style={{
-                                                        padding: '6px 12px',
-                                                        background: 'var(--color-surface)',
-                                                        border: '1px solid var(--color-border)',
+                                                        padding: '6px 14px',
+                                                        background: releaseIdx === 0 ? 'var(--color-accent)' : 'var(--color-surface)',
+                                                        border: '1px solid',
+                                                        borderColor: releaseIdx === 0 ? 'var(--color-accent)' : 'var(--color-border)',
                                                         borderRadius: 20,
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        gap: 6,
+                                                        gap: 8,
                                                     }}
                                                 >
-                                                    <Clock size={14} style={{ color: 'var(--color-accent)' }} />
+                                                    <Clock size={14} style={{ color: releaseIdx === 0 ? '#ffffff' : 'var(--color-accent)' }} />
                                                     <span
                                                         style={{
-                                                            fontSize: '0.8rem',
-                                                            fontWeight: 600,
-                                                            color: 'var(--color-text-primary)',
+                                                            fontSize: '0.85rem',
+                                                            fontWeight: 700,
+                                                            color: releaseIdx === 0 ? '#ffffff' : 'var(--color-text-primary)',
                                                         }}
                                                     >
-                                                        {formatRelativeTime(currentRelease.date)}
+                                                        {formatDate(release.date)}
                                                     </span>
                                                 </div>
+                                                <span
+                                                    style={{
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 600,
+                                                        color: 'var(--color-text-tertiary)',
+                                                    }}
+                                                >
+                                                    {formatRelativeTime(release.date)}
+                                                </span>
+                                                {releaseIdx === 0 && (
+                                                    <span
+                                                        style={{
+                                                            fontSize: '0.65rem',
+                                                            fontWeight: 700,
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.08em',
+                                                            color: 'var(--color-accent)',
+                                                            background: 'var(--color-surface)',
+                                                            padding: '4px 10px',
+                                                            borderRadius: 12,
+                                                            border: '1px solid var(--color-border)',
+                                                        }}
+                                                    >
+                                                        Latest
+                                                    </span>
+                                                )}
                                             </div>
 
                                             {/* Changes Cards */}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                                {currentRelease.changes.map((change, idx) => (
+                                                {release.changes.map((change, idx) => (
                                                     <motion.div
                                                         key={idx}
                                                         initial={{ opacity: 0, x: -10 }}
                                                         animate={{ opacity: 1, x: 0 }}
-                                                        transition={{ delay: idx * 0.05 }}
+                                                        transition={{ delay: releaseIdx * 0.1 + idx * 0.05 }}
                                                         style={{
                                                             padding: '16px 18px',
                                                             background: 'var(--color-surface)',
@@ -375,8 +339,8 @@ export default function VersionHistoryModal({ open, onClose }: VersionHistoryMod
                                                 ))}
                                             </div>
                                         </motion.div>
-                                    </div>
-                                </>
+                                    ))}
+                                </div>
                             ) : (
                                 <div
                                     style={{
