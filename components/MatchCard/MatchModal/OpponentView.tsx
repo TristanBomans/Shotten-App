@@ -214,7 +214,7 @@ export default function OpponentView({
         );
     }
 
-    // Head-to-Head Comparison
+    // Head-to-Head Comparison - Us vs Them
     const renderHeadToHead = () => {
         if (!opponentData || !ownTeamData || opponentData.rank === undefined || ownTeamData.rank === undefined) {
             return null;
@@ -224,7 +224,7 @@ export default function OpponentView({
             { label: 'Rank', us: ownTeamData.rank, them: opponentData.rank, lowerIsBetter: true },
             { label: 'Points', us: ownTeamData.points || 0, them: opponentData.points || 0, lowerIsBetter: false },
             { label: 'Wins', us: ownTeamData.wins || 0, them: opponentData.wins || 0, lowerIsBetter: false },
-            { label: 'Goal Diff', us: ownTeamData.goalDifference || 0, them: opponentData.goalDifference || 0, lowerIsBetter: false },
+            { label: 'Goals', us: (ownTeamData.goalsFor || 0) - (ownTeamData.goalsAgainst || 0), them: (opponentData.goalsFor || 0) - (opponentData.goalsAgainst || 0), lowerIsBetter: false },
         ];
 
         let usWins = 0;
@@ -236,90 +236,201 @@ export default function OpponentView({
             if (themAhead) themWins++;
         });
 
-        let verdict = { text: 'Even match', emoji: '🤝', color: 'var(--color-warning)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' };
-        if (usWins === 4) {
-            verdict = { text: 'Easy pickings', emoji: '🔥', color: 'var(--color-success)', bg: 'rgb(var(--color-success-rgb) / 0.2)' };
-        } else if (usWins >= 3) {
-            verdict = { text: 'Looking good', emoji: '💪', color: 'var(--color-success)', bg: 'rgb(var(--color-success-rgb) / 0.15)' };
-        } else if (themWins === 4) {
-            verdict = { text: 'Major challenge', emoji: '🚨', color: 'var(--color-danger)', bg: 'rgb(var(--color-danger-rgb) / 0.2)' };
-        } else if (themWins >= 3) {
-            verdict = { text: 'Tough match', emoji: '⚠️', color: 'var(--color-warning-secondary)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' };
-        }
+        const getVerdict = () => {
+            if (usWins === 4) return { text: 'Clear Favorite', emoji: '🔥', color: '#22c55e' };
+            if (usWins >= 3) return { text: 'Advantage', emoji: '💪', color: '#22c55e' };
+            if (themWins === 4) return { text: 'Underdogs', emoji: '⚡', color: '#ef4444' };
+            if (themWins >= 3) return { text: 'Tough Match', emoji: '⚠️', color: '#f59e0b' };
+            return { text: 'Even Match', emoji: '⚖️', color: '#6b7280' };
+        };
+
+        const verdict = getVerdict();
+
+        const formatValue = (val: number, label: string) => {
+            if (label === 'Rank') return `#${val}`;
+            if (label === 'Goals' && val > 0) return `+${val}`;
+            return val.toString();
+        };
 
         return (
-            <SectionCard>
-                <SectionHeader
-                    icon={Zap}
-                    title="Head to Head"
-                    color="var(--color-warning)"
-                    rightContent={(
-                        <div style={{
-                            padding: '4px 10px',
-                            borderRadius: 10,
-                            background: verdict.bg,
-                            color: verdict.color,
-                            fontSize: '0.7rem',
-                            fontWeight: 600,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                        }}>
-                            <span>{verdict.emoji}</span>
-                            <span>{verdict.text}</span>
-                        </div>
-                    )}
-                />
+            <SectionCard style={{ padding: 16 }}>
+                {/* Header */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 12,
+                }}>
+                    <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: 'var(--color-text-secondary)',
+                    }}>
+                        Head To Head
+                    </span>
+                    <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        color: verdict.color,
+                    }}>
+                        {verdict.emoji} {verdict.text}
+                    </span>
+                </div>
 
-                {/* Comparison Table */}
+                {/* Column Headers */}
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr auto auto',
-                    gap: '8px 12px',
+                    gridTemplateColumns: '1fr auto 1fr',
+                    gap: 12,
+                    padding: '8px 0',
+                    borderBottom: '1px solid var(--color-border)',
+                    marginBottom: 4,
                 }}>
-                    {comparisons.map((stat) => {
+                    <span style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        color: '#22c55e',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                    }}>
+                        Us
+                    </span>
+                    <span style={{
+                        fontSize: '0.6rem',
+                        color: 'var(--color-text-tertiary)',
+                    }}>
+                        vs
+                    </span>
+                    <span style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        color: '#ef4444',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        textAlign: 'right',
+                    }}>
+                        Them
+                    </span>
+                </div>
+
+                {/* Stats List */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {comparisons.map((stat, index) => {
                         const usAhead = stat.lowerIsBetter ? stat.us < stat.them : stat.us > stat.them;
                         const themAhead = stat.lowerIsBetter ? stat.them < stat.us : stat.them > stat.us;
+                        const isTie = stat.us === stat.them;
 
                         return (
-                            <React.Fragment key={stat.label}>
-                                <div style={{
-                                    fontSize: '0.85rem',
-                                    color: 'var(--color-text-secondary)',
-                                    display: 'flex',
+                            <motion.div
+                                key={stat.label}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.05 }}
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr auto 1fr',
+                                    gap: 12,
                                     alignItems: 'center',
+                                    padding: '10px 0',
+                                    borderBottom: index < 3 ? '1px solid var(--color-border-subtle)' : 'none',
+                                }}
+                            >
+                                {/* Your value */}
+                                <span style={{
+                                    fontSize: '1rem',
+                                    fontWeight: 700,
+                                    color: usAhead ? '#22c55e' : isTie ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                                }}>
+                                    {formatValue(stat.us, stat.label)}
+                                </span>
+
+                                {/* Label */}
+                                <span style={{
+                                    fontSize: '0.65rem',
+                                    fontWeight: 600,
+                                    color: 'var(--color-text-tertiary)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
                                 }}>
                                     {stat.label}
-                                </div>
-                                <div style={{
-                                    padding: '6px 14px',
-                                    borderRadius: 8,
-                                    background: usAhead ? 'rgb(var(--color-success-rgb) / 0.15)' : 'var(--color-surface-hover)',
-                                    fontSize: '0.9rem',
+                                </span>
+
+                                {/* Their value */}
+                                <span style={{
+                                    fontSize: '1rem',
                                     fontWeight: 700,
-                                    color: usAhead ? 'var(--color-success)' : 'var(--color-text-primary)',
-                                    textAlign: 'center',
-                                    minWidth: 50,
-                                    border: usAhead ? '1px solid rgb(var(--color-success-rgb) / 0.25)' : '1px solid transparent',
+                                    color: themAhead ? '#ef4444' : isTie ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                                    textAlign: 'right',
                                 }}>
-                                    {stat.label === 'Goal Diff' && stat.us > 0 ? '+' : ''}{stat.us}
-                                </div>
-                                <div style={{
-                                    padding: '6px 14px',
-                                    borderRadius: 8,
-                                    background: themAhead ? 'rgb(var(--color-danger-rgb) / 0.15)' : 'var(--color-surface-hover)',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 700,
-                                    color: themAhead ? 'var(--color-danger)' : 'var(--color-text-primary)',
-                                    textAlign: 'center',
-                                    minWidth: 50,
-                                    border: themAhead ? '1px solid rgb(var(--color-danger-rgb) / 0.25)' : '1px solid transparent',
-                                }}>
-                                    {stat.label === 'Goal Diff' && stat.them > 0 ? '+' : ''}{stat.them}
-                                </div>
-                            </React.Fragment>
+                                    {formatValue(stat.them, stat.label)}
+                                </span>
+                            </motion.div>
                         );
                     })}
+                </div>
+
+                {/* Summary */}
+                <div style={{
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTop: '1px solid var(--color-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 20,
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                    }}>
+                        <span style={{
+                            fontSize: '1.1rem',
+                            fontWeight: 800,
+                            color: usWins >= themWins ? '#22c55e' : 'var(--color-text-secondary)',
+                        }}>
+                            {usWins}
+                        </span>
+                        <span style={{
+                            fontSize: '0.65rem',
+                            color: 'var(--color-text-tertiary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                        }}>
+                            Us
+                        </span>
+                    </div>
+
+                    <span style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--color-text-tertiary)',
+                    }}>
+                        —
+                    </span>
+
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                    }}>
+                        <span style={{
+                            fontSize: '0.65rem',
+                            color: 'var(--color-text-tertiary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                        }}>
+                            Them
+                        </span>
+                        <span style={{
+                            fontSize: '1.1rem',
+                            fontWeight: 800,
+                            color: themWins > usWins ? '#ef4444' : 'var(--color-text-secondary)',
+                        }}>
+                            {themWins}
+                        </span>
+                    </div>
                 </div>
             </SectionCard>
         );
