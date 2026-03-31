@@ -153,37 +153,39 @@ export default function TopOverlayHeader({
                                     paddingRight: 8,
                                 }}
                             >
-                                <button
-                                    onClick={leagueHeaderControls?.onCycleLeague}
-                                    onContextMenu={(event) => {
-                                        event.preventDefault();
-                                        leagueHeaderControls?.onOpenLeagueSelector();
-                                    }}
-                                    disabled={!leagueHeaderControls?.hasLeagues}
-                                    aria-label={`Selected league ${leagueHeaderControls?.selectedLeague || 'none'}. Tap to cycle leagues.`}
-                                    style={{
-                                        ...compactControlStyle,
-                                        minWidth: 'clamp(64px, 20vw, 84px)',
-                                        maxWidth: 'min(112px, 28vw)',
-                                        padding: '0 8px',
-                                        justifyContent: 'flex-start',
-                                        opacity: leagueHeaderControls?.hasLeagues ? 1 : 0.5,
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    <Trophy size={13} />
-                                    <span
+                                {leagueHeaderControls?.activeTab === 'standings' && (
+                                    <button
+                                        onClick={leagueHeaderControls?.onCycleLeague}
+                                        onContextMenu={(event) => {
+                                            event.preventDefault();
+                                            leagueHeaderControls?.onOpenLeagueSelector();
+                                        }}
+                                        disabled={!leagueHeaderControls?.hasLeagues}
+                                        aria-label={`Selected league ${leagueHeaderControls?.selectedLeague || 'none'}. Tap to cycle leagues.`}
                                         style={{
-                                            whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            fontSize: '0.78rem',
-                                            fontWeight: 600,
+                                            ...compactControlStyle,
+                                            minWidth: 'clamp(64px, 20vw, 84px)',
+                                            maxWidth: 'min(112px, 28vw)',
+                                            padding: '0 8px',
+                                            justifyContent: 'flex-start',
+                                            opacity: leagueHeaderControls?.hasLeagues ? 1 : 0.5,
+                                            flexShrink: 0,
                                         }}
                                     >
-                                        {leagueHeaderControls?.selectedLeague || 'Select'}
-                                    </span>
-                                </button>
+                                        <Trophy size={13} />
+                                        <span
+                                            style={{
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                fontSize: '0.78rem',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            {leagueHeaderControls?.selectedLeague || 'Select'}
+                                        </span>
+                                    </button>
+                                )}
 
                                 <button
                                     onClick={() => leagueHeaderControls?.onSelectTab('standings')}
@@ -273,7 +275,7 @@ export default function TopOverlayHeader({
                                 }}
                             >
                                 <Clock3 size={13} />
-                                <span style={{ whiteSpace: 'nowrap' }}>Recent</span>
+                                <span style={{ whiteSpace: 'nowrap' }}></span>
                                 {homeHeaderControls?.recentCount ? (
                                     <span
                                         style={{
