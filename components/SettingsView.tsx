@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Database, Wifi, WifiOff, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette } from 'lucide-react';
+import { LogOut, Database, Wifi, WifiOff, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck } from 'lucide-react';
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
 import PlayerManagementSheet from './PlayerManagementSheet';
 import VersionHistoryModal from './VersionHistoryModal';
+import HiddenAdminDialog from './HiddenAdminDialog';
+import RespondAsPlayerSheet from './RespondAsPlayerSheet';
 
 interface SettingsViewProps {
     onLogout: () => void;
@@ -15,6 +17,7 @@ interface SettingsViewProps {
     onOpenVersion: () => void;
     isVersionOpen: boolean;
     onCloseVersion: () => void;
+    isHiddenAdminUnlocked?: boolean;
 }
 
 export default function SettingsView({
@@ -23,6 +26,7 @@ export default function SettingsView({
     onOpenVersion,
     isVersionOpen,
     onCloseVersion,
+    isHiddenAdminUnlocked = false,
 }: SettingsViewProps) {
     const [useMock, setUseMock] = useState(true);
     const [isLocalhost, setIsLocalhost] = useState(false);
@@ -35,6 +39,8 @@ export default function SettingsView({
     const [showLeagueSelector, setShowLeagueSelector] = useState(false);
     const [theme, setTheme] = useState<string>('original');
     const [showThemeSelector, setShowThemeSelector] = useState(false);
+    const [isSecretFeatureOpen, setIsSecretFeatureOpen] = useState(false);
+    const [isRespondAsPlayerOpen, setIsRespondAsPlayerOpen] = useState(false);
     const { hasUpdate, updateApp, isChecking } = useVersionChecker();
 
     useEffect(() => {
@@ -256,6 +262,111 @@ export default function SettingsView({
                     </motion.div>
                 </motion.div>
 
+                {/* Hidden Admin Block */}
+                {isHiddenAdminUnlocked && (
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.05 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setIsSecretFeatureOpen(true);
+                        }}
+                        style={{
+                            background: 'var(--color-surface)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
+                            borderRadius: 20,
+                            border: '0.5px solid var(--color-border)',
+                            overflow: 'hidden',
+                            marginBottom: 16,
+                            width: '100%',
+                            padding: 0,
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 10,
+                                background: 'rgb(var(--color-accent-rgb) / 0.15)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--color-accent)',
+                                flexShrink: 0,
+                            }}>
+                                <Bell size={20} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>
+                                    Hidden Admin
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                    Worker dashboard for private network
+                                </div>
+                            </div>
+                        </div>
+                    </motion.button>
+                )}
+
+                {/* Respond as Player */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.08 }}
+                    style={{
+                        background: 'var(--color-surface)',
+                        backdropFilter: 'blur(40px)',
+                        WebkitBackdropFilter: 'blur(40px)',
+                        borderRadius: 20,
+                        border: '0.5px solid var(--color-border)',
+                        overflow: 'hidden',
+                        marginBottom: 16,
+                    }}
+                >
+                    <motion.div
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setIsRespondAsPlayerOpen(true);
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'rgb(var(--color-success-rgb) / 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-success)',
+                            flexShrink: 0,
+                        }}>
+                            <UserCheck size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>
+                                Respond as Player
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                Fill in attendance for someone else
+                            </div>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                    </motion.div>
+                </motion.div>
+
                 {/* Default League */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -412,7 +523,7 @@ export default function SettingsView({
                     </motion.div>
                 )}
 
-                {/* About Section */}
+                {/* Version History */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -427,40 +538,43 @@ export default function SettingsView({
                         marginBottom: 16,
                     }}
                 >
-                    <VersionRow
-                        icon={<Info size={20} />}
-                        iconBg="rgb(var(--color-accent-rgb) / 0.15)"
-                        iconColor="var(--color-accent)"
-                        title="About Shotten"
-                        hasUpdate={hasUpdate}
-                        onUpdate={updateApp}
-                        isChecking={isChecking}
-                    />
-                    <motion.button
+                    <motion.div
                         onClick={() => {
                             hapticPatterns.tap();
                             onOpenVersion();
                         }}
-                        whileTap={{ scale: 0.995 }}
+                        whileTap={{ scale: 0.98 }}
                         style={{
-                            width: '100%',
-                            padding: 0,
-                            border: 'none',
-                            background: 'transparent',
-                            color: 'inherit',
-                            textAlign: 'left',
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
                             cursor: 'pointer',
                         }}
                     >
-                        <VersionInfoRow
-                            icon={<RefreshCw size={18} />}
-                            iconBg="var(--color-surface-hover)"
-                            iconColor="var(--color-text-tertiary)"
-                            label="Version Details"
-                            value="View build info"
-                            hasChevron
-                        />
-                    </motion.button>
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'rgb(var(--color-accent-rgb) / 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-accent)',
+                            flexShrink: 0,
+                        }}>
+                            <RefreshCw size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>
+                                Version History
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                View changelog and updates
+                            </div>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                    </motion.div>
                 </motion.div>
 
                 {/* Account Section */}
@@ -847,6 +961,11 @@ export default function SettingsView({
                 onClose={() => setIsPlayerManagementOpen(false)}
             />
             <VersionHistoryModal open={isVersionOpen} onClose={onCloseVersion} />
+            <HiddenAdminDialog open={isSecretFeatureOpen} onClose={() => setIsSecretFeatureOpen(false)} />
+            <RespondAsPlayerSheet
+                isOpen={isRespondAsPlayerOpen}
+                onClose={() => setIsRespondAsPlayerOpen(false)}
+            />
         </div>
     );
 }

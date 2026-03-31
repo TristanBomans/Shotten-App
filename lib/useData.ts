@@ -207,15 +207,21 @@ export function useMatches(playerId: number | null) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchMatches = useCallback(async () => {
+    const fetchMatches = useCallback(async (options?: { silent?: boolean }) => {
+        const silent = options?.silent ?? false;
+
         if (!playerId) {
             setMatches([]);
-            setLoading(false);
+            if (!silent) {
+                setLoading(false);
+            }
             return;
         }
 
-        setLoading(true);
-        setError(null);
+        if (!silent) {
+            setLoading(true);
+            setError(null);
+        }
 
         try {
             if (getUseMockData()) {
@@ -230,10 +236,17 @@ export function useMatches(playerId: number | null) {
                 );
                 setMatches(data);
             }
+            setError(null);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Unknown error');
+            if (!silent) {
+                setError(e instanceof Error ? e.message : 'Unknown error');
+            } else {
+                console.warn('Silent match refresh failed:', e);
+            }
         } finally {
-            setLoading(false);
+            if (!silent) {
+                setLoading(false);
+            }
         }
     }, [playerId]);
 
