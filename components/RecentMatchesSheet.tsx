@@ -79,9 +79,9 @@ function formatRelativeTime(dateStr: string): string {
 
 function isSameCalendarDay(left: Date, right: Date): boolean {
     return (
-        left.getFullYear() === right.getFullYear() &&
-        left.getMonth() === right.getMonth() &&
-        left.getDate() === right.getDate()
+        left.getUTCFullYear() === right.getUTCFullYear() &&
+        left.getUTCMonth() === right.getUTCMonth() &&
+        left.getUTCDate() === right.getUTCDate()
     );
 }
 
