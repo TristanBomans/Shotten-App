@@ -15,6 +15,7 @@ import { parseDateToTimestamp } from '@/lib/dateUtils';
 import TopOverlayHeader from './TopOverlayHeader';
 import NotificationSheet from './NotificationSheet';
 import RecentMatchesSheet from './RecentMatchesSheet';
+import UnlockDialog from './UnlockDialog';
 import { buildMatchReminders } from '@/lib/notifications';
 
 interface DashboardProps {
@@ -75,6 +76,11 @@ export default function Dashboard({
     const [highlightedMatchId, setHighlightedMatchId] = useState<number | null>(null);
     const [recentMatches, setRecentMatches] = useState<RecentMatchesResponse>(EMPTY_RECENT_MATCHES);
     const [loadingRecentMatches, setLoadingRecentMatches] = useState(true);
+    const [isHiddenAdminUnlocked, setIsHiddenAdminUnlocked] = useState(
+        () => typeof window !== 'undefined' && localStorage.getItem('hiddenAdminUnlocked') === 'true'
+    );
+    const [isUnlockDialogOpen, setIsUnlockDialogOpen] = useState(false);
+    const bellClickTimestampsRef = useRef<number[]>([]);
     const upcomingRef = useRef<HTMLElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const matchCardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -263,6 +269,16 @@ export default function Dashboard({
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [currentView, getViewIndexFromScroll, scrollToView]);
 
+    // Listen for attendance updates from RespondAsPlayerSheet
+    useEffect(() => {
+        const handleAttendanceUpdate = () => {
+            // Refresh match attendance in the background so the current UI stays intact.
+            fetchMatches({ silent: true });
+        };
+        window.addEventListener('attendanceUpdated', handleAttendanceUpdate);
+        return () => window.removeEventListener('attendanceUpdated', handleAttendanceUpdate);
+    }, [fetchMatches]);
+
     // Cleanup timeouts
     useEffect(() => {
         return () => {
@@ -340,6 +356,43 @@ export default function Dashboard({
     const openNotificationSheet = () => {
         hapticPatterns.tap();
         setIsNotificationSheetOpen(true);
+
+        if (currentView !== 'settings') {
+            bellClickTimestampsRef.current = [];
+            return;
+        }
+
+        const now = Date.now();
+        bellClickTimestampsRef.current = bellClickTimestampsRef.current.filter(
+            (t) => now - t <= 10_000
+        );
+        bellClickTimestampsRef.current.push(now);
+
+        if (bellClickTimestampsRef.current.length >= 5 && !isHiddenAdminUnlocked) {
+            bellClickTimestampsRef.current = [];
+            fetch('http://192.168.129.250:8094/health')
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data && data.status === 'ok') {
+                        setIsUnlockDialogOpen(true);
+                    }
+                })
+                .catch(() => {
+                    // silently fail
+                });
+        }
+    };
+
+    const handleConfirmUnlock = () => {
+        hapticPatterns.success();
+        localStorage.setItem('hiddenAdminUnlocked', 'true');
+        setIsHiddenAdminUnlocked(true);
+        setIsUnlockDialogOpen(false);
+    };
+
+    const handleCancelUnlock = () => {
+        hapticPatterns.tap();
+        setIsUnlockDialogOpen(false);
     };
 
     const closeNotificationSheet = () => {
@@ -698,6 +751,11 @@ export default function Dashboard({
                 internalMatches={matches}
                 onClose={closeRecentMatchesSheet}
             />
+            <UnlockDialog
+                open={isUnlockDialogOpen}
+                onConfirm={handleConfirmUnlock}
+                onCancel={handleCancelUnlock}
+            />
             {currentView === 'league' && leagueOptions.length > 0 && (
                 <LeagueSelector
                     leagues={leagueOptions}
@@ -802,6 +860,7 @@ export default function Dashboard({
                         onOpenVersion={onOpenVersion}
                         isVersionOpen={isVersionOpen}
                         onCloseVersion={onCloseVersion}
+                        isHiddenAdminUnlocked={isHiddenAdminUnlocked}
                     />
                 </div>
             </div>
