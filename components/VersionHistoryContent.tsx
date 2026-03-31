@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 
 interface Release {
     date: string;
@@ -98,23 +97,6 @@ export default function VersionHistoryContent() {
             transition={{ duration: 0.4 }}
         >
             <div style={{ marginBottom: 32 }}>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    marginBottom: 8,
-                }}>
-                    <Sparkles size={16} style={{ color: 'var(--color-accent)' }} />
-                    <span style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        color: 'var(--color-accent)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                    }}>
-                        What&apos;s New
-                    </span>
-                </div>
                 <h1 style={{
                     fontSize: '1.75rem',
                     fontWeight: 700,
@@ -204,12 +186,11 @@ export default function VersionHistoryContent() {
                 style={{
                     marginTop: 48,
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
+                    gap: 4,
                     color: 'var(--color-text-tertiary)',
                     fontSize: '0.75rem',
-                    flexWrap: 'wrap',
                 }}
             >
                 <span>Release notes powered by</span>
@@ -218,7 +199,7 @@ export default function VersionHistoryContent() {
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
                         gap: 6,
                         color: 'var(--color-text-secondary)',
