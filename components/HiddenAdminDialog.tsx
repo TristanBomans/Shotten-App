@@ -1,14 +1,44 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, Search, FileText, Shield, Clock, HardDrive, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface HiddenAdminDialogProps {
     open: boolean;
     onClose: () => void;
+}
+
+interface BackupStatus {
+    success: boolean;
+    backupDir: string;
+    hasBackups: boolean;
+    totalCount: number;
+    latest: {
+        fileName: string;
+        fileSize: string;
+        createdAt: string;
+        durationSeconds: number;
+        success: boolean;
+        isHealthy: boolean;
+        hoursSince: number;
+    };
+}
+
+interface LogEntry {
+    timestamp: string;
+    level: 'info' | 'warn' | 'error' | 'LOG';
+    message: string;
+    legacy?: boolean;
+}
+
+interface LogsResponse {
+    success: boolean;
+    logs: LogEntry[];
+    hasMore: boolean;
+    totalCount?: number;
 }
 
 function formatBackupName(filename: string): string {
@@ -28,6 +58,35 @@ function formatBackupName(filename: string): string {
     });
 }
 
+function formatDuration(seconds: number): string {
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+}
+
+function formatHoursAgo(hours: number): string {
+    if (hours < 1) {
+        const minutes = Math.round(hours * 60);
+        if (minutes < 1) return 'just now';
+        return `${minutes}m ago`;
+    }
+    if (hours < 24) {
+        const wholeHours = Math.floor(hours);
+        const minutes = Math.round((hours - wholeHours) * 60);
+        if (minutes === 0) {
+            return `${wholeHours}h ago`;
+        }
+        return `${wholeHours}h ${minutes}m ago`;
+    }
+    const days = Math.floor(hours / 24);
+    const remainingHours = Math.round(hours % 24);
+    if (remainingHours === 0) {
+        return `${days}d ago`;
+    }
+    return `${days}d ${remainingHours}h ago`;
+}
+
 export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogProps) {
     const [scrapeLoading, setScrapeLoading] = useState(false);
     const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
@@ -36,6 +95,24 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     const [backupDir, setBackupDir] = useState<string | null>(null);
     const [backupsLoading, setBackupsLoading] = useState(false);
     const [backupsError, setBackupsError] = useState<string | null>(null);
+    const [backupsExpanded, setBackupsExpanded] = useState(false);
+
+    // Backup status state
+    const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
+    const [backupStatusLoading, setBackupStatusLoading] = useState(false);
+    const [backupStatusError, setBackupStatusError] = useState<string | null>(null);
+
+    // Logs state
+    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [logsLoading, setLogsLoading] = useState(false);
+    const [logsError, setLogsError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [levelFilter, setLevelFilter] = useState<'all' | 'info' | 'warn' | 'error' | 'LOG'>('all');
+    const [dateFilter, setDateFilter] = useState<string>('');
+    const [logsLimit, setLogsLimit] = useState<number>(50);
+    const [page, setPage] = useState(1);
+    const [hasMoreLogs, setHasMoreLogs] = useState(false);
+    const [logsExpanded, setLogsExpanded] = useState(false);
 
     useEffect(() => {
         if (!open) return;
@@ -82,7 +159,53 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
             }
         };
 
+        // Load backup status
+        const loadBackupStatus = async () => {
+            setBackupStatusLoading(true);
+            setBackupStatusError(null);
+            try {
+                const res = await fetch('http://192.168.129.250:8094/api/backup/status');
+                const data = await res.json();
+                if (data && data.success) {
+                    setBackupStatus(data);
+                } else {
+                    setBackupStatusError(data.error || 'Failed to load backup status.');
+                }
+            } catch {
+                setBackupStatusError('Failed to connect to worker.');
+            } finally {
+                setBackupStatusLoading(false);
+            }
+        };
+
+        // Initial logs load
+        const loadLogs = async () => {
+            setLogsLoading(true);
+            setLogsError(null);
+            try {
+                const params = new URLSearchParams();
+                params.set('page', '1');
+                params.set('limit', logsLimit.toString());
+
+                const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
+                const data = await res.json();
+                if (data && data.success) {
+                    setLogs(data.logs || []);
+                    setHasMoreLogs(data.hasMore || false);
+                } else {
+                    setLogsError(data.error || 'Failed to load logs.');
+                }
+            } catch {
+                setLogsError('Failed to connect to worker.');
+            } finally {
+                setLogsLoading(false);
+            }
+        };
+
         loadBackups();
+        loadBackupStatus();
+        loadLogs();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
     const handleTriggerScrape = async () => {
@@ -101,6 +224,63 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
             setScrapeMessage('Failed to connect to worker.');
         } finally {
             setScrapeLoading(false);
+        }
+    };
+
+    const fetchLogs = useCallback(async (pageNum: number = 1, append: boolean = false) => {
+        setLogsLoading(true);
+        setLogsError(null);
+        try {
+            const params = new URLSearchParams();
+            params.set('page', pageNum.toString());
+            params.set('limit', logsLimit.toString());
+            if (dateFilter) params.set('date', dateFilter);
+            if (levelFilter !== 'all') params.set('level', levelFilter);
+            if (searchQuery.trim()) params.set('search', searchQuery.trim());
+
+            const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
+            const data = await res.json();
+            if (data && data.success) {
+                setLogs(prev => append ? [...prev, ...(data.logs || [])] : (data.logs || []));
+                setHasMoreLogs(data.hasMore || false);
+                setPage(pageNum);
+            } else {
+                setLogsError(data.error || 'Failed to load logs.');
+            }
+        } catch {
+            setLogsError('Failed to connect to worker.');
+        } finally {
+            setLogsLoading(false);
+        }
+    }, [dateFilter, levelFilter, searchQuery, logsLimit]);
+
+    const handleSearch = () => {
+        hapticPatterns.tap();
+        fetchLogs(1, false);
+    };
+
+    const handleLoadMore = () => {
+        hapticPatterns.tap();
+        fetchLogs(page + 1, true);
+    };
+
+    const getLevelColor = (level: string) => {
+        switch (level) {
+            case 'error': return 'var(--color-danger)';
+            case 'warn': return 'var(--color-warning)';
+            case 'info': return 'var(--color-accent)';
+            case 'LOG': return 'var(--color-text-secondary)';
+            default: return 'var(--color-text-tertiary)';
+        }
+    };
+
+    const getLevelBg = (level: string) => {
+        switch (level) {
+            case 'error': return 'rgb(var(--color-danger-rgb) / 0.15)';
+            case 'warn': return 'rgb(var(--color-warning-rgb) / 0.15)';
+            case 'info': return 'rgb(var(--color-accent-rgb) / 0.15)';
+            case 'LOG': return 'var(--color-surface)';
+            default: return 'var(--color-surface-hover)';
         }
     };
 
@@ -184,33 +364,18 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                 {/* Danger Warning */}
                                 <div
                                     style={{
-                                        background: 'rgb(var(--color-danger-rgb) / 0.12)',
-                                        border: '1px solid rgb(var(--color-danger-rgb) / 0.25)',
-                                        borderRadius: 14,
-                                        padding: 14,
+                                        background: 'rgb(var(--color-danger-rgb) / 0.1)',
+                                        border: '1px solid rgb(var(--color-danger-rgb) / 0.2)',
+                                        borderRadius: 10,
+                                        padding: '10px 12px',
                                         display: 'flex',
-                                        gap: 12,
+                                        alignItems: 'center',
+                                        gap: 10,
                                     }}
                                 >
-                                    <div style={{ color: 'var(--color-danger)', flexShrink: 0, paddingTop: 1 }}>
-                                        <AlertTriangle size={20} />
-                                    </div>
-                                    <div>
-                                        <div
-                                            style={{
-                                                fontWeight: 700,
-                                                fontSize: '0.9rem',
-                                                color: 'var(--color-danger)',
-                                                marginBottom: 4,
-                                            }}
-                                        >
-                                            Dangerous Zone
-                                        </div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
-                                            This dashboard controls the Shotten Scraper Worker running on the local network.
-                                            It runs scheduled jobs: LZV scraper daily at 03:00, iCal match sync every 4 hours,
-                                            and Supabase backups daily at 02:00. Triggering actions here affects live data.
-                                        </div>
+                                    <AlertTriangle size={16} style={{ color: 'var(--color-danger)', flexShrink: 0 }} />
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                                        Actions here affect live data on the Shotten Scraper Worker.
                                     </div>
                                 </div>
 
@@ -279,6 +444,584 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                     )}
                                 </div>
 
+                                {/* Backup Status */}
+                                <div>
+                                    <div
+                                        style={{
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                            color: 'var(--color-text-tertiary)',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em',
+                                            marginBottom: 8,
+                                        }}
+                                    >
+                                        Backup Status
+                                    </div>
+
+                                    {backupStatusLoading && (
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 8,
+                                                padding: '20px 0',
+                                                color: 'var(--color-text-tertiary)',
+                                                fontSize: '0.9rem',
+                                            }}
+                                        >
+                                            <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                                            Loading status...
+                                        </div>
+                                    )}
+
+                                    {backupStatusError && (
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 6,
+                                                fontSize: '0.85rem',
+                                                color: 'var(--color-danger)',
+                                                padding: '8px 0',
+                                            }}
+                                        >
+                                            <AlertCircle size={14} />
+                                            {backupStatusError}
+                                        </div>
+                                    )}
+
+                                    {backupStatus?.hasBackups && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            style={{
+                                                background: backupStatus.latest.isHealthy
+                                                    ? 'linear-gradient(135deg, rgb(var(--color-success-rgb) / 0.1) 0%, var(--color-surface) 100%)'
+                                                    : 'linear-gradient(135deg, rgb(var(--color-danger-rgb) / 0.1) 0%, var(--color-surface) 100%)',
+                                                borderRadius: 16,
+                                                padding: 16,
+                                                border: `1px solid ${backupStatus.latest.isHealthy ? 'rgb(var(--color-success-rgb) / 0.25)' : 'rgb(var(--color-danger-rgb) / 0.25)'}`,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 12,
+                                            }}
+                                        >
+                                            {/* Health Header */}
+                                            <div
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 12,
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        width: 48,
+                                                        height: 48,
+                                                        borderRadius: '50%',
+                                                        background: backupStatus.latest.isHealthy
+                                                            ? 'rgb(var(--color-success-rgb) / 0.15)'
+                                                            : 'rgb(var(--color-danger-rgb) / 0.15)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        color: backupStatus.latest.isHealthy ? 'var(--color-success)' : 'var(--color-danger)',
+                                                    }}
+                                                >
+                                                    {backupStatus.latest.isHealthy ? <Shield size={24} /> : <AlertCircle size={24} />}
+                                                </div>
+                                                <div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: '1.1rem',
+                                                            fontWeight: 700,
+                                                            color: backupStatus.latest.isHealthy ? 'var(--color-success)' : 'var(--color-danger)',
+                                                        }}
+                                                    >
+                                                        {backupStatus.latest.isHealthy ? 'Healthy' : 'Unhealthy'}
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: '0.8rem',
+                                                            color: 'var(--color-text-secondary)',
+                                                        }}
+                                                    >
+                                                        Last backup {formatHoursAgo(backupStatus.latest.hoursSince)}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Stats Grid */}
+                                            <div
+                                                style={{
+                                                    display: 'grid',
+                                                    gridTemplateColumns: 'repeat(3, 1fr)',
+                                                    gap: 8,
+                                                    padding: '12px 0',
+                                                    borderTop: '1px solid var(--color-border-subtle)',
+                                                    borderBottom: '1px solid var(--color-border-subtle)',
+                                                }}
+                                            >
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div
+                                                        style={{
+                                                            fontSize: '0.7rem',
+                                                            color: 'var(--color-text-tertiary)',
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.05em',
+                                                            marginBottom: 4,
+                                                        }}
+                                                    >
+                                                        Size
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: '0.9rem',
+                                                            fontWeight: 600,
+                                                            color: 'var(--color-text-primary)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: 4,
+                                                        }}
+                                                    >
+                                                        <HardDrive size={12} />
+                                                        {backupStatus.latest.fileSize}
+                                                    </div>
+                                                </div>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div
+                                                        style={{
+                                                            fontSize: '0.7rem',
+                                                            color: 'var(--color-text-tertiary)',
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.05em',
+                                                            marginBottom: 4,
+                                                        }}
+                                                    >
+                                                        Duration
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: '0.9rem',
+                                                            fontWeight: 600,
+                                                            color: 'var(--color-text-primary)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: 4,
+                                                        }}
+                                                    >
+                                                        <Clock size={12} />
+                                                        {formatDuration(backupStatus.latest.durationSeconds)}
+                                                    </div>
+                                                </div>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div
+                                                        style={{
+                                                            fontSize: '0.7rem',
+                                                            color: 'var(--color-text-tertiary)',
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.05em',
+                                                            marginBottom: 4,
+                                                        }}
+                                                    >
+                                                        Total
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: '0.9rem',
+                                                            fontWeight: 600,
+                                                            color: 'var(--color-text-primary)',
+                                                        }}
+                                                    >
+                                                        {backupStatus.totalCount}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Timestamp */}
+                                            <div
+                                                style={{
+                                                    fontSize: '0.75rem',
+                                                    color: 'var(--color-text-tertiary)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 6,
+                                                }}
+                                            >
+                                                <FileText size={12} />
+                                                {backupStatus.latest.fileName}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </div>
+
+                                {/* Log Viewer */}
+                                <div>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            marginBottom: 8,
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                color: 'var(--color-text-tertiary)',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.05em',
+                                            }}
+                                        >
+                                            Application Logs
+                                        </div>
+                                        <motion.button
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => {
+                                                hapticPatterns.tap();
+                                                setLogsExpanded(!logsExpanded);
+                                            }}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 4,
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'var(--color-accent)',
+                                                fontSize: '0.75rem',
+                                                cursor: 'pointer',
+                                                padding: '4px 8px',
+                                            }}
+                                        >
+                                            {logsExpanded ? (
+                                                <>
+                                                    Hide <ChevronUp size={14} />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Show <ChevronDown size={14} />
+                                                </>
+                                            )}
+                                        </motion.button>
+                                    </div>
+
+                                    <AnimatePresence>
+                                        {logsExpanded && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                style={{ overflow: 'hidden' }}
+                                            >
+                                                {/* Search & Filters */}
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        gap: 8,
+                                                        marginBottom: 12,
+                                                        flexWrap: 'wrap',
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search logs..."
+                                                        value={searchQuery}
+                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                                        style={{
+                                                            flex: 1,
+                                                            minWidth: 140,
+                                                            padding: '8px 12px',
+                                                            borderRadius: 8,
+                                                            border: '1px solid var(--color-border)',
+                                                            background: 'var(--color-surface-hover)',
+                                                            color: 'var(--color-text-primary)',
+                                                            fontSize: '0.85rem',
+                                                            outline: 'none',
+                                                        }}
+                                                    />
+                                                    <select
+                                                        value={levelFilter}
+                                                        onChange={(e) => {
+                                                            setLevelFilter(e.target.value as 'all' | 'info' | 'warn' | 'error' | 'LOG');
+                                                            fetchLogs(1, false);
+                                                        }}
+                                                        style={{
+                                                            padding: '8px 12px',
+                                                            borderRadius: 8,
+                                                            border: '1px solid var(--color-border)',
+                                                            background: 'var(--color-surface-hover)',
+                                                            color: 'var(--color-text-primary)',
+                                                            fontSize: '0.85rem',
+                                                            cursor: 'pointer',
+                                                        }}
+                                                    >
+                                                        <option value="all">All Levels</option>
+                                                        <option value="info">Info</option>
+                                                        <option value="warn">Warn</option>
+                                                        <option value="error">Error</option>
+                                                        <option value="LOG">Log</option>
+                                                    </select>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        <input
+                                                            type="date"
+                                                            value={dateFilter}
+                                                            placeholder="Date"
+                                                            onChange={(e) => {
+                                                                setDateFilter(e.target.value);
+                                                                fetchLogs(1, false);
+                                                            }}
+                                                            style={{
+                                                                padding: '8px 12px',
+                                                                borderRadius: 8,
+                                                                border: '1px solid var(--color-border)',
+                                                                background: 'var(--color-surface-hover)',
+                                                                color: dateFilter ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
+                                                                fontSize: '0.85rem',
+                                                                width: 110,
+                                                            }}
+                                                        />
+                                                        {dateFilter && (
+                                                            <motion.button
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => {
+                                                                    hapticPatterns.tap();
+                                                                    setDateFilter('');
+                                                                    fetchLogs(1, false);
+                                                                }}
+                                                                style={{
+                                                                    padding: '4px',
+                                                                    borderRadius: 4,
+                                                                    border: 'none',
+                                                                    background: 'transparent',
+                                                                    color: 'var(--color-text-tertiary)',
+                                                                    cursor: 'pointer',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                }}
+                                                            >
+                                                                ×
+                                                            </motion.button>
+                                                        )}
+                                                    </div>
+                                                    <select
+                                                        value={logsLimit}
+                                                        onChange={(e) => {
+                                                            setLogsLimit(Number(e.target.value));
+                                                            fetchLogs(1, false);
+                                                        }}
+                                                        style={{
+                                                            padding: '8px 12px',
+                                                            borderRadius: 8,
+                                                            border: '1px solid var(--color-border)',
+                                                            background: 'var(--color-surface-hover)',
+                                                            color: 'var(--color-text-primary)',
+                                                            fontSize: '0.85rem',
+                                                            cursor: 'pointer',
+                                                        }}
+                                                    >
+                                                        <option value={25}>25 lines</option>
+                                                        <option value={50}>50 lines</option>
+                                                        <option value={100}>100 lines</option>
+                                                        <option value={250}>250 lines</option>
+                                                    </select>
+                                                    <motion.button
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={handleSearch}
+                                                        style={{
+                                                            padding: '8px 14px',
+                                                            borderRadius: 8,
+                                                            border: 'none',
+                                                            background: 'var(--color-accent)',
+                                                            color: 'white',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        <Search size={16} />
+                                                    </motion.button>
+                                                </div>
+
+                                                {/* Logs List */}
+                                                <div
+                                                    style={{
+                                                        background: 'var(--color-surface-hover)',
+                                                        borderRadius: 12,
+                                                        padding: 10,
+                                                        maxHeight: 320,
+                                                        overflowY: 'auto',
+                                                    }}
+                                                >
+                                                    {logsLoading && logs.length === 0 && (
+                                                        <div
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: 8,
+                                                                padding: '20px 0',
+                                                                color: 'var(--color-text-tertiary)',
+                                                                fontSize: '0.9rem',
+                                                            }}
+                                                        >
+                                                            <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                                                            Loading logs...
+                                                        </div>
+                                                    )}
+
+                                                    {logsError && (
+                                                        <div
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 6,
+                                                                fontSize: '0.85rem',
+                                                                color: 'var(--color-danger)',
+                                                                padding: '8px 0',
+                                                            }}
+                                                        >
+                                                            <AlertCircle size={14} />
+                                                            {logsError}
+                                                        </div>
+                                                    )}
+
+                                                    {logs.length === 0 && !logsLoading && !logsError && (
+                                                        <div
+                                                            style={{
+                                                                fontSize: '0.85rem',
+                                                                color: 'var(--color-text-tertiary)',
+                                                                textAlign: 'center',
+                                                                padding: '16px 0',
+                                                            }}
+                                                        >
+                                                            No logs found.
+                                                        </div>
+                                                    )}
+
+                                                    {logs.map((log, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            style={{
+                                                                padding: '8px 10px',
+                                                                borderBottom: idx < logs.length - 1 ? '1px solid var(--color-border-subtle)' : undefined,
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                gap: 4,
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 8,
+                                                                }}
+                                                            >
+                                                                <span
+                                                                    style={{
+                                                                        fontSize: '0.65rem',
+                                                                        fontWeight: 700,
+                                                                        textTransform: 'uppercase',
+                                                                        padding: '2px 6px',
+                                                                        borderRadius: 4,
+                                                                        background: getLevelBg(log.level),
+                                                                        color: getLevelColor(log.level),
+                                                                        letterSpacing: '0.05em',
+                                                                    }}
+                                                                >
+                                                                    {log.level}
+                                                                </span>
+                                                                {log.legacy && (
+                                                                    <span
+                                                                        style={{
+                                                                            fontSize: '0.6rem',
+                                                                            fontWeight: 600,
+                                                                            textTransform: 'uppercase',
+                                                                            padding: '2px 5px',
+                                                                            borderRadius: 4,
+                                                                            background: 'var(--color-surface)',
+                                                                            color: 'var(--color-text-tertiary)',
+                                                                            letterSpacing: '0.05em',
+                                                                            border: '1px solid var(--color-border)',
+                                                                        }}
+                                                                    >
+                                                                        legacy
+                                                                    </span>
+                                                                )}
+                                                                <span
+                                                                    style={{
+                                                                        fontSize: '0.7rem',
+                                                                        color: 'var(--color-text-tertiary)',
+                                                                        fontFamily: 'monospace',
+                                                                    }}
+                                                                >
+                                                                    {new Date(log.timestamp).toLocaleDateString('en-GB', {
+                                                                        day: '2-digit',
+                                                                        month: 'short',
+                                                                    })} {' '}
+                                                                    {new Date(log.timestamp).toLocaleTimeString('en-GB', {
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit',
+                                                                        second: '2-digit',
+                                                                    })}
+                                                                </span>
+                                                            </div>
+                                                            <div
+                                                                style={{
+                                                                    fontSize: '0.8rem',
+                                                                    color: 'var(--color-text-secondary)',
+                                                                    wordBreak: 'break-word',
+                                                                    lineHeight: 1.4,
+                                                                }}
+                                                            >
+                                                                {log.message}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    {hasMoreLogs && (
+                                                        <motion.button
+                                                            whileTap={{ scale: 0.98 }}
+                                                            onClick={handleLoadMore}
+                                                            disabled={logsLoading}
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '10px',
+                                                                marginTop: 8,
+                                                                borderRadius: 8,
+                                                                border: '1px solid var(--color-border)',
+                                                                background: 'var(--color-surface)',
+                                                                color: 'var(--color-text-secondary)',
+                                                                fontSize: '0.8rem',
+                                                                cursor: logsLoading ? 'not-allowed' : 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: 6,
+                                                                opacity: logsLoading ? 0.7 : 1,
+                                                            }}
+                                                        >
+                                                            {logsLoading ? (
+                                                                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                                                            ) : (
+                                                                <RefreshCw size={14} />
+                                                            )}
+                                                            Load More
+                                                        </motion.button>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
                                 {/* Backups */}
                                 <div>
                                     <div
@@ -300,19 +1043,57 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                         >
                                             Backups
                                         </div>
-                                        {backupCount !== null && (
-                                            <div
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            {backupCount !== null && (
+                                                <div
+                                                    style={{
+                                                        fontSize: '0.75rem',
+                                                        color: 'var(--color-text-tertiary)',
+                                                    }}
+                                                >
+                                                    {backupCount} total
+                                                </div>
+                                            )}
+                                            <motion.button
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => {
+                                                    hapticPatterns.tap();
+                                                    setBackupsExpanded(!backupsExpanded);
+                                                }}
                                                 style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 4,
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: 'var(--color-accent)',
                                                     fontSize: '0.75rem',
-                                                    color: 'var(--color-text-tertiary)',
+                                                    cursor: 'pointer',
+                                                    padding: '4px 8px',
                                                 }}
                                             >
-                                                {backupCount} total
-                                            </div>
-                                        )}
+                                                {backupsExpanded ? (
+                                                    <>
+                                                        Hide <ChevronUp size={14} />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Show <ChevronDown size={14} />
+                                                    </>
+                                                )}
+                                            </motion.button>
+                                        </div>
                                     </div>
 
-                                    {backupsLoading && (
+                                    <AnimatePresence>
+                                        {backupsExpanded && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                style={{ overflow: 'hidden' }}
+                                            >
+                                                {backupsLoading && (
                                         <div
                                             style={{
                                                 display: 'flex',
@@ -415,6 +1196,9 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                             No backups found.
                                         </div>
                                     )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             </div>
                         </motion.div>
