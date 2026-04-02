@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, Search, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface HiddenAdminDialogProps {
@@ -124,8 +124,13 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     const logsContainerRef = useRef<HTMLDivElement>(null);
     const pageRef = useRef<number>(page);
     const loadingMoreRef = useRef(false);
-    const hasAutoScrolledLogsRef = useRef(false);
+    const shouldAutoScrollLogsRef = useRef(false);
+    const pendingScrollRestoreRef = useRef<{
+        scrollTop: number;
+        scrollHeight: number;
+    } | null>(null);
     const logEntryIdRef = useRef(0);
+    const filterChangeRef = useRef(false);
 
     const withEntryIds = useCallback((entries: LogEntry[]) => {
         return entries.map(entry => ({
@@ -157,7 +162,8 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     useEffect(() => {
         if (!open) return;
 
-        hasAutoScrolledLogsRef.current = false;
+        shouldAutoScrollLogsRef.current = false;
+        filterChangeRef.current = false;
         logEntryIdRef.current = 0;
 
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -171,14 +177,32 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [open, onClose]);
 
-    // Scroll logs to bottom on initial load only
-    useEffect(() => {
-        if (logsExpanded && !logsLoading && logs.length > 0 && !hasAutoScrolledLogsRef.current) {
+    // Scroll logs to the newest item after initial load or a non-pagination refresh.
+    useLayoutEffect(() => {
+        if (!logsExpanded || logsLoading || logs.length === 0 || !shouldAutoScrollLogsRef.current) return;
+
+        const raf = window.requestAnimationFrame(() => {
             scrollLogsToBottom();
-            hasAutoScrolledLogsRef.current = true;
+            shouldAutoScrollLogsRef.current = false;
+        });
+
+        return () => window.cancelAnimationFrame(raf);
+    }, [logsExpanded, logsLoading, logs.length, scrollLogsToBottom]);
+
+    useLayoutEffect(() => {
+        const pending = pendingScrollRestoreRef.current;
+        if (!pending || logsLoading || !logsExpanded) return;
+
+        const container = logsContainerRef.current;
+        if (!container) return;
+
+        const scrollDelta = container.scrollHeight - pending.scrollHeight;
+        if (scrollDelta > 0) {
+            container.scrollTop = pending.scrollTop + scrollDelta;
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [logsExpanded, logsLoading, scrollLogsToBottom]);
+
+        pendingScrollRestoreRef.current = null;
+    }, [logs, logsLoading, logsExpanded]);
 
     useEffect(() => {
         if (!open) {
@@ -234,6 +258,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         const loadLogs = async () => {
             setLogsLoading(true);
             setLogsError(null);
+            shouldAutoScrollLogsRef.current = true;
             try {
                 const params = new URLSearchParams();
                 params.set('page', '1');
@@ -289,6 +314,16 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         setLogsLoading(true);
         setIsPaginatingLogs(append);
         setLogsError(null);
+        shouldAutoScrollLogsRef.current = !append;
+        if (append) {
+            const container = logsContainerRef.current;
+            if (container) {
+                pendingScrollRestoreRef.current = {
+                    scrollTop: container.scrollTop,
+                    scrollHeight: container.scrollHeight,
+                };
+            }
+        }
         try {
             const params = new URLSearchParams();
             params.set('page', pageNum.toString());
@@ -321,10 +356,16 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         }
     }, [dateFilter, levelFilter, searchQuery, withEntryIds]);
 
-    const handleSearch = () => {
-        hapticPatterns.tap();
-        fetchLogs(1, false);
-    };
+    useEffect(() => {
+        if (!logsExpanded || !filterChangeRef.current) return;
+
+        const timeout = window.setTimeout(() => {
+            filterChangeRef.current = false;
+            fetchLogs(1, false);
+        }, 3000);
+
+        return () => window.clearTimeout(timeout);
+    }, [searchQuery, levelFilter, dateFilter, logsExpanded, fetchLogs]);
 
     // Sync pageRef with page state
     useEffect(() => {
@@ -350,8 +391,6 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         };
 
         container.addEventListener('scroll', checkScroll);
-        // Also check immediately in case content is already near the top
-        checkScroll();
         return () => container.removeEventListener('scroll', checkScroll);
     }, [logsExpanded, hasMoreLogs, fetchLogs]);
 
@@ -812,43 +851,48 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                 {/* Search & Filters */}
                                                 <div
                                                     style={{
-                                                        display: 'flex',
+                                                        display: 'grid',
+                                                        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                                                         gap: 8,
                                                         marginBottom: 12,
-                                                        flexWrap: 'wrap',
+                                                        alignItems: 'stretch',
                                                     }}
                                                 >
                                                     <input
                                                         type="text"
                                                         placeholder="Search logs..."
                                                         value={searchQuery}
-                                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                                        onChange={(e) => {
+                                                            filterChangeRef.current = true;
+                                                            setSearchQuery(e.target.value);
+                                                        }}
                                                         style={{
-                                                            flex: 1,
-                                                            minWidth: 140,
-                                                            padding: '8px 12px',
-                                                            borderRadius: 8,
+                                                            width: '100%',
+                                                            minWidth: 0,
+                                                            padding: '12px 14px',
+                                                            borderRadius: 12,
                                                             border: '1px solid var(--color-border)',
                                                             background: 'var(--color-surface-hover)',
                                                             color: 'var(--color-text-primary)',
-                                                            fontSize: '0.85rem',
+                                                            fontSize: '0.9rem',
                                                             outline: 'none',
                                                         }}
                                                     />
                                                     <select
                                                         value={levelFilter}
                                                         onChange={(e) => {
+                                                            filterChangeRef.current = true;
                                                             setLevelFilter(e.target.value as 'all' | 'info' | 'warn' | 'error' | 'LOG');
-                                                            fetchLogs(1, false);
                                                         }}
                                                         style={{
-                                                            padding: '8px 12px',
-                                                            borderRadius: 8,
+                                                            width: '100%',
+                                                            minWidth: 0,
+                                                            padding: '12px 14px',
+                                                            borderRadius: 12,
                                                             border: '1px solid var(--color-border)',
                                                             background: 'var(--color-surface-hover)',
                                                             color: 'var(--color-text-primary)',
-                                                            fontSize: '0.85rem',
+                                                            fontSize: '0.9rem',
                                                             cursor: 'pointer',
                                                         }}
                                                     >
@@ -858,23 +902,24 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                         <option value="error">Error</option>
                                                         <option value="LOG">Log</option>
                                                     </select>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <div style={{ position: 'relative', minWidth: 0 }}>
                                                         <input
                                                             type="date"
                                                             value={dateFilter}
                                                             placeholder="Date"
                                                             onChange={(e) => {
+                                                                filterChangeRef.current = true;
                                                                 setDateFilter(e.target.value);
-                                                                fetchLogs(1, false);
                                                             }}
                                                             style={{
-                                                                padding: '8px 12px',
-                                                                borderRadius: 8,
+                                                                width: '100%',
+                                                                padding: '12px 40px 12px 14px',
+                                                                borderRadius: 12,
                                                                 border: '1px solid var(--color-border)',
                                                                 background: 'var(--color-surface-hover)',
                                                                 color: dateFilter ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
-                                                                fontSize: '0.85rem',
-                                                                width: 110,
+                                                                fontSize: '0.9rem',
+                                                                minWidth: 0,
                                                             }}
                                                         />
                                                         {dateFilter && (
@@ -882,42 +927,31 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                                 whileTap={{ scale: 0.9 }}
                                                                 onClick={() => {
                                                                     hapticPatterns.tap();
+                                                                    filterChangeRef.current = true;
                                                                     setDateFilter('');
-                                                                    fetchLogs(1, false);
                                                                 }}
                                                                 style={{
-                                                                    padding: '4px',
-                                                                    borderRadius: 4,
+                                                                    position: 'absolute',
+                                                                    right: 8,
+                                                                    top: '50%',
+                                                                    transform: 'translateY(-50%)',
+                                                                    width: 22,
+                                                                    height: 22,
+                                                                    padding: 0,
+                                                                    borderRadius: 999,
                                                                     border: 'none',
-                                                                    background: 'transparent',
+                                                                    background: 'var(--color-surface)',
                                                                     color: 'var(--color-text-tertiary)',
                                                                     cursor: 'pointer',
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     justifyContent: 'center',
                                                                 }}
-                                                            >
-                                                                ×
-                                                            </motion.button>
+                                                                >
+                                                                    ×
+                                                                </motion.button>
                                                         )}
                                                     </div>
-                                                    <motion.button
-                                                        whileTap={{ scale: 0.95 }}
-                                                        onClick={handleSearch}
-                                                        style={{
-                                                            padding: '8px 14px',
-                                                            borderRadius: 8,
-                                                            border: 'none',
-                                                            background: 'var(--color-accent)',
-                                                            color: 'white',
-                                                            cursor: 'pointer',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                        }}
-                                                    >
-                                                        <Search size={16} />
-                                                    </motion.button>
                                                 </div>
 
                                                 {/* Logs List */}
