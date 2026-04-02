@@ -9,8 +9,9 @@ async function main() {
   const version = getVersion();
   const commitHash = getCommitHash();
 
-  // Get last 5 commits with their dates
-  const commits = getRecentCommits(5);
+  // Get last 10 commits with their dates, then filter out [redacted] ones
+  const rawCommits = getRecentCommits(10);
+  const commits = rawCommits.filter(c => !c.message.includes('[redacted]')).slice(0, 5);
   console.log('Recent commits:');
   commits.forEach(c => console.log(`  - [${c.date}] ${c.message}`));
 
@@ -26,7 +27,7 @@ async function main() {
     // Fallback: create basic changelog from commit messages
     releases = commits.map(commit => ({
       date: commit.date,
-      changes: commit.message.includes('[redacted]') ? ['[redacted]'] : [`📝 ${commit.message.split('\n')[0]}`], // Use first line only as fallback
+      changes: [`📝 ${commit.message.split('\n')[0]}`], // Use first line only as fallback
     }));
   } else {
     // Generate changelog via Mistral AI
@@ -161,12 +162,6 @@ ${commits.map((c, i) => `${i}. ${c.message}`).join('\n')}`;
 
   // Map parsed response back to commits
   const releases = commits.map((commit, index) => {
-    if (commit.message.includes('[redacted]')) {
-      return {
-        date: commit.date,
-        changes: ['[redacted]'],
-      };
-    }
     const item = parsed.find(p => p.index === index);
     const changes = item?.bullets || [`📝 ${commit.message}`];
     return {
