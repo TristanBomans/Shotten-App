@@ -34,10 +34,15 @@ interface LogEntry {
     legacy?: boolean;
 }
 
+interface RenderedLogEntry extends LogEntry {
+    entryId: string;
+}
+
 interface LogsResponse {
     success: boolean;
     logs: LogEntry[];
-    hasMore: boolean;
+    hasMore?: boolean;
+    total?: number;
     totalCount?: number;
 }
 
@@ -87,7 +92,7 @@ function formatHoursAgo(hours: number): string {
     return `${days}d ${remainingHours}h ago`;
 }
 
-const LOGS_LIMIT = 250;
+const LOGS_LIMIT = 50;
 
 export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogProps) {
     const [scrapeLoading, setScrapeLoading] = useState(false);
@@ -105,7 +110,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     const [backupStatusError, setBackupStatusError] = useState<string | null>(null);
 
     // Logs state
-    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [logs, setLogs] = useState<RenderedLogEntry[]>([]);
     const [logsLoading, setLogsLoading] = useState(false);
     const [logsError, setLogsError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -114,19 +119,29 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     const [page, setPage] = useState(1);
     const [hasMoreLogs, setHasMoreLogs] = useState(false);
     const [logsExpanded, setLogsExpanded] = useState(false);
-    const [expandedLogIndices, setExpandedLogIndices] = useState<Set<number>>(new Set());
+    const [isPaginatingLogs, setIsPaginatingLogs] = useState(false);
+    const [expandedLogKeys, setExpandedLogKeys] = useState<Set<string>>(new Set());
     const logsContainerRef = useRef<HTMLDivElement>(null);
-    const sentinelRef = useRef<HTMLDivElement>(null);
-    const pageLoadedAtRef = useRef<number>(0);
+    const pageRef = useRef<number>(page);
+    const loadingMoreRef = useRef(false);
+    const hasAutoScrolledLogsRef = useRef(false);
+    const logEntryIdRef = useRef(0);
 
-    const toggleLogExpanded = (index: number) => {
+    const withEntryIds = useCallback((entries: LogEntry[]) => {
+        return entries.map(entry => ({
+            ...entry,
+            entryId: `log-${Date.now()}-${logEntryIdRef.current++}`,
+        }));
+    }, []);
+
+    const toggleLogExpanded = (key: string) => {
         hapticPatterns.tap();
-        setExpandedLogIndices(prev => {
+        setExpandedLogKeys(prev => {
             const next = new Set(prev);
-            if (next.has(index)) {
-                next.delete(index);
+            if (next.has(key)) {
+                next.delete(key);
             } else {
-                next.add(index);
+                next.add(key);
             }
             return next;
         });
@@ -142,6 +157,9 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     useEffect(() => {
         if (!open) return;
 
+        hasAutoScrolledLogsRef.current = false;
+        logEntryIdRef.current = 0;
+
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
                 hapticPatterns.tap();
@@ -153,12 +171,14 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [open, onClose]);
 
-    // Scroll logs to bottom when they load/change or when expanded
+    // Scroll logs to bottom on initial load only
     useEffect(() => {
-        if (logsExpanded && !logsLoading && logs.length > 0) {
+        if (logsExpanded && !logsLoading && logs.length > 0 && !hasAutoScrolledLogsRef.current) {
             scrollLogsToBottom();
+            hasAutoScrolledLogsRef.current = true;
         }
-    }, [logs, logsLoading, logsExpanded, scrollLogsToBottom]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [logsExpanded, logsLoading, scrollLogsToBottom]);
 
     useEffect(() => {
         if (!open) {
@@ -219,14 +239,20 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                 params.set('page', '1');
                 params.set('limit', LOGS_LIMIT.toString());
 
-                const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
-                const data = await res.json();
-                if (data && data.success) {
-                    setLogs(data.logs || []);
-                    setHasMoreLogs(data.hasMore || false);
-                } else {
-                    setLogsError(data.error || 'Failed to load logs.');
-                }
+            const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
+            const data = await res.json();
+            if (data && data.success) {
+                setLogs(withEntryIds(data.logs || []));
+                const total = typeof data.total === 'number' ? data.total : typeof data.totalCount === 'number' ? data.totalCount : undefined;
+                const returnedCount = Array.isArray(data.logs) ? data.logs.length : 0;
+                setHasMoreLogs(
+                    typeof total === 'number'
+                        ? LOGS_LIMIT < total
+                        : returnedCount === LOGS_LIMIT
+                );
+            } else {
+                setLogsError(data.error || 'Failed to load logs.');
+            }
             } catch {
                 setLogsError('Failed to connect to worker.');
             } finally {
@@ -261,6 +287,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
 
     const fetchLogs = useCallback(async (pageNum: number = 1, append: boolean = false) => {
         setLogsLoading(true);
+        setIsPaginatingLogs(append);
         setLogsError(null);
         try {
             const params = new URLSearchParams();
@@ -273,8 +300,15 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
             const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
             const data = await res.json();
             if (data && data.success) {
-                setLogs(prev => append ? [...prev, ...(data.logs || [])] : (data.logs || []));
-                setHasMoreLogs(data.hasMore || false);
+                const nextEntries = withEntryIds(data.logs || []);
+                setLogs(prev => append ? [...prev, ...nextEntries] : nextEntries);
+                const total = typeof data.total === 'number' ? data.total : typeof data.totalCount === 'number' ? data.totalCount : undefined;
+                const returnedCount = Array.isArray(data.logs) ? data.logs.length : 0;
+                setHasMoreLogs(
+                    typeof total === 'number'
+                        ? pageNum * LOGS_LIMIT < total
+                        : returnedCount === LOGS_LIMIT
+                );
                 setPage(pageNum);
             } else {
                 setLogsError(data.error || 'Failed to load logs.');
@@ -283,38 +317,43 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
             setLogsError('Failed to connect to worker.');
         } finally {
             setLogsLoading(false);
+            setIsPaginatingLogs(false);
         }
-    }, [dateFilter, levelFilter, searchQuery]);
+    }, [dateFilter, levelFilter, searchQuery, withEntryIds]);
 
     const handleSearch = () => {
         hapticPatterns.tap();
         fetchLogs(1, false);
     };
 
-    // Infinite scroll: load next page when sentinel reaches bottom of logs container
+    // Sync pageRef with page state
     useEffect(() => {
-        if (!logsExpanded || !hasMoreLogs || logsLoading) return;
+        pageRef.current = page;
+    }, [page]);
 
-        const sentinel = sentinelRef.current;
+    // Infinite scroll: load next page when scrolling near the top
+    useEffect(() => {
+        if (!logsExpanded || !hasMoreLogs) return;
+
         const container = logsContainerRef.current;
-        if (!sentinel || !container) return;
+        if (!container) return;
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting) {
-                    const now = Date.now();
-                    if (now - pageLoadedAtRef.current > 500) {
-                        pageLoadedAtRef.current = now;
-                        fetchLogs(page + 1, true);
-                    }
-                }
-            },
-            { root: container, threshold: 0 }
-        );
+        const checkScroll = () => {
+            if (loadingMoreRef.current) return;
+            const { scrollTop } = container;
+            if (scrollTop <= 80) {
+                loadingMoreRef.current = true;
+                fetchLogs(pageRef.current + 1, true).finally(() => {
+                    loadingMoreRef.current = false;
+                });
+            }
+        };
 
-        observer.observe(sentinel);
-        return () => observer.disconnect();
-    }, [logsExpanded, hasMoreLogs, logsLoading, page, fetchLogs]);
+        container.addEventListener('scroll', checkScroll);
+        // Also check immediately in case content is already near the top
+        checkScroll();
+        return () => container.removeEventListener('scroll', checkScroll);
+    }, [logsExpanded, hasMoreLogs, fetchLogs]);
 
     const getLevelColor = (level: string) => {
         switch (level) {
@@ -884,14 +923,15 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                 {/* Logs List */}
                                                 <div
                                                     ref={logsContainerRef}
-                                                    style={{
-                                                        background: 'var(--color-surface-hover)',
-                                                        borderRadius: 12,
-                                                        padding: 10,
-                                                        maxHeight: 320,
-                                                        overflowY: 'auto',
-                                                    }}
-                                                >
+                                                style={{
+                                                    background: 'var(--color-surface-hover)',
+                                                    borderRadius: 12,
+                                                    padding: 10,
+                                                    maxHeight: 320,
+                                                    overflowY: 'auto',
+                                                    overflowAnchor: 'none',
+                                                }}
+                                            >
                                                     {logsLoading && logs.length === 0 && (
                                                         <div
                                                             style={{
@@ -906,6 +946,25 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                         >
                                                             <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
                                                             Loading logs...
+                                                        </div>
+                                                    )}
+
+                                                    {isPaginatingLogs && logs.length > 0 && (
+                                                        <div
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: 8,
+                                                                padding: '10px 8px',
+                                                                color: 'var(--color-text-tertiary)',
+                                                                fontSize: '0.85rem',
+                                                                borderBottom: '1px solid var(--color-border-subtle)',
+                                                                background: 'var(--color-surface)',
+                                                            }}
+                                                        >
+                                                            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                                                            Loading older logs...
                                                         </div>
                                                     )}
 
@@ -939,11 +998,11 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                     )}
 
                                                     {logs.slice().reverse().map((log, idx) => {
-                                                        const isExpanded = expandedLogIndices.has(idx);
+                                                        const isExpanded = expandedLogKeys.has(log.entryId);
                                                         return (
                                                             <motion.div
-                                                                key={idx}
-                                                                onClick={() => toggleLogExpanded(idx)}
+                                                                key={log.entryId}
+                                                                onClick={() => toggleLogExpanded(log.entryId)}
                                                                 initial={false}
                                                                 animate={{ backgroundColor: isExpanded ? 'var(--color-surface)' : 'transparent' }}
                                                                 style={{
@@ -1029,10 +1088,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                         );
                                                     })}
 
-                                                    {/* Sentinel for infinite scroll */}
-                                                    {hasMoreLogs && <div ref={sentinelRef} style={{ height: 1 }} />}
-
-                                                    {logsLoading && logs.length > 0 && (
+                                                    {logsLoading && logs.length > 0 && !isPaginatingLogs && (
                                                         <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                                                             {[0, 1, 2].map((i) => (
                                                                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
