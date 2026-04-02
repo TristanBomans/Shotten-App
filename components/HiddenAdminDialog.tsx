@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, Search, FileText, Shield, Clock, HardDrive, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp, Save } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface HiddenAdminDialogProps {
@@ -34,10 +34,15 @@ interface LogEntry {
     legacy?: boolean;
 }
 
+interface RenderedLogEntry extends LogEntry {
+    entryId: string;
+}
+
 interface LogsResponse {
     success: boolean;
     logs: LogEntry[];
-    hasMore: boolean;
+    hasMore?: boolean;
+    total?: number;
     totalCount?: number;
 }
 
@@ -87,9 +92,13 @@ function formatHoursAgo(hours: number): string {
     return `${days}d ${remainingHours}h ago`;
 }
 
+const LOGS_LIMIT = 50;
+
 export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogProps) {
     const [scrapeLoading, setScrapeLoading] = useState(false);
     const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
+    const [backupLoading, setBackupLoading] = useState(false);
+    const [backupMessage, setBackupMessage] = useState<string | null>(null);
     const [backups, setBackups] = useState<string[] | null>(null);
     const [backupCount, setBackupCount] = useState<number | null>(null);
     const [backupDir, setBackupDir] = useState<string | null>(null);
@@ -103,27 +112,43 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     const [backupStatusError, setBackupStatusError] = useState<string | null>(null);
 
     // Logs state
-    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [logs, setLogs] = useState<RenderedLogEntry[]>([]);
     const [logsLoading, setLogsLoading] = useState(false);
     const [logsError, setLogsError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [levelFilter, setLevelFilter] = useState<'all' | 'info' | 'warn' | 'error' | 'LOG'>('all');
     const [dateFilter, setDateFilter] = useState<string>('');
-    const [logsLimit, setLogsLimit] = useState<number>(50);
     const [page, setPage] = useState(1);
     const [hasMoreLogs, setHasMoreLogs] = useState(false);
     const [logsExpanded, setLogsExpanded] = useState(false);
-    const [expandedLogIndices, setExpandedLogIndices] = useState<Set<number>>(new Set());
+    const [isPaginatingLogs, setIsPaginatingLogs] = useState(false);
+    const [expandedLogKeys, setExpandedLogKeys] = useState<Set<string>>(new Set());
     const logsContainerRef = useRef<HTMLDivElement>(null);
+    const pageRef = useRef<number>(page);
+    const loadingMoreRef = useRef(false);
+    const shouldAutoScrollLogsRef = useRef(false);
+    const pendingScrollRestoreRef = useRef<{
+        scrollTop: number;
+        scrollHeight: number;
+    } | null>(null);
+    const logEntryIdRef = useRef(0);
+    const filterChangeRef = useRef(false);
 
-    const toggleLogExpanded = (index: number) => {
+    const withEntryIds = useCallback((entries: LogEntry[]) => {
+        return entries.map(entry => ({
+            ...entry,
+            entryId: `log-${Date.now()}-${logEntryIdRef.current++}`,
+        }));
+    }, []);
+
+    const toggleLogExpanded = (key: string) => {
         hapticPatterns.tap();
-        setExpandedLogIndices(prev => {
+        setExpandedLogKeys(prev => {
             const next = new Set(prev);
-            if (next.has(index)) {
-                next.delete(index);
+            if (next.has(key)) {
+                next.delete(key);
             } else {
-                next.add(index);
+                next.add(key);
             }
             return next;
         });
@@ -139,6 +164,10 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     useEffect(() => {
         if (!open) return;
 
+        shouldAutoScrollLogsRef.current = false;
+        filterChangeRef.current = false;
+        logEntryIdRef.current = 0;
+
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
                 hapticPatterns.tap();
@@ -150,16 +179,37 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [open, onClose]);
 
-    // Scroll logs to bottom when they load/change or when expanded
-    useEffect(() => {
-        if (logsExpanded && !logsLoading && logs.length > 0) {
+    // Scroll logs to the newest item after initial load or a non-pagination refresh.
+    useLayoutEffect(() => {
+        if (!logsExpanded || logsLoading || logs.length === 0 || !shouldAutoScrollLogsRef.current) return;
+
+        const raf = window.requestAnimationFrame(() => {
             scrollLogsToBottom();
+            shouldAutoScrollLogsRef.current = false;
+        });
+
+        return () => window.cancelAnimationFrame(raf);
+    }, [logsExpanded, logsLoading, logs.length, scrollLogsToBottom]);
+
+    useLayoutEffect(() => {
+        const pending = pendingScrollRestoreRef.current;
+        if (!pending || logsLoading || !logsExpanded) return;
+
+        const container = logsContainerRef.current;
+        if (!container) return;
+
+        const scrollDelta = container.scrollHeight - pending.scrollHeight;
+        if (scrollDelta > 0) {
+            container.scrollTop = pending.scrollTop + scrollDelta;
         }
-    }, [logs, logsLoading, logsExpanded, scrollLogsToBottom]);
+
+        pendingScrollRestoreRef.current = null;
+    }, [logs, logsLoading, logsExpanded]);
 
     useEffect(() => {
         if (!open) {
             setScrapeMessage(null);
+            setBackupMessage(null);
             setBackups(null);
             setBackupCount(null);
             setBackupDir(null);
@@ -211,19 +261,26 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         const loadLogs = async () => {
             setLogsLoading(true);
             setLogsError(null);
+            shouldAutoScrollLogsRef.current = true;
             try {
                 const params = new URLSearchParams();
                 params.set('page', '1');
-                params.set('limit', logsLimit.toString());
+                params.set('limit', LOGS_LIMIT.toString());
 
-                const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
-                const data = await res.json();
-                if (data && data.success) {
-                    setLogs(data.logs || []);
-                    setHasMoreLogs(data.hasMore || false);
-                } else {
-                    setLogsError(data.error || 'Failed to load logs.');
-                }
+            const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
+            const data = await res.json();
+            if (data && data.success) {
+                setLogs(withEntryIds(data.logs || []));
+                const total = typeof data.total === 'number' ? data.total : typeof data.totalCount === 'number' ? data.totalCount : undefined;
+                const returnedCount = Array.isArray(data.logs) ? data.logs.length : 0;
+                setHasMoreLogs(
+                    typeof total === 'number'
+                        ? LOGS_LIMIT < total
+                        : returnedCount === LOGS_LIMIT
+                );
+            } else {
+                setLogsError(data.error || 'Failed to load logs.');
+            }
             } catch {
                 setLogsError('Failed to connect to worker.');
             } finally {
@@ -256,13 +313,43 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         }
     };
 
+    const handleTriggerBackup = async () => {
+        hapticPatterns.tap();
+        setBackupLoading(true);
+        setBackupMessage(null);
+        try {
+            const res = await fetch('http://192.168.129.250:8094/api/backup/trigger', { method: 'POST' });
+            const data = await res.json();
+            if (data && data.success) {
+                setBackupMessage(data.message || 'Backup job started.');
+            } else {
+                setBackupMessage(data.error || 'Backup failed.');
+            }
+        } catch {
+            setBackupMessage('Failed to connect to worker.');
+        } finally {
+            setBackupLoading(false);
+        }
+    };
+
     const fetchLogs = useCallback(async (pageNum: number = 1, append: boolean = false) => {
         setLogsLoading(true);
+        setIsPaginatingLogs(append);
         setLogsError(null);
+        shouldAutoScrollLogsRef.current = !append;
+        if (append) {
+            const container = logsContainerRef.current;
+            if (container) {
+                pendingScrollRestoreRef.current = {
+                    scrollTop: container.scrollTop,
+                    scrollHeight: container.scrollHeight,
+                };
+            }
+        }
         try {
             const params = new URLSearchParams();
             params.set('page', pageNum.toString());
-            params.set('limit', logsLimit.toString());
+            params.set('limit', LOGS_LIMIT.toString());
             if (dateFilter) params.set('date', dateFilter);
             if (levelFilter !== 'all') params.set('level', levelFilter);
             if (searchQuery.trim()) params.set('search', searchQuery.trim());
@@ -270,8 +357,15 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
             const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
             const data = await res.json();
             if (data && data.success) {
-                setLogs(prev => append ? [...prev, ...(data.logs || [])] : (data.logs || []));
-                setHasMoreLogs(data.hasMore || false);
+                const nextEntries = withEntryIds(data.logs || []);
+                setLogs(prev => append ? [...prev, ...nextEntries] : nextEntries);
+                const total = typeof data.total === 'number' ? data.total : typeof data.totalCount === 'number' ? data.totalCount : undefined;
+                const returnedCount = Array.isArray(data.logs) ? data.logs.length : 0;
+                setHasMoreLogs(
+                    typeof total === 'number'
+                        ? pageNum * LOGS_LIMIT < total
+                        : returnedCount === LOGS_LIMIT
+                );
                 setPage(pageNum);
             } else {
                 setLogsError(data.error || 'Failed to load logs.');
@@ -280,18 +374,47 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
             setLogsError('Failed to connect to worker.');
         } finally {
             setLogsLoading(false);
+            setIsPaginatingLogs(false);
         }
-    }, [dateFilter, levelFilter, searchQuery, logsLimit]);
+    }, [dateFilter, levelFilter, searchQuery, withEntryIds]);
 
-    const handleSearch = () => {
-        hapticPatterns.tap();
-        fetchLogs(1, false);
-    };
+    useEffect(() => {
+        if (!logsExpanded || !filterChangeRef.current) return;
 
-    const handleLoadMore = () => {
-        hapticPatterns.tap();
-        fetchLogs(page + 1, true);
-    };
+        const timeout = window.setTimeout(() => {
+            filterChangeRef.current = false;
+            fetchLogs(1, false);
+        }, 3000);
+
+        return () => window.clearTimeout(timeout);
+    }, [searchQuery, levelFilter, dateFilter, logsExpanded, fetchLogs]);
+
+    // Sync pageRef with page state
+    useEffect(() => {
+        pageRef.current = page;
+    }, [page]);
+
+    // Infinite scroll: load next page when scrolling near the top
+    useEffect(() => {
+        if (!logsExpanded || !hasMoreLogs) return;
+
+        const container = logsContainerRef.current;
+        if (!container) return;
+
+        const checkScroll = () => {
+            if (loadingMoreRef.current) return;
+            const { scrollTop } = container;
+            if (scrollTop <= 80) {
+                loadingMoreRef.current = true;
+                fetchLogs(pageRef.current + 1, true).finally(() => {
+                    loadingMoreRef.current = false;
+                });
+            }
+        };
+
+        container.addEventListener('scroll', checkScroll);
+        return () => container.removeEventListener('scroll', checkScroll);
+    }, [logsExpanded, hasMoreLogs, fetchLogs]);
 
     const getLevelColor = (level: string) => {
         switch (level) {
@@ -408,7 +531,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                     </div>
                                 </div>
 
-                                {/* Trigger Scrape */}
+                                {/* Manual Actions */}
                                 <div>
                                     <div
                                         style={{
@@ -422,53 +545,110 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                     >
                                         Manual Actions
                                     </div>
-                                    <motion.button
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={handleTriggerScrape}
-                                        disabled={scrapeLoading}
-                                        style={{
-                                            width: '100%',
-                                            padding: '12px 14px',
-                                            borderRadius: 12,
-                                            border: 'none',
-                                            background: 'var(--color-warning)',
-                                            color: '#050508',
-                                            fontWeight: 700,
-                                            fontSize: '0.95rem',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: 8,
-                                            opacity: scrapeLoading ? 0.7 : 1,
-                                        }}
-                                    >
-                                        {scrapeLoading ? (
-                                            <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                                        ) : (
-                                            <Play size={18} />
-                                        )}
-                                        Trigger Scrape
-                                    </motion.button>
-                                    {scrapeMessage && (
-                                        <div
+                                    {/* Action Buttons Row */}
+                                    <div style={{ display: 'flex', gap: 10 }}>
+                                        <motion.button
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={handleTriggerScrape}
+                                            disabled={scrapeLoading}
                                             style={{
-                                                marginTop: 8,
+                                                flex: 1,
+                                                padding: '10px 12px',
+                                                borderRadius: 10,
+                                                border: '1px solid var(--color-border)',
+                                                background: 'var(--color-surface)',
+                                                color: 'var(--color-text-primary)',
+                                                fontWeight: 500,
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
                                                 display: 'flex',
                                                 alignItems: 'center',
+                                                justifyContent: 'center',
                                                 gap: 6,
-                                                fontSize: '0.85rem',
-                                                color: scrapeMessage.includes('started') || scrapeMessage.includes('success')
-                                                    ? 'var(--color-success)'
-                                                    : 'var(--color-danger)',
+                                                opacity: scrapeLoading ? 0.6 : 1,
                                             }}
                                         >
-                                            {scrapeMessage.includes('started') || scrapeMessage.includes('success') ? (
-                                                <CheckCircle2 size={14} />
+                                            {scrapeLoading ? (
+                                                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
                                             ) : (
-                                                <AlertCircle size={14} />
+                                                <Play size={14} />
                                             )}
-                                            {scrapeMessage}
+                                            Scrape
+                                        </motion.button>
+
+                                        <motion.button
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={handleTriggerBackup}
+                                            disabled={backupLoading}
+                                            style={{
+                                                flex: 1,
+                                                padding: '10px 12px',
+                                                borderRadius: 10,
+                                                border: '1px solid var(--color-border)',
+                                                background: 'var(--color-surface)',
+                                                color: 'var(--color-text-primary)',
+                                                fontWeight: 500,
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 6,
+                                                opacity: backupLoading ? 0.6 : 1,
+                                            }}
+                                        >
+                                            {backupLoading ? (
+                                                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                                            ) : (
+                                                <Save size={14} />
+                                            )}
+                                            Backup
+                                        </motion.button>
+                                    </div>
+
+                                    {/* Messages */}
+                                    {(scrapeMessage || backupMessage) && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+                                            {scrapeMessage && (
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 6,
+                                                        fontSize: '0.8rem',
+                                                        color: scrapeMessage.includes('started') || scrapeMessage.includes('success')
+                                                            ? 'var(--color-success)'
+                                                            : 'var(--color-danger)',
+                                                    }}
+                                                >
+                                                    {scrapeMessage.includes('started') || scrapeMessage.includes('success') ? (
+                                                        <CheckCircle2 size={12} />
+                                                    ) : (
+                                                        <AlertCircle size={12} />
+                                                    )}
+                                                    {scrapeMessage}
+                                                </div>
+                                            )}
+                                            {backupMessage && (
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 6,
+                                                        fontSize: '0.8rem',
+                                                        color: backupMessage.includes('started') || backupMessage.includes('success')
+                                                            ? 'var(--color-success)'
+                                                            : 'var(--color-danger)',
+                                                    }}
+                                                >
+                                                    {backupMessage.includes('started') || backupMessage.includes('success') ? (
+                                                        <CheckCircle2 size={12} />
+                                                    ) : (
+                                                        <AlertCircle size={12} />
+                                                    )}
+                                                    {backupMessage}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -750,43 +930,48 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                 {/* Search & Filters */}
                                                 <div
                                                     style={{
-                                                        display: 'flex',
+                                                        display: 'grid',
+                                                        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                                                         gap: 8,
                                                         marginBottom: 12,
-                                                        flexWrap: 'wrap',
+                                                        alignItems: 'stretch',
                                                     }}
                                                 >
                                                     <input
                                                         type="text"
                                                         placeholder="Search logs..."
                                                         value={searchQuery}
-                                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                                        onChange={(e) => {
+                                                            filterChangeRef.current = true;
+                                                            setSearchQuery(e.target.value);
+                                                        }}
                                                         style={{
-                                                            flex: 1,
-                                                            minWidth: 140,
-                                                            padding: '8px 12px',
-                                                            borderRadius: 8,
+                                                            width: '100%',
+                                                            minWidth: 0,
+                                                            padding: '12px 14px',
+                                                            borderRadius: 12,
                                                             border: '1px solid var(--color-border)',
                                                             background: 'var(--color-surface-hover)',
                                                             color: 'var(--color-text-primary)',
-                                                            fontSize: '0.85rem',
+                                                            fontSize: '0.9rem',
                                                             outline: 'none',
                                                         }}
                                                     />
                                                     <select
                                                         value={levelFilter}
                                                         onChange={(e) => {
+                                                            filterChangeRef.current = true;
                                                             setLevelFilter(e.target.value as 'all' | 'info' | 'warn' | 'error' | 'LOG');
-                                                            fetchLogs(1, false);
                                                         }}
                                                         style={{
-                                                            padding: '8px 12px',
-                                                            borderRadius: 8,
+                                                            width: '100%',
+                                                            minWidth: 0,
+                                                            padding: '12px 14px',
+                                                            borderRadius: 12,
                                                             border: '1px solid var(--color-border)',
                                                             background: 'var(--color-surface-hover)',
                                                             color: 'var(--color-text-primary)',
-                                                            fontSize: '0.85rem',
+                                                            fontSize: '0.9rem',
                                                             cursor: 'pointer',
                                                         }}
                                                     >
@@ -796,23 +981,24 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                         <option value="error">Error</option>
                                                         <option value="LOG">Log</option>
                                                     </select>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <div style={{ position: 'relative', minWidth: 0 }}>
                                                         <input
                                                             type="date"
                                                             value={dateFilter}
                                                             placeholder="Date"
                                                             onChange={(e) => {
+                                                                filterChangeRef.current = true;
                                                                 setDateFilter(e.target.value);
-                                                                fetchLogs(1, false);
                                                             }}
                                                             style={{
-                                                                padding: '8px 12px',
-                                                                borderRadius: 8,
+                                                                width: '100%',
+                                                                padding: '12px 40px 12px 14px',
+                                                                borderRadius: 12,
                                                                 border: '1px solid var(--color-border)',
                                                                 background: 'var(--color-surface-hover)',
                                                                 color: dateFilter ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
-                                                                fontSize: '0.85rem',
-                                                                width: 110,
+                                                                fontSize: '0.9rem',
+                                                                minWidth: 0,
                                                             }}
                                                         />
                                                         {dateFilter && (
@@ -820,76 +1006,45 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                                 whileTap={{ scale: 0.9 }}
                                                                 onClick={() => {
                                                                     hapticPatterns.tap();
+                                                                    filterChangeRef.current = true;
                                                                     setDateFilter('');
-                                                                    fetchLogs(1, false);
                                                                 }}
                                                                 style={{
-                                                                    padding: '4px',
-                                                                    borderRadius: 4,
+                                                                    position: 'absolute',
+                                                                    right: 8,
+                                                                    top: '50%',
+                                                                    transform: 'translateY(-50%)',
+                                                                    width: 22,
+                                                                    height: 22,
+                                                                    padding: 0,
+                                                                    borderRadius: 999,
                                                                     border: 'none',
-                                                                    background: 'transparent',
+                                                                    background: 'var(--color-surface)',
                                                                     color: 'var(--color-text-tertiary)',
                                                                     cursor: 'pointer',
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     justifyContent: 'center',
                                                                 }}
-                                                            >
-                                                                ×
-                                                            </motion.button>
+                                                                >
+                                                                    ×
+                                                                </motion.button>
                                                         )}
                                                     </div>
-                                                    <select
-                                                        value={logsLimit}
-                                                        onChange={(e) => {
-                                                            setLogsLimit(Number(e.target.value));
-                                                            fetchLogs(1, false);
-                                                        }}
-                                                        style={{
-                                                            padding: '8px 12px',
-                                                            borderRadius: 8,
-                                                            border: '1px solid var(--color-border)',
-                                                            background: 'var(--color-surface-hover)',
-                                                            color: 'var(--color-text-primary)',
-                                                            fontSize: '0.85rem',
-                                                            cursor: 'pointer',
-                                                        }}
-                                                    >
-                                                        <option value={25}>25 lines</option>
-                                                        <option value={50}>50 lines</option>
-                                                        <option value={100}>100 lines</option>
-                                                        <option value={250}>250 lines</option>
-                                                    </select>
-                                                    <motion.button
-                                                        whileTap={{ scale: 0.95 }}
-                                                        onClick={handleSearch}
-                                                        style={{
-                                                            padding: '8px 14px',
-                                                            borderRadius: 8,
-                                                            border: 'none',
-                                                            background: 'var(--color-accent)',
-                                                            color: 'white',
-                                                            cursor: 'pointer',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                        }}
-                                                    >
-                                                        <Search size={16} />
-                                                    </motion.button>
                                                 </div>
 
                                                 {/* Logs List */}
                                                 <div
                                                     ref={logsContainerRef}
-                                                    style={{
-                                                        background: 'var(--color-surface-hover)',
-                                                        borderRadius: 12,
-                                                        padding: 10,
-                                                        maxHeight: 320,
-                                                        overflowY: 'auto',
-                                                    }}
-                                                >
+                                                style={{
+                                                    background: 'var(--color-surface-hover)',
+                                                    borderRadius: 12,
+                                                    padding: 10,
+                                                    maxHeight: 320,
+                                                    overflowY: 'auto',
+                                                    overflowAnchor: 'none',
+                                                }}
+                                            >
                                                     {logsLoading && logs.length === 0 && (
                                                         <div
                                                             style={{
@@ -904,6 +1059,25 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                         >
                                                             <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
                                                             Loading logs...
+                                                        </div>
+                                                    )}
+
+                                                    {isPaginatingLogs && logs.length > 0 && (
+                                                        <div
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: 8,
+                                                                padding: '10px 8px',
+                                                                color: 'var(--color-text-tertiary)',
+                                                                fontSize: '0.85rem',
+                                                                borderBottom: '1px solid var(--color-border-subtle)',
+                                                                background: 'var(--color-surface)',
+                                                            }}
+                                                        >
+                                                            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                                                            Loading older logs...
                                                         </div>
                                                     )}
 
@@ -937,11 +1111,11 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                     )}
 
                                                     {logs.slice().reverse().map((log, idx) => {
-                                                        const isExpanded = expandedLogIndices.has(idx);
+                                                        const isExpanded = expandedLogKeys.has(log.entryId);
                                                         return (
                                                             <motion.div
-                                                                key={idx}
-                                                                onClick={() => toggleLogExpanded(idx)}
+                                                                key={log.entryId}
+                                                                onClick={() => toggleLogExpanded(log.entryId)}
                                                                 initial={false}
                                                                 animate={{ backgroundColor: isExpanded ? 'var(--color-surface)' : 'transparent' }}
                                                                 style={{
@@ -1027,35 +1201,16 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                         );
                                                     })}
 
-                                                    {hasMoreLogs && (
-                                                        <motion.button
-                                                            whileTap={{ scale: 0.98 }}
-                                                            onClick={handleLoadMore}
-                                                            disabled={logsLoading}
-                                                            style={{
-                                                                width: '100%',
-                                                                padding: '10px',
-                                                                marginTop: 8,
-                                                                borderRadius: 8,
-                                                                border: '1px solid var(--color-border)',
-                                                                background: 'var(--color-surface)',
-                                                                color: 'var(--color-text-secondary)',
-                                                                fontSize: '0.8rem',
-                                                                cursor: logsLoading ? 'not-allowed' : 'pointer',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                gap: 6,
-                                                                opacity: logsLoading ? 0.7 : 1,
-                                                            }}
-                                                        >
-                                                            {logsLoading ? (
-                                                                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                                                            ) : (
-                                                                <RefreshCw size={14} />
-                                                            )}
-                                                            Load More
-                                                        </motion.button>
+                                                    {logsLoading && logs.length > 0 && !isPaginatingLogs && (
+                                                        <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                            {[0, 1, 2].map((i) => (
+                                                                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                                                    <div style={{ width: 36, height: 16, borderRadius: 4, background: 'var(--color-border)' }} />
+                                                                    <div style={{ width: 60, height: 14, borderRadius: 4, background: 'var(--color-border)' }} />
+                                                                    <div style={{ flex: 1, height: 14, borderRadius: 4, background: 'var(--color-border)' }} />
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </motion.div>
