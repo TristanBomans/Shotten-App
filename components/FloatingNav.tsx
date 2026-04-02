@@ -79,10 +79,28 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
                         background: 'var(--color-nav-bg)',
                         borderRadius: 9999,
                         border: '1px solid var(--color-nav-border)',
-                        boxShadow: 'var(--shadow-lg)',
+                        backdropFilter: 'blur(40px) saturate(200%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+                        boxShadow: `
+                            var(--shadow-lg),
+                            0 0 0 1px rgba(255,255,255,0.06),
+                            inset 0 1.5px 0 rgba(255, 255, 255, 0.22),
+                            inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+                        `,
                         transition: 'background var(--transition-base), border-color var(--transition-base)',
+                        overflow: 'hidden',
                     }}
                 >
+                    <div
+                        aria-hidden
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            borderRadius: 9999,
+                            background: 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.02) 40%, transparent 100%)',
+                            pointerEvents: 'none',
+                        }}
+                    />
                     {navItems.map((item) => {
                         const isActive = currentView === item.id;
 
@@ -122,6 +140,12 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
                                             borderRadius: 9999,
                                             background: 'var(--color-nav-active)',
                                             border: '1px solid var(--color-nav-border)',
+                                            boxShadow: `
+                                                inset 0 1px 0 rgba(255,255,255,0.25),
+                                                0 4px 12px rgba(0,0,0,0.15)
+                                            `,
+                                            backdropFilter: 'blur(8px)',
+                                            WebkitBackdropFilter: 'blur(8px)',
                                         }}
                                     />
                                 )}
