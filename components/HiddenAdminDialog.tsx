@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp, Save } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface HiddenAdminDialogProps {
@@ -97,6 +97,8 @@ const LOGS_LIMIT = 50;
 export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogProps) {
     const [scrapeLoading, setScrapeLoading] = useState(false);
     const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
+    const [backupLoading, setBackupLoading] = useState(false);
+    const [backupMessage, setBackupMessage] = useState<string | null>(null);
     const [backups, setBackups] = useState<string[] | null>(null);
     const [backupCount, setBackupCount] = useState<number | null>(null);
     const [backupDir, setBackupDir] = useState<string | null>(null);
@@ -207,6 +209,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     useEffect(() => {
         if (!open) {
             setScrapeMessage(null);
+            setBackupMessage(null);
             setBackups(null);
             setBackupCount(null);
             setBackupDir(null);
@@ -307,6 +310,25 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
             setScrapeMessage('Failed to connect to worker.');
         } finally {
             setScrapeLoading(false);
+        }
+    };
+
+    const handleTriggerBackup = async () => {
+        hapticPatterns.tap();
+        setBackupLoading(true);
+        setBackupMessage(null);
+        try {
+            const res = await fetch('http://192.168.129.250:8094/api/backup/trigger', { method: 'POST' });
+            const data = await res.json();
+            if (data && data.success) {
+                setBackupMessage(data.message || 'Backup job started.');
+            } else {
+                setBackupMessage(data.error || 'Backup failed.');
+            }
+        } catch {
+            setBackupMessage('Failed to connect to worker.');
+        } finally {
+            setBackupLoading(false);
         }
     };
 
@@ -509,7 +531,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                     </div>
                                 </div>
 
-                                {/* Trigger Scrape */}
+                                {/* Manual Actions */}
                                 <div>
                                     <div
                                         style={{
@@ -523,53 +545,110 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                     >
                                         Manual Actions
                                     </div>
-                                    <motion.button
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={handleTriggerScrape}
-                                        disabled={scrapeLoading}
-                                        style={{
-                                            width: '100%',
-                                            padding: '12px 14px',
-                                            borderRadius: 12,
-                                            border: 'none',
-                                            background: 'var(--color-warning)',
-                                            color: '#050508',
-                                            fontWeight: 700,
-                                            fontSize: '0.95rem',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: 8,
-                                            opacity: scrapeLoading ? 0.7 : 1,
-                                        }}
-                                    >
-                                        {scrapeLoading ? (
-                                            <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                                        ) : (
-                                            <Play size={18} />
-                                        )}
-                                        Trigger Scrape
-                                    </motion.button>
-                                    {scrapeMessage && (
-                                        <div
+                                    {/* Action Buttons Row */}
+                                    <div style={{ display: 'flex', gap: 10 }}>
+                                        <motion.button
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={handleTriggerScrape}
+                                            disabled={scrapeLoading}
                                             style={{
-                                                marginTop: 8,
+                                                flex: 1,
+                                                padding: '10px 12px',
+                                                borderRadius: 10,
+                                                border: '1px solid var(--color-border)',
+                                                background: 'var(--color-surface)',
+                                                color: 'var(--color-text-primary)',
+                                                fontWeight: 500,
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
                                                 display: 'flex',
                                                 alignItems: 'center',
+                                                justifyContent: 'center',
                                                 gap: 6,
-                                                fontSize: '0.85rem',
-                                                color: scrapeMessage.includes('started') || scrapeMessage.includes('success')
-                                                    ? 'var(--color-success)'
-                                                    : 'var(--color-danger)',
+                                                opacity: scrapeLoading ? 0.6 : 1,
                                             }}
                                         >
-                                            {scrapeMessage.includes('started') || scrapeMessage.includes('success') ? (
-                                                <CheckCircle2 size={14} />
+                                            {scrapeLoading ? (
+                                                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
                                             ) : (
-                                                <AlertCircle size={14} />
+                                                <Play size={14} />
                                             )}
-                                            {scrapeMessage}
+                                            Scrape
+                                        </motion.button>
+
+                                        <motion.button
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={handleTriggerBackup}
+                                            disabled={backupLoading}
+                                            style={{
+                                                flex: 1,
+                                                padding: '10px 12px',
+                                                borderRadius: 10,
+                                                border: '1px solid var(--color-border)',
+                                                background: 'var(--color-surface)',
+                                                color: 'var(--color-text-primary)',
+                                                fontWeight: 500,
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 6,
+                                                opacity: backupLoading ? 0.6 : 1,
+                                            }}
+                                        >
+                                            {backupLoading ? (
+                                                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                                            ) : (
+                                                <Save size={14} />
+                                            )}
+                                            Backup
+                                        </motion.button>
+                                    </div>
+
+                                    {/* Messages */}
+                                    {(scrapeMessage || backupMessage) && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+                                            {scrapeMessage && (
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 6,
+                                                        fontSize: '0.8rem',
+                                                        color: scrapeMessage.includes('started') || scrapeMessage.includes('success')
+                                                            ? 'var(--color-success)'
+                                                            : 'var(--color-danger)',
+                                                    }}
+                                                >
+                                                    {scrapeMessage.includes('started') || scrapeMessage.includes('success') ? (
+                                                        <CheckCircle2 size={12} />
+                                                    ) : (
+                                                        <AlertCircle size={12} />
+                                                    )}
+                                                    {scrapeMessage}
+                                                </div>
+                                            )}
+                                            {backupMessage && (
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 6,
+                                                        fontSize: '0.8rem',
+                                                        color: backupMessage.includes('started') || backupMessage.includes('success')
+                                                            ? 'var(--color-success)'
+                                                            : 'var(--color-danger)',
+                                                    }}
+                                                >
+                                                    {backupMessage.includes('started') || backupMessage.includes('success') ? (
+                                                        <CheckCircle2 size={12} />
+                                                    ) : (
+                                                        <AlertCircle size={12} />
+                                                    )}
+                                                    {backupMessage}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
