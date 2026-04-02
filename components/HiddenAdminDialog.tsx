@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, Search, FileText, Shield, Clock, HardDrive, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, Search, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface HiddenAdminDialogProps {
@@ -87,6 +87,8 @@ function formatHoursAgo(hours: number): string {
     return `${days}d ${remainingHours}h ago`;
 }
 
+const LOGS_LIMIT = 250;
+
 export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogProps) {
     const [scrapeLoading, setScrapeLoading] = useState(false);
     const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
@@ -109,12 +111,13 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     const [searchQuery, setSearchQuery] = useState('');
     const [levelFilter, setLevelFilter] = useState<'all' | 'info' | 'warn' | 'error' | 'LOG'>('all');
     const [dateFilter, setDateFilter] = useState<string>('');
-    const [logsLimit, setLogsLimit] = useState<number>(50);
     const [page, setPage] = useState(1);
     const [hasMoreLogs, setHasMoreLogs] = useState(false);
     const [logsExpanded, setLogsExpanded] = useState(false);
     const [expandedLogIndices, setExpandedLogIndices] = useState<Set<number>>(new Set());
     const logsContainerRef = useRef<HTMLDivElement>(null);
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const pageLoadedAtRef = useRef<number>(0);
 
     const toggleLogExpanded = (index: number) => {
         hapticPatterns.tap();
@@ -214,7 +217,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
             try {
                 const params = new URLSearchParams();
                 params.set('page', '1');
-                params.set('limit', logsLimit.toString());
+                params.set('limit', LOGS_LIMIT.toString());
 
                 const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
                 const data = await res.json();
@@ -262,7 +265,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         try {
             const params = new URLSearchParams();
             params.set('page', pageNum.toString());
-            params.set('limit', logsLimit.toString());
+            params.set('limit', LOGS_LIMIT.toString());
             if (dateFilter) params.set('date', dateFilter);
             if (levelFilter !== 'all') params.set('level', levelFilter);
             if (searchQuery.trim()) params.set('search', searchQuery.trim());
@@ -281,17 +284,37 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         } finally {
             setLogsLoading(false);
         }
-    }, [dateFilter, levelFilter, searchQuery, logsLimit]);
+    }, [dateFilter, levelFilter, searchQuery]);
 
     const handleSearch = () => {
         hapticPatterns.tap();
         fetchLogs(1, false);
     };
 
-    const handleLoadMore = () => {
-        hapticPatterns.tap();
-        fetchLogs(page + 1, true);
-    };
+    // Infinite scroll: load next page when sentinel reaches bottom of logs container
+    useEffect(() => {
+        if (!logsExpanded || !hasMoreLogs || logsLoading) return;
+
+        const sentinel = sentinelRef.current;
+        const container = logsContainerRef.current;
+        if (!sentinel || !container) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    const now = Date.now();
+                    if (now - pageLoadedAtRef.current > 500) {
+                        pageLoadedAtRef.current = now;
+                        fetchLogs(page + 1, true);
+                    }
+                }
+            },
+            { root: container, threshold: 0 }
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [logsExpanded, hasMoreLogs, logsLoading, page, fetchLogs]);
 
     const getLevelColor = (level: string) => {
         switch (level) {
@@ -839,27 +862,6 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                             </motion.button>
                                                         )}
                                                     </div>
-                                                    <select
-                                                        value={logsLimit}
-                                                        onChange={(e) => {
-                                                            setLogsLimit(Number(e.target.value));
-                                                            fetchLogs(1, false);
-                                                        }}
-                                                        style={{
-                                                            padding: '8px 12px',
-                                                            borderRadius: 8,
-                                                            border: '1px solid var(--color-border)',
-                                                            background: 'var(--color-surface-hover)',
-                                                            color: 'var(--color-text-primary)',
-                                                            fontSize: '0.85rem',
-                                                            cursor: 'pointer',
-                                                        }}
-                                                    >
-                                                        <option value={25}>25 lines</option>
-                                                        <option value={50}>50 lines</option>
-                                                        <option value={100}>100 lines</option>
-                                                        <option value={250}>250 lines</option>
-                                                    </select>
                                                     <motion.button
                                                         whileTap={{ scale: 0.95 }}
                                                         onClick={handleSearch}
@@ -1027,35 +1029,19 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                         );
                                                     })}
 
-                                                    {hasMoreLogs && (
-                                                        <motion.button
-                                                            whileTap={{ scale: 0.98 }}
-                                                            onClick={handleLoadMore}
-                                                            disabled={logsLoading}
-                                                            style={{
-                                                                width: '100%',
-                                                                padding: '10px',
-                                                                marginTop: 8,
-                                                                borderRadius: 8,
-                                                                border: '1px solid var(--color-border)',
-                                                                background: 'var(--color-surface)',
-                                                                color: 'var(--color-text-secondary)',
-                                                                fontSize: '0.8rem',
-                                                                cursor: logsLoading ? 'not-allowed' : 'pointer',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                gap: 6,
-                                                                opacity: logsLoading ? 0.7 : 1,
-                                                            }}
-                                                        >
-                                                            {logsLoading ? (
-                                                                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                                                            ) : (
-                                                                <RefreshCw size={14} />
-                                                            )}
-                                                            Load More
-                                                        </motion.button>
+                                                    {/* Sentinel for infinite scroll */}
+                                                    {hasMoreLogs && <div ref={sentinelRef} style={{ height: 1 }} />}
+
+                                                    {logsLoading && logs.length > 0 && (
+                                                        <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                            {[0, 1, 2].map((i) => (
+                                                                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                                                    <div style={{ width: 36, height: 16, borderRadius: 4, background: 'var(--color-border)' }} />
+                                                                    <div style={{ width: 60, height: 14, borderRadius: 4, background: 'var(--color-border)' }} />
+                                                                    <div style={{ flex: 1, height: 14, borderRadius: 4, background: 'var(--color-border)' }} />
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </motion.div>
