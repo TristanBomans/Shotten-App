@@ -26,7 +26,7 @@ async function main() {
     // Fallback: create basic changelog from commit messages
     releases = commits.map(commit => ({
       date: commit.date,
-      changes: commit.message === '[redacted]' ? ['[redacted]'] : [`📝 ${commit.message.split('\n')[0]}`], // Use first line only as fallback
+      changes: commit.message.includes('[redacted]') ? ['[redacted]'] : [`📝 ${commit.message.split('\n')[0]}`], // Use first line only as fallback
     }));
   } else {
     // Generate changelog via Mistral AI
@@ -161,7 +161,7 @@ ${commits.map((c, i) => `${i}. ${c.message}`).join('\n')}`;
 
   // Map parsed response back to commits
   const releases = commits.map((commit, index) => {
-    if (commit.message === '[redacted]') {
+    if (commit.message.includes('[redacted]')) {
       return {
         date: commit.date,
         changes: ['[redacted]'],
