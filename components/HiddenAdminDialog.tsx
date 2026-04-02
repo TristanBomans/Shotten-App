@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, Search, FileText, Shield, Clock, HardDrive, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
@@ -113,6 +113,28 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
     const [page, setPage] = useState(1);
     const [hasMoreLogs, setHasMoreLogs] = useState(false);
     const [logsExpanded, setLogsExpanded] = useState(false);
+    const [expandedLogIndices, setExpandedLogIndices] = useState<Set<number>>(new Set());
+    const logsContainerRef = useRef<HTMLDivElement>(null);
+
+    const toggleLogExpanded = (index: number) => {
+        hapticPatterns.tap();
+        setExpandedLogIndices(prev => {
+            const next = new Set(prev);
+            if (next.has(index)) {
+                next.delete(index);
+            } else {
+                next.add(index);
+            }
+            return next;
+        });
+    };
+
+    const scrollLogsToBottom = useCallback(() => {
+        const el = logsContainerRef.current;
+        if (el) {
+            el.scrollTop = el.scrollHeight;
+        }
+    }, []);
 
     useEffect(() => {
         if (!open) return;
@@ -127,6 +149,13 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [open, onClose]);
+
+    // Scroll logs to bottom when they load/change or when expanded
+    useEffect(() => {
+        if (logsExpanded && !logsLoading && logs.length > 0) {
+            scrollLogsToBottom();
+        }
+    }, [logs, logsLoading, logsExpanded, scrollLogsToBottom]);
 
     useEffect(() => {
         if (!open) {
@@ -852,6 +881,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
 
                                                 {/* Logs List */}
                                                 <div
+                                                    ref={logsContainerRef}
                                                     style={{
                                                         background: 'var(--color-surface-hover)',
                                                         borderRadius: 12,
@@ -906,22 +936,23 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                         </div>
                                                     )}
 
-                                                    {logs.map((log, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            style={{
-                                                                padding: '8px 10px',
-                                                                borderBottom: idx < logs.length - 1 ? '1px solid var(--color-border-subtle)' : undefined,
-                                                                display: 'flex',
-                                                                flexDirection: 'column',
-                                                                gap: 4,
-                                                            }}
-                                                        >
-                                                            <div
+                                                    {logs.slice().reverse().map((log, idx) => {
+                                                        const isExpanded = expandedLogIndices.has(idx);
+                                                        return (
+                                                            <motion.div
+                                                                key={idx}
+                                                                onClick={() => toggleLogExpanded(idx)}
+                                                                initial={false}
+                                                                animate={{ backgroundColor: isExpanded ? 'var(--color-surface)' : 'transparent' }}
                                                                 style={{
+                                                                    padding: '6px 8px',
+                                                                    borderBottom: idx < logs.length - 1 ? '1px solid var(--color-border-subtle)' : undefined,
                                                                     display: 'flex',
-                                                                    alignItems: 'center',
+                                                                    alignItems: isExpanded ? 'flex-start' : 'center',
                                                                     gap: 8,
+                                                                    minWidth: 0,
+                                                                    cursor: 'pointer',
+                                                                    borderRadius: 6,
                                                                 }}
                                                             >
                                                                 <span
@@ -934,6 +965,8 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                                         background: getLevelBg(log.level),
                                                                         color: getLevelColor(log.level),
                                                                         letterSpacing: '0.05em',
+                                                                        flexShrink: 0,
+                                                                        marginTop: isExpanded ? 1 : 0,
                                                                     }}
                                                                 >
                                                                     {log.level}
@@ -950,6 +983,8 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                                             color: 'var(--color-text-tertiary)',
                                                                             letterSpacing: '0.05em',
                                                                             border: '1px solid var(--color-border)',
+                                                                            flexShrink: 0,
+                                                                            marginTop: isExpanded ? 1 : 0,
                                                                         }}
                                                                     >
                                                                         legacy
@@ -960,6 +995,8 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                                         fontSize: '0.7rem',
                                                                         color: 'var(--color-text-tertiary)',
                                                                         fontFamily: 'monospace',
+                                                                        flexShrink: 0,
+                                                                        marginTop: isExpanded ? 1 : 0,
                                                                     }}
                                                                 >
                                                                     {new Date(log.timestamp).toLocaleDateString('en-GB', {
@@ -972,19 +1009,23 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                                         second: '2-digit',
                                                                     })}
                                                                 </span>
-                                                            </div>
-                                                            <div
-                                                                style={{
-                                                                    fontSize: '0.8rem',
-                                                                    color: 'var(--color-text-secondary)',
-                                                                    wordBreak: 'break-word',
-                                                                    lineHeight: 1.4,
-                                                                }}
-                                                            >
-                                                                {log.message}
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                                <span
+                                                                    style={{
+                                                                        fontSize: '0.8rem',
+                                                                        color: 'var(--color-text-secondary)',
+                                                                        whiteSpace: isExpanded ? 'normal' : 'nowrap',
+                                                                        overflow: isExpanded ? 'visible' : 'hidden',
+                                                                        textOverflow: isExpanded ? 'clip' : 'ellipsis',
+                                                                        wordBreak: isExpanded ? 'break-word' : 'normal',
+                                                                        minWidth: 0,
+                                                                        lineHeight: isExpanded ? 1.4 : 1.2,
+                                                                    }}
+                                                                >
+                                                                    {log.message}
+                                                                </span>
+                                                            </motion.div>
+                                                        );
+                                                    })}
 
                                                     {hasMoreLogs && (
                                                         <motion.button
