@@ -384,7 +384,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
         const timeout = window.setTimeout(() => {
             filterChangeRef.current = false;
             fetchLogs(1, false);
-        }, 3000);
+        }, 500);
 
         return () => window.clearTimeout(timeout);
     }, [searchQuery, levelFilter, dateFilter, logsExpanded, fetchLogs]);
@@ -1173,14 +1173,13 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                                                                         marginTop: isExpanded ? 1 : 0,
                                                                     }}
                                                                 >
-                                                                    {new Date(log.timestamp).toLocaleDateString('en-GB', {
+                                                                    {new Date(log.timestamp.endsWith('Z') ? log.timestamp : `${log.timestamp}Z`).toLocaleDateString('en-GB', {
                                                                         day: '2-digit',
                                                                         month: 'short',
                                                                     })} {' '}
-                                                                    {new Date(log.timestamp).toLocaleTimeString('en-GB', {
+                                                                    {new Date(log.timestamp.endsWith('Z') ? log.timestamp : `${log.timestamp}Z`).toLocaleTimeString('en-GB', {
                                                                         hour: '2-digit',
                                                                         minute: '2-digit',
-                                                                        second: '2-digit',
                                                                     })}
                                                                 </span>
                                                                 <span
