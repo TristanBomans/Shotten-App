@@ -254,9 +254,7 @@ export default function TopOverlayHeader({
                                 }
                                 style={{
                                     ...compactControlStyle,
-                                    padding: homeHeaderControls?.recentCount
-                                        ? '0 10px 0 12px'
-                                        : '0 12px',
+                                    padding: '0 10px',
                                     fontSize: '0.78rem',
                                     fontWeight: 700,
                                     background: homeHeaderControls?.hasRecentHighlight
@@ -274,8 +272,7 @@ export default function TopOverlayHeader({
                                     flexShrink: 0,
                                 }}
                             >
-                                <Clock3 size={13} />
-                                <span style={{ whiteSpace: 'nowrap' }}></span>
+                                <Clock3 size={14} />
                                 {homeHeaderControls?.recentCount ? (
                                     <span
                                         style={{
