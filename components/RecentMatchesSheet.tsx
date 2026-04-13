@@ -70,9 +70,16 @@ function formatRelativeTime(dateStr: string): string {
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffWeeks = Math.floor(diffDays / 7);
 
+    // Use calendar-day diff for accurate "Yesterday" (consistent with isSameCalendarDay)
+    const calendarDaysDiff = Math.floor(
+        (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+            Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())) /
+            (1000 * 60 * 60 * 24)
+    );
+
     if (diffMinutes < 60) return `${diffMinutes}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return 'Yesterday';
+    if (calendarDaysDiff === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays}d ago`;
     return `${diffWeeks}w ago`;
 }

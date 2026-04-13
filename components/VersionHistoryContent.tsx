@@ -73,10 +73,17 @@ export default function VersionHistoryContent() {
         const diffWeeks = Math.floor(diffDays / 7);
         const diffMonths = Math.floor(diffDays / 30);
 
+        // Use calendar-day diff for accurate "Yesterday"
+        const calendarDaysDiff = Math.floor(
+            (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+                Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())) /
+                (1000 * 60 * 60 * 24)
+        );
+
         if (diffMinutes < 1) return 'Just now';
         if (diffMinutes < 60) return `${diffMinutes}m ago`;
         if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays === 1) return 'Yesterday';
+        if (calendarDaysDiff === 1) return 'Yesterday';
         if (diffDays < 7) return `${diffDays}d ago`;
         if (diffWeeks <= 4) return `${diffWeeks}w ago`;
         return `${Math.max(1, diffMonths)}mo ago`;
