@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, ReactNode } from 'react';
+import { useRef, useState, useCallback, useEffect, ReactNode } from 'react';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 
@@ -39,7 +39,7 @@ export default function PullToRefresh({
         }
     }, [isRefreshing]);
 
-    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const handleTouchMove = useCallback((e: TouchEvent) => {
         if (!isPulling.current || isRefreshing) return;
 
         const container = containerRef.current;
@@ -50,15 +50,21 @@ export default function PullToRefresh({
 
         // Only pull down if we're at the top AND pulling downward
         if (container.scrollTop === 0 && pullDistance > 0) {
-            // Prevent default scroll behavior to avoid page refresh
             e.preventDefault();
 
-            // Apply resistance to pull distance
             const resistance = 0.5;
             const resistedDistance = Math.min(pullDistance * resistance, maxPullDistance);
             scrollY.set(resistedDistance);
         }
     }, [isRefreshing, maxPullDistance, scrollY]);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        container.addEventListener('touchmove', handleTouchMove, { passive: false });
+        return () => container.removeEventListener('touchmove', handleTouchMove);
+    }, [handleTouchMove]);
 
     const handleTouchEnd = useCallback(async () => {
         if (!isPulling.current || isRefreshing) return;
@@ -102,7 +108,6 @@ export default function PullToRefresh({
         <div
             ref={containerRef}
             onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             style={{
                 width: '100%',

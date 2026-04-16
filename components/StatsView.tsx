@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
-import { LineChart, Line, ResponsiveContainer, ReferenceLine, YAxis } from 'recharts';
+import { LineChart, Line, ReferenceLine, YAxis } from 'recharts';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
@@ -700,6 +700,27 @@ function RulesModal({ onClose }: { onClose: () => void }) {
 }
 
 function ScoreSparkline({ history }: { history: ScoreHistoryPoint[] }) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+
+        const update = () => {
+            const { width, height } = el.getBoundingClientRect();
+            if (width > 0 && height > 0) {
+                setDimensions({ width, height });
+            }
+        };
+
+        update();
+
+        const observer = new ResizeObserver(() => update());
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
     if (history.length < 2) return null;
 
     const startScore = history[0].score;
@@ -715,21 +736,26 @@ function ScoreSparkline({ history }: { history: ScoreHistoryPoint[] }) {
     const chartMax = visualMax + yPadding;
 
     return (
-        <div style={{ position: 'relative', width: '100%', height: 84 }}>
-            <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={history} margin={{ top: 10, right: 24, bottom: 10, left: 6 }}>
-                    <YAxis hide domain={[chartMin, chartMax]} />
-                    <ReferenceLine y={1000} stroke="var(--color-border-subtle)" strokeDasharray="3 3" />
-                    <Line
-                        type="monotone"
-                        dataKey="score"
-                        stroke={trendColor}
-                        strokeWidth={3}
-                        dot={false}
-                        isAnimationActive={false}
-                    />
-                </LineChart>
-            </ResponsiveContainer>
+        <div ref={containerRef} style={{ position: 'relative', width: '100%', height: 84 }}>
+            {dimensions && (
+            <LineChart
+                width={dimensions.width}
+                height={dimensions.height}
+                data={history}
+                margin={{ top: 10, right: 24, bottom: 10, left: 6 }}
+            >
+                <YAxis hide domain={[chartMin, chartMax]} />
+                <ReferenceLine y={1000} stroke="var(--color-border-subtle)" strokeDasharray="3 3" />
+                <Line
+                    type="monotone"
+                    dataKey="score"
+                    stroke={trendColor}
+                    strokeWidth={3}
+                    dot={false}
+                    isAnimationActive={false}
+                />
+            </LineChart>
+            )}
             <div style={{
                 position: 'absolute',
                 right: 0,
