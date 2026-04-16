@@ -501,8 +501,8 @@ export default function Dashboard({
         }, focusDelay);
     }, [currentView, onViewChange]);
 
-    // Loading state
-    if (loading) {
+    // Loading state - only show skeleton on initial load when no data yet
+    if (loading && matches.length === 0) {
         return (
             <>
                 <TopOverlayHeader

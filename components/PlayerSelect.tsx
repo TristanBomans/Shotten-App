@@ -116,7 +116,7 @@ export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
                     overflowY: 'auto',
                     paddingRight: 'var(--space-xs)',
                 }} className="scrollbar-hide">
-                    {loading ? (
+                    {loading && players.length === 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
                             {[...Array(5)].map((_, i) => (
                                 <div
