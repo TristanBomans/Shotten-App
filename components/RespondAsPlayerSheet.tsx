@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, Loader2, Calendar, MapPin, UserCheck } from 'lucide-react';
+import { ChevronLeft, Loader2, Calendar, MapPin, UserCheck, X } from 'lucide-react';
 import { useAllPlayers, useUpdateAttendance, getUseMockData } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
@@ -27,13 +27,11 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
     const { players, loading: playersLoading, fetchAllPlayers } = useAllPlayers();
     const { updating, updateAttendance } = useUpdateAttendance();
 
-    // Load players when sheet opens
+    // Load players when dialog opens
     useEffect(() => {
         if (isOpen) {
             fetchAllPlayers();
-            document.body.style.overflow = 'hidden';
         } else {
-            document.body.style.overflow = '';
             // Reset state when closing
             setStep('player');
             setSelectedPlayer(null);
@@ -41,9 +39,6 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
             setMatchesLoading(false);
             setUpdatingMatchId(null);
         }
-        return () => {
-            document.body.style.overflow = '';
-        };
     }, [isOpen, fetchAllPlayers]);
 
     const fetchMatchesForPlayer = async (playerId: number) => {
@@ -137,283 +132,276 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
     return (
         <AnimatePresence>
             {isOpen && (
-                <>
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
+                <motion.div
+                    initial={{ opacity: 0, x: '100%' }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'var(--color-bg)',
+                        zIndex: 10020,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                    }}
+                >
+                    {/* Header with iOS-style back button */}
+                    <div
                         style={{
-                            position: 'fixed',
-                            inset: 0,
-                            background: 'var(--color-overlay)',
-                            backdropFilter: 'blur(10px)',
-                            zIndex: 10000,
-                        }}
-                    />
-
-                    {/* Sheet */}
-                    <motion.div
-                        initial={{ y: '100%' }}
-                        animate={{ y: 0 }}
-                        exit={{ y: '100%' }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        style={{
-                            position: 'fixed',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            height: '80vh',
-                            background: 'var(--color-bg)',
-                            borderRadius: '24px 24px 0 0',
-                            zIndex: 10001,
+                            position: 'relative',
                             display: 'flex',
-                            flexDirection: 'column',
-                            overflow: 'hidden',
+                            alignItems: 'center',
+                            padding: 'calc(var(--safe-top) + 8px) 16px 12px',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
+                            background: 'var(--color-surface)',
                         }}
                     >
-                        {/* Drag Handle */}
-                        <div
-                            style={{
-                                padding: '12px 0 8px',
-                                display: 'flex',
-                                justifyContent: 'center',
+                        <motion.button
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                if (step === 'matches') {
+                                    handleBackToPlayers();
+                                } else {
+                                    onClose();
+                                }
                             }}
-                        >
-                            <div
-                                style={{
-                                    width: 36,
-                                    height: 4,
-                                    borderRadius: 2,
-                                    background: 'var(--color-border)',
-                                }}
-                            />
-                        </div>
-
-                        {/* Header */}
-                        <div
                             style={{
-                                padding: '0 20px 16px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'space-between',
-                                borderBottom: '1px solid var(--color-border-subtle)',
+                                gap: 2,
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--color-accent)',
+                                fontSize: '1.05rem',
+                                fontWeight: 400,
+                                cursor: 'pointer',
+                                padding: '4px 8px 4px 0',
+                                marginLeft: -4,
                             }}
                         >
-                            {step === 'matches' ? (
-                                <motion.button
-                                    onClick={handleBackToPlayers}
-                                    whileTap={{ scale: 0.9 }}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 4,
-                                        background: 'transparent',
-                                        border: 'none',
-                                        color: 'var(--color-accent)',
-                                        fontSize: '1rem',
-                                        cursor: 'pointer',
-                                        padding: '4px 8px 4px 0',
-                                    }}
-                                >
-                                    <ChevronLeft size={24} />
-                                    Back
-                                </motion.button>
-                            ) : (
-                                <div style={{ width: 60 }} />
-                            )}
-                            <span
-                                style={{
-                                    fontSize: '1.1rem',
-                                    fontWeight: 700,
-                                    color: 'var(--color-text-primary)',
-                                }}
-                            >
-                                {step === 'player' ? 'Select Player' : selectedPlayer?.name}
-                            </span>
+                            <ChevronLeft size={28} strokeWidth={1.5} />
+                            {step === 'matches' ? 'Back' : 'Close'}
+                        </motion.button>
+                        <div
+                            style={{
+                                position: 'absolute',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                fontSize: '1.05rem',
+                                fontWeight: 600,
+                                color: 'var(--color-text-primary)',
+                                maxWidth: '55%',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                textAlign: 'center',
+                                pointerEvents: 'none',
+                            }}
+                        >
+                            {step === 'player' ? 'Select Player' : selectedPlayer?.name}
+                        </div>
+                        {step === 'matches' && (
                             <motion.button
+                                whileTap={{ scale: 0.96 }}
                                 onClick={() => {
                                     hapticPatterns.tap();
                                     onClose();
                                 }}
-                                whileTap={{ scale: 0.9 }}
                                 style={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 10,
-                                    border: 'none',
-                                    background: 'var(--color-surface)',
-                                    color: 'var(--color-text-secondary)',
+                                    position: 'absolute',
+                                    right: 16,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--color-text-tertiary)',
                                     cursor: 'pointer',
+                                    padding: 4,
+                                    top: 'calc(var(--safe-top) + 12px)',
                                 }}
                             >
-                                <X size={18} />
+                                <X size={22} strokeWidth={1.5} />
                             </motion.button>
-                        </div>
+                        )}
+                    </div>
 
-                        {/* Content */}
-                        <div
-                            style={{
-                                flex: 1,
-                                overflowY: 'auto',
-                                padding: '16px 20px',
-                            }}
-                        >
-                            <AnimatePresence mode="wait">
-                                {step === 'player' ? (
-                                    <motion.div
-                                        key="player-step"
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -20 }}
-                                        style={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 8,
-                                        }}
-                                    >
-                                        {playersLoading ? (
-                                            <div
+                    {/* Content */}
+                    <div
+                        style={{
+                            flex: 1,
+                            overflowY: 'auto',
+                            padding: '16px 20px',
+                        }}
+                    >
+                        <AnimatePresence mode="wait">
+                            {step === 'player' ? (
+                                <motion.div
+                                    key="player-step"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 8,
+                                    }}
+                                >
+                                    {playersLoading ? (
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 8,
+                                                padding: '40px 0',
+                                                color: 'var(--color-text-tertiary)',
+                                            }}
+                                        >
+                                            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                                            Loading players...
+                                        </div>
+                                    ) : (
+                                        players.map(player => (
+                                            <motion.button
+                                                key={player.id}
+                                                onClick={() => handleSelectPlayer(player)}
+                                                whileTap={{ scale: 0.98 }}
                                                 style={{
+                                                    padding: '14px 16px',
+                                                    background: 'var(--color-surface-hover)',
+                                                    border: '1px solid var(--color-border-subtle)',
+                                                    borderRadius: 12,
+                                                    cursor: 'pointer',
+                                                    textAlign: 'left',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: 8,
-                                                    padding: '40px 0',
-                                                    color: 'var(--color-text-tertiary)',
+                                                    gap: 12,
                                                 }}
                                             >
-                                                <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                                                Loading players...
+                                                <div
+                                                    style={{
+                                                        width: 36,
+                                                        height: 36,
+                                                        borderRadius: '50%',
+                                                        background: 'var(--color-accent)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        color: '#fff',
+                                                        fontSize: '0.9rem',
+                                                        fontWeight: 600,
+                                                    }}
+                                                >
+                                                    {player.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <div
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            color: 'var(--color-text-primary)',
+                                                            fontSize: '0.95rem',
+                                                        }}
+                                                    >
+                                                        {player.name}
+                                                    </div>
+                                                </div>
+                                                <UserCheck size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                                            </motion.button>
+                                        ))
+                                    )}
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="matches-step"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 12,
+                                    }}
+                                >
+                                    {matchesLoading ? (
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 8,
+                                                padding: '40px 0',
+                                                color: 'var(--color-text-tertiary)',
+                                            }}
+                                        >
+                                            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                                            Loading matches...
+                                        </div>
+                                    ) : localMatches.length === 0 ? (
+                                        <div
+                                            style={{
+                                                textAlign: 'center',
+                                                padding: '40px 0',
+                                                color: 'var(--color-text-secondary)',
+                                            }}
+                                        >
+                                            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>⚽</div>
+                                            <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                                                No upcoming matches
                                             </div>
-                                        ) : (
-                                            players.map(player => (
-                                                <motion.button
-                                                    key={player.id}
-                                                    onClick={() => handleSelectPlayer(player)}
-                                                    whileTap={{ scale: 0.98 }}
+                                            <div style={{ fontSize: '0.9rem' }}>
+                                                This player has no matches to respond to
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        localMatches.map(match => {
+                                            const status = getPlayerStatus(match);
+                                            return (
+                                                <div
+                                                    key={match.id}
                                                     style={{
                                                         padding: '14px 16px',
                                                         background: 'var(--color-surface-hover)',
                                                         border: '1px solid var(--color-border-subtle)',
                                                         borderRadius: 12,
-                                                        cursor: 'pointer',
-                                                        textAlign: 'left',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 12,
                                                     }}
                                                 >
                                                     <div
                                                         style={{
-                                                            width: 36,
-                                                            height: 36,
-                                                            borderRadius: '50%',
-                                                            background: 'var(--color-accent)',
                                                             display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            color: '#fff',
-                                                            fontSize: '0.9rem',
-                                                            fontWeight: 600,
+                                                            justifyContent: 'space-between',
+                                                            alignItems: 'flex-start',
+                                                            marginBottom: 12,
                                                         }}
                                                     >
-                                                        {player.name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div style={{ flex: 1 }}>
-                                                        <div
-                                                            style={{
-                                                                fontWeight: 600,
-                                                                color: 'var(--color-text-primary)',
-                                                                fontSize: '0.95rem',
-                                                            }}
-                                                        >
-                                                            {player.name}
-                                                        </div>
-                                                    </div>
-                                                    <UserCheck size={18} style={{ color: 'var(--color-text-tertiary)' }} />
-                                                </motion.button>
-                                            ))
-                                        )}
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        key="matches-step"
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: 20 }}
-                                        style={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 12,
-                                        }}
-                                    >
-                                        {matchesLoading ? (
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: 8,
-                                                    padding: '40px 0',
-                                                    color: 'var(--color-text-tertiary)',
-                                                }}
-                                            >
-                                                <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                                                Loading matches...
-                                            </div>
-                                        ) : localMatches.length === 0 ? (
-                                            <div
-                                                style={{
-                                                    textAlign: 'center',
-                                                    padding: '40px 0',
-                                                    color: 'var(--color-text-secondary)',
-                                                }}
-                                            >
-                                                <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>⚽</div>
-                                                <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                                                    No upcoming matches
-                                                </div>
-                                                <div style={{ fontSize: '0.9rem' }}>
-                                                    This player has no matches to respond to
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            localMatches.map(match => {
-                                                const status = getPlayerStatus(match);
-                                                return (
-                                                    <div
-                                                        key={match.id}
-                                                        style={{
-                                                            padding: '14px 16px',
-                                                            background: 'var(--color-surface-hover)',
-                                                            border: '1px solid var(--color-border-subtle)',
-                                                            borderRadius: 12,
-                                                        }}
-                                                    >
-                                                        <div
-                                                            style={{
-                                                                display: 'flex',
-                                                                justifyContent: 'space-between',
-                                                                alignItems: 'flex-start',
-                                                                marginBottom: 12,
-                                                            }}
-                                                        >
-                                                            <div style={{ flex: 1 }}>
-                                                                <div
-                                                                    style={{
-                                                                        fontWeight: 600,
-                                                                        color: 'var(--color-text-primary)',
-                                                                        fontSize: '0.95rem',
-                                                                        marginBottom: 6,
-                                                                    }}
-                                                                >
-                                                                    {match.name}
-                                                                </div>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div
+                                                                style={{
+                                                                    fontWeight: 600,
+                                                                    color: 'var(--color-text-primary)',
+                                                                    fontSize: '0.95rem',
+                                                                    marginBottom: 6,
+                                                                }}
+                                                            >
+                                                                {match.name}
+                                                            </div>
+                                                            <div
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 6,
+                                                                    fontSize: '0.8rem',
+                                                                    color: 'var(--color-text-secondary)',
+                                                                    marginBottom: 4,
+                                                                }}
+                                                            >
+                                                                <Calendar size={12} />
+                                                                {formatDate(match.date)}
+                                                            </div>
+                                                            {match.location && (
                                                                 <div
                                                                     style={{
                                                                         display: 'flex',
@@ -421,67 +409,52 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
                                                                         gap: 6,
                                                                         fontSize: '0.8rem',
                                                                         color: 'var(--color-text-secondary)',
-                                                                        marginBottom: 4,
                                                                     }}
                                                                 >
-                                                                    <Calendar size={12} />
-                                                                    {formatDate(match.date)}
+                                                                    <MapPin size={12} />
+                                                                    {match.location}
                                                                 </div>
-                                                                {match.location && (
-                                                                    <div
-                                                                        style={{
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            gap: 6,
-                                                                            fontSize: '0.8rem',
-                                                                            color: 'var(--color-text-secondary)',
-                                                                        }}
-                                                                    >
-                                                                        <MapPin size={12} />
-                                                                        {match.location}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        <div
-                                                            style={{
-                                                                display: 'flex',
-                                                                justifyContent: 'center',
-                                                                gap: 16,
-                                                                paddingTop: 8,
-                                                                borderTop: '1px solid var(--color-border-subtle)',
-                                                            }}
-                                                        >
-                                                            <HeaderResponseButton
-                                                                type="yes"
-                                                                selected={status === 'Present'}
-                                                                loading={updatingMatchId === match.id && updating === 'Present'}
-                                                                onClick={() => handleResponse(match.id, 'Present')}
-                                                            />
-                                                            <HeaderResponseButton
-                                                                type="maybe"
-                                                                selected={status === 'Maybe'}
-                                                                loading={updatingMatchId === match.id && updating === 'Maybe'}
-                                                                onClick={() => handleResponse(match.id, 'Maybe')}
-                                                            />
-                                                            <HeaderResponseButton
-                                                                type="no"
-                                                                selected={status === 'NotPresent'}
-                                                                loading={updatingMatchId === match.id && updating === 'NotPresent'}
-                                                                onClick={() => handleResponse(match.id, 'NotPresent')}
-                                                            />
+                                                            )}
                                                         </div>
                                                     </div>
-                                                );
-                                            })
-                                        )}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </motion.div>
-                </>
+
+                                                    <div
+                                                        style={{
+                                                            display: 'flex',
+                                                            justifyContent: 'center',
+                                                            gap: 16,
+                                                            paddingTop: 8,
+                                                            borderTop: '1px solid var(--color-border-subtle)',
+                                                        }}
+                                                    >
+                                                        <HeaderResponseButton
+                                                            type="yes"
+                                                            selected={status === 'Present'}
+                                                            loading={updatingMatchId === match.id && updating === 'Present'}
+                                                            onClick={() => handleResponse(match.id, 'Present')}
+                                                        />
+                                                        <HeaderResponseButton
+                                                            type="maybe"
+                                                            selected={status === 'Maybe'}
+                                                            loading={updatingMatchId === match.id && updating === 'Maybe'}
+                                                            onClick={() => handleResponse(match.id, 'Maybe')}
+                                                        />
+                                                        <HeaderResponseButton
+                                                            type="no"
+                                                            selected={status === 'NotPresent'}
+                                                            loading={updatingMatchId === match.id && updating === 'NotPresent'}
+                                                            onClick={() => handleResponse(match.id, 'NotPresent')}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </motion.div>
             )}
         </AnimatePresence>
     );

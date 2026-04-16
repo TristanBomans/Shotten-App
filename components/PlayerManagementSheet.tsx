@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Trash2, UserPlus, Loader2 } from 'lucide-react';
+import { ChevronLeft, Check, Trash2, UserPlus, Loader2 } from 'lucide-react';
 import { usePlayerManagement } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import type { Player } from '@/lib/mockData';
@@ -36,18 +36,12 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
     useEffect(() => {
         if (isOpen) {
             refresh();
-            // Prevent body scroll when sheet is open
-            document.body.style.overflow = 'hidden';
         } else {
-            document.body.style.overflow = '';
             // Reset state when closing
             setEditingId(null);
             setIsAddingNew(false);
             setDeleteConfirmId(null);
         }
-        return () => {
-            document.body.style.overflow = '';
-        };
     }, [isOpen, refresh]);
 
     useEffect(() => {
@@ -103,98 +97,82 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
         onClose();
     };
 
+    if (!isOpen) return null;
+
     return (
         <AnimatePresence>
             {isOpen && (
-                <>
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        onClick={handleClose}
+                <motion.div
+                    initial={{ opacity: 0, x: '100%' }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'var(--color-bg)',
+                        zIndex: 10020,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                    }}
+                >
+                    {/* Header with iOS-style back button */}
+                    <div
                         style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 50,
-                            background: 'var(--color-overlay)',
-                            backdropFilter: 'blur(8px)',
-                            WebkitBackdropFilter: 'blur(8px)',
-                        }}
-                    />
-
-                    {/* Bottom Sheet */}
-                    <motion.div
-                        initial={{ y: '100%' }}
-                        animate={{ y: 0 }}
-                        exit={{ y: '100%' }}
-                        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                        style={{
-                            position: 'fixed',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            zIndex: 51,
-                            background: 'var(--color-bg-elevated)',
-                            borderTopLeftRadius: 20,
-                            borderTopRightRadius: 20,
-                            maxHeight: '85vh',
                             display: 'flex',
-                            flexDirection: 'column',
-                            boxShadow: 'var(--shadow-lg)',
+                            alignItems: 'center',
+                            padding: 'calc(var(--safe-top) + 8px) 16px 12px',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
+                            background: 'var(--color-surface)',
                         }}
                     >
-                        {/* Handle bar */}
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            padding: '12px 0 8px',
-                        }}>
-                            <div style={{
-                                width: 36,
-                                height: 5,
-                                borderRadius: 3,
-                                background: 'var(--color-text-tertiary)',
-                            }} />
-                        </div>
-
-                        {/* Header */}
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '8px 20px 16px',
-                            borderBottom: '0.5px solid var(--color-border)',
-                        }}>
-                            <h2 style={{
-                                margin: 0,
-                                fontSize: '1.25rem',
-                                fontWeight: 700,
+                        <motion.button
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                handleClose();
+                            }}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 2,
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--color-accent)',
+                                fontSize: '1.05rem',
+                                fontWeight: 400,
+                                cursor: 'pointer',
+                                padding: '4px 8px 4px 0',
+                                marginLeft: -4,
+                            }}
+                        >
+                            <ChevronLeft size={28} strokeWidth={1.5} />
+                            Back
+                        </motion.button>
+                        <div
+                            style={{
+                                position: 'absolute',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                fontSize: '1.05rem',
+                                fontWeight: 600,
                                 color: 'var(--color-text-primary)',
-                            }}>
-                                Manage Players
-                            </h2>
-                            <motion.button
-                                onClick={handleClose}
-                                whileTap={{ scale: 0.9 }}
-                                style={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: '50%',
-                                    background: 'var(--color-surface)',
-                                    border: 'none',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    color: 'var(--color-text-secondary)',
-                                }}
-                            >
-                                <X size={18} />
-                            </motion.button>
+                            }}
+                        >
+                            Manage Players
                         </div>
+                    </div>
 
+                    {/* Content */}
+                    <div
+                        style={{
+                            flex: 1,
+                            overflowY: 'auto',
+                            display: 'flex',
+                            flexDirection: 'column',
+                        }}
+                    >
                         {/* Loading state */}
                         {loading ? (
                             <div style={{
@@ -321,8 +299,8 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                                             height: 44,
                                                             borderRadius: 10,
                                                             border: 'none',
-                                                            background: isInTeam 
-                                                                ? 'var(--color-success-glow)' 
+                                                            background: isInTeam
+                                                                ? 'var(--color-success-glow)'
                                                                 : 'var(--color-surface)',
                                                             display: 'flex',
                                                             alignItems: 'center',
@@ -445,12 +423,12 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                             Add new player...
                                         </motion.button>
                                         )}
-                                        
+
                                         {/* Empty cells for alignment */}
                                         {teams.map(team => (
                                             <div key={team.id} />
                                         ))}
-                                        
+
                                         {isAddingNew && newPlayerName.trim() ? (
                                             <motion.button
                                                 onClick={handleAddNew}
@@ -477,14 +455,14 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                 </div>
 
                                 {/* Safe area padding for iOS */}
-                                <div style={{ 
+                                <div style={{
                                     height: 'env(safe-area-inset-bottom, 20px)',
                                     background: 'var(--color-bg-elevated)',
                                 }} />
                             </>
                         )}
-                    </motion.div>
-                </>
+                    </div>
+                </motion.div>
             )}
         </AnimatePresence>
     );

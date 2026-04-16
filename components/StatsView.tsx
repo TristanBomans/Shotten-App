@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
+import { ChevronLeft, Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, ReferenceLine, YAxis } from 'recharts';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
@@ -399,77 +399,99 @@ function PlayerDetailModal({ player, rank, onClose }: {
 }) {
     if (typeof document === 'undefined') return null;
 
-    const modalContent = (
-        <>
+    return createPortal(
+        <AnimatePresence>
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => {
-                    hapticPatterns.tap();
-                    onClose();
-                }}
+                initial={{ opacity: 0, x: '100%' }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: '100%' }}
+                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
                 style={{
                     position: 'fixed',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'var(--color-overlay)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    zIndex: 10000,
+                    inset: 0,
+                    background: 'var(--color-bg)',
+                    zIndex: 10020,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
                 }}
-            />
-            <div style={{
-                position: 'fixed',
-                top: 0, left: 0, right: 0, bottom: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 20, zIndex: 10001, pointerEvents: 'none',
-            }}>
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            >
+                {/* Header with iOS-style back button */}
+                <div
                     style={{
-                        width: '100%', maxWidth: 360, maxHeight: 'calc(100dvh - 120px)',
-                        display: 'flex', flexDirection: 'column', pointerEvents: 'auto',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: 'calc(var(--safe-top) + 8px) 16px 12px',
+                        borderBottom: '0.5px solid var(--color-border-subtle)',
                         background: 'var(--color-surface)',
-                        backdropFilter: 'blur(60px)', WebkitBackdropFilter: 'blur(60px)',
-                        borderRadius: 24, border: '0.5px solid var(--color-border)',
-                        boxShadow: '0 24px 80px var(--color-overlay)', overflow: 'hidden',
                     }}
                 >
-                    {/* Header */}
-                    <div style={{ padding: '20px 20px 16px', borderBottom: '0.5px solid var(--color-border)', flexShrink: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    #{rank} · <player.stats.rank.icon size={12} style={{ color: player.stats.rank.color }} /> {player.stats.rank.name}
-                                </div>
-                                <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
-                                    {player.name}
-                                </h2>
-                            </div>
-                            <motion.button
-                                onClick={() => {
-                                    hapticPatterns.tap();
-                                    onClose();
-                                }}
-                                whileTap={{ scale: 0.9 }}
-                                style={{
-                                    width: 32, height: 32, borderRadius: 9999, border: 'none',
-                                    background: 'var(--color-surface-hover)', color: 'var(--color-text-secondary)',
-                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}
-                            >
-                                <X size={16} />
-                            </motion.button>
+                    <motion.button
+                        whileTap={{ scale: 0.96 }}
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            onClose();
+                        }}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--color-accent)',
+                            fontSize: '1.05rem',
+                            fontWeight: 400,
+                            cursor: 'pointer',
+                            padding: '4px 8px 4px 0',
+                            marginLeft: -4,
+                        }}
+                    >
+                        <ChevronLeft size={28} strokeWidth={1.5} />
+                        Back
+                    </motion.button>
+                    <div
+                        style={{
+                            position: 'absolute',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            fontSize: '1.05rem',
+                            fontWeight: 600,
+                            color: 'var(--color-text-primary)',
+                            maxWidth: '60%',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            textAlign: 'center',
+                        }}
+                    >
+                        {player.name}
+                    </div>
+                </div>
+
+                {/* Scrollable Content */}
+                <div
+                    style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}
+                >
+                    {/* Hero Section */}
+                    <div style={{ padding: '24px 20px 20px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            #{rank} · <player.stats.rank.icon size={12} style={{ color: player.stats.rank.color }} /> {player.stats.rank.name}
                         </div>
 
                         {/* Score */}
                         <div style={{
-                            marginTop: 16, padding: 14, background: 'var(--color-bg-elevated)',
-                            borderRadius: 14, textAlign: 'center',
+                            padding: 18,
+                            background: 'var(--color-bg-elevated)',
+                            borderRadius: 16,
+                            textAlign: 'center',
+                            border: '0.5px solid var(--color-border)',
                         }}>
-                            <div style={{ fontSize: '2.25rem', fontWeight: 800, color: player.stats.rank.color }}>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: player.stats.rank.color }}>
                                 {player.stats.score}
                             </div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>
@@ -481,7 +503,7 @@ function PlayerDetailModal({ player, rank, onClose }: {
                                 <div style={{ marginTop: 16 }}>
                                     <ScoreSparkline history={player.stats.scoreHistory} />
                                     <div style={{
-                                        fontSize: '0.6rem',
+                                        fontSize: '0.65rem',
                                         color: 'var(--color-text-tertiary)',
                                         marginTop: 8,
                                     }}>
@@ -492,7 +514,7 @@ function PlayerDetailModal({ player, rank, onClose }: {
                         </div>
 
                         {/* Stats */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 12 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 16 }}>
                             <StatMini label="Present" value={player.stats.presentCount} color="var(--color-success)" />
                             <StatMini label="Maybe" value={player.stats.maybeCount} color="var(--color-warning)" />
                             <StatMini label="Absent" value={player.stats.absentCount} color="var(--color-danger)" />
@@ -501,7 +523,7 @@ function PlayerDetailModal({ player, rank, onClose }: {
                     </div>
 
                     {/* Match History */}
-                    <div style={{ padding: '12px 16px 20px', overflowY: 'auto', flex: 1 }}>
+                    <div style={{ padding: '0 20px 24px', flex: 1 }}>
                         <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', marginBottom: 10 }}>
                             Match History
                         </h3>
@@ -545,19 +567,18 @@ function PlayerDetailModal({ player, rank, onClose }: {
                             ))}
                         </div>
                     </div>
-                </motion.div>
-            </div>
-        </>
+                </div>
+            </motion.div>
+        </AnimatePresence>,
+        document.body
     );
-
-    return createPortal(modalContent, document.body);
 }
 
 function StatMini({ label, value, color }: { label: string; value: number; color: string }) {
     return (
         <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color }}>{value}</div>
-            <div style={{ fontSize: '0.55rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>{label}</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{value}</div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>{label}</div>
         </div>
     );
 }
@@ -565,60 +586,78 @@ function StatMini({ label, value, color }: { label: string; value: number; color
 function RulesModal({ onClose }: { onClose: () => void }) {
     if (typeof document === 'undefined') return null;
 
-    const modalContent = (
-        <>
+    return createPortal(
+        <AnimatePresence>
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => {
-                    hapticPatterns.tap();
-                    onClose();
-                }}
+                initial={{ opacity: 0, x: '100%' }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: '100%' }}
+                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
                 style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'var(--color-overlay)', backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)', zIndex: 10000,
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'var(--color-bg)',
+                    zIndex: 10020,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
                 }}
-            />
-            <div style={{
-                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 20, zIndex: 10001, pointerEvents: 'none',
-            }}>
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            >
+                {/* Header with iOS-style back button */}
+                <div
                     style={{
-                        width: '100%', maxWidth: 340, maxHeight: 'calc(100dvh - 120px)',
-                        overflowY: 'auto', pointerEvents: 'auto',
-                        background: 'var(--color-surface)', backdropFilter: 'blur(60px)',
-                        WebkitBackdropFilter: 'blur(60px)', borderRadius: 24,
-                        border: '0.5px solid var(--color-border)',
-                        boxShadow: '0 24px 80px var(--color-overlay)', padding: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: 'calc(var(--safe-top) + 8px) 16px 12px',
+                        borderBottom: '0.5px solid var(--color-border-subtle)',
+                        background: 'var(--color-surface)',
                     }}
                 >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
-                            How it works 🤡
-                        </h2>
-                        <motion.button
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                onClose();
-                            }}
-                            whileTap={{ scale: 0.9 }}
-                            style={{
-                                width: 32, height: 32, borderRadius: 9999, border: 'none',
-                                background: 'var(--color-surface-hover)', color: 'var(--color-text-secondary)',
-                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}
-                        >
-                            <X size={16} />
-                        </motion.button>
+                    <motion.button
+                        whileTap={{ scale: 0.96 }}
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            onClose();
+                        }}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--color-accent)',
+                            fontSize: '1.05rem',
+                            fontWeight: 400,
+                            cursor: 'pointer',
+                            padding: '4px 8px 4px 0',
+                            marginLeft: -4,
+                        }}
+                    >
+                        <ChevronLeft size={28} strokeWidth={1.5} />
+                        Back
+                    </motion.button>
+                    <div
+                        style={{
+                            position: 'absolute',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            fontSize: '1.05rem',
+                            fontWeight: 600,
+                            color: 'var(--color-text-primary)',
+                        }}
+                    >
+                        How it works
                     </div>
+                </div>
 
+                {/* Content */}
+                <div
+                    style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        padding: '20px',
+                    }}
+                >
                     <div style={{ marginBottom: 20 }}>
                         <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', marginBottom: 10 }}>
                             Points
@@ -653,27 +692,11 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                             ))}
                         </div>
                     </div>
-
-                    <motion.button
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            onClose();
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                        style={{
-                            width: '100%', marginTop: 20, padding: '12px',
-                            background: 'var(--color-surface-hover)', border: 'none', borderRadius: 12,
-                            color: 'var(--color-text-primary)', fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
-                        }}
-                    >
-                        Got it
-                    </motion.button>
-                </motion.div>
-            </div>
-        </>
+                </div>
+            </motion.div>
+        </AnimatePresence>,
+        document.body
     );
-
-    return createPortal(modalContent, document.body);
 }
 
 function ScoreSparkline({ history }: { history: ScoreHistoryPoint[] }) {

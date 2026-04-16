@@ -475,9 +475,10 @@ export default function OpponentView({
                         <div style={{
                             width: 72, height: 72,
                             borderRadius: 14,
-                            background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-secondary))',
+                            background: 'var(--color-surface-hover)',
+                            border: '1px solid var(--color-border)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary)',
+                            fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-accent)',
                             flexShrink: 0,
                         }}>
                             {opponentData.name.charAt(0)}

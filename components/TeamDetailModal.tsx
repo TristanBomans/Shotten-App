@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp } from 'lucide-react';
+import { ChevronLeft, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp, X } from 'lucide-react';
 import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
@@ -140,122 +140,72 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
 
     if (typeof document === 'undefined') return null;
 
-    const modalContent = (
-        <>
-            {/* Backdrop */}
+    return createPortal(
+        <AnimatePresence>
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => {
-                    hapticPatterns.tap();
-                    onClose();
-                }}
+                initial={{ opacity: 0, x: '100%' }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: '100%' }}
+                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
                 style={{
                     position: 'fixed',
                     inset: 0,
-                    background: 'var(--color-overlay)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    zIndex: 10000,
+                    background: 'var(--color-bg)',
+                    zIndex: 10020,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
                 }}
-            />
-
-            {/* Modal Container */}
-            <div style={{
-                position: 'fixed',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 20,
-                zIndex: 10001,
-                pointerEvents: 'none',
-            }}>
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-                    style={{
-                        position: 'relative',
-                        width: '100%',
-                        maxWidth: 420,
-                        height: '85vh',
-                        maxHeight: 'calc(100dvh - 80px)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        pointerEvents: 'auto',
-                        background: 'var(--color-surface)',
-                        backdropFilter: 'blur(60px)',
-                        WebkitBackdropFilter: 'blur(60px)',
-                        borderRadius: 24,
-                        border: '1px solid var(--color-border)',
-                        boxShadow: 'var(--shadow-lg)',
-                        overflow: 'hidden',
-                    }}
-                >
-                    {/* Header */}
-                    <div style={{
-                        padding: '16px 20px',
-                        borderBottom: '0.5px solid var(--color-border)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                    }}>
-                        {team.imageBase64 ? (
-                            <img
-                                src={team.imageBase64}
-                                alt={team.name}
-                                onClick={() => {
-                                    hapticPatterns.tap();
-                                    setShowImage(true);
-                                }}
-                                style={{
-                                    width: 48, height: 48,
-                                    borderRadius: 12,
-                                    objectFit: 'cover',
-                                    border: '1px solid var(--color-border)',
-                                    cursor: 'zoom-in',
-                                    flexShrink: 0,
-                                }}
-                            />
-                        ) : (
-                            <div style={{
-                                width: 48, height: 48,
-                                borderRadius: 12,
-                                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-secondary))',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary)',
-                                flexShrink: 0,
-                            }}>
-                                {team.name.charAt(0)}
-                            </div>
-                        )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{
-                                fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)',
-                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                            }}>
-                                {team.name}
-                            </div>
-                            {team.leagueName && (
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                                    {team.leagueName}
-                                </div>
-                            )}
+            >
+                    {/* Header with iOS-style back button */}
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: 'calc(var(--safe-top) + 8px) 16px 12px',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
+                            background: 'var(--color-surface)',
+                        }}
+                    >
+                        <motion.button
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                onClose();
+                            }}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 2,
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--color-accent)',
+                                fontSize: '1.05rem',
+                                fontWeight: 400,
+                                cursor: 'pointer',
+                                padding: '4px 8px 4px 0',
+                                marginLeft: -4,
+                            }}
+                        >
+                            <ChevronLeft size={28} strokeWidth={1.5} />
+                            Back
+                        </motion.button>
+                        <div
+                            style={{
+                                position: 'absolute',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                fontSize: '1.05rem',
+                                fontWeight: 600,
+                                color: 'var(--color-text-primary)',
+                                maxWidth: '60%',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            }}
+                        >
+                            {team.name}
                         </div>
-                        <button onClick={() => {
-                            hapticPatterns.tap();
-                            onClose();
-                        }} style={{
-                            background: 'var(--color-surface-hover)', border: 'none',
-                            borderRadius: '50%', width: 32, height: 32,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'var(--color-text-primary)', cursor: 'pointer', flexShrink: 0,
-                        }}>
-                            <X size={16} />
-                        </button>
                     </div>
 
                     {/* Tabs */}
@@ -264,6 +214,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                         padding: '10px 16px',
                         gap: 6,
                         borderBottom: '0.5px solid var(--color-border-subtle)',
+                        background: 'var(--color-surface)',
                     }}>
                         {([
                             { id: 'overview', icon: TrendingUp, label: 'Overview' },
@@ -326,6 +277,53 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 overflowY: 'auto',
                             }}
                         >
+                            {/* Team Hero */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                                {team.imageBase64 ? (
+                                    <img
+                                        src={team.imageBase64}
+                                        alt={team.name}
+                                        onClick={() => {
+                                            hapticPatterns.tap();
+                                            setShowImage(true);
+                                        }}
+                                        style={{
+                                            width: 64, height: 64,
+                                            borderRadius: 16,
+                                            objectFit: 'cover',
+                                            border: '1px solid var(--color-border)',
+                                            cursor: 'zoom-in',
+                                            flexShrink: 0,
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{
+                                        width: 64, height: 64,
+                                        borderRadius: 16,
+                                        background: 'var(--color-surface-hover)',
+                                        border: '1px solid var(--color-border)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent)',
+                                        flexShrink: 0,
+                                    }}>
+                                        {team.name.charAt(0)}
+                                    </div>
+                                )}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-text-primary)',
+                                        marginBottom: 2,
+                                    }}>
+                                        {team.name}
+                                    </div>
+                                    {team.leagueName && (
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                                            {team.leagueName}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Recent Form */}
                             {recentForm.length > 0 && (
                                 <div style={{ marginBottom: 16 }}>
@@ -411,6 +409,8 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                     borderTop: '0.5px solid var(--color-border-subtle)',
                                     borderBottom: '0.5px solid var(--color-border-subtle)',
                                     marginBottom: 16,
+                                    background: 'var(--color-surface-hover)',
+                                    borderRadius: 12,
                                 }}>
                                     {team.colors && (
                                         <div style={{
@@ -601,69 +601,67 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             )}
                         </div>
                     </div>
-                </motion.div>
-            </div>
 
-            {/* Full Image Overlay */}
-            <AnimatePresence>
-                {showImage && team.imageBase64 && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            setShowImage(false);
-                        }}
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 10002,
-                            background: 'var(--color-overlay)',
-                            backdropFilter: 'blur(10px)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 20,
-                        }}
-                    >
-                        <motion.img
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0.8 }}
-                            src={team.imageBase64}
-                            style={{
-                                maxWidth: '100%',
-                                maxHeight: '80vh',
-                                borderRadius: 16,
-                                objectFit: 'contain',
-                            }}
-                        />
-                        <button
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                setShowImage(false);
-                            }}
-                            style={{
-                                position: 'absolute',
-                                top: 20, right: 20,
-                                background: 'var(--color-surface-hover)',
-                                border: 'none', borderRadius: '50%',
-                                width: 40, height: 40,
-                                color: 'var(--color-text-primary)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                cursor: 'pointer',
-                            }}
-                        >
-                            <X size={24} />
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </>
+                    {/* Full Image Overlay */}
+                    <AnimatePresence>
+                        {showImage && team.imageBase64 && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    setShowImage(false);
+                                }}
+                                style={{
+                                    position: 'fixed',
+                                    inset: 0,
+                                    zIndex: 10021,
+                                    background: 'var(--color-overlay)',
+                                    backdropFilter: 'blur(10px)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 20,
+                                }}
+                            >
+                                <motion.img
+                                    initial={{ scale: 0.8 }}
+                                    animate={{ scale: 1 }}
+                                    exit={{ scale: 0.8 }}
+                                    src={team.imageBase64}
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '80vh',
+                                        borderRadius: 16,
+                                        objectFit: 'contain',
+                                    }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        hapticPatterns.tap();
+                                        setShowImage(false);
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 20, right: 20,
+                                        background: 'var(--color-surface-hover)',
+                                        border: 'none', borderRadius: '50%',
+                                        width: 40, height: 40,
+                                        color: 'var(--color-text-primary)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <X size={24} />
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+            </motion.div>
+        </AnimatePresence>,
+        document.body
     );
-
-    return createPortal(modalContent, document.body);
 }
 
 // Sub-components
