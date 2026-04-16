@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Target, Users, Calendar, TrendingUp, Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Target, Users, Calendar, TrendingUp, Award, ChevronRight } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import type { ScraperPlayer, ScraperTeam, ScraperTeamStats } from '@/lib/useData';
 
@@ -94,432 +94,379 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
     return createPortal(
         <AnimatePresence>
             {open && (
-                <>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            onClose();
-                        }}
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            background: 'var(--color-overlay)',
-                            backdropFilter: 'blur(24px)',
-                            WebkitBackdropFilter: 'blur(24px)',
-                            zIndex: 10020,
-                        }}
-                    />
-
+                <motion.div
+                    initial={{ opacity: 0, x: '100%' }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'var(--color-bg)',
+                        zIndex: 10020,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                    }}
+                >
+                    {/* Header with iOS-style back button */}
                     <div
                         style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 10021,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            pointerEvents: 'none',
-                            padding: 16,
+                            padding: 'calc(var(--safe-top) + 8px) 16px 12px',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
+                            background: 'var(--color-surface)',
                         }}
                     >
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 30 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 30 }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                        <motion.button
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                onClose();
+                            }}
                             style={{
-                                width: '100%',
-                                maxWidth: 380,
-                                maxHeight: 'calc(100dvh - 60px)',
                                 display: 'flex',
-                                flexDirection: 'column',
-                                pointerEvents: 'auto',
-                                background: 'var(--color-surface)',
-                                borderRadius: 28,
-                                border: '1px solid var(--color-border)',
-                                boxShadow: '0 32px 96px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
-                                overflow: 'hidden',
-                                position: 'relative',
+                                alignItems: 'center',
+                                gap: 2,
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--color-accent)',
+                                fontSize: '1.05rem',
+                                fontWeight: 400,
+                                cursor: 'pointer',
+                                padding: '4px 8px 4px 0',
+                                marginLeft: -4,
                             }}
                         >
-                            {/* Close Button - Floating */}
-                            <motion.button
-                                onClick={() => {
-                                    hapticPatterns.tap();
-                                    onClose();
-                                }}
-                                whileTap={{ scale: 0.9 }}
-                                style={{
-                                    position: 'absolute',
-                                    top: 16,
-                                    right: 16,
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 12,
-                                    border: 'none',
-                                    background: 'rgba(255,255,255,0.08)',
-                                    color: 'var(--color-text-secondary)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    zIndex: 10,
-                                    backdropFilter: 'blur(10px)',
-                                }}
-                            >
-                                <X size={18} />
-                            </motion.button>
+                            <ChevronLeft size={28} strokeWidth={1.5} />
+                            Back
+                        </motion.button>
+                        <div
+                            style={{
+                                position: 'absolute',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                fontSize: '1.05rem',
+                                fontWeight: 600,
+                                color: 'var(--color-text-primary)',
+                            }}
+                        >
+                            {player.name}
+                        </div>
+                    </div>
 
-                            {/* Scrollable Content */}
+                    {/* Scrollable Content */}
+                    <div
+                        className="scrollbar-hide"
+                        style={{
+                            overflowY: 'auto',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            flex: 1,
+                        }}
+                    >
+{/* Hero Section */}
                             <div
-                                className="scrollbar-hide"
                                 style={{
-                                    overflowY: 'auto',
-                                    display: 'flex',
-                                    flexDirection: 'column',
+                                    padding: '20px 24px 16px',
                                 }}
                             >
-                                {/* Hero Section */}
+                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                                    {playerStats.length} Team{playerStats.length !== 1 ? 's' : ''} • {player.gamesPlayed} Games
+                                </p>
+                            </div>
+
+                        {/* Big Stats */}
+                        <div style={{ padding: '0 24px 24px' }}>
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1px 1fr',
+                                    gap: 0,
+                                    background: 'var(--color-surface-hover)',
+                                    borderRadius: 20,
+                                    padding: '24px 0',
+                                    border: '0.5px solid var(--color-border)',
+                                }}
+                            >
+                                {/* Goals */}
+                                <div style={{ textAlign: 'center' }}>
+                                    <div
+                                        style={{
+                                            fontSize: '3rem',
+                                            fontWeight: 900,
+                                            color: 'var(--color-success)',
+                                            lineHeight: 1,
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        {player.goals}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                        <Target size={12} style={{ color: 'var(--color-text-tertiary)' }} />
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', fontWeight: 600 }}>Goals</span>
+                                    </div>
+                                </div>
+
+                                {/* Divider */}
+                                <div style={{ background: 'var(--color-border)', width: 1 }} />
+
+                                {/* Assists */}
+                                <div style={{ textAlign: 'center' }}>
+                                    <div
+                                        style={{
+                                            fontSize: '3rem',
+                                            fontWeight: 900,
+                                            color: 'var(--color-accent)',
+                                            lineHeight: 1,
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        {player.assists}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                        <Users size={12} style={{ color: 'var(--color-text-tertiary)' }} />
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', fontWeight: 600 }}>Assists</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Performance Metrics */}
+                        <div style={{ padding: '0 24px 24px' }}>
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(3, 1fr)',
+                                    gap: 8,
+                                }}
+                            >
+                                <MetricBox icon={<TrendingUp size={14} />} label="G/G" value={avgGoals} />
+                                <MetricBox icon={<Award size={14} />} label="A/G" value={avgAssists} />
+                                <MetricBox icon={<Calendar size={14} />} label="Contrib" value={contribution} />
+                            </div>
+                        </div>
+
+                        {/* Team Breakdown Section */}
+                        {hasTeams && (
+                            <div style={{ padding: '0 24px 24px' }}>
+                                {/* Team Breakdown Header */}
                                 <div
                                     style={{
-                                        padding: '32px 24px 24px',
-                                        background: 'linear-gradient(180deg, rgb(var(--color-accent-rgb) / 0.12) 0%, transparent 100%)',
-                                        position: 'relative',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        marginBottom: 12,
                                     }}
                                 >
-                                    {/* Player Initial Badge */}
                                     <div
                                         style={{
-                                            width: 80,
-                                            height: 80,
-                                            borderRadius: 24,
-                                            background: 'var(--color-accent)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: '2.5rem',
-                                            fontWeight: 800,
-                                            color: '#ffffff',
-                                            marginBottom: 16,
-                                            boxShadow: '0 8px 32px rgb(var(--color-accent-rgb) / 0.3)',
+                                            fontSize: '0.7rem',
+                                            fontWeight: 700,
+                                            color: 'var(--color-text-tertiary)',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.08em',
                                         }}
                                     >
-                                        {player.name.charAt(0)}
-                                    </div>
-
-                                    {/* Player Name */}
-                                    <h2
-                                        style={{
-                                            fontSize: '1.6rem',
-                                            fontWeight: 800,
-                                            color: 'var(--color-text-primary)',
-                                            margin: 0,
-                                            marginBottom: 4,
-                                            letterSpacing: '-0.02em',
-                                        }}
-                                    >
-                                        {player.name}
-                                    </h2>
-                                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-                                        {playerStats.length} Team{playerStats.length !== 1 ? 's' : ''} • {player.gamesPlayed} Games
-                                    </p>
-                                </div>
-
-                                {/* Big Stats */}
-                                <div style={{ padding: '0 24px 24px' }}>
-                                    <div
-                                        style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: '1fr 1px 1fr',
-                                            gap: 0,
-                                            background: 'var(--color-surface-hover)',
-                                            borderRadius: 20,
-                                            padding: '24px 0',
-                                            border: '0.5px solid var(--color-border)',
-                                        }}
-                                    >
-                                        {/* Goals */}
-                                        <div style={{ textAlign: 'center' }}>
-                                            <div
-                                                style={{
-                                                    fontSize: '3rem',
-                                                    fontWeight: 900,
-                                                    color: 'var(--color-success)',
-                                                    lineHeight: 1,
-                                                    marginBottom: 4,
-                                                }}
-                                            >
-                                                {player.goals}
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                                                <Target size={12} style={{ color: 'var(--color-text-tertiary)' }} />
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', fontWeight: 600 }}>Goals</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Divider */}
-                                        <div style={{ background: 'var(--color-border)', width: 1 }} />
-
-                                        {/* Assists */}
-                                        <div style={{ textAlign: 'center' }}>
-                                            <div
-                                                style={{
-                                                    fontSize: '3rem',
-                                                    fontWeight: 900,
-                                                    color: 'var(--color-accent)',
-                                                    lineHeight: 1,
-                                                    marginBottom: 4,
-                                                }}
-                                            >
-                                                {player.assists}
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                                                <Users size={12} style={{ color: 'var(--color-text-tertiary)' }} />
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', fontWeight: 600 }}>Assists</span>
-                                            </div>
-                                        </div>
+                                        Team Breakdown
                                     </div>
                                 </div>
 
-                                {/* Performance Metrics */}
-                                <div style={{ padding: '0 24px 24px' }}>
-                                    <div
-                                        style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: 'repeat(3, 1fr)',
-                                            gap: 8,
-                                        }}
-                                    >
-                                        <MetricBox icon={<TrendingUp size={14} />} label="G/G" value={avgGoals} />
-                                        <MetricBox icon={<Award size={14} />} label="A/G" value={avgAssists} />
-                                        <MetricBox icon={<Calendar size={14} />} label="Contrib" value={contribution} />
-                                    </div>
-                                </div>
-
-                                {/* Team Breakdown Section */}
-                                {hasTeams && (
-                                    <div style={{ padding: '0 24px 24px' }}>
-                                        {/* Team Breakdown Header */}
+                                {/* Horizontal Scrollable Team Cards */}
+                                <div
+                                    ref={scrollRef}
+                                    className="scrollbar-hide"
+                                    style={{
+                                        display: 'flex',
+                                        width: '100%',
+                                        overflowX: 'auto',
+                                        overflowY: 'hidden',
+                                        scrollSnapType: 'x mandatory',
+                                        scrollBehavior: 'smooth',
+                                        marginBottom: 16,
+                                    }}
+                                >
+                                    {playerStats.map((teamStat, index) => (
                                         <div
+                                            key={teamStat.id}
+                                            ref={(el) => { teamCardRefs.current[index] = el; }}
+                                            data-index={index}
                                             style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                marginBottom: 12,
+                                                minWidth: '100%',
+                                                scrollSnapAlign: 'center',
+                                                scrollSnapStop: 'always',
+                                                paddingRight: index < playerStats.length - 1 ? 12 : 0,
                                             }}
                                         >
                                             <div
                                                 style={{
-                                                    fontSize: '0.7rem',
-                                                    fontWeight: 700,
-                                                    color: 'var(--color-text-tertiary)',
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: '0.08em',
+                                                    background: 'linear-gradient(135deg, var(--color-surface-hover) 0%, rgb(var(--color-accent-rgb) / 0.05) 100%)',
+                                                    borderRadius: 20,
+                                                    padding: 20,
+                                                    border: '0.5px solid var(--color-border)',
                                                 }}
                                             >
-                                                Team Breakdown
-                                            </div>
-                                        </div>
-
-                                        {/* Horizontal Scrollable Team Cards */}
-                                        <div
-                                            ref={scrollRef}
-                                            className="scrollbar-hide"
-                                            style={{
-                                                display: 'flex',
-                                                width: '100%',
-                                                overflowX: 'auto',
-                                                overflowY: 'hidden',
-                                                scrollSnapType: 'x mandatory',
-                                                scrollBehavior: 'smooth',
-                                                marginBottom: 16,
-                                            }}
-                                        >
-                                            {playerStats.map((teamStat, index) => (
-                                                <div
-                                                    key={teamStat.id}
-                                                    ref={(el) => { teamCardRefs.current[index] = el; }}
-                                                    data-index={index}
-                                                    style={{
-                                                        minWidth: '100%',
-                                                        scrollSnapAlign: 'center',
-                                                        scrollSnapStop: 'always',
-                                                        paddingRight: index < playerStats.length - 1 ? 12 : 0,
-                                                    }}
-                                                >
-                                                    <div
-                                                        style={{
-                                                            background: 'linear-gradient(135deg, var(--color-surface-hover) 0%, rgb(var(--color-accent-rgb) / 0.05) 100%)',
-                                                            borderRadius: 20,
-                                                            padding: 20,
-                                                            border: '0.5px solid var(--color-border)',
-                                                        }}
-                                                    >
-                                                        {/* Team Header */}
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                                                            {getTeamImage(teams, teamStat.teamId) ? (
-                                                                <img
-                                                                    src={getTeamImage(teams, teamStat.teamId)}
-                                                                    alt={getTeamName(teams, teamStat.teamId)}
-                                                                    style={{
-                                                                        width: 48,
-                                                                        height: 48,
-                                                                        borderRadius: 14,
-                                                                        objectFit: 'cover',
-                                                                        border: '1px solid var(--color-border)',
-                                                                    }}
-                                                                />
-                                                            ) : (
-                                                                <div
-                                                                    style={{
-                                                                        width: 48,
-                                                                        height: 48,
-                                                                        borderRadius: 14,
-                                                                        background: 'var(--color-accent)',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                        fontSize: '1.25rem',
-                                                                        fontWeight: 700,
-                                                                        color: '#ffffff',
-                                                                        boxShadow: '0 4px 12px rgb(var(--color-accent-rgb) / 0.25)',
-                                                                    }}
-                                                                >
-                                                                    {getTeamName(teams, teamStat.teamId).charAt(0)}
-                                                                </div>
-                                                            )}
-                                                            <div style={{ flex: 1 }}>
-                                                                <div
-                                                                    style={{
-                                                                        fontSize: '1.1rem',
-                                                                        fontWeight: 700,
-                                                                        color: 'var(--color-text-primary)',
-                                                                    }}
-                                                                >
-                                                                    {getTeamName(teams, teamStat.teamId)}
-                                                                </div>
-                                                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)' }}>
-                                                                    Jersey #{teamStat.number || '-'}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Team Stats Grid */}
+                                                {/* Team Header */}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                                                    {getTeamImage(teams, teamStat.teamId) ? (
+                                                        <img
+                                                            src={getTeamImage(teams, teamStat.teamId)}
+                                                            alt={getTeamName(teams, teamStat.teamId)}
+                                                            style={{
+                                                                width: 48,
+                                                                height: 48,
+                                                                borderRadius: 14,
+                                                                objectFit: 'cover',
+                                                                border: '1px solid var(--color-border)',
+                                                            }}
+                                                        />
+                                                    ) : (
                                                         <div
                                                             style={{
-                                                                display: 'grid',
-                                                                gridTemplateColumns: 'repeat(3, 1fr)',
-                                                                gap: 12,
+                                                                width: 48,
+                                                                height: 48,
+                                                                borderRadius: 14,
+                                                                background: 'var(--color-accent)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '1.25rem',
+                                                                fontWeight: 700,
+                                                                color: '#ffffff',
+                                                                boxShadow: '0 4px 12px rgb(var(--color-accent-rgb) / 0.25)',
                                                             }}
                                                         >
-                                                            <TeamStat value={teamStat.gamesPlayed || 0} label="Games" />
-                                                            <TeamStat value={teamStat.goals || 0} label="Goals" color="var(--color-success)" />
-                                                            <TeamStat value={teamStat.assists || 0} label="Assists" color="var(--color-accent)" />
+                                                            {getTeamName(teams, teamStat.teamId).charAt(0)}
+                                                        </div>
+                                                    )}
+                                                    <div style={{ flex: 1 }}>
+                                                        <div
+                                                            style={{
+                                                                fontSize: '1.1rem',
+                                                                fontWeight: 700,
+                                                                color: 'var(--color-text-primary)',
+                                                            }}
+                                                        >
+                                                            {getTeamName(teams, teamStat.teamId)}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)' }}>
+                                                            Jersey #{teamStat.number || '-'}
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                {/* Team Stats Grid */}
+                                                <div
+                                                    style={{
+                                                        display: 'grid',
+                                                        gridTemplateColumns: 'repeat(3, 1fr)',
+                                                        gap: 12,
+                                                    }}
+                                                >
+                                                    <TeamStat value={teamStat.gamesPlayed || 0} label="Games" />
+                                                    <TeamStat value={teamStat.goals || 0} label="Goals" color="var(--color-success)" />
+                                                    <TeamStat value={teamStat.assists || 0} label="Assists" color="var(--color-accent)" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Navigation */}
+                                {playerStats.length > 1 && (
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            gap: 12,
+                                        }}
+                                    >
+                                        <motion.button
+                                            onClick={prevTeam}
+                                            disabled={activeTeamIndex === 0}
+                                            whileTap={activeTeamIndex > 0 ? { scale: 0.95 } : undefined}
+                                            style={{
+                                                width: 40,
+                                                height: 40,
+                                                borderRadius: 12,
+                                                border: 'none',
+                                                background: activeTeamIndex === 0 ? 'var(--color-surface)' : 'var(--color-surface-hover)',
+                                                color: activeTeamIndex === 0 ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                cursor: activeTeamIndex === 0 ? 'not-allowed' : 'pointer',
+                                                opacity: activeTeamIndex === 0 ? 0.5 : 1,
+                                            }}
+                                        >
+                                            <ChevronLeft size={20} />
+                                        </motion.button>
+
+                                        {/* Dots */}
+                                        <div style={{ display: 'flex', gap: 6 }}>
+                                            {playerStats.map((_, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        hapticPatterns.tap();
+                                                        scrollToTeam(idx);
+                                                    }}
+                                                    style={{
+                                                        width: 8,
+                                                        height: 8,
+                                                        borderRadius: 4,
+                                                        background: idx === activeTeamIndex ? 'var(--color-accent)' : 'var(--color-border)',
+                                                        transition: 'all 0.2s',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        padding: 0,
+                                                    }}
+                                                />
                                             ))}
                                         </div>
 
-                                        {/* Navigation */}
-                                        {playerStats.length > 1 && (
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    gap: 12,
-                                                }}
-                                            >
-                                                <motion.button
-                                                    onClick={prevTeam}
-                                                    disabled={activeTeamIndex === 0}
-                                                    whileTap={activeTeamIndex > 0 ? { scale: 0.95 } : undefined}
-                                                    style={{
-                                                        width: 40,
-                                                        height: 40,
-                                                        borderRadius: 12,
-                                                        border: 'none',
-                                                        background: activeTeamIndex === 0 ? 'var(--color-surface)' : 'var(--color-surface-hover)',
-                                                        color: activeTeamIndex === 0 ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        cursor: activeTeamIndex === 0 ? 'not-allowed' : 'pointer',
-                                                        opacity: activeTeamIndex === 0 ? 0.5 : 1,
-                                                    }}
-                                                >
-                                                    <ChevronLeft size={20} />
-                                                </motion.button>
-
-                                                {/* Dots */}
-                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                    {playerStats.map((_, idx) => (
-                                                        <button
-                                                            key={idx}
-                                                            onClick={() => {
-                                                                hapticPatterns.tap();
-                                                                scrollToTeam(idx);
-                                                            }}
-                                                            style={{
-                                                                width: 8,
-                                                                height: 8,
-                                                                borderRadius: 4,
-                                                                background: idx === activeTeamIndex ? 'var(--color-accent)' : 'var(--color-border)',
-                                                                transition: 'all 0.2s',
-                                                                border: 'none',
-                                                                cursor: 'pointer',
-                                                                padding: 0,
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </div>
-
-                                                <motion.button
-                                                    onClick={nextTeam}
-                                                    disabled={activeTeamIndex === playerStats.length - 1}
-                                                    whileTap={activeTeamIndex < playerStats.length - 1 ? { scale: 0.95 } : undefined}
-                                                    style={{
-                                                        width: 40,
-                                                        height: 40,
-                                                        borderRadius: 12,
-                                                        border: 'none',
-                                                        background: activeTeamIndex === playerStats.length - 1 ? 'var(--color-surface)' : 'var(--color-surface-hover)',
-                                                        color: activeTeamIndex === playerStats.length - 1 ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        cursor: activeTeamIndex === playerStats.length - 1 ? 'not-allowed' : 'pointer',
-                                                        opacity: activeTeamIndex === playerStats.length - 1 ? 0.5 : 1,
-                                                    }}
-                                                >
-                                                    <ChevronRight size={20} />
-                                                </motion.button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* No Teams State */}
-                                {!hasTeams && (
-                                    <div
-                                        style={{
-                                            padding: '32px 24px',
-                                            textAlign: 'center',
-                                            color: 'var(--color-text-tertiary)',
-                                        }}
-                                    >
-                                        <div style={{ fontSize: '0.9rem', marginBottom: 4 }}>No team statistics available</div>
-                                        <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Player data may still be syncing</div>
+                                        <motion.button
+                                            onClick={nextTeam}
+                                            disabled={activeTeamIndex === playerStats.length - 1}
+                                            whileTap={activeTeamIndex < playerStats.length - 1 ? { scale: 0.95 } : undefined}
+                                            style={{
+                                                width: 40,
+                                                height: 40,
+                                                borderRadius: 12,
+                                                border: 'none',
+                                                background: activeTeamIndex === playerStats.length - 1 ? 'var(--color-surface)' : 'var(--color-surface-hover)',
+                                                color: activeTeamIndex === playerStats.length - 1 ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                cursor: activeTeamIndex === playerStats.length - 1 ? 'not-allowed' : 'pointer',
+                                                opacity: activeTeamIndex === playerStats.length - 1 ? 0.5 : 1,
+                                            }}
+                                        >
+                                            <ChevronRight size={20} />
+                                        </motion.button>
                                     </div>
                                 )}
                             </div>
-                        </motion.div>
+                        )}
+
+                        {/* No Teams State */}
+                        {!hasTeams && (
+                            <div
+                                style={{
+                                    padding: '32px 24px',
+                                    textAlign: 'center',
+                                    color: 'var(--color-text-tertiary)',
+                                }}
+                            >
+                                <div style={{ fontSize: '0.9rem', marginBottom: 4 }}>No team statistics available</div>
+                                <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Player data may still be syncing</div>
+                            </div>
+                        )}
                     </div>
-                </>
+                </motion.div>
             )}
         </AnimatePresence>,
         document.body

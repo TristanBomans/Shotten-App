@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import VersionHistoryContent from '@/components/VersionHistoryContent';
 
@@ -33,110 +33,77 @@ export default function VersionHistoryModal({ open, onClose }: VersionHistoryMod
         <AnimatePresence>
             {open && (
                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    onClick={onClose}
+                    initial={{ opacity: 0, x: '100%' }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
                     style={{
                         position: 'fixed',
                         inset: 0,
-                        background: 'rgba(0, 0, 0, 0.6)',
-                        backdropFilter: 'blur(8px)',
+                        background: 'var(--color-bg)',
                         zIndex: 10020,
                         display: 'flex',
-                        alignItems: 'flex-end',
-                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
                     }}
                 >
-                    <motion.div
-                        initial={{ y: '100%' }}
-                        animate={{ y: 0 }}
-                        exit={{ y: '100%' }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        onClick={(e) => e.stopPropagation()}
+                    {/* Header with iOS-style back button */}
+                    <div
                         style={{
-                            width: '100%',
-                            maxWidth: 600,
-                            maxHeight: '85vh',
-                            background: 'var(--color-bg)',
-                            borderRadius: '24px 24px 0 0',
-                            overflow: 'hidden',
                             display: 'flex',
-                            flexDirection: 'column',
+                            alignItems: 'center',
+                            padding: 'calc(var(--safe-top) + 8px) 16px 12px',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
+                            background: 'var(--color-surface)',
                         }}
                     >
-                        {/* Drag Handle */}
-                        <div
-                            style={{
-                                padding: '12px 0 8px',
-                                display: 'flex',
-                                justifyContent: 'center',
+                        <motion.button
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                onClose();
                             }}
-                        >
-                            <div
-                                style={{
-                                    width: 36,
-                                    height: 4,
-                                    borderRadius: 2,
-                                    background: 'var(--color-border)',
-                                }}
-                            />
-                        </div>
-
-                        {/* Header */}
-                        <div
                             style={{
-                                padding: '0 20px 16px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'space-between',
-                                borderBottom: '1px solid var(--color-border-subtle)',
+                                gap: 2,
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--color-accent)',
+                                fontSize: '1.05rem',
+                                fontWeight: 400,
+                                cursor: 'pointer',
+                                padding: '4px 8px 4px 0',
+                                marginLeft: -4,
                             }}
                         >
-                            <span
-                                style={{
-                                    fontSize: '1.1rem',
-                                    fontWeight: 700,
-                                    color: 'var(--color-text-primary)',
-                                }}
-                            >
-                                What&apos;s New
-                            </span>
-                            <motion.button
-                                onClick={() => {
-                                    hapticPatterns.tap();
-                                    onClose();
-                                }}
-                                whileTap={{ scale: 0.9 }}
-                                style={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 10,
-                                    border: 'none',
-                                    background: 'var(--color-surface)',
-                                    color: 'var(--color-text-secondary)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                <X size={18} />
-                            </motion.button>
-                        </div>
-
-                        {/* Content */}
+                            <ChevronLeft size={28} strokeWidth={1.5} />
+                            Back
+                        </motion.button>
                         <div
                             style={{
-                                flex: 1,
-                                overflowY: 'auto',
-                                padding: '20px',
+                                position: 'absolute',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                fontSize: '1.05rem',
+                                fontWeight: 600,
+                                color: 'var(--color-text-primary)',
                             }}
                         >
-                            <VersionHistoryContent />
+                            What&apos;s New
                         </div>
-                    </motion.div>
+                    </div>
+
+                    {/* Content */}
+                    <div
+                        style={{
+                            flex: 1,
+                            overflowY: 'auto',
+                            padding: '16px',
+                        }}
+                    >
+                        <VersionHistoryContent />
+                    </div>
                 </motion.div>
             )}
         </AnimatePresence>,

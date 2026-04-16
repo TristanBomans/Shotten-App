@@ -214,7 +214,7 @@ export default function LeagueView({
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: index * 0.02, duration: 0.2 }}
-                                                whileTap={{ scale: 0.99, background: 'var(--color-surface-hover)' }}
+                                                whileTap={{ scale: 0.99, backgroundColor: 'var(--color-surface-hover)' }}
                                                 style={{
                                                     display: 'grid',
                                                     gridTemplateColumns: '28px 1fr 32px 32px 38px 38px',
@@ -225,7 +225,7 @@ export default function LeagueView({
                                                     color: 'var(--color-text-primary)',
                                                     alignItems: 'center',
                                                     cursor: 'pointer',
-                                                    background: isHighlighted ? 'rgb(var(--color-accent-rgb) / 0.12)' : 'transparent',
+                                                    backgroundColor: isHighlighted ? 'rgb(var(--color-accent-rgb) / 0.12)' : 'transparent',
                                                     position: 'relative',
                                                 }}
                                             >
