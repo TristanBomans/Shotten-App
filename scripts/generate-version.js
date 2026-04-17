@@ -23,14 +23,10 @@ async function main() {
 
   if (!hasMistral || !hasApiKey) {
     const reason = !hasMistral ? 'Mistral AI package not available' : 'MISTRAL_API_KEY not found';
-    console.warn(`⚠️  ${reason} - using basic changelog format`);
-    // Fallback: create basic changelog from commit messages
-    releases = commits.map(commit => ({
-      date: commit.date,
-      changes: [`📝 ${commit.message.split('\n')[0]}`], // Use first line only as fallback
-    }));
+    console.warn(`⚠️  ${reason} - skipping AI changelog`);
+    releases = [];
   } else {
-    // Generate changelog via Mistral AI
+    // Generate changelog via Mistral AI with retries
     console.log('\nGenerating changelog via Mistral AI...');
     try {
       const { Mistral } = await import('@mistralai/mistralai');
@@ -38,12 +34,8 @@ async function main() {
       console.log('Generated releases:');
       releases.forEach(r => console.log(`  - [${r.date}] ${r.changes.length} bullet(s)`));
     } catch (error) {
-      console.warn('⚠️  Failed to generate AI changelog, using basic format:', error.message);
-      // Fallback on error
-      releases = commits.map(commit => ({
-        date: commit.date,
-        changes: [`📝 ${commit.message.split('\n')[0]}`],
-      }));
+      console.warn('⚠️  Failed to generate AI changelog:', error.message);
+      releases = [];
     }
   }
 
@@ -141,34 +133,60 @@ Example output:
 Commits:
 ${commits.map((c, i) => `${i}. ${c.message}`).join('\n')}`;
 
-  const response = await client.chat.complete({
-    model: 'mistral-small-latest',
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.3,
-  });
-
-  const content = response.choices[0].message.content;
-  
-  // Parse JSON response
   let parsed;
-  try {
-    // Remove potential markdown code blocks
-    const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    parsed = JSON.parse(cleanContent);
-  } catch (e) {
-    console.error('Failed to parse Mistral response as JSON:', content);
-    throw new Error('Mistral returned invalid JSON');
+  const maxRetries = 3;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const response = await client.chat.complete({
+      model: 'mistral-small-latest',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+    });
+
+    const content = response.choices[0].message.content;
+
+    try {
+      // Remove potential markdown code blocks
+      const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      parsed = JSON.parse(cleanContent);
+    } catch (e) {
+      console.error(`Attempt ${attempt}: Failed to parse Mistral response as JSON:`, content);
+      if (attempt === maxRetries) {
+        throw new Error('Mistral returned invalid JSON after retries');
+      }
+      continue;
+    }
+
+    const coveredCount = commits.filter((_, index) => {
+      const item = parsed.find(p => p.index === index);
+      return Array.isArray(item?.bullets) && item.bullets.length > 0;
+    }).length;
+
+    if (coveredCount === commits.length) {
+      console.log(`  All ${commits.length} commits covered on attempt ${attempt}`);
+      break;
+    }
+
+    console.warn(`  Attempt ${attempt}: Only ${coveredCount}/${commits.length} commits covered, retrying...`);
+
+    if (attempt === maxRetries) {
+      console.warn('  Max retries reached, using partial coverage');
+    }
   }
 
-  // Map parsed response back to commits
-  const releases = commits.map((commit, index) => {
-    const item = parsed.find(p => p.index === index);
-    const changes = item?.bullets || [`📝 ${commit.message}`];
-    return {
-      date: commit.date,
-      changes,
-    };
-  });
+  // Map parsed response back to commits, dropping any that weren't covered
+  const releases = commits
+    .map((commit, index) => {
+      const item = parsed.find(p => p.index === index);
+      if (!Array.isArray(item?.bullets) || item.bullets.length === 0) {
+        return null;
+      }
+      return {
+        date: commit.date,
+        changes: item.bullets,
+      };
+    })
+    .filter(Boolean);
 
   return releases;
 }
