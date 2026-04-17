@@ -82,14 +82,13 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
     };
 
     if (typeof document === 'undefined') return null;
-    if (!player) return null;
 
-    const playerStats = player.teamStats || [];
+    const playerStats = player?.teamStats || [];
     const hasTeams = playerStats.length > 0;
 
-    const avgGoals = player.gamesPlayed > 0 ? (player.goals / player.gamesPlayed).toFixed(2) : '0.00';
-    const avgAssists = player.gamesPlayed > 0 ? (player.assists / player.gamesPlayed).toFixed(2) : '0.00';
-    const contribution = player.gamesPlayed > 0 ? ((player.goals + player.assists) / player.gamesPlayed).toFixed(2) : '0.00';
+    const avgGoals = player && player.gamesPlayed > 0 ? (player.goals / player.gamesPlayed).toFixed(2) : '0.00';
+    const avgAssists = player && player.gamesPlayed > 0 ? (player.assists / player.gamesPlayed).toFixed(2) : '0.00';
+    const contribution = player && player.gamesPlayed > 0 ? ((player.goals + player.assists) / player.gamesPlayed).toFixed(2) : '0.00';
 
     return createPortal(
         <AnimatePresence>
@@ -152,7 +151,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                 color: 'var(--color-text-primary)',
                             }}
                         >
-                            {player.name}
+                            {player?.name || ''}
                         </div>
                     </div>
 
@@ -173,7 +172,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                 }}
                             >
                                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                    {playerStats.length} Team{playerStats.length !== 1 ? 's' : ''} • {player.gamesPlayed} Games
+                                    {playerStats.length} Team{playerStats.length !== 1 ? 's' : ''} • {player?.gamesPlayed ?? 0} Games
                                 </p>
                             </div>
 
@@ -201,7 +200,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                             marginBottom: 4,
                                         }}
                                     >
-                                        {player.goals}
+                                        {player?.goals ?? 0}
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                                         <Target size={12} style={{ color: 'var(--color-text-tertiary)' }} />
@@ -223,7 +222,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                                             marginBottom: 4,
                                         }}
                                     >
-                                        {player.assists}
+                                        {player?.assists ?? 0}
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                                         <Users size={12} style={{ color: 'var(--color-text-tertiary)' }} />

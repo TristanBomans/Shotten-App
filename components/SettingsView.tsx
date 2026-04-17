@@ -18,6 +18,12 @@ interface SettingsViewProps {
     isVersionOpen: boolean;
     onCloseVersion: () => void;
     isHiddenAdminUnlocked?: boolean;
+    isPlayerManagementOpen?: boolean;
+    onOpenPlayerManagement?: () => void;
+    onClosePlayerManagement?: () => void;
+    isRespondAsPlayerOpen?: boolean;
+    onOpenRespondAsPlayer?: () => void;
+    onCloseRespondAsPlayer?: () => void;
 }
 
 export default function SettingsView({
@@ -27,20 +33,24 @@ export default function SettingsView({
     isVersionOpen,
     onCloseVersion,
     isHiddenAdminUnlocked = false,
+    isPlayerManagementOpen = false,
+    onOpenPlayerManagement,
+    onClosePlayerManagement,
+    isRespondAsPlayerOpen = false,
+    onOpenRespondAsPlayer,
+    onCloseRespondAsPlayer,
 }: SettingsViewProps) {
     const [useMock, setUseMock] = useState(true);
     const [isLocalhost, setIsLocalhost] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [hapticFeedback, setHapticFeedback] = useState(true);
     const [showFullNames, setShowFullNames] = useState(true);
-    const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
     const [defaultLeague, setDefaultLeague] = useState<string>('');
     const [leagues, setLeagues] = useState<string[]>([]);
     const [showLeagueSelector, setShowLeagueSelector] = useState(false);
     const [theme, setTheme] = useState<string>('original');
     const [showThemeSelector, setShowThemeSelector] = useState(false);
     const [isSecretFeatureOpen, setIsSecretFeatureOpen] = useState(false);
-    const [isRespondAsPlayerOpen, setIsRespondAsPlayerOpen] = useState(false);
     const { hasUpdate, updateApp, isChecking } = useVersionChecker();
 
     useEffect(() => {
@@ -331,7 +341,7 @@ export default function SettingsView({
                     <motion.div
                         onClick={() => {
                             hapticPatterns.tap();
-                            setIsRespondAsPlayerOpen(true);
+                            onOpenRespondAsPlayer?.();
                         }}
                         whileTap={{ scale: 0.98 }}
                         style={{
@@ -437,7 +447,7 @@ export default function SettingsView({
                     <motion.div
                         onClick={() => {
                             hapticPatterns.tap();
-                            setIsPlayerManagementOpen(true);
+                            onOpenPlayerManagement?.();
                         }}
                         whileTap={{ scale: 0.98 }}
                         style={{
@@ -958,13 +968,13 @@ export default function SettingsView({
             {/* Player Management Sheet */}
             <PlayerManagementSheet
                 isOpen={isPlayerManagementOpen}
-                onClose={() => setIsPlayerManagementOpen(false)}
+                onClose={() => onClosePlayerManagement?.()}
             />
             <VersionHistoryModal open={isVersionOpen} onClose={onCloseVersion} />
             <HiddenAdminDialog open={isSecretFeatureOpen} onClose={() => setIsSecretFeatureOpen(false)} />
             <RespondAsPlayerSheet
                 isOpen={isRespondAsPlayerOpen}
-                onClose={() => setIsRespondAsPlayerOpen(false)}
+                onClose={() => onCloseRespondAsPlayer?.()}
             />
         </div>
     );

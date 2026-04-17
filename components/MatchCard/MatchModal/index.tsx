@@ -17,13 +17,14 @@ interface MatchModalProps {
     dateObj: Date;
     roster: RosterPlayer[];
     currentPlayerId: number;
+    open: boolean;
     onClose: () => void;
 }
 
 const OWN_TEAMS = ['FC Degradé', 'Wille ma ni kunne'];
 const modalTabs = ['squad', 'opponent'] as const;
 
-export default function MatchModal({ match, dateObj, roster, currentPlayerId, onClose }: MatchModalProps) {
+export default function MatchModal({ match, dateObj, roster, currentPlayerId, open, onClose }: MatchModalProps) {
     const [activeTab, setActiveTab] = useState<'squad' | 'opponent'>('squad');
     const [showImage, setShowImage] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -107,22 +108,23 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
 
     return createPortal(
         <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0, x: '100%' }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: '100%' }}
-                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                    position: 'fixed',
-                    inset: 0,
-                    background: 'var(--color-bg)',
-                    zIndex: 10020,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                }}
-            >
+            {open && (
+                <motion.div
+                    initial={{ opacity: 0, x: '100%' }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'var(--color-bg)',
+                        zIndex: 10020,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                    }}
+                >
                 {/* Header with iOS-style back button */}
                 <div
                     style={{
@@ -409,6 +411,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, on
                     )}
                 </AnimatePresence>
             </motion.div>
+        )}
         </AnimatePresence>,
         document.body
     );

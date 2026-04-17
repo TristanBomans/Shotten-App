@@ -97,8 +97,6 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
         onClose();
     };
 
-    if (!isOpen) return null;
-
     return (
         <AnimatePresence>
             {isOpen && (

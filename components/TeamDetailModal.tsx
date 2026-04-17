@@ -26,10 +26,11 @@ interface ScraperMatch {
 interface TeamDetailModalProps {
     team: ScraperTeam;
     players: ScraperPlayer[];
+    open: boolean;
     onClose: () => void;
 }
 
-export default function TeamDetailModal({ team, players, onClose }: TeamDetailModalProps) {
+export default function TeamDetailModal({ team, players, open, onClose }: TeamDetailModalProps) {
     const [showImage, setShowImage] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'squad'>('overview');
     const [matches, setMatches] = useState<ScraperMatch[]>([]);
@@ -42,6 +43,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
 
     // Fetch matches for this team
     useEffect(() => {
+        if (!open || !team.externalId) return;
         const fetchMatches = async () => {
             setLoadingMatches(true);
             try {
@@ -57,7 +59,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
             }
         };
         fetchMatches();
-    }, [team.externalId]);
+    }, [open, team.externalId]);
 
     // Intersection Observer for tab sync
     useEffect(() => {
@@ -90,8 +92,13 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
         }
     };
 
+    if (typeof document === 'undefined') return null;
+
+    const hasTeam = !!team?.externalId;
+
     // Calculate recent form from matches
     const getRecentForm = () => {
+        if (!hasTeam || !team?.name) return [];
         const playedMatches = matches
             .filter(m => m.status === 'Played')
             .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date))
@@ -121,42 +128,43 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
 
     // Sort players by goals
     // Extract per-team stats for THIS team specifically
-    const sortedPlayers = players
-        .map(p => {
-            // Find stats for this specific team
-            const teamStats = p.teamStats?.find(ts => ts.teamId === team.externalId);
+    const sortedPlayers = hasTeam
+        ? players
+            .map(p => {
+                // Find stats for this specific team
+                const teamStats = p.teamStats?.find(ts => ts.teamId === team.externalId);
 
-            // Use team-specific stats if available, otherwise fall back to aggregated
-            return {
-                ...p,
-                // Override with per-team stats
-                goals: teamStats?.goals ?? p.goals,
-                assists: teamStats?.assists ?? p.assists,
-                gamesPlayed: teamStats?.gamesPlayed ?? p.gamesPlayed,
-                number: teamStats?.number ?? p.number,
-            };
-        })
-        .sort((a, b) => b.goals - a.goals);
-
-    if (typeof document === 'undefined') return null;
+                // Use team-specific stats if available, otherwise fall back to aggregated
+                return {
+                    ...p,
+                    // Override with per-team stats
+                    goals: teamStats?.goals ?? p.goals,
+                    assists: teamStats?.assists ?? p.assists,
+                    gamesPlayed: teamStats?.gamesPlayed ?? p.gamesPlayed,
+                    number: teamStats?.number ?? p.number,
+                };
+            })
+            .sort((a, b) => b.goals - a.goals)
+        : [];
 
     return createPortal(
         <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0, x: '100%' }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: '100%' }}
-                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                style={{
-                    position: 'fixed',
-                    inset: 0,
-                    background: 'var(--color-bg)',
-                    zIndex: 10020,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                }}
-            >
+            {open && (
+                <motion.div
+                    initial={{ opacity: 0, x: '100%' }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'var(--color-bg)',
+                        zIndex: 10020,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                    }}
+                >
                     {/* Header with iOS-style back button */}
                     <div
                         style={{
@@ -204,7 +212,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                 textOverflow: 'ellipsis',
                             }}
                         >
-                            {team.name}
+                            {team?.name || ''}
                         </div>
                     </div>
 
@@ -279,10 +287,10 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                         >
                             {/* Team Hero */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                                {team.imageBase64 ? (
+                                {team?.imageBase64 ? (
                                     <img
                                         src={team.imageBase64}
-                                        alt={team.name}
+                                        alt={team?.name || ''}
                                         onClick={() => {
                                             hapticPatterns.tap();
                                             setShowImage(true);
@@ -306,7 +314,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                         fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent)',
                                         flexShrink: 0,
                                     }}>
-                                        {team.name.charAt(0)}
+                                        {team?.name?.charAt(0) || ''}
                                     </div>
                                 )}
                                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -314,9 +322,9 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                         fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-text-primary)',
                                         marginBottom: 2,
                                     }}>
-                                        {team.name}
+                                        {team?.name || ''}
                                     </div>
-                                    {team.leagueName && (
+                                    {team?.leagueName && (
                                         <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                                             {team.leagueName}
                                         </div>
@@ -450,7 +458,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             {/* LZV Link */}
                             <div style={{ display: 'flex', justifyContent: 'center' }}>
                                 <a
-                                    href={`https://www.lzvcup.be/teams/detail/${team.externalId}`}
+                                    href={`https://www.lzvcup.be/teams/detail/${team?.externalId || ''}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     style={{
@@ -514,7 +522,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                 {upcomingMatches.slice(0, 5).map(match => (
-                                                    <MatchRow key={match.externalId} match={match} teamName={team.name} />
+                                                    <MatchRow key={match.externalId} match={match} teamName={team?.name || ''} />
                                                 ))}
                                             </div>
                                         </div>
@@ -533,7 +541,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                 {pastMatches.slice(0, 10).map(match => (
-                                                    <MatchRow key={match.externalId} match={match} teamName={team.name} isPlayed />
+                                                    <MatchRow key={match.externalId} match={match} teamName={team?.name || ''} isPlayed />
                                                 ))}
                                             </div>
                                         </div>
@@ -604,7 +612,7 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
 
                     {/* Full Image Overlay */}
                     <AnimatePresence>
-                        {showImage && team.imageBase64 && (
+                        {showImage && team?.imageBase64 && (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -658,7 +666,8 @@ export default function TeamDetailModal({ team, players, onClose }: TeamDetailMo
                             </motion.div>
                         )}
                     </AnimatePresence>
-            </motion.div>
+                </motion.div>
+            )}
         </AnimatePresence>,
         document.body
     );
@@ -716,6 +725,22 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
 }
 
 function MatchRow({ match, teamName, isPlayed }: { match: ScraperMatch; teamName: string; isPlayed?: boolean }) {
+    if (!teamName || !match) {
+        return (
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                background: isPlayed ? 'var(--color-surface-hover)' : 'var(--color-surface)',
+                borderRadius: 12,
+                border: `1px solid ${isPlayed ? 'var(--color-border)' : 'var(--color-border-subtle)'}`,
+                opacity: 0.5,
+            }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Loading match...</span>
+            </div>
+        );
+    }
     const isHome = isHomeTeamForMatch(teamName, match.homeTeam, match.awayTeam);
     const opponent = isHome ? match.awayTeam : match.homeTeam;
     const teamScore = isHome ? match.homeScore : match.awayScore;

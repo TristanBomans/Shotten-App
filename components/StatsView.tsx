@@ -15,6 +15,8 @@ interface StatsViewProps {
     currentPlayerId: number;
     showRules?: boolean;
     onShowRulesChange?: (open: boolean) => void;
+    selectedPlayerId?: number | null;
+    onSelectPlayer?: (id: number | null) => void;
 }
 
 // Rank configuration
@@ -183,9 +185,10 @@ export default function StatsView({
     currentPlayerId,
     showRules,
     onShowRulesChange,
+    selectedPlayerId,
+    onSelectPlayer,
 }: StatsViewProps) {
     const [internalShowRules, setInternalShowRules] = useState(false);
-    const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null);
     const isRulesOpen = showRules ?? internalShowRules;
 
     const setRulesOpen = (open: boolean) => {
@@ -199,6 +202,10 @@ export default function StatsView({
         ...player,
         stats: calculatePlayerScore(player, matches),
     })).sort((a, b) => b.stats.score - a.stats.score);
+
+    const selectedPlayer = selectedPlayerId != null
+        ? playerStats.find(p => p.id === selectedPlayerId) || null
+        : null;
 
     const topScorer = playerStats[0];
     const mostGhosts = playerStats.length > 0 ? playerStats.reduce((a, b) =>
@@ -246,7 +253,7 @@ export default function StatsView({
                             key={player.id}
                             onClick={() => {
                                 hapticPatterns.tap();
-                                setSelectedPlayer(player);
+                                onSelectPlayer?.(player.id);
                             }}
                             whileTap={{ scale: 0.98 }}
                             initial={{ opacity: 0, y: 10 }}
@@ -340,20 +347,15 @@ export default function StatsView({
             </motion.div>
 
             {/* Rules Modal */}
-            <AnimatePresence>
-                {isRulesOpen && <RulesModal onClose={() => setRulesOpen(false)} />}
-            </AnimatePresence>
+            <RulesModal open={isRulesOpen} onClose={() => setRulesOpen(false)} />
 
             {/* Player Detail Modal */}
-            <AnimatePresence>
-                {selectedPlayer && (
-                    <PlayerDetailModal
-                        player={selectedPlayer}
-                        rank={playerStats.findIndex(p => p.id === selectedPlayer.id) + 1}
-                        onClose={() => setSelectedPlayer(null)}
-                    />
-                )}
-            </AnimatePresence>
+            <PlayerDetailModal
+                open={Boolean(selectedPlayer)}
+                player={selectedPlayer || ({} as PlayerWithStats)}
+                rank={selectedPlayer ? playerStats.findIndex(p => p.id === selectedPlayer.id) + 1 : 0}
+                onClose={() => onSelectPlayer?.(null)}
+            />
         </div>
     );
 }
@@ -392,7 +394,8 @@ function HighlightCard({ icon, title, player }: { icon: string; title: string; p
     );
 }
 
-function PlayerDetailModal({ player, rank, onClose }: {
+function PlayerDetailModal({ open, player, rank, onClose }: {
+    open: boolean;
     player: PlayerWithStats;
     rank: number;
     onClose: () => void;
@@ -401,20 +404,21 @@ function PlayerDetailModal({ player, rank, onClose }: {
 
     return createPortal(
         <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0, x: '100%' }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: '100%' }}
-                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                style={{
-                    position: 'fixed',
-                    inset: 0,
-                    background: 'var(--color-bg)',
-                    zIndex: 10020,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                }}
+            {open && (
+                <motion.div
+                    initial={{ opacity: 0, x: '100%' }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'var(--color-bg)',
+                        zIndex: 10020,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                    }}
             >
                 {/* Header with iOS-style back button */}
                 <div
@@ -569,6 +573,7 @@ function PlayerDetailModal({ player, rank, onClose }: {
                     </div>
                 </div>
             </motion.div>
+        )}
         </AnimatePresence>,
         document.body
     );
@@ -583,26 +588,27 @@ function StatMini({ label, value, color }: { label: string; value: number; color
     );
 }
 
-function RulesModal({ onClose }: { onClose: () => void }) {
+function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (typeof document === 'undefined') return null;
 
     return createPortal(
         <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0, x: '100%' }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: '100%' }}
-                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                style={{
-                    position: 'fixed',
-                    inset: 0,
-                    background: 'var(--color-bg)',
-                    zIndex: 10020,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                }}
-            >
+            {open && (
+                <motion.div
+                    initial={{ opacity: 0, x: '100%' }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'var(--color-bg)',
+                        zIndex: 10020,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                    }}
+                >
                 {/* Header with iOS-style back button */}
                 <div
                     style={{
@@ -694,6 +700,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                     </div>
                 </div>
             </motion.div>
+        )}
         </AnimatePresence>,
         document.body
     );

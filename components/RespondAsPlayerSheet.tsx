@@ -127,8 +127,6 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
         });
     };
 
-    if (!isOpen) return null;
-
     return (
         <AnimatePresence>
             {isOpen && (
