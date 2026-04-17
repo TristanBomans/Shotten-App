@@ -137,21 +137,36 @@ ${commits.map((c, i) => `${i}. ${c.message}`).join('\n')}`;
   const maxRetries = 3;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const response = await client.chat.complete({
-      model: 'mistral-small-latest',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
-    });
-
-    const content = response.choices[0].message.content;
+    let content;
+    try {
+      const response = await client.chat.complete({
+        model: 'mistral-small-latest',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+      });
+      content = response.choices[0].message.content;
+    } catch (apiError) {
+      console.warn(`  Attempt ${attempt}: API error: ${apiError.message}`);
+      if (parsed) {
+        console.warn('  Using partial result from previous attempt');
+        break;
+      }
+      if (attempt === maxRetries) {
+        throw apiError;
+      }
+      continue;
+    }
 
     try {
-      // Remove potential markdown code blocks
       const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       parsed = JSON.parse(cleanContent);
     } catch (e) {
-      console.error(`Attempt ${attempt}: Failed to parse Mistral response as JSON:`, content);
+      console.error(`  Attempt ${attempt}: Failed to parse Mistral response as JSON:`, content);
       if (attempt === maxRetries) {
+        if (parsed) {
+          console.warn('  Using partial result from previous attempt');
+          break;
+        }
         throw new Error('Mistral returned invalid JSON after retries');
       }
       continue;
@@ -174,10 +189,9 @@ ${commits.map((c, i) => `${i}. ${c.message}`).join('\n')}`;
     }
   }
 
-  // Map parsed response back to commits, dropping any that weren't covered
   const releases = commits
     .map((commit, index) => {
-      const item = parsed.find(p => p.index === index);
+      const item = parsed?.find(p => p.index === index);
       if (!Array.isArray(item?.bullets) || item.bullets.length === 0) {
         return null;
       }

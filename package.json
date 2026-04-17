@@ -7,7 +7,7 @@
     "preinstall": "npx only-allow bun",
     "predev": "node scripts/check-npm.js",
     "dev": "next dev",
-    "build": "bun scripts/generate-version.js && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "build:cf": "bun install && bun scripts/generate-version.js && bunx next build && bash scripts/build-opennext.sh && bash scripts/prepare-pages.sh",
