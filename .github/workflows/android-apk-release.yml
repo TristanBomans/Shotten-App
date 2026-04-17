@@ -1,6 +1,9 @@
 name: Android APK Release
 
 on:
+  push:
+    tags:
+      - "mobile-v*"
   workflow_dispatch:
     inputs:
       release_tag:
@@ -67,6 +70,9 @@ jobs:
         id: artifact
         run: |
           TAG="${{ github.event.inputs.release_tag }}"
+          if [ -z "${TAG}" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          fi
           SAFE_TAG="${TAG//\//-}"
           ASSET_NAME="shotten-android-${SAFE_TAG}.apk"
           curl -L "${{ steps.eas.outputs.build_url }}" --output "${RUNNER_TEMP}/${ASSET_NAME}"
@@ -77,6 +83,9 @@ jobs:
         id: release_meta
         run: |
           TAG="${{ github.event.inputs.release_tag }}"
+          if [ -z "${TAG}" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          fi
           NAME="${{ github.event.inputs.release_name }}"
           if [ -z "${NAME}" ]; then
             NAME="Shotten Android ${TAG}"
