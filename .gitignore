@@ -32,3 +32,11 @@ public/version.json
 
 # package manager
 package-lock.json
+
+# mobile (expo)
+/mobile/node_modules
+/mobile/.expo
+/mobile/dist
+/mobile/android
+/mobile/ios
+/mobile/expo-env.d.ts
