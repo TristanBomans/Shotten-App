@@ -7,6 +7,9 @@ export interface MatchCardProps {
     allPlayers: Player[];
     onUpdate: (matchId: number, newStatus: AttendanceStatus) => void;
     variant: 'hero' | 'compact';
+    isModalOpen?: boolean;
+    onOpenModal?: () => void;
+    onCloseModal?: () => void;
 }
 
 export interface RosterPlayer {

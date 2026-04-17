@@ -13,6 +13,10 @@ interface LeagueViewProps {
     selectedLeague: string;
     onSelectedLeagueChange: (league: string) => void;
     onLeagueDataChange?: (data: { leagues: string[]; teams: ScraperTeam[] }) => void;
+    selectedTeamId?: number | null;
+    onSelectTeam?: (id: number | null) => void;
+    selectedPlayerId?: number | null;
+    onSelectPlayer?: (id: number | null) => void;
 }
 
 export default function LeagueView({
@@ -20,12 +24,14 @@ export default function LeagueView({
     selectedLeague,
     onSelectedLeagueChange,
     onLeagueDataChange,
+    selectedTeamId,
+    onSelectTeam,
+    selectedPlayerId,
+    onSelectPlayer,
 }: LeagueViewProps) {
     const [teams, setTeams] = useState<ScraperTeam[]>([]);
     const [allPlayers, setAllPlayers] = useState<ScraperPlayer[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedTeam, setSelectedTeam] = useState<{ team: ScraperTeam, players: ScraperPlayer[] } | null>(null);
-    const [selectedPlayer, setSelectedPlayer] = useState<ScraperPlayer | null>(null);
     const [visiblePlayers, setVisiblePlayers] = useState(50);
 
     // Extract unique leagues
@@ -94,21 +100,31 @@ export default function LeagueView({
 
     const handleTeamClick = (team: ScraperTeam) => {
         hapticPatterns.tap();
-        // Filter players who belong to this team
-        // Check teamIds array first (multi-team support), fallback to teamId
-        const teamPlayers = allPlayers.filter(p => {
-            if (p.teamIds && p.teamIds.length > 0) {
-                return p.teamIds.includes(team.externalId);
-            }
-            return p.teamId === team.externalId;
-        });
-        setSelectedTeam({ team, players: teamPlayers });
+        onSelectTeam?.(team.externalId);
     };
 
     const handlePlayerClick = (player: ScraperPlayer) => {
         hapticPatterns.tap();
-        setSelectedPlayer(player);
+        onSelectPlayer?.(player.externalId);
     };
+
+    const selectedTeam = selectedTeamId != null
+        ? (() => {
+            const team = teams.find(t => t.externalId === selectedTeamId);
+            if (!team) return null;
+            const teamPlayers = allPlayers.filter(p => {
+                if (p.teamIds && p.teamIds.length > 0) {
+                    return p.teamIds.includes(team.externalId);
+                }
+                return p.teamId === team.externalId;
+            });
+            return { team, players: teamPlayers };
+        })()
+        : null;
+
+    const selectedPlayer = selectedPlayerId != null
+        ? allPlayers.find(p => p.externalId === selectedPlayerId) || null
+        : null;
 
     const isOwnTeam = (name: string) => {
         const lower = name.toLowerCase();
@@ -515,21 +531,18 @@ export default function LeagueView({
                 )}
             </div>
             {/* Modal */}
-            <AnimatePresence>
-                {selectedTeam && (
-                    <TeamDetailModal
-                        team={selectedTeam.team}
-                        players={selectedTeam.players}
-                        onClose={() => setSelectedTeam(null)}
-                    />
-                )}
-            </AnimatePresence>
+            <TeamDetailModal
+                team={selectedTeam?.team || ({} as ScraperTeam)}
+                players={selectedTeam?.players || []}
+                open={Boolean(selectedTeam)}
+                onClose={() => onSelectTeam?.(null)}
+            />
 
             <PlayerStatsDialog
                 open={Boolean(selectedPlayer)}
                 player={selectedPlayer}
                 teams={teams}
-                onClose={() => setSelectedPlayer(null)}
+                onClose={() => onSelectPlayer?.(null)}
             />
         </div>
     );

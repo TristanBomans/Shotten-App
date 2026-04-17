@@ -18,6 +18,8 @@ import RecentMatchesSheet from './RecentMatchesSheet';
 import UnlockDialog from './UnlockDialog';
 import { buildMatchReminders } from '@/lib/notifications';
 
+type Modal = 'version' | 'match' | 'players' | 'respond' | 'playerStats' | 'team' | 'rules' | 'playerDetail' | null;
+
 interface DashboardProps {
     playerId: number;
     currentView: 'home' | 'stats' | 'league' | 'settings';
@@ -27,6 +29,10 @@ interface DashboardProps {
     onOpenVersion: () => void;
     isVersionOpen: boolean;
     onCloseVersion: () => void;
+    currentModal: Modal;
+    currentModalId: string | null;
+    onOpenModal: (modal: Modal, modalId?: string | null) => void;
+    onCloseModal: () => void;
 }
 
 // View order for determining slide position
@@ -61,13 +67,16 @@ export default function Dashboard({
     onOpenVersion,
     isVersionOpen,
     onCloseVersion,
+    currentModal,
+    currentModalId,
+    onOpenModal,
+    onCloseModal,
 }: DashboardProps) {
     const { matches, loading, error, fetchMatches, setMatches } = useMatches(playerId);
     const { players, fetchAllPlayers } = useAllPlayers();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isNotificationSheetOpen, setIsNotificationSheetOpen] = useState(false);
     const [isRecentMatchesSheetOpen, setIsRecentMatchesSheetOpen] = useState(false);
-    const [isStatsRulesOpen, setIsStatsRulesOpen] = useState(false);
     const [leagueTab, setLeagueTab] = useState<'standings' | 'players'>('standings');
     const [selectedLeague, setSelectedLeague] = useState('');
     const [leagueOptions, setLeagueOptions] = useState<string[]>([]);
@@ -124,9 +133,6 @@ export default function Dashboard({
     useEffect(() => {
         if (currentView !== 'league') {
             setIsLeagueSelectorOpen(false);
-        }
-        if (currentView !== 'stats') {
-            setIsStatsRulesOpen(false);
         }
         if (currentView !== 'home') {
             setIsRecentMatchesSheetOpen(false);
@@ -440,8 +446,8 @@ export default function Dashboard({
 
     const openStatsRules = useCallback(() => {
         hapticPatterns.tap();
-        setIsStatsRulesOpen(true);
-    }, []);
+        onOpenModal('rules');
+    }, [onOpenModal]);
 
     const topLeagueControls = currentView === 'league'
         ? {
@@ -640,6 +646,9 @@ export default function Dashboard({
                             allPlayers={players}
                             onUpdate={handleUpdate}
                             variant="hero"
+                            isModalOpen={currentModal === 'match' && currentModalId === heroMatch.id.toString()}
+                            onOpenModal={() => onOpenModal('match', heroMatch.id.toString())}
+                            onCloseModal={onCloseModal}
                         />
                     </motion.div>
                 </section>
@@ -684,6 +693,9 @@ export default function Dashboard({
                                     allPlayers={players}
                                     onUpdate={handleUpdate}
                                     variant="compact"
+                                    isModalOpen={currentModal === 'match' && currentModalId === match.id.toString()}
+                                    onOpenModal={() => onOpenModal('match', match.id.toString())}
+                                    onCloseModal={onCloseModal}
                                 />
                             </motion.div>
                         ))}
@@ -715,6 +727,9 @@ export default function Dashboard({
                                     allPlayers={players}
                                     onUpdate={handleUpdate}
                                     variant="compact"
+                                    isModalOpen={currentModal === 'match' && currentModalId === match.id.toString()}
+                                    onOpenModal={() => onOpenModal('match', match.id.toString())}
+                                    onCloseModal={onCloseModal}
                                 />
                             </motion.div>
                         ))}
@@ -817,8 +832,10 @@ export default function Dashboard({
                         matches={matches}
                         players={players}
                         currentPlayerId={playerId}
-                        showRules={isStatsRulesOpen}
-                        onShowRulesChange={setIsStatsRulesOpen}
+                        showRules={currentModal === 'rules'}
+                        onShowRulesChange={(open) => open ? onOpenModal('rules') : onCloseModal()}
+                        selectedPlayerId={currentModal === 'playerDetail' ? (currentModalId ? parseInt(currentModalId, 10) : null) : null}
+                        onSelectPlayer={(id) => id !== null ? onOpenModal('playerDetail', id.toString()) : onCloseModal()}
                     />
                 </div>
 
@@ -839,6 +856,10 @@ export default function Dashboard({
                         selectedLeague={selectedLeague}
                         onSelectedLeagueChange={setSelectedLeague}
                         onLeagueDataChange={handleLeagueDataChange}
+                        selectedTeamId={currentModal === 'team' ? (currentModalId ? parseInt(currentModalId, 10) : null) : null}
+                        onSelectTeam={(id) => id !== null ? onOpenModal('team', id.toString()) : onCloseModal()}
+                        selectedPlayerId={currentModal === 'playerStats' ? (currentModalId ? parseInt(currentModalId, 10) : null) : null}
+                        onSelectPlayer={(id) => id !== null ? onOpenModal('playerStats', id.toString()) : onCloseModal()}
                     />
                 </div>
 
@@ -861,6 +882,12 @@ export default function Dashboard({
                         isVersionOpen={isVersionOpen}
                         onCloseVersion={onCloseVersion}
                         isHiddenAdminUnlocked={isHiddenAdminUnlocked}
+                        isPlayerManagementOpen={currentModal === 'players'}
+                        onOpenPlayerManagement={() => onOpenModal('players')}
+                        onClosePlayerManagement={onCloseModal}
+                        isRespondAsPlayerOpen={currentModal === 'respond'}
+                        onOpenRespondAsPlayer={() => onOpenModal('respond')}
+                        onCloseRespondAsPlayer={onCloseModal}
                     />
                 </div>
             </div>

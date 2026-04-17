@@ -17,12 +17,14 @@ export default function MatchCard({
     currentPlayerId,
     allPlayers,
     onUpdate,
-    variant
+    variant,
+    isModalOpen,
+    onOpenModal,
+    onCloseModal,
 }: MatchCardProps) {
     const { updating, updateAttendance } = useUpdateAttendance();
     const [countdown, setCountdown] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
     const [showConfetti, setShowConfetti] = useState(false);
-    const [showModal, setShowModal] = useState(false);
     const [showFullNames, setShowFullNames] = useState(true);
 
     // Load showFullNames setting
@@ -113,7 +115,7 @@ export default function MatchCard({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                onClick={() => { hapticPatterns.tap(); setShowModal(true); }}
+                onClick={() => { hapticPatterns.tap(); onOpenModal?.(); }}
                 whileTap={{ scale: 0.98 }}
                 style={{
                     background: 'var(--color-surface)',
@@ -284,9 +286,7 @@ export default function MatchCard({
                 </div>
 
                 {/* Modal */}
-                {showModal && (
-                    <MatchModal match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} onClose={() => setShowModal(false)} />
-                )}
+                <MatchModal match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />
             </motion.div>
         );
     }
@@ -296,7 +296,7 @@ export default function MatchCard({
 
     return (
         <motion.div
-            onClick={() => { hapticPatterns.tap(); setShowModal(true); }}
+            onClick={() => { hapticPatterns.tap(); onOpenModal?.(); }}
             whileTap={{ scale: 0.98 }}
             style={{
                 background: 'var(--color-surface)',
@@ -362,8 +362,8 @@ export default function MatchCard({
             </div>
 
             {/* Modal */}
-            {showModal && (
-                <MatchModal match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} onClose={() => setShowModal(false)} />
+            {isModalOpen && (
+                <MatchModal match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />
             )}
         </motion.div>
     );
