@@ -5,6 +5,11 @@ const { execSync } = require('child_process');
 async function main() {
   const apiKey = process.env.MISTRAL_API_KEY;
 
+  // Ensure full git history is available (Cloudflare Pages uses shallow clones)
+  try {
+    execSync('git fetch --unshallow 2>/dev/null', { encoding: 'utf8' });
+  } catch {}
+
   // Get version and commit hash for update checking
   const version = getVersion();
   const commitHash = getCommitHash();
