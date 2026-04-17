@@ -62,7 +62,10 @@ const config: ExpoConfig = {
     typedRoutes: true
   },
   extra: {
-    appVariant
+    appVariant,
+    eas: {
+      projectId: "cbdf84f5-b6f7-4d4c-a4bb-871ff4575622"
+    }
   }
 };
 
