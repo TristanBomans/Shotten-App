@@ -58,8 +58,6 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
       .finally(() => setLoadingPlayers(false));
   }, [visible, team]);
 
-  if (!team) return null;
-
   const now = Date.now();
   const upcomingMatches = matches
     .filter((m) => new Date(m.date).getTime() > now || m.status === "Scheduled")
@@ -93,6 +91,8 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
   const openLZV = () => {
     Linking.openURL(`https://www.lzvcup.be/teams/detail/${team.externalId}`);
   };
+
+  if (!team) return null;
 
   return (
     <Modal

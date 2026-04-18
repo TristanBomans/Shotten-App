@@ -3,6 +3,7 @@ import {
   Animated,
   Dimensions,
   Modal,
+  PanResponder,
   ScrollView,
   StatusBar,
   StyleSheet,

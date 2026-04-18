@@ -540,12 +540,13 @@ function PlayerPodiumCard({
   const playerTeamIds = player.teamIds ?? [player.teamId];
   const playerTeams = teams.filter((tm) => playerTeamIds.includes(tm.externalId));
   const primaryTeam = playerTeams[0];
+  const ours = playerTeams.some((tm) => isOurTeam(tm.name));
 
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => onPress(player)}
-      style={[styles.playerPodiumCard, highlight && styles.playerPodiumCardHighlight]}
+      style={[styles.playerPodiumCard, highlight && styles.playerPodiumCardHighlight, ours && styles.playerPodiumCardOurs]}
     >
       <View style={[styles.playerPodiumRankBadge, { backgroundColor: `${rankColor}20` }]}>
         <Text style={[styles.playerPodiumRankText, { color: rankColor }]}>{rank}</Text>
@@ -582,12 +583,13 @@ function PlayerCard({
   const playerTeams = teams.filter((tm) => playerTeamIds.includes(tm.externalId));
   const primaryTeam = playerTeams[0];
   const isMultiTeam = playerTeams.length > 1;
+  const ours = playerTeams.some((tm) => isOurTeam(tm.name));
 
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => onPress(player)}
-      style={styles.playerCard}
+      style={[styles.playerCard, ours && styles.playerCardOurs]}
     >
       {/* Rank */}
       <Text style={styles.playerCardRank}>{index}</Text>
@@ -601,6 +603,7 @@ function PlayerCard({
       <View style={styles.playerCardInfo}>
         <Text style={styles.playerCardName} numberOfLines={1}>
           {player.name}
+          {ours && <Text style={styles.playerCardOursLabel}> (You)</Text>}
         </Text>
         <Text style={styles.playerCardTeam} numberOfLines={1}>
           {isMultiTeam ? `${playerTeams.length} teams` : primaryTeam?.name ?? "Unknown"}
@@ -745,6 +748,7 @@ const styles = StyleSheet.create({
   podiumPoints: { color: t.colors.primary, fontSize: 18, fontWeight: "800", marginTop: t.spacing.xs },
   podiumMeta: { color: t.colors.onSurfaceDim, fontSize: 11, fontWeight: "600", marginTop: 2 },
   podiumForm: { flexDirection: "row", gap: 4, marginTop: t.spacing.sm },
+  podiumCardOurs: { borderColor: `${t.colors.primary}60`, backgroundColor: `${t.colors.primary}08` },
 
   // Form dot
   formDot: { marginHorizontal: 1 },
@@ -792,6 +796,8 @@ const styles = StyleSheet.create({
   teamCardGd: { color: t.colors.onSurfaceDim, fontSize: 12, fontWeight: "600", marginTop: 1 },
   teamCardGdPos: { color: t.colors.primary },
   teamCardGdNeg: { color: t.colors.errorAccent },
+  teamCardOurs: { borderColor: `${t.colors.primary}60`, backgroundColor: `${t.colors.primary}08` },
+  teamCardOursLabel: { color: t.colors.primary, fontSize: 12, fontWeight: "700" },
 
   // Player podium
   playerPodiumCard: {
@@ -807,6 +813,7 @@ const styles = StyleSheet.create({
     backgroundColor: t.colors.surfaceAlt,
     borderColor: "#f7cb6160",
   },
+  playerPodiumCardOurs: { borderColor: `${t.colors.primary}60`, backgroundColor: `${t.colors.primary}08` },
   playerPodiumRankBadge: {
     width: 28,
     height: 28,
@@ -876,6 +883,8 @@ const styles = StyleSheet.create({
   playerCardStatValue: { color: t.colors.primary, fontSize: 18, fontWeight: "800" },
   playerCardStatLabel: { color: t.colors.onSurfaceDim, fontSize: 10, fontWeight: "700", textTransform: "uppercase", marginTop: 1 },
   playerCardStatDivider: { width: 1, height: 24, backgroundColor: t.colors.divider },
+  playerCardOurs: { borderColor: `${t.colors.primary}60`, backgroundColor: `${t.colors.primary}08` },
+  playerCardOursLabel: { color: t.colors.primary, fontSize: 12, fontWeight: "700" },
 
   // Show more
   showMoreBtn: {
