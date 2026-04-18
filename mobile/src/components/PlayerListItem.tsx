@@ -1,6 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { Player } from "../lib/types";
 import { androidDarkTheme } from "../theme/androidDark";
+
+const t = androidDarkTheme;
 
 interface PlayerListItemProps {
   player: Player;
@@ -11,7 +14,7 @@ interface PlayerListItemProps {
 export function PlayerListItem({ player, onPress, disabled = false }: PlayerListItemProps) {
   return (
     <Pressable
-      android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
+      android_ripple={{ color: t.colors.ripple, borderless: false }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed, disabled && styles.cardDisabled]}
@@ -22,7 +25,7 @@ export function PlayerListItem({ player, onPress, disabled = false }: PlayerList
       <View style={styles.info}>
         <Text style={styles.name}>{player.name}</Text>
       </View>
-      <Text style={styles.chevron}>›</Text>
+      <MaterialCommunityIcons name="chevron-right" size={20} color={t.colors.onSurfaceDim} />
     </Pressable>
   );
 }
@@ -30,46 +33,40 @@ export function PlayerListItem({ player, onPress, disabled = false }: PlayerList
 const styles = StyleSheet.create({
   card: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderColor: androidDarkTheme.colors.outline,
-    borderRadius: androidDarkTheme.radius.lg,
-    borderWidth: 1,
+    borderBottomColor: t.colors.divider,
+    borderBottomWidth: 1,
     flexDirection: "row",
-    marginBottom: 10,
+    gap: t.spacing.md,
+    minHeight: t.touch.minHeight,
     overflow: "hidden",
-    paddingHorizontal: 14,
-    paddingVertical: 12
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
   },
   cardPressed: {
-    backgroundColor: androidDarkTheme.colors.surfaceAlt
+    backgroundColor: t.colors.surfaceAlt,
   },
   cardDisabled: {
-    opacity: 0.6
+    opacity: 0.5,
   },
   avatar: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.primary,
-    borderRadius: 999,
-    height: 38,
+    backgroundColor: t.colors.primaryMuted,
+    borderRadius: t.radius.pill,
+    height: 40,
     justifyContent: "center",
-    marginRight: 12,
-    width: 38
+    width: 40,
   },
   avatarText: {
-    color: androidDarkTheme.colors.onPrimary,
-    fontWeight: "700"
+    color: t.colors.primary,
+    fontSize: 16,
+    fontWeight: "700",
   },
   info: {
-    flex: 1
+    flex: 1,
   },
   name: {
-    color: androidDarkTheme.colors.onSurface,
+    color: t.colors.onSurface,
     fontSize: 16,
-    fontWeight: "600"
+    fontWeight: "600",
   },
-  chevron: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 22,
-    marginLeft: 8
-  }
 });
