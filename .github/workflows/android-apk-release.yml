@@ -33,6 +33,15 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -94,36 +103,21 @@ jobs:
         id: eas
         working-directory: mobile
         run: |
-          BUILD_JSON="$(bunx eas-cli@latest build --platform android --profile "${{ steps.release_meta.outputs.eas_profile }}" --non-interactive --wait --json)"
+          OUTPUT_PATH="${RUNNER_TEMP}/shotten-android-${{ steps.release_meta.outputs.safe_tag }}.apk"
+          BUILD_JSON="$(bunx eas-cli@latest build --platform android --profile "${{ steps.release_meta.outputs.eas_profile }}" --local --non-interactive --output "${OUTPUT_PATH}" --json)"
           printf '%s\n' "${BUILD_JSON}" > "${RUNNER_TEMP}/eas-build.json"
 
-          BUILD_URL="$(jq -r 'if type=="array" then .[0].artifacts.buildUrl // .[0].artifacts.applicationArchiveUrl // empty else .artifacts.buildUrl // .artifacts.applicationArchiveUrl // empty end' "${RUNNER_TEMP}/eas-build.json")"
-          BUILD_ID="$(jq -r 'if type=="array" then .[0].id // empty else .id // empty end' "${RUNNER_TEMP}/eas-build.json")"
-
-          if [ -z "${BUILD_URL}" ]; then
-            echo "Could not resolve build artifact URL from EAS output:"
-            cat "${RUNNER_TEMP}/eas-build.json"
+          if [ ! -f "${OUTPUT_PATH}" ]; then
+            echo "Expected local artifact at ${OUTPUT_PATH}, but file was not found."
+            echo "EAS local build output:"
+            cat "${RUNNER_TEMP}/eas-build.json" || true
             exit 1
           fi
 
-          echo "build_url=${BUILD_URL}" >> "${GITHUB_OUTPUT}"
+          BUILD_ID="$(jq -r 'if type=="array" then .[0].id // empty else .id // empty end' "${RUNNER_TEMP}/eas-build.json")"
+          echo "artifact_path=${OUTPUT_PATH}" >> "${GITHUB_OUTPUT}"
+          echo "artifact_name=$(basename "${OUTPUT_PATH}")" >> "${GITHUB_OUTPUT}"
           echo "build_id=${BUILD_ID}" >> "${GITHUB_OUTPUT}"
-
-      - name: Download Android artifact
-        id: artifact
-        run: |
-          SOURCE_FILE="$(basename "${{ steps.eas.outputs.build_url }}")"
-          SOURCE_FILE="${SOURCE_FILE%%\?*}"
-          EXT="${SOURCE_FILE##*.}"
-          if [ "${EXT}" = "${SOURCE_FILE}" ]; then
-            EXT="bin"
-          fi
-
-          ASSET_NAME="shotten-android-${{ steps.release_meta.outputs.safe_tag }}.${EXT}"
-          curl -fL "${{ steps.eas.outputs.build_url }}" --output "${RUNNER_TEMP}/${ASSET_NAME}"
-
-          echo "asset_name=${ASSET_NAME}" >> "${GITHUB_OUTPUT}"
-          echo "asset_path=${RUNNER_TEMP}/${ASSET_NAME}" >> "${GITHUB_OUTPUT}"
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
@@ -131,13 +125,13 @@ jobs:
           tag_name: ${{ steps.release_meta.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: ${{ steps.release_meta.outputs.name }}
-          files: ${{ steps.artifact.outputs.asset_path }}
+          files: ${{ steps.eas.outputs.artifact_path }}
           prerelease: ${{ steps.release_meta.outputs.prerelease }}
           make_latest: ${{ steps.release_meta.outputs.make_latest }}
           generate_release_notes: true
           body: |
-            Android build generated via GitHub Actions.
+            Android build generated via GitHub Actions (local EAS build on runner).
 
             - Channel: `${{ steps.release_meta.outputs.channel }}`
             - EAS profile: `${{ steps.release_meta.outputs.eas_profile }}`
-            - EAS build ID: `${{ steps.eas.outputs.build_id }}`
+            - EAS build ID: `${{ steps.eas.outputs.build_id || 'local' }}`

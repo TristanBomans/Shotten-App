@@ -14,6 +14,11 @@ The QR flow works via Expo. The Android release pipeline is in `.github/workflow
 
 Workflow: `Android Release`
 
+Build mode:
+
+- Local EAS build on the GitHub Actions runner (`eas build --local`)
+- No EAS cloud build workers are used for this workflow
+
 Triggers:
 
 - Stable release on tag push (`mobile-v*.*.*`) using EAS profile `production`
@@ -21,7 +26,7 @@ Triggers:
 
 Required repository secret:
 
-- `EXPO_TOKEN` (Expo account/token with permissions to start EAS builds)
+- `EXPO_TOKEN` (Expo account/token used by EAS CLI for authentication/credentials)
 
 Stable release via tag:
 
