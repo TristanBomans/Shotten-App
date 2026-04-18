@@ -46,7 +46,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="home"
           options={{
-            title: "Wedstrijden",
+            title: "Matches",
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="soccer" size={size} color={color} />
             ),
@@ -64,7 +64,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="league"
           options={{
-            title: "Klassement",
+            title: "Standings",
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="format-list-numbered" size={size} color={color} />
             ),
@@ -73,7 +73,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="settings"
           options={{
-            title: "Instellingen",
+            title: "Settings",
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="cog" size={size} color={color} />
             ),

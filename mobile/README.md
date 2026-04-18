@@ -2,6 +2,10 @@
 
 Expo Router mobile app scaffold for Shotten attendance.
 
+## Language
+
+All user-facing text in the mobile app is in **English**. The PWA (web app) uses Dutch, but the mobile app is English-first. Keep it this way.
+
 ## Goal of this phase
 
 - Select a player

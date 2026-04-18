@@ -11,7 +11,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { fetchMatches, updateAttendance } from "../../lib/api";
 import {
   filterPastMatches,
-  getAttendanceSummary,
   getHeroMatch,
   getPlayerAttendanceStatus,
   getRemainingUpcoming,
@@ -93,7 +92,6 @@ export default function HomeScreen() {
   const heroMatch = useMemo(() => getHeroMatch(matches), [matches]);
   const upcomingMatches = useMemo(() => getRemainingUpcoming(matches), [matches]);
   const pastMatches = useMemo(() => filterPastMatches(matches), [matches]);
-  const attendanceSummary = useMemo(() => getAttendanceSummary(matches, session.playerId), [matches, session.playerId]);
 
   const renderMatchCard = (match: Match, variant: "default" | "hero" = "default") => {
     const currentStatus = getPlayerAttendanceStatus(match, session.playerId);
@@ -106,6 +104,7 @@ export default function HomeScreen() {
         onYes={() => void handleRespond(match.id, "yes")}
         onNo={() => void handleRespond(match.id, "no")}
         variant={variant}
+        currentPlayerId={session.playerId}
       />
     );
   };
@@ -140,52 +139,39 @@ export default function HomeScreen() {
           />
         }
       >
-        <View style={styles.statsRow}>
-          <View style={[styles.statChip, styles.statPresent]}>
-            <Text style={styles.statValue}>{attendanceSummary.present}</Text>
-            <Text style={styles.statLabel}>Present</Text>
-          </View>
-          <View style={[styles.statChip, styles.statAbsent]}>
-            <Text style={styles.statValue}>{attendanceSummary.notPresent}</Text>
-            <Text style={styles.statLabel}>Not present</Text>
-          </View>
-          <View style={[styles.statChip, styles.statMaybe]}>
-            <Text style={styles.statValue}>{attendanceSummary.maybe}</Text>
-            <Text style={styles.statLabel}>Maybe</Text>
-          </View>
-        </View>
+        <View style={[styles.contentWrap, refreshing && styles.contentWrapRefreshing]}>
+          {actionError ? <View style={styles.errorWrap}><ErrorState message={actionError} /></View> : null}
 
-        {actionError ? <View style={styles.errorWrap}><ErrorState message={actionError} /></View> : null}
-
-        {heroMatch ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Next match</Text>
-            {renderMatchCard(heroMatch, "hero")}
-          </View>
-        ) : null}
-
-        {upcomingMatches.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Upcoming matches</Text>
-            {upcomingMatches.map((m) => renderMatchCard(m))}
-          </View>
-        ) : null}
-
-        {pastMatches.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Past matches</Text>
-            <View style={styles.pastOverlay}>
-              {pastMatches.slice(0, 5).map((m) => renderMatchCard(m))}
+          {heroMatch ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Next match</Text>
+              {renderMatchCard(heroMatch, "hero")}
             </View>
-          </View>
-        ) : null}
+          ) : null}
 
-        {!heroMatch && upcomingMatches.length === 0 && pastMatches.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No upcoming matches</Text>
-            <Text style={styles.emptySubtitle}>As soon as new matches are available, you will see them here.</Text>
-          </View>
-        ) : null}
+          {upcomingMatches.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Upcoming matches</Text>
+              {upcomingMatches.map((m) => renderMatchCard(m))}
+            </View>
+          ) : null}
+
+          {pastMatches.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Past matches</Text>
+              <View style={styles.pastOverlay}>
+                {pastMatches.slice(0, 5).map((m) => renderMatchCard(m))}
+              </View>
+            </View>
+          ) : null}
+
+          {!heroMatch && upcomingMatches.length === 0 && pastMatches.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No upcoming matches</Text>
+              <Text style={styles.emptySubtitle}>As soon as new matches are available, you will see them here.</Text>
+            </View>
+          ) : null}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -199,40 +185,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 24,
   },
-  statsRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
+  contentWrap: {
+    opacity: 1,
   },
-  statChip: {
-    alignItems: "center",
-    borderRadius: androidDarkTheme.radius.md,
-    flex: 1,
-    paddingBottom: 10,
-    paddingHorizontal: 8,
-    paddingTop: 10,
-  },
-  statPresent: {
-    backgroundColor: androidDarkTheme.colors.successContainer,
-  },
-  statAbsent: {
-    backgroundColor: androidDarkTheme.colors.errorContainer,
-  },
-  statMaybe: {
-    backgroundColor: androidDarkTheme.colors.warningContainer,
-  },
-  statValue: {
-    color: androidDarkTheme.colors.onSurface,
-    fontSize: 20,
-    fontWeight: "800",
-  },
-  statLabel: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 2,
+  contentWrapRefreshing: {
+    opacity: 0.5,
   },
   errorWrap: {
     paddingHorizontal: 16,

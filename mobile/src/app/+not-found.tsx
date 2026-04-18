@@ -5,9 +5,9 @@ import { androidDarkTheme } from "../theme/androidDark";
 export default function NotFoundScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Pagina niet gevonden</Text>
+      <Text style={styles.title}>Page not found</Text>
       <Link href="/" style={styles.link}>
-        Terug naar start
+        Back to home
       </Link>
     </View>
   );

@@ -30,8 +30,8 @@ describe("filterUpcomingMatches", () => {
 });
 
 describe("resolveAttendanceLabel", () => {
-  it("maps Maybe to Dutch undecided label", () => {
-    expect(resolveAttendanceLabel("Maybe")).toBe("Nog niet beslist");
+  it("maps Maybe to English undecided label", () => {
+    expect(resolveAttendanceLabel("Maybe")).toBe("Undecided");
   });
 });
 

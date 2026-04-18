@@ -5,7 +5,7 @@ interface LoadingStateProps {
   message?: string;
 }
 
-export function LoadingState({ message = "Laden..." }: LoadingStateProps) {
+export function LoadingState({ message = "Loading..." }: LoadingStateProps) {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="small" color={androidDarkTheme.colors.primary} />

@@ -27,7 +27,7 @@ export function ResponseButtons({ currentState, isUpdating, onYes, onNo }: Respo
         ]}
       >
         <Text style={[styles.buttonText, yesIsActive && styles.activeButtonText]}>
-          {isUpdating && yesIsActive ? "Opslaan..." : "Ja"}
+          {isUpdating && yesIsActive ? "Saving..." : "Yes"}
         </Text>
       </Pressable>
       <Pressable
@@ -43,7 +43,7 @@ export function ResponseButtons({ currentState, isUpdating, onYes, onNo }: Respo
         ]}
       >
         <Text style={[styles.buttonText, noIsActive && styles.activeButtonText]}>
-          {isUpdating && noIsActive ? "Opslaan..." : "Nee"}
+          {isUpdating && noIsActive ? "Saving..." : "No"}
         </Text>
       </Pressable>
     </View>

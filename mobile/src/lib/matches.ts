@@ -36,18 +36,18 @@ export function resolveAttendanceState(status: AttendanceStatus | null): Resolve
 
 export function resolveAttendanceLabel(status: AttendanceStatus | null): string {
   if (status === "Present") {
-    return "Ja";
+    return "Yes";
   }
 
   if (status === "NotPresent") {
-    return "Nee";
+    return "No";
   }
 
   if (status === "Maybe") {
-    return "Nog niet beslist";
+    return "Undecided";
   }
 
-  return "Nog geen antwoord";
+  return "No response";
 }
 
 export function withPlayerAttendance(
@@ -115,10 +115,10 @@ export function formatMatchDate(dateIso: string): string {
   const date = new Date(dateIso);
 
   if (Number.isNaN(date.getTime())) {
-    return "Onbekende datum";
+    return "Unknown date";
   }
 
-  return new Intl.DateTimeFormat("nl-BE", {
+  return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
