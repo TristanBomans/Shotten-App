@@ -11,11 +11,14 @@ interface MatchCardProps {
   isUpdating: boolean;
   onYes: () => void;
   onNo: () => void;
+  variant?: "default" | "hero";
 }
 
-export function MatchCard({ match, currentStatus, isUpdating, onYes, onNo }: MatchCardProps) {
+export function MatchCard({ match, currentStatus, isUpdating, onYes, onNo, variant = "default" }: MatchCardProps) {
+  const isHero = variant === "hero";
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, isHero && styles.heroCard]}>
       <Text style={styles.title}>{match.name}</Text>
       <Text style={styles.meta}>{formatMatchDate(match.date)}</Text>
       <Text style={styles.meta}>{match.location || "Locatie onbekend"}</Text>
@@ -43,6 +46,11 @@ const styles = StyleSheet.create({
     elevation: 1,
     marginBottom: 12,
     padding: 14
+  },
+  heroCard: {
+    borderColor: androidDarkTheme.colors.primary,
+    borderWidth: 1.5,
+    marginBottom: 0,
   },
   title: {
     color: androidDarkTheme.colors.onSurface,

@@ -27,7 +27,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: androidDarkTheme.colors.errorContainer,
-    borderColor: "#693747",
+    borderColor: "#4a1525",
     borderWidth: 1,
     borderRadius: androidDarkTheme.radius.md,
     padding: 14,
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     fontSize: 15
   },
   message: {
-    color: "#f6a6bb",
+    color: "#ffb4c5",
     fontSize: 14,
     lineHeight: 20
   },
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     opacity: 0.88
   },
   buttonText: {
-    color: "#3a0719",
+    color: "#1a0008",
     fontWeight: "700",
     fontSize: 13
   }

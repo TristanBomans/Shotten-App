@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   yesButton: {
     backgroundColor: androidDarkTheme.colors.successContainer,
-    borderColor: "#2f5f44"
+    borderColor: "#1a5c3a"
   },
   yesButtonActive: {
     backgroundColor: androidDarkTheme.colors.primary,
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   noButton: {
     backgroundColor: androidDarkTheme.colors.errorContainer,
-    borderColor: "#693747"
+    borderColor: "#4a1525"
   },
   noButtonActive: {
     backgroundColor: "#ff5f85",

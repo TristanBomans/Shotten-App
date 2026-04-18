@@ -11,23 +11,16 @@ export default function RootLayout() {
       <StatusBar style="light" backgroundColor={colors.surface} />
       <Stack
         screenOptions={{
-          contentStyle: {
-            backgroundColor: colors.background
-          },
-          headerStyle: {
-            backgroundColor: colors.surface
-          },
+          contentStyle: { backgroundColor: colors.background },
+          headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.onSurface,
-          headerTitleStyle: {
-            color: colors.onSurface,
-            fontWeight: "700"
-          },
+          headerTitleStyle: { color: colors.onSurface, fontWeight: "700" },
           headerShadowVisible: false,
-          statusBarStyle: "light"
+          statusBarStyle: "light",
         }}
       >
         <Stack.Screen name="index" options={{ title: "Choose player" }} />
-        <Stack.Screen name="matches" options={{ title: "Upcoming matches" }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
     </SafeAreaProvider>
   );

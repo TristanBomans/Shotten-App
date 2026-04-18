@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { fetchPlayers } from "../lib/api";
 import type { Player } from "../lib/types";
@@ -34,7 +35,7 @@ export default function PlayerSelectScreen() {
     async function bootstrap() {
       const existingSession = await getPlayerSession();
       if (existingSession) {
-        router.replace("/matches");
+        router.replace("/home");
         return;
       }
 
@@ -59,7 +60,7 @@ export default function PlayerSelectScreen() {
       playerName: player.name
     });
 
-    router.replace("/matches");
+    router.replace("/home");
   };
 
   return (

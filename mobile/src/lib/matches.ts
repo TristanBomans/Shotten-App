@@ -83,6 +83,34 @@ export function withPlayerAttendance(
   };
 }
 
+export function filterPastMatches(matches: Match[], nowTimestamp = Date.now()): Match[] {
+  return [...matches]
+    .filter((match) => !isUpcomingMatch(match, nowTimestamp))
+    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+}
+
+export function getHeroMatch(matches: Match[], nowTimestamp = Date.now()): Match | undefined {
+  return filterUpcomingMatches(matches, nowTimestamp)[0];
+}
+
+export function getRemainingUpcoming(matches: Match[], nowTimestamp = Date.now()): Match[] {
+  return filterUpcomingMatches(matches, nowTimestamp).slice(1);
+}
+
+export function getAttendanceSummary(
+  matches: Match[],
+  playerId: number
+): { present: number; notPresent: number; maybe: number } {
+  const summary: Record<AttendanceStatus, number> = { Present: 0, NotPresent: 0, Maybe: 0 };
+  for (const match of matches) {
+    const status = getPlayerAttendanceStatus(match, playerId);
+    if (status) {
+      summary[status] += 1;
+    }
+  }
+  return { present: summary.Present, notPresent: summary.NotPresent, maybe: summary.Maybe };
+}
+
 export function formatMatchDate(dateIso: string): string {
   const date = new Date(dateIso);
 
