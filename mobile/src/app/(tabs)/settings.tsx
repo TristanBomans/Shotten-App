@@ -1,8 +1,11 @@
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Dimensions,
   Linking,
   Modal,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -15,7 +18,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Constants from "expo-constants";
 import { clearPlayerSession } from "../../state/player-session";
 import { useSession } from "../../state/session-context";
@@ -32,6 +35,7 @@ import type { ReleaseScope } from "../../lib/types";
 import { androidDarkTheme } from "../../theme/androidDark";
 
 const t = androidDarkTheme;
+const { width: SCREEN_W } = Dimensions.get("window");
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 
@@ -75,6 +79,44 @@ export default function SettingsScreen() {
   const [hasUpdate, setHasUpdate] = useState(false);
   const [isCheckingRelease, setIsCheckingRelease] = useState(false);
   const [releaseCheckFailed, setReleaseCheckFailed] = useState(false);
+  const pickerPanY = useRef(new Animated.Value(0)).current;
+
+  const pickerPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 2,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          pickerPanY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 80 || gestureState.vy > 0.5) {
+          Animated.timing(pickerPanY, {
+            toValue: SCREEN_W,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            pickerPanY.setValue(0);
+            setLeaguePickerOpen(false);
+          });
+        } else {
+          Animated.spring(pickerPanY, {
+            toValue: 0,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 40,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    if (leaguePickerOpen) {
+      pickerPanY.setValue(0);
+    }
+  }, [leaguePickerOpen]);
 
   const isAndroid = Platform.OS === "android";
   const appVersion = useMemo(() => Constants.expoConfig?.version ?? "0.1.0", []);
@@ -424,12 +466,13 @@ export default function SettingsScreen() {
       >
         <StatusBar barStyle="light-content" backgroundColor={t.colors.surface} />
         <SafeAreaView style={styles.pickerSafeArea} edges={["top", "bottom"]}>
-          {/* Drag handle */}
-          <View style={styles.pickerHandleBar}>
-            <View style={styles.pickerHandle} />
-          </View>
+          <Animated.View style={{ flex: 1, transform: [{ translateY: pickerPanY }] }}>
+            {/* Drag handle — swipeable */}
+            <View style={styles.pickerHandleBar} {...pickerPanResponder.panHandlers}>
+              <View style={styles.pickerHandle} />
+            </View>
 
-          <View style={styles.pickerToolbar}>
+            <View style={styles.pickerToolbar}>
             <Text style={styles.pickerTitle}>Default League</Text>
             <Pressable
               android_ripple={{ color: t.colors.ripple, borderless: true }}
@@ -476,6 +519,7 @@ export default function SettingsScreen() {
               </Pressable>
             ))}
           </ScrollView>
+          </Animated.View>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -670,8 +714,10 @@ const styles = StyleSheet.create({
   },
   pickerHandleBar: {
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: t.colors.surface,
-    paddingTop: t.spacing.sm,
+    paddingVertical: t.spacing.md,
+    minHeight: 44,
   },
   pickerHandle: {
     backgroundColor: t.colors.surfaceElevated,
