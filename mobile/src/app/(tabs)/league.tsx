@@ -26,6 +26,12 @@ import { androidDarkTheme } from "../../theme/androidDark";
 const t = androidDarkTheme;
 const { width: SCREEN_W } = Dimensions.get("window");
 
+// Teams that belong to "us" — highlighted across the app
+const OUR_TEAM_KEYWORDS = ["Hattrick", "Shotten"];
+function isOurTeam(name: string): boolean {
+  return OUR_TEAM_KEYWORDS.some((k) => name.toLowerCase().includes(k.toLowerCase()));
+}
+
 type LeagueTab = "standings" | "players";
 
 // =============================================================================
@@ -358,12 +364,13 @@ function PodiumCard({ team, rank, onPress, highlight }: { team: ScraperTeam; ran
   };
   const rankColor = rankColors[rank] ?? t.colors.onSurfaceDim;
   const gd = team.goalDifference ?? 0;
+  const ours = isOurTeam(team.name);
 
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => onPress(team)}
-      style={[styles.podiumCard, highlight && styles.podiumCardHighlight]}
+      style={[styles.podiumCard, highlight && styles.podiumCardHighlight, ours && styles.podiumCardOurs]}
     >
       <View style={[styles.podiumRankBadge, { backgroundColor: `${rankColor}20`, borderColor: `${rankColor}40` }]}>
         <Text style={[styles.podiumRankText, { color: rankColor }]}>{rank}</Text>
@@ -393,12 +400,13 @@ function TeamCard({ team, index, onPress }: { team: ScraperTeam; index: number; 
   const gdText = gd > 0 ? `+${gd}` : String(gd);
   const isRelegation = index > 12; // assume 14-team league
   const isPromotion = index <= 3;
+  const ours = isOurTeam(team.name);
 
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => onPress(team)}
-      style={styles.teamCard}
+      style={[styles.teamCard, ours && styles.teamCardOurs]}
     >
       {/* Left: rank + avatar */}
       <View style={styles.teamCardLeft}>
@@ -414,7 +422,10 @@ function TeamCard({ team, index, onPress }: { team: ScraperTeam; index: number; 
 
       {/* Middle: name + form */}
       <View style={styles.teamCardMiddle}>
-        <Text style={styles.teamCardName} numberOfLines={1}>{team.name}</Text>
+        <Text style={styles.teamCardName} numberOfLines={1}>
+          {team.name}
+          {ours && <Text style={styles.teamCardOursLabel}> (You)</Text>}
+        </Text>
         {team.form && team.form.length > 0 ? (
           <View style={styles.teamCardFormRow}>
             {team.form.slice(0, 5).map((result, i) => (
@@ -708,8 +719,6 @@ const styles = StyleSheet.create({
   podiumCardHighlight: {
     backgroundColor: t.colors.surfaceAlt,
     borderColor: "#f7cb6160",
-    paddingVertical: t.spacing.xl,
-    transform: [{ scale: 1.02 }],
   },
   podiumRankBadge: {
     width: 28,
@@ -797,8 +806,6 @@ const styles = StyleSheet.create({
   playerPodiumCardHighlight: {
     backgroundColor: t.colors.surfaceAlt,
     borderColor: "#f7cb6160",
-    paddingVertical: t.spacing.xl,
-    transform: [{ scale: 1.02 }],
   },
   playerPodiumRankBadge: {
     width: 28,

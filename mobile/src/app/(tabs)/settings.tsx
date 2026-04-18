@@ -23,9 +23,7 @@ import { usePreferences } from "../../state/preferences-context";
 import {
   clearDefaultLeague,
   setDefaultLeague,
-  setHapticFeedback,
   setReleaseScope,
-  setShowFullNames,
 } from "../../state/preferences";
 import { fetchGithubReleases, fetchScraperTeams } from "../../lib/api";
 import { resolveInstalledReleaseTag, resolveReleaseUpdateStatus } from "../../lib/release-updates";
@@ -156,18 +154,6 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const handleToggleHaptic = useCallback(async () => {
-    const newValue = !preferences.hapticFeedback;
-    await setHapticFeedback(newValue);
-    reloadPrefs();
-  }, [preferences.hapticFeedback, reloadPrefs]);
-
-  const handleToggleFullNames = useCallback(async () => {
-    const newValue = !preferences.showFullNames;
-    await setShowFullNames(newValue);
-    reloadPrefs();
-  }, [preferences.showFullNames, reloadPrefs]);
-
   const handleToggleReleaseScope = useCallback(async () => {
     const nextScope: ReleaseScope = releaseScope === "stable" ? "all" : "stable";
     await setReleaseScope(nextScope);
@@ -245,8 +231,7 @@ export default function SettingsScreen() {
             <Text style={styles.playerName}>{session.playerName}</Text>
             <Text style={styles.playerId}>Player #{session.playerId}</Text>
           </View>
-          <MaterialCommunityIcons name="chevron-right" size={20} color={t.colors.onSurfaceDim} />
-        </View>
+</View>
 
         {/* Preferences */}
         <Text style={styles.sectionTitle}>Preferences</Text>
@@ -271,38 +256,19 @@ export default function SettingsScreen() {
           <View style={styles.settingRow}>
             <SettingIcon name="vibrate" color={t.colors.primary} />
             <View style={styles.settingContent}>
-              <Text style={styles.settingLabel}>Haptic Feedback</Text>
-              <Text style={styles.settingDescription}>
-                {preferences.hapticFeedback ? "Vibration on actions" : "Vibration disabled"}
-              </Text>
+              <Text style={[styles.settingLabel, styles.settingLabelDisabled]}>Haptic Feedback</Text>
+              <Text style={styles.settingDescription}>Coming in a future update</Text>
             </View>
             <Switch
-              value={preferences.hapticFeedback}
-              onValueChange={() => void handleToggleHaptic()}
-              trackColor={{ false: t.colors.surfaceRaised, true: `${t.colors.primary}55` }}
-              thumbColor={preferences.hapticFeedback ? t.colors.primary : t.colors.onSurfaceDim}
+              value={false}
+              disabled
+              trackColor={{ false: t.colors.surfaceRaised, true: t.colors.surfaceRaised }}
+              thumbColor={t.colors.onSurfaceDim}
               style={styles.switch}
             />
           </View>
 
-          <View style={styles.settingDivider} />
-
-          <View style={styles.settingRow}>
-            <SettingIcon name="account-group" color={t.colors.primary} />
-            <View style={styles.settingContent}>
-              <Text style={styles.settingLabel}>Show Full Names</Text>
-              <Text style={styles.settingDescription}>
-                {preferences.showFullNames ? "Names visible on cards" : "Avatars only"}
-              </Text>
-            </View>
-            <Switch
-              value={preferences.showFullNames}
-              onValueChange={() => void handleToggleFullNames()}
-              trackColor={{ false: t.colors.surfaceRaised, true: `${t.colors.primary}55` }}
-              thumbColor={preferences.showFullNames ? t.colors.primary : t.colors.onSurfaceDim}
-              style={styles.switch}
-            />
-          </View>
+          
         </View>
 
         {/* League */}

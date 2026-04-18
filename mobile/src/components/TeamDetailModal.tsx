@@ -152,8 +152,8 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
                   <HeroStat
                     label="GD"
                     value={`${(team.goalDifference ?? 0) >= 0 ? "+" : ""}${team.goalDifference ?? 0}`}
-                    accent={team.goalDifference > 0}
-                    negative={team.goalDifference < 0}
+                    accent={(team.goalDifference ?? 0) > 0}
+                    negative={(team.goalDifference ?? 0) < 0}
                   />
                 </View>
               )}
@@ -396,7 +396,7 @@ function MatchesTab({
           const dateStr = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
           const timeStr = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
-          let resultColor = t.colors.onSurfaceDim;
+          let resultColor: string = t.colors.onSurfaceDim;
           let resultText = "—";
           if (isPlayed) {
             const teamScore = isHome ? match.homeScore : match.awayScore;
