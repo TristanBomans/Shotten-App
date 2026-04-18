@@ -1,23 +1,24 @@
-name: Android APK Release
+name: Android Release
 
 on:
   push:
     tags:
-      - "mobile-v*"
+      - "mobile-v*.*.*"
   workflow_dispatch:
     inputs:
-      release_tag:
-        description: "Git tag for the release (example: mobile-v0.1.0)"
-        required: true
+      preview_tag:
+        description: "Optional preview tag (default auto-generated)"
+        required: false
+        default: ""
         type: string
       release_name:
-        description: "Optional display name for the release"
+        description: "Optional display name for the preview release"
         required: false
         default: ""
         type: string
 
 jobs:
-  build-android-apk:
+  build-android-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -44,6 +45,48 @@ jobs:
             exit 1
           fi
 
+      - name: Resolve release metadata
+        id: release_meta
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            CHANNEL="preview"
+            EAS_PROFILE="preview"
+            TAG="${{ github.event.inputs.preview_tag }}"
+            if [ -z "${TAG}" ]; then
+              TAG="mobile-preview-$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
+            fi
+            NAME="${{ github.event.inputs.release_name }}"
+            if [ -z "${NAME}" ]; then
+              NAME="Shotten Android Preview ${TAG}"
+            fi
+            PRERELEASE="true"
+            MAKE_LATEST="false"
+          else
+            CHANNEL="stable"
+            EAS_PROFILE="production"
+            TAG="${GITHUB_REF_NAME}"
+            NAME="Shotten Android ${TAG}"
+
+            VERSION="${TAG#mobile-v}"
+            if [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              PRERELEASE="false"
+              MAKE_LATEST="true"
+            else
+              PRERELEASE="true"
+              MAKE_LATEST="false"
+            fi
+          fi
+
+          SAFE_TAG="${TAG//\//-}"
+
+          echo "channel=${CHANNEL}" >> "${GITHUB_OUTPUT}"
+          echo "eas_profile=${EAS_PROFILE}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "safe_tag=${SAFE_TAG}" >> "${GITHUB_OUTPUT}"
+          echo "name=${NAME}" >> "${GITHUB_OUTPUT}"
+          echo "prerelease=${PRERELEASE}" >> "${GITHUB_OUTPUT}"
+          echo "make_latest=${MAKE_LATEST}" >> "${GITHUB_OUTPUT}"
+
       - name: Install mobile dependencies
         run: bun install --cwd mobile --frozen-lockfile
 
@@ -51,14 +94,14 @@ jobs:
         id: eas
         working-directory: mobile
         run: |
-          BUILD_JSON="$(bunx eas-cli@latest build --platform android --profile preview --non-interactive --wait --json)"
+          BUILD_JSON="$(bunx eas-cli@latest build --platform android --profile "${{ steps.release_meta.outputs.eas_profile }}" --non-interactive --wait --json)"
           printf '%s\n' "${BUILD_JSON}" > "${RUNNER_TEMP}/eas-build.json"
 
-          BUILD_URL="$(jq -r 'if type=="array" then .[0].artifacts.buildUrl // empty else .artifacts.buildUrl // empty end' "${RUNNER_TEMP}/eas-build.json")"
+          BUILD_URL="$(jq -r 'if type=="array" then .[0].artifacts.buildUrl // .[0].artifacts.applicationArchiveUrl // empty else .artifacts.buildUrl // .artifacts.applicationArchiveUrl // empty end' "${RUNNER_TEMP}/eas-build.json")"
           BUILD_ID="$(jq -r 'if type=="array" then .[0].id // empty else .id // empty end' "${RUNNER_TEMP}/eas-build.json")"
 
           if [ -z "${BUILD_URL}" ]; then
-            echo "Could not resolve buildUrl from EAS output:"
+            echo "Could not resolve build artifact URL from EAS output:"
             cat "${RUNNER_TEMP}/eas-build.json"
             exit 1
           fi
@@ -66,42 +109,35 @@ jobs:
           echo "build_url=${BUILD_URL}" >> "${GITHUB_OUTPUT}"
           echo "build_id=${BUILD_ID}" >> "${GITHUB_OUTPUT}"
 
-      - name: Download APK artifact
+      - name: Download Android artifact
         id: artifact
         run: |
-          TAG="${{ github.event.inputs.release_tag }}"
-          if [ -z "${TAG}" ]; then
-            TAG="${GITHUB_REF_NAME}"
+          SOURCE_FILE="$(basename "${{ steps.eas.outputs.build_url }}")"
+          SOURCE_FILE="${SOURCE_FILE%%\?*}"
+          EXT="${SOURCE_FILE##*.}"
+          if [ "${EXT}" = "${SOURCE_FILE}" ]; then
+            EXT="bin"
           fi
-          SAFE_TAG="${TAG//\//-}"
-          ASSET_NAME="shotten-android-${SAFE_TAG}.apk"
-          curl -L "${{ steps.eas.outputs.build_url }}" --output "${RUNNER_TEMP}/${ASSET_NAME}"
+
+          ASSET_NAME="shotten-android-${{ steps.release_meta.outputs.safe_tag }}.${EXT}"
+          curl -fL "${{ steps.eas.outputs.build_url }}" --output "${RUNNER_TEMP}/${ASSET_NAME}"
+
           echo "asset_name=${ASSET_NAME}" >> "${GITHUB_OUTPUT}"
           echo "asset_path=${RUNNER_TEMP}/${ASSET_NAME}" >> "${GITHUB_OUTPUT}"
-
-      - name: Resolve release metadata
-        id: release_meta
-        run: |
-          TAG="${{ github.event.inputs.release_tag }}"
-          if [ -z "${TAG}" ]; then
-            TAG="${GITHUB_REF_NAME}"
-          fi
-          NAME="${{ github.event.inputs.release_name }}"
-          if [ -z "${NAME}" ]; then
-            NAME="Shotten Android ${TAG}"
-          fi
-          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
-          echo "name=${NAME}" >> "${GITHUB_OUTPUT}"
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release_meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           name: ${{ steps.release_meta.outputs.name }}
           files: ${{ steps.artifact.outputs.asset_path }}
+          prerelease: ${{ steps.release_meta.outputs.prerelease }}
+          make_latest: ${{ steps.release_meta.outputs.make_latest }}
           generate_release_notes: true
           body: |
             Android build generated via GitHub Actions.
 
-            - EAS profile: `preview`
+            - Channel: `${{ steps.release_meta.outputs.channel }}`
+            - EAS profile: `${{ steps.release_meta.outputs.eas_profile }}`
             - EAS build ID: `${{ steps.eas.outputs.build_id }}`
