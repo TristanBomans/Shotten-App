@@ -2,13 +2,13 @@ import { buildApiUrl } from "./config";
 import type {
   AttendanceStatus,
   AttendanceUpdateResponse,
+  GithubRelease,
   Match,
   Player,
-  Team,
-  ScraperTeam,
-  ScraperPlayer,
   ScraperMatch,
-  VersionInfo,
+  ScraperPlayer,
+  ScraperTeam,
+  Team,
 } from "./types";
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -143,18 +143,66 @@ export async function fetchScraperTeamMatches(teamId: number): Promise<ScraperMa
   }
 }
 
-// =============================================================================
-// VERSION INFO
-// =============================================================================
+interface GithubReleaseApiAsset {
+  name: string;
+  content_type?: string;
+  browser_download_url?: string;
+}
 
-export async function fetchVersionInfo(): Promise<VersionInfo | null> {
+interface GithubReleaseApiItem {
+  tag_name?: string;
+  name?: string;
+  html_url?: string;
+  draft?: boolean;
+  prerelease?: boolean;
+  published_at?: string | null;
+  assets?: GithubReleaseApiAsset[];
+}
+
+function mapGithubRelease(raw: GithubReleaseApiItem): GithubRelease | null {
+  if (!raw.tag_name || !raw.html_url) {
+    return null;
+  }
+
+  const assets = (raw.assets ?? [])
+    .filter((asset): asset is Required<Pick<GithubReleaseApiAsset, "name" | "browser_download_url">> & GithubReleaseApiAsset => {
+      return Boolean(asset.name && asset.browser_download_url);
+    })
+    .map((asset) => ({
+      name: asset.name,
+      contentType: asset.content_type ?? "",
+      browserDownloadUrl: asset.browser_download_url,
+    }));
+
+  return {
+    tagName: raw.tag_name,
+    name: raw.name ?? raw.tag_name,
+    htmlUrl: raw.html_url,
+    draft: Boolean(raw.draft),
+    prerelease: Boolean(raw.prerelease),
+    publishedAt: raw.published_at ?? null,
+    assets,
+  };
+}
+
+export async function fetchGithubReleases(limit = 20): Promise<GithubRelease[] | null> {
   try {
-    // Fetch from the PWA's version.json 
-    const response = await fetch("https://shotten.taltiko.com/version.json", {
-      headers: { "Cache-Control": "no-cache" },
+    const response = await fetch(`https://api.github.com/repos/TristanBomans/Shotten-App/releases?per_page=${limit}`, {
+      headers: { Accept: "application/vnd.github+json" },
     });
-    if (!response.ok) return null;
-    return (await response.json()) as VersionInfo;
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as GithubReleaseApiItem[];
+    if (!Array.isArray(payload)) {
+      return null;
+    }
+
+    return payload
+      .map(mapGithubRelease)
+      .filter((release): release is GithubRelease => release !== null);
   } catch {
     return null;
   }

@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { fetchMatches, updateAttendance } from "../../lib/api";
+import { fetchMatches, updateAttendance, fetchScraperTeams, fetchScraperTeamMatches } from "../../lib/api";
 import {
   filterPastMatches,
   getHeroMatch,
@@ -21,7 +21,7 @@ import {
   withPlayerAttendance,
   formatMatchDate,
 } from "../../lib/matches";
-import type { AttendanceStatus, Match } from "../../lib/types";
+import type { AttendanceStatus, Match, ScraperMatch } from "../../lib/types";
 import { useSession } from "../../state/session-context";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -57,6 +57,52 @@ function getSquadCounts(match: Match) {
   const notPresent = match.attendances.filter((a) => a.status === "NotPresent").length;
   const total = match.attendances.length;
   return { present, maybe, notPresent, total, unanswered: total - present - maybe - notPresent };
+}
+
+type MatchScore = { scoreline: string; result: "W" | "L" | "D" };
+
+function normalizeTeamName(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/['`']/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isSameTeamName(left: string, right: string): boolean {
+  const ln = normalizeTeamName(left);
+  const rn = normalizeTeamName(right);
+  if (!ln || !rn) return false;
+  if (ln === rn) return true;
+  return ln.includes(rn) || rn.includes(ln);
+}
+
+function isSameCalendarDay(dateA: string, dateB: string): boolean {
+  const a = new Date(dateA);
+  const b = new Date(dateB);
+  return (
+    a.getUTCFullYear() === b.getUTCFullYear() &&
+    a.getUTCMonth() === b.getUTCMonth() &&
+    a.getUTCDate() === b.getUTCDate()
+  );
+}
+
+function findMatchScore(match: Match, scraperMatches: ScraperMatch[]): MatchScore | null {
+  for (const sm of scraperMatches) {
+    if (sm.status !== "Played") continue;
+    if (!isSameCalendarDay(match.date, sm.date)) continue;
+    const isHome = isSameTeamName(match.teamName, sm.homeTeam);
+    const isAway = isSameTeamName(match.teamName, sm.awayTeam);
+    if (!isHome && !isAway) continue;
+    const ourScore = isHome ? sm.homeScore : sm.awayScore;
+    const oppScore = isHome ? sm.awayScore : sm.homeScore;
+    const result: "W" | "L" | "D" = ourScore > oppScore ? "W" : ourScore < oppScore ? "L" : "D";
+    return { scoreline: `${ourScore} - ${oppScore}`, result };
+  }
+  return null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -202,11 +248,13 @@ function HistoryModal({
   onClose,
   pastMatches,
   playerId,
+  scoreLookup,
 }: {
   visible: boolean;
   onClose: () => void;
   pastMatches: Match[];
   playerId: number;
+  scoreLookup: Map<number, MatchScore | null>;
 }) {
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
@@ -224,7 +272,14 @@ function HistoryModal({
               <Text style={styles.emptySubtitle}>No past matches</Text>
             </View>
           ) : (
-            pastMatches.map((match) => <PastMatchRow key={match.id} match={match} playerId={playerId} />)
+            pastMatches.map((match) => (
+              <PastMatchRow
+                key={match.id}
+                match={match}
+                playerId={playerId}
+                scoreInfo={scoreLookup.get(match.id) ?? null}
+              />
+            ))
           )}
         </ScrollView>
       </SafeAreaView>
@@ -232,7 +287,7 @@ function HistoryModal({
   );
 }
 
-function PastMatchRow({ match, playerId }: { match: Match; playerId: number }) {
+function PastMatchRow({ match, playerId, scoreInfo }: { match: Match; playerId: number; scoreInfo: MatchScore | null }) {
   const status = getPlayerAttendanceStatus(match, playerId);
   const state = resolveAttendanceState(status);
 
@@ -254,6 +309,20 @@ function PastMatchRow({ match, playerId }: { match: Match; playerId: number }) {
           ? "help-circle"
           : "circle-outline";
 
+  const resultBg =
+    scoreInfo?.result === "W"
+      ? t.colors.successContainer
+      : scoreInfo?.result === "L"
+        ? t.colors.errorContainer
+        : t.colors.warningContainer;
+
+  const resultColor =
+    scoreInfo?.result === "W"
+      ? t.colors.primary
+      : scoreInfo?.result === "L"
+        ? t.colors.errorAccent
+        : t.colors.warningAccent;
+
   return (
     <View style={styles.pastRow}>
       <MaterialCommunityIcons name={stateIcon as any} size={18} color={stateColor} />
@@ -263,6 +332,14 @@ function PastMatchRow({ match, playerId }: { match: Match; playerId: number }) {
         </Text>
         <Text style={styles.pastRowDate}>{formatMatchDate(match.date)}</Text>
       </View>
+      {scoreInfo && (
+        <View style={styles.pastScoreWrap}>
+          <View style={[styles.pastResultBadge, { backgroundColor: resultBg }]}>
+            <Text style={[styles.pastResultText, { color: resultColor }]}>{scoreInfo.result}</Text>
+          </View>
+          <Text style={styles.pastScoreText}>{scoreInfo.scoreline}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -282,6 +359,7 @@ export default function HomeScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [scoreLookup, setScoreLookup] = useState<Map<number, MatchScore | null>>(new Map());
   const scrollViewRef = useRef<ScrollView>(null);
 
   const loadMatches = useCallback(
@@ -355,6 +433,50 @@ export default function HomeScreen() {
 
   const pastMatches = useMemo(() => filterPastMatches(matches), [matches]);
   const activeMatch = upcomingMatches[currentIndex];
+
+  useEffect(() => {
+    if (!showHistory || pastMatches.length === 0) return;
+    let cancelled = false;
+
+    async function fetchScores() {
+      try {
+        const teams = await fetchScraperTeams();
+        const uniqueTeamNames = [...new Set(pastMatches.map((m) => m.teamName))];
+        const teamExternalIds = new Map<string, number>();
+
+        for (const teamName of uniqueTeamNames) {
+          const matched = teams.find((t) => isSameTeamName(t.name, teamName));
+          if (matched) {
+            teamExternalIds.set(teamName, matched.externalId);
+          }
+        }
+
+        const allScraperMatches: ScraperMatch[] = [];
+        const fetchPromises = Array.from(teamExternalIds.values()).map((externalId) =>
+          fetchScraperTeamMatches(externalId).catch(() => [] as ScraperMatch[]),
+        );
+        const results = await Promise.all(fetchPromises);
+        for (const matches of results) {
+          allScraperMatches.push(...matches);
+        }
+
+        if (cancelled) return;
+
+        const lookup = new Map<number, MatchScore | null>();
+        for (const match of pastMatches) {
+          lookup.set(match.id, findMatchScore(match, allScraperMatches));
+        }
+        setScoreLookup(lookup);
+      } catch {
+        // Scores won't be shown if fetch fails
+      }
+    }
+
+    void fetchScores();
+    return () => {
+      cancelled = true;
+    };
+  }, [showHistory, pastMatches]);
 
   const answeredCount = upcomingMatches.filter((m) => getPlayerAttendanceStatus(m, session.playerId) !== null).length;
 
@@ -488,7 +610,7 @@ export default function HomeScreen() {
       )}
 
       {/* History modal */}
-      <HistoryModal visible={showHistory} onClose={() => setShowHistory(false)} pastMatches={pastMatches} playerId={session.playerId} />
+      <HistoryModal visible={showHistory} onClose={() => setShowHistory(false)} pastMatches={pastMatches} playerId={session.playerId} scoreLookup={scoreLookup} />
 
       {/* Detail modal */}
       {selectedMatch ? (
@@ -766,5 +888,30 @@ const styles = StyleSheet.create({
     color: t.colors.onSurfaceDim,
     fontSize: 12,
     marginTop: 2,
+  },
+  pastScoreWrap: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: t.spacing.sm,
+    flexShrink: 0,
+  },
+  pastResultBadge: {
+    borderRadius: 6,
+    height: 22,
+    width: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pastResultText: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.02,
+  },
+  pastScoreText: {
+    color: t.colors.onSurface,
+    fontSize: 15,
+    fontWeight: "800",
+    fontVariant: ["tabular-nums"],
+    letterSpacing: -0.02,
   },
 });

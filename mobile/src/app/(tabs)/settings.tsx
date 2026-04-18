@@ -1,19 +1,46 @@
-import { Alert, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Switch, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Constants from "expo-constants";
 import { clearPlayerSession } from "../../state/player-session";
 import { useSession } from "../../state/session-context";
 import { usePreferences } from "../../state/preferences-context";
-import { setHapticFeedback, setShowFullNames, setDefaultLeague, clearDefaultLeague } from "../../state/preferences";
-import { fetchScraperTeams } from "../../lib/api";
+import {
+  clearDefaultLeague,
+  setDefaultLeague,
+  setHapticFeedback,
+  setReleaseScope,
+  setShowFullNames,
+} from "../../state/preferences";
+import { fetchGithubReleases, fetchScraperTeams } from "../../lib/api";
+import { resolveInstalledReleaseTag, resolveReleaseUpdateStatus } from "../../lib/release-updates";
+import type { AndroidRelease } from "../../lib/release-updates";
+import type { ReleaseScope } from "../../lib/types";
 import { androidDarkTheme } from "../../theme/androidDark";
-import Constants from "expo-constants";
 
 const t = androidDarkTheme;
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+
+type AppExtra = {
+  appVariant?: "development" | "preview" | "production";
+  releaseTag?: string;
+};
 
 function SettingIcon({ name, color }: { name: IconName; color: string }) {
   return (
@@ -23,12 +50,42 @@ function SettingIcon({ name, color }: { name: IconName; color: string }) {
   );
 }
 
+function formatPublishedDate(isoString: string | null): string {
+  if (!isoString) {
+    return "";
+  }
+
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function SettingsScreen() {
   const session = useSession();
   const { preferences, reload: reloadPrefs } = usePreferences();
   const router = useRouter();
   const [leagues, setLeagues] = useState<string[]>([]);
   const [leaguePickerOpen, setLeaguePickerOpen] = useState(false);
+  const [latestRelease, setLatestRelease] = useState<AndroidRelease | null>(null);
+  const [hasUpdate, setHasUpdate] = useState(false);
+  const [isCheckingRelease, setIsCheckingRelease] = useState(false);
+  const [releaseCheckFailed, setReleaseCheckFailed] = useState(false);
+
+  const isAndroid = Platform.OS === "android";
+  const appVersion = useMemo(() => Constants.expoConfig?.version ?? "0.1.0", []);
+  const appExtra = useMemo(() => (Constants.expoConfig?.extra ?? {}) as AppExtra, []);
+  const releaseScope = preferences.releaseScope;
+  const installedReleaseTag = useMemo(
+    () => resolveInstalledReleaseTag(appVersion, appExtra.releaseTag),
+    [appExtra.releaseTag, appVersion],
+  );
 
   useEffect(() => {
     const loadLeagues = async () => {
@@ -42,6 +99,49 @@ export default function SettingsScreen() {
     };
     void loadLeagues();
   }, []);
+
+  useEffect(() => {
+    if (!isAndroid) {
+      return;
+    }
+
+    let isActive = true;
+
+    const checkReleases = async () => {
+      setIsCheckingRelease(true);
+      setReleaseCheckFailed(false);
+
+      const releases = await fetchGithubReleases();
+      if (!isActive) {
+        return;
+      }
+
+      if (!releases) {
+        setReleaseCheckFailed(true);
+        setLatestRelease(null);
+        setHasUpdate(false);
+        setIsCheckingRelease(false);
+        return;
+      }
+
+      const status = resolveReleaseUpdateStatus({
+        releases,
+        scope: releaseScope,
+        installedAppVersion: appVersion,
+        installedReleaseTag,
+      });
+
+      setLatestRelease(status.latestRelease);
+      setHasUpdate(status.updateAvailable);
+      setIsCheckingRelease(false);
+    };
+
+    void checkReleases();
+
+    return () => {
+      isActive = false;
+    };
+  }, [appVersion, installedReleaseTag, isAndroid, releaseScope]);
 
   const handleLogout = () => {
     Alert.alert("Switch player", "Are you sure you want to switch to a different player?", [
@@ -68,6 +168,24 @@ export default function SettingsScreen() {
     reloadPrefs();
   }, [preferences.showFullNames, reloadPrefs]);
 
+  const handleToggleReleaseScope = useCallback(async () => {
+    const nextScope: ReleaseScope = releaseScope === "stable" ? "all" : "stable";
+    await setReleaseScope(nextScope);
+    reloadPrefs();
+  }, [releaseScope, reloadPrefs]);
+
+  const handleDownloadLatestRelease = useCallback(async () => {
+    if (!latestRelease) {
+      return;
+    }
+
+    try {
+      await Linking.openURL(latestRelease.apkDownloadUrl);
+    } catch {
+      Alert.alert("Open download failed", "Could not open the APK download link.");
+    }
+  }, [latestRelease]);
+
   const handleSelectLeague = useCallback(async (league: string) => {
     await setDefaultLeague(league);
     reloadPrefs();
@@ -80,10 +198,35 @@ export default function SettingsScreen() {
     setLeaguePickerOpen(false);
   }, [reloadPrefs]);
 
-  const appVersion = useMemo(() => {
-    const v = Constants.expoConfig?.version;
-    return v ? `${v}` : "0.1.0";
-  }, []);
+  const versionLabel = useMemo(() => {
+    if (appExtra.appVariant === "preview") {
+      return `${appVersion} (preview)`;
+    }
+
+    if (appExtra.appVariant === "development") {
+      return `${appVersion} (dev)`;
+    }
+
+    return appVersion;
+  }, [appExtra.appVariant, appVersion]);
+
+  const releaseStatusTitle = useMemo(() => {
+    if (isCheckingRelease) return "Checking for updates...";
+    if (releaseCheckFailed) return "Update check unavailable";
+    if (hasUpdate) return "New release available";
+    return "You're up to date";
+  }, [hasUpdate, isCheckingRelease, releaseCheckFailed]);
+
+  const releaseStatusDescription = useMemo(() => {
+    if (releaseCheckFailed) return "Could not fetch GitHub releases right now.";
+    if (!latestRelease) return "No Android release found for this scope.";
+    return `Latest: ${latestRelease.tagName}`;
+  }, [latestRelease, releaseCheckFailed]);
+
+  const releasePublishedLabel = useMemo(() => {
+    const dateLabel = formatPublishedDate(latestRelease?.publishedAt ?? null);
+    return dateLabel ? `Published ${dateLabel}` : "";
+  }, [latestRelease?.publishedAt]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
@@ -213,21 +356,84 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+        {/* Android release checker */}
+        {isAndroid ? (
+          <>
+            <View style={styles.sectionTitleRow}>
+              <Text style={styles.sectionTitle}>Android Updates</Text>
+              {hasUpdate && !isCheckingRelease ? <View style={styles.sectionAlertDot} /> : null}
+            </View>
+
+            <View style={styles.section}>
+              <View style={styles.settingRow}>
+                <SettingIcon name="source-branch" color={t.colors.warningAccent} />
+                <View style={styles.settingContent}>
+                  <Text style={styles.settingLabel}>Version Scope</Text>
+                  <Text style={styles.settingDescription}>
+                    {releaseScope === "stable" ? "Stable releases only" : "All releases (including previews)"}
+                  </Text>
+                </View>
+                <Switch
+                  value={releaseScope === "all"}
+                  onValueChange={() => void handleToggleReleaseScope()}
+                  trackColor={{ false: t.colors.surfaceRaised, true: `${t.colors.primary}55` }}
+                  thumbColor={releaseScope === "all" ? t.colors.primary : t.colors.onSurfaceDim}
+                  style={styles.switch}
+                />
+              </View>
+
+              <View style={styles.settingDivider} />
+
+              <View style={[styles.settingRow, styles.settingRowTop]}>
+                <SettingIcon
+                  name={hasUpdate ? "bell-badge-outline" : "download-circle-outline"}
+                  color={hasUpdate ? t.colors.warningAccent : t.colors.primary}
+                />
+
+                <View style={styles.settingContent}>
+                  <View style={styles.releaseTitleRow}>
+                    <Text style={styles.settingLabel}>{releaseStatusTitle}</Text>
+                    {hasUpdate && !isCheckingRelease ? (
+                      <View style={styles.updateBadge}>
+                        <Text style={styles.updateBadgeText}>New</Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  <Text style={styles.settingDescription}>{releaseStatusDescription}</Text>
+                  {releasePublishedLabel ? (
+                    <Text style={styles.settingDescription}>{releasePublishedLabel}</Text>
+                  ) : null}
+
+                  {hasUpdate && latestRelease ? (
+                    <Pressable
+                      android_ripple={{ color: t.colors.ripple, borderless: false }}
+                      onPress={() => void handleDownloadLatestRelease()}
+                      style={({ pressed }) => [styles.downloadButton, pressed && styles.downloadButtonPressed]}
+                    >
+                      <MaterialCommunityIcons name="download" size={16} color={t.colors.onPrimary} />
+                      <Text style={styles.downloadButtonText}>Download APK</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+
+                {isCheckingRelease ? <ActivityIndicator size="small" color={t.colors.primary} /> : null}
+              </View>
+            </View>
+          </>
+        ) : null}
+
         {/* About */}
         <Text style={styles.sectionTitle}>About</Text>
         <View style={styles.section}>
-          <Pressable
-            android_ripple={{ color: t.colors.ripple, borderless: false }}
-            onPress={() => router.push("/version-history")}
-            style={({ pressed }) => [styles.settingRow, pressed && styles.settingRowPressed]}
-          >
+          <View style={styles.settingRow}>
             <SettingIcon name="information-outline" color={t.colors.onSurfaceMuted} />
             <View style={styles.settingContent}>
               <Text style={styles.settingLabel}>Version</Text>
-              <Text style={styles.settingDescription}>{appVersion} (beta)</Text>
+              <Text style={styles.settingDescription}>{versionLabel}</Text>
+              {isAndroid ? <Text style={styles.settingDescription}>{installedReleaseTag}</Text> : null}
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color={t.colors.onSurfaceDim} />
-          </Pressable>
+          </View>
         </View>
 
         {/* Sign out — danger zone */}
@@ -364,6 +570,17 @@ const styles = StyleSheet.create({
     marginBottom: t.spacing.sm,
     paddingHorizontal: t.spacing.xs,
   },
+  sectionTitleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: t.spacing.xs,
+  },
+  sectionAlertDot: {
+    backgroundColor: t.colors.warningAccent,
+    borderRadius: t.radius.pill,
+    height: 8,
+    width: 8,
+  },
   section: {
     backgroundColor: t.colors.surface,
     borderRadius: t.radius.lg,
@@ -373,7 +590,7 @@ const styles = StyleSheet.create({
   settingDivider: {
     backgroundColor: t.colors.divider,
     height: 1,
-    marginLeft: 68, // align with text after icon
+    marginLeft: 68,
   },
 
   // Setting rows
@@ -384,6 +601,9 @@ const styles = StyleSheet.create({
     minHeight: t.touch.minHeight,
     paddingHorizontal: t.spacing.lg,
     paddingVertical: t.spacing.md,
+  },
+  settingRowTop: {
+    alignItems: "flex-start",
   },
   settingRowPressed: {
     backgroundColor: t.colors.surfaceAlt,
@@ -413,6 +633,44 @@ const styles = StyleSheet.create({
   },
   switch: {
     marginLeft: t.spacing.sm,
+  },
+
+  // Release checker
+  releaseTitleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: t.spacing.sm,
+  },
+  updateBadge: {
+    backgroundColor: t.colors.warningContainer,
+    borderRadius: t.radius.pill,
+    paddingHorizontal: t.spacing.sm,
+    paddingVertical: 2,
+  },
+  updateBadgeText: {
+    color: t.colors.warningAccent,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  downloadButton: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: t.colors.primary,
+    borderRadius: t.radius.pill,
+    flexDirection: "row",
+    gap: t.spacing.xs,
+    marginTop: t.spacing.md,
+    overflow: "hidden",
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs,
+  },
+  downloadButtonPressed: {
+    opacity: 0.9,
+  },
+  downloadButtonText: {
+    color: t.colors.onPrimary,
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   // Sign out
@@ -474,9 +732,9 @@ const styles = StyleSheet.create({
     padding: t.spacing.xs,
   },
   pickerList: {
+    gap: t.spacing.sm,
     paddingHorizontal: t.spacing.lg,
     paddingVertical: t.spacing.md,
-    gap: t.spacing.sm,
   },
   pickerItem: {
     alignItems: "center",

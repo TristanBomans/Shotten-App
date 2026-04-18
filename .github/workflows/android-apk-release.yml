@@ -60,6 +60,7 @@ jobs:
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             CHANNEL="preview"
             EAS_PROFILE="preview"
+            APP_VARIANT="preview"
             TAG="${{ github.event.inputs.preview_tag }}"
             if [ -z "${TAG}" ]; then
               TAG="mobile-preview-$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
@@ -73,6 +74,7 @@ jobs:
           else
             CHANNEL="stable"
             EAS_PROFILE="production"
+            APP_VARIANT="production"
             TAG="${GITHUB_REF_NAME}"
             NAME="Shotten Android ${TAG}"
 
@@ -90,6 +92,7 @@ jobs:
 
           echo "channel=${CHANNEL}" >> "${GITHUB_OUTPUT}"
           echo "eas_profile=${EAS_PROFILE}" >> "${GITHUB_OUTPUT}"
+          echo "app_variant=${APP_VARIANT}" >> "${GITHUB_OUTPUT}"
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
           echo "safe_tag=${SAFE_TAG}" >> "${GITHUB_OUTPUT}"
           echo "name=${NAME}" >> "${GITHUB_OUTPUT}"
@@ -103,7 +106,11 @@ jobs:
         id: eas
         working-directory: mobile
         run: |
+          RELEASE_PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           OUTPUT_PATH="${RUNNER_TEMP}/shotten-android-${{ steps.release_meta.outputs.safe_tag }}.apk"
+          APP_VARIANT="${{ steps.release_meta.outputs.app_variant }}" \
+          RELEASE_TAG="${{ steps.release_meta.outputs.tag }}" \
+          RELEASE_PUBLISHED_AT="${RELEASE_PUBLISHED_AT}" \
           bunx eas-cli@latest build --platform android --profile "${{ steps.release_meta.outputs.eas_profile }}" --local --non-interactive --output "${OUTPUT_PATH}"
 
           if [ ! -f "${OUTPUT_PATH}" ]; then

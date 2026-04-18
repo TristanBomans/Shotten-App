@@ -93,11 +93,20 @@ export interface ScraperMatch {
   status: "Scheduled" | "Played" | "Postponed";
 }
 
-export interface VersionRelease {
-  date: string;
-  changes: string[];
+export type ReleaseScope = "stable" | "all";
+
+export interface GithubReleaseAsset {
+  name: string;
+  contentType: string;
+  browserDownloadUrl: string;
 }
 
-export interface VersionInfo {
-  releases: VersionRelease[];
+export interface GithubRelease {
+  tagName: string;
+  name: string;
+  htmlUrl: string;
+  draft: boolean;
+  prerelease: boolean;
+  publishedAt: string | null;
+  assets: GithubReleaseAsset[];
 }

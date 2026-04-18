@@ -2,6 +2,15 @@ import type { ExpoConfig } from "expo/config";
 
 type AppVariant = "development" | "preview" | "production";
 
+function resolveOptionalValue(raw: string | undefined): string | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  const trimmed = raw.trim();
+  return trimmed ? trimmed : undefined;
+}
+
 function resolveVariant(raw: string | undefined): AppVariant {
   if (raw === "development" || raw === "preview" || raw === "production") {
     return raw;
@@ -10,6 +19,8 @@ function resolveVariant(raw: string | undefined): AppVariant {
 }
 
 const appVariant = resolveVariant(process.env.APP_VARIANT);
+const releaseTag = resolveOptionalValue(process.env.RELEASE_TAG);
+const releasePublishedAt = resolveOptionalValue(process.env.RELEASE_PUBLISHED_AT);
 
 const VARIANT_CONFIG: Record<
   AppVariant,
@@ -74,6 +85,8 @@ const config: ExpoConfig = {
   },
   extra: {
     appVariant,
+    releaseTag,
+    releasePublishedAt,
     eas: {
       projectId: "cbdf84f5-b6f7-4d4c-a4bb-871ff4575622"
     }

@@ -89,10 +89,6 @@ export default function StatsScreen() {
   const leaderboard = useMemo(() => buildLeaderboard(players, matches), [players, matches]);
 
   const topThree = leaderboard.slice(0, 3);
-  const rest = leaderboard.slice(3);
-
-  const ownPlayer = leaderboard.find((p) => p.id === session.playerId);
-  const ownRank = ownPlayer ? leaderboard.findIndex((p) => p.id === session.playerId) + 1 : 0;
 
   const selectedRank = selectedPlayer
     ? leaderboard.findIndex((p) => p.id === selectedPlayer.id) + 1
@@ -196,36 +192,13 @@ export default function StatsScreen() {
             </View>
           )}
 
-          {/* Own rank card (sticky summary) */}
-          {ownPlayer && ownRank > 3 && (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setSelectedPlayer(ownPlayer)}
-              style={styles.ownCard}
-            >
-              <View style={styles.ownCardLeft}>
-                <Text style={styles.ownCardRank}>#{ownRank}</Text>
-                <View style={[styles.ownCardAvatar, { backgroundColor: ownPlayer.stats.rank.color + "20" }]}>
-                  <Text style={[styles.ownCardAvatarText, { color: ownPlayer.stats.rank.color }]}>
-                    {ownPlayer.name.charAt(0)}
-                  </Text>
-                </View>
-                <View>
-                  <Text style={styles.ownCardName}>{ownPlayer.name} <Text style={styles.ownCardYou}>(You)</Text></Text>
-                  <Text style={styles.ownCardSubtitle}>{ownPlayer.stats.rank.name}</Text>
-                </View>
-              </View>
-              <Text style={styles.ownCardScore}>{ownPlayer.stats.score}</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Rest of leaderboard */}
+          {/* Leaderboard list */}
           <View style={styles.leaderboardList}>
-            {rest.map((player, i) => (
+            {leaderboard.map((player, i) => (
               <RankCard
                 key={player.id}
                 player={player}
-                rank={i + 4}
+                rank={i + 1}
                 isOwn={player.id === session.playerId}
                 onPress={() => setSelectedPlayer(player)}
               />
@@ -282,7 +255,7 @@ function RankCard({
         </View>
         <View style={styles.rankCardInfo}>
           <Text style={[styles.rankCardName, isOwn && styles.rankCardNameOwn]} numberOfLines={1}>
-            {player.name}
+            {player.name}{isOwn ? <Text style={styles.rankCardYou}> (You)</Text> : null}
           </Text>
           <View style={styles.rankCardForm}>
             {player.stats.recentForm.map((status, j) => (
@@ -628,61 +601,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Own card
-  ownCard: {
-    marginHorizontal: t.spacing.lg,
-    marginTop: t.spacing.lg,
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.lg,
-    padding: t.spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: t.colors.primary + "30",
-  },
-  ownCardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: t.spacing.md,
-    flex: 1,
-  },
-  ownCardRank: {
-    color: t.colors.primary,
-    fontSize: 18,
-    fontWeight: "800",
-    width: 36,
-  },
-  ownCardAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ownCardAvatarText: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  ownCardName: {
-    color: t.colors.onSurface,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  ownCardYou: {
-    color: t.colors.primary,
-    fontWeight: "600",
-  },
-  ownCardSubtitle: {
-    color: t.colors.onSurfaceMuted,
-    ...t.typography.caption,
-    marginTop: 2,
-  },
-  ownCardScore: {
-    color: t.colors.onSurface,
-    ...t.typography.score,
-  },
-
   // Leaderboard list
   leaderboardList: {
     gap: t.spacing.sm,
@@ -738,6 +656,10 @@ const styles = StyleSheet.create({
   },
   rankCardNameOwn: {
     color: t.colors.primary,
+  },
+  rankCardYou: {
+    color: t.colors.primary,
+    fontWeight: "600",
   },
   rankCardForm: {
     flexDirection: "row",
