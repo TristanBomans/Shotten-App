@@ -9,10 +9,12 @@ interface ResponseButtonsProps {
   isUpdating: boolean;
   onYes: () => void;
   onNo: () => void;
+  onMaybe?: () => void;
 }
 
-export function ResponseButtons({ currentState, isUpdating, onYes, onNo }: ResponseButtonsProps) {
+export function ResponseButtons({ currentState, isUpdating, onYes, onNo, onMaybe }: ResponseButtonsProps) {
   const yesIsActive = currentState === "yes";
+  const maybeIsActive = currentState === "undecided";
   const noIsActive = currentState === "no";
 
   return (
@@ -36,9 +38,35 @@ export function ResponseButtons({ currentState, isUpdating, onYes, onNo }: Respo
           style={styles.buttonIcon}
         />
         <Text style={[styles.buttonText, styles.yesText, yesIsActive && styles.activeText]}>
-          {isUpdating && yesIsActive ? "Saving..." : "Yes"}
+          {isUpdating && yesIsActive ? "..." : "Yes"}
         </Text>
       </Pressable>
+
+      {onMaybe ? (
+        <Pressable
+          android_ripple={{ color: "rgba(247, 203, 97, 0.15)", borderless: false }}
+          disabled={isUpdating}
+          onPress={onMaybe}
+          style={({ pressed }) => [
+            styles.button,
+            styles.maybeButton,
+            maybeIsActive && styles.maybeButtonActive,
+            pressed && !isUpdating && styles.buttonPressed,
+            isUpdating && styles.buttonDisabled,
+          ]}
+        >
+          <MaterialCommunityIcons
+            name={maybeIsActive ? "help-circle" : "help-circle-outline"}
+            size={18}
+            color={maybeIsActive ? "#1e1800" : t.colors.warningAccent}
+            style={styles.buttonIcon}
+          />
+          <Text style={[styles.buttonText, styles.maybeText, maybeIsActive && styles.maybeActiveText]}>
+            {isUpdating && maybeIsActive ? "..." : "Maybe"}
+          </Text>
+        </Pressable>
+      ) : null}
+
       <Pressable
         android_ripple={{ color: "rgba(255, 95, 133, 0.15)", borderless: false }}
         disabled={isUpdating}
@@ -57,8 +85,8 @@ export function ResponseButtons({ currentState, isUpdating, onYes, onNo }: Respo
           color={noIsActive ? "#1e0008" : t.colors.errorAccent}
           style={styles.buttonIcon}
         />
-        <Text style={[styles.buttonText, styles.noText, noIsActive && styles.activeText]}>
-          {isUpdating && noIsActive ? "Saving..." : "No"}
+        <Text style={[styles.buttonText, styles.noText, noIsActive && styles.noActiveText]}>
+          {isUpdating && noIsActive ? "..." : "No"}
         </Text>
       </Pressable>
     </View>
@@ -90,6 +118,12 @@ const styles = StyleSheet.create({
   yesButtonActive: {
     backgroundColor: t.colors.primary,
   },
+  maybeButton: {
+    backgroundColor: t.colors.warningContainer,
+  },
+  maybeButtonActive: {
+    backgroundColor: t.colors.warningAccent,
+  },
   noButton: {
     backgroundColor: t.colors.errorContainer,
   },
@@ -109,10 +143,19 @@ const styles = StyleSheet.create({
   yesText: {
     color: t.colors.primary,
   },
+  maybeText: {
+    color: t.colors.warningAccent,
+  },
   noText: {
     color: t.colors.errorAccent,
   },
   activeText: {
     color: t.colors.onPrimary,
+  },
+  maybeActiveText: {
+    color: "#1e1800",
+  },
+  noActiveText: {
+    color: "#1e0008",
   },
 });

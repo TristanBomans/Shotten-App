@@ -4,6 +4,11 @@ export interface Player {
   teamIds: number[];
 }
 
+export interface Team {
+  id: number;
+  name: string;
+}
+
 export type AttendanceStatus = "Present" | "NotPresent" | "Maybe";
 
 export interface MatchAttendance {
@@ -44,7 +49,22 @@ export interface ScraperTeam {
   goalsAgainst?: number;
   goalDifference?: number;
   pointsPerMatch?: number;
+  form?: string[];
+  colors?: string;
+  manager?: string;
+  description?: string;
   imageBase64?: string;
+}
+
+export interface ScraperTeamStats {
+  id: number;
+  playerId: number;
+  teamId: number;
+  number?: number;
+  gamesPlayed: number;
+  goals: number;
+  assists: number;
+  fairplayRank?: number;
 }
 
 export interface ScraperPlayer {
@@ -57,4 +77,27 @@ export interface ScraperPlayer {
   assists: number;
   fairplayRank?: number;
   teamIds?: number[];
+  teamStats?: ScraperTeamStats[];
+}
+
+export interface ScraperMatch {
+  _id: string;
+  externalId: string;
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  location?: string;
+  teamId: number;
+  status: "Scheduled" | "Played" | "Postponed";
+}
+
+export interface VersionRelease {
+  date: string;
+  changes: string[];
+}
+
+export interface VersionInfo {
+  releases: VersionRelease[];
 }

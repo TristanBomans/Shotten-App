@@ -1,6 +1,7 @@
 import { Alert, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Switch, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { clearPlayerSession } from "../../state/player-session";
 import { useSession } from "../../state/session-context";
@@ -25,6 +26,7 @@ function SettingIcon({ name, color }: { name: IconName; color: string }) {
 export default function SettingsScreen() {
   const session = useSession();
   const { preferences, reload: reloadPrefs } = usePreferences();
+  const router = useRouter();
   const [leagues, setLeagues] = useState<string[]>([]);
   const [leaguePickerOpen, setLeaguePickerOpen] = useState(false);
 
@@ -184,7 +186,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Pressable
             android_ripple={{ color: t.colors.ripple, borderless: false }}
-            onPress={() => {}}
+            onPress={() => router.push("/respond-as-player")}
             style={({ pressed }) => [styles.settingRow, pressed && styles.settingRowPressed]}
           >
             <SettingIcon name="account-check" color={t.colors.primary} />
@@ -199,7 +201,7 @@ export default function SettingsScreen() {
 
           <Pressable
             android_ripple={{ color: t.colors.ripple, borderless: false }}
-            onPress={() => {}}
+            onPress={() => router.push("/player-management")}
             style={({ pressed }) => [styles.settingRow, pressed && styles.settingRowPressed]}
           >
             <SettingIcon name="account-cog" color={t.colors.primary} />
@@ -214,13 +216,18 @@ export default function SettingsScreen() {
         {/* About */}
         <Text style={styles.sectionTitle}>About</Text>
         <View style={styles.section}>
-          <View style={styles.settingRow}>
+          <Pressable
+            android_ripple={{ color: t.colors.ripple, borderless: false }}
+            onPress={() => router.push("/version-history")}
+            style={({ pressed }) => [styles.settingRow, pressed && styles.settingRowPressed]}
+          >
             <SettingIcon name="information-outline" color={t.colors.onSurfaceMuted} />
             <View style={styles.settingContent}>
               <Text style={styles.settingLabel}>Version</Text>
               <Text style={styles.settingDescription}>{appVersion} (beta)</Text>
             </View>
-          </View>
+            <MaterialCommunityIcons name="chevron-right" size={20} color={t.colors.onSurfaceDim} />
+          </Pressable>
         </View>
 
         {/* Sign out — danger zone */}

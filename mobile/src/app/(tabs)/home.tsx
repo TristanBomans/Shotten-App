@@ -24,6 +24,7 @@ import { useSession } from "../../state/session-context";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
 import { MatchCard } from "../../components/MatchCard";
+import { MatchDetailModal } from "../../components/MatchDetailModal";
 import { androidDarkTheme } from "../../theme/androidDark";
 
 const t = androidDarkTheme;
@@ -37,6 +38,7 @@ export default function HomeScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [updatingMatchId, setUpdatingMatchId] = useState<number | null>(null);
   const [showPast, setShowPast] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
   const loadMatches = useCallback(
     async (playerId: number, isRefresh = false) => {
@@ -68,8 +70,9 @@ export default function HomeScreen() {
     void loadMatches(session.playerId, true);
   }, [loadMatches, session.playerId]);
 
-  const handleRespond = async (matchId: number, response: "yes" | "no") => {
-    const nextStatus: AttendanceStatus = response === "yes" ? "Present" : "NotPresent";
+  const handleRespond = async (matchId: number, response: "yes" | "no" | "maybe") => {
+    const statusMap: Record<string, AttendanceStatus> = { yes: "Present", no: "NotPresent", maybe: "Maybe" };
+    const nextStatus: AttendanceStatus = statusMap[response];
     setActionError(null);
     setUpdatingMatchId(matchId);
 
@@ -109,6 +112,7 @@ export default function HomeScreen() {
         isUpdating={updatingMatchId === match.id}
         onYes={() => void handleRespond(match.id, "yes")}
         onNo={() => void handleRespond(match.id, "no")}
+        onPress={() => setSelectedMatch(match)}
         variant={variant}
         currentPlayerId={session.playerId}
       />
@@ -217,6 +221,19 @@ export default function HomeScreen() {
           ) : null}
         </View>
       </ScrollView>
+
+      {selectedMatch ? (
+        <MatchDetailModal
+          match={selectedMatch}
+          currentPlayerId={session.playerId}
+          currentStatus={getPlayerAttendanceStatus(selectedMatch, session.playerId)}
+          isUpdating={updatingMatchId === selectedMatch.id}
+          onYes={() => void handleRespond(selectedMatch.id, "yes")}
+          onNo={() => void handleRespond(selectedMatch.id, "no")}
+          onMaybe={() => void handleRespond(selectedMatch.id, "maybe")}
+          onClose={() => setSelectedMatch(null)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

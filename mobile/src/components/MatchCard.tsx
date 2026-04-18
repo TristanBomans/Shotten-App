@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ResponseButtons } from "./ResponseButtons";
 import { formatMatchDate, resolveAttendanceState } from "../lib/matches";
 import type { AttendanceStatus, Match } from "../lib/types";
@@ -13,6 +14,8 @@ interface MatchCardProps {
   isUpdating: boolean;
   onYes: () => void;
   onNo: () => void;
+  onMaybe?: () => void;
+  onPress?: () => void;
   variant?: "default" | "hero";
   currentPlayerId?: number;
 }
@@ -77,13 +80,13 @@ function formatPlayerNames(players: { id: number; name: string }[], currentPlaye
   }).join(" · ");
 }
 
-export function MatchCard({ match, currentStatus, isUpdating, onYes, onNo, variant = "default", currentPlayerId }: MatchCardProps) {
+export function MatchCard({ match, currentStatus, isUpdating, onYes, onNo, onMaybe, onPress, variant = "default", currentPlayerId }: MatchCardProps) {
   const { preferences } = usePreferences();
   const isHero = variant === "hero";
   const sections = buildSquadSections(match.attendances, currentPlayerId);
   const hasResponses = sections.length > 0;
 
-  return (
+  const cardContent = (
     <View style={[styles.card, isHero && styles.heroCard]}>
       {isHero ? <View style={styles.heroAccent} /> : null}
       <View style={styles.cardInner}>
@@ -93,6 +96,9 @@ export function MatchCard({ match, currentStatus, isUpdating, onYes, onNo, varia
             <Text style={styles.meta}>{formatMatchDate(match.date)}</Text>
             {match.location ? <Text style={styles.metaLocation}>{match.location}</Text> : null}
           </View>
+          {onPress ? (
+            <MaterialCommunityIcons name="chevron-right" size={20} color={t.colors.onSurfaceDim} style={styles.chevron} />
+          ) : null}
         </View>
 
         {hasResponses ? (
@@ -116,15 +122,32 @@ export function MatchCard({ match, currentStatus, isUpdating, onYes, onNo, varia
           <Text style={styles.noResponses}>No responses yet</Text>
         )}
 
-        <ResponseButtons
-          currentState={resolveAttendanceState(currentStatus)}
-          isUpdating={isUpdating}
-          onYes={onYes}
-          onNo={onNo}
-        />
+        <View style={styles.buttonsWrap} onStartShouldSetResponder={() => true}>
+          <ResponseButtons
+            currentState={resolveAttendanceState(currentStatus)}
+            isUpdating={isUpdating}
+            onYes={onYes}
+            onNo={onNo}
+            onMaybe={onMaybe}
+          />
+        </View>
       </View>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <Pressable
+        android_ripple={{ color: t.colors.ripple, borderless: false, radius: t.radius.lg + 5 }}
+        onPress={onPress}
+        style={({ pressed }) => [pressed && styles.cardPressed]}
+      >
+        {cardContent}
+      </Pressable>
+    );
+  }
+
+  return cardContent;
 }
 
 const styles = StyleSheet.create({
@@ -145,12 +168,19 @@ const styles = StyleSheet.create({
   cardInner: {
     padding: t.spacing.lg,
   },
+  cardPressed: {
+    opacity: 0.92,
+  },
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
   },
   headerText: {
     flex: 1,
+  },
+  chevron: {
+    marginTop: 4,
+    marginLeft: t.spacing.sm,
   },
   title: {
     color: t.colors.onSurface,
@@ -207,4 +237,5 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: t.spacing.md,
   },
+  buttonsWrap: {},
 });

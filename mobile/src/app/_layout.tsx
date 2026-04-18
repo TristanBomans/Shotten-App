@@ -22,6 +22,9 @@ export default function RootLayout() {
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="player-management" options={{ title: "Manage Players" }} />
+        <Stack.Screen name="respond-as-player" options={{ title: "Respond as Player" }} />
+        <Stack.Screen name="version-history" options={{ title: "Version History" }} />
       </Stack>
     </SafeAreaProvider>
   );

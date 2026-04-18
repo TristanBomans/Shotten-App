@@ -16,6 +16,7 @@ import { fetchScraperTeams, fetchScraperPlayers } from "../../lib/api";
 import type { ScraperTeam, ScraperPlayer } from "../../lib/types";
 import { usePreferences } from "../../state/preferences-context";
 import { setDefaultLeague, clearDefaultLeague } from "../../state/preferences";
+import { TeamDetailModal } from "../../components/TeamDetailModal";
 import { androidDarkTheme } from "../../theme/androidDark";
 
 const t = androidDarkTheme;
@@ -32,6 +33,7 @@ export default function LeagueScreen() {
   const [activeTab, setActiveTab] = useState<LeagueTab>("standings");
   const [selectedLeague, setSelectedLeague] = useState("");
   const [leaguePickerOpen, setLeaguePickerOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<ScraperTeam | null>(null);
   const [visiblePlayers, setVisiblePlayers] = useState(50);
 
   const loadData = useCallback(async (isRefresh = false) => {
@@ -170,7 +172,7 @@ export default function LeagueScreen() {
         }
       >
         {activeTab === "standings" ? (
-          <StandingsTable teams={filteredTeams} />
+          <StandingsTable teams={filteredTeams} onTeamPress={setSelectedTeam} />
         ) : (
           <PlayersList players={shownPlayers} teams={teams} hasMore={hasMorePlayers} onLoadMore={() => setVisiblePlayers((p) => p + 50)} />
         )}
@@ -229,11 +231,17 @@ export default function LeagueScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      <TeamDetailModal
+        team={selectedTeam}
+        visible={selectedTeam !== null}
+        onClose={() => setSelectedTeam(null)}
+      />
     </SafeAreaView>
   );
 }
 
-function StandingsTable({ teams }: { teams: ScraperTeam[] }) {
+function StandingsTable({ teams, onTeamPress }: { teams: ScraperTeam[]; onTeamPress: (team: ScraperTeam) => void }) {
   if (teams.length === 0) {
     return (
       <View style={styles.emptyTable}>
@@ -258,7 +266,12 @@ function StandingsTable({ teams }: { teams: ScraperTeam[] }) {
         const gd = team.goalDifference ?? 0;
         const gdText = gd > 0 ? `+${gd}` : String(gd);
         return (
-          <View key={team.externalId} style={styles.tableRow}>
+          <Pressable
+            key={team.externalId}
+            android_ripple={{ color: t.colors.ripple, borderless: false }}
+            onPress={() => onTeamPress(team)}
+            style={styles.tableRow}
+          >
             <Text style={[styles.tdRank, team.rank === 1 && styles.tdRankFirst, i === teams.length - 1 && styles.tdRankLast]}>
               {team.rank ?? "-"}
             </Text>
@@ -266,7 +279,7 @@ function StandingsTable({ teams }: { teams: ScraperTeam[] }) {
             <Text style={styles.tdNum}>{team.matchesPlayed ?? 0}</Text>
             <Text style={[styles.tdNum, gd > 0 && styles.tdGdPositive, gd < 0 && styles.tdGdNegative]}>{gdText}</Text>
             <Text style={styles.tdPts}>{team.points ?? 0}</Text>
-          </View>
+          </Pressable>
         );
       })}
     </View>
@@ -482,6 +495,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     minHeight: t.touch.minHeight,
+    overflow: "hidden",
     paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.sm,
   },
