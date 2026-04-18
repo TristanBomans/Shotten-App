@@ -3,6 +3,8 @@ import type { AttendanceStatus } from "../lib/types";
 import { resolveAttendanceLabel, resolveAttendanceState } from "../lib/matches";
 import { androidDarkTheme } from "../theme/androidDark";
 
+const t = androidDarkTheme;
+
 interface AttendanceStatusBadgeProps {
   status: AttendanceStatus | null;
 }
@@ -16,7 +18,7 @@ export function AttendanceStatusBadge({ status }: AttendanceStatusBadgeProps) {
           styles.text,
           state === "yes" && styles.yesText,
           state === "no" && styles.noText,
-          state === "undecided" && styles.maybeText
+          state === "undecided" && styles.maybeText,
         ]}
       >
         {resolveAttendanceLabel(status)}
@@ -28,32 +30,32 @@ export function AttendanceStatusBadge({ status }: AttendanceStatusBadgeProps) {
 const styles = StyleSheet.create({
   base: {
     alignSelf: "flex-start",
-    backgroundColor: androidDarkTheme.colors.chip,
-    borderRadius: 999,
+    backgroundColor: t.colors.chip,
+    borderRadius: t.radius.pill,
     paddingHorizontal: 10,
-    paddingVertical: 5
+    paddingVertical: 5,
   },
   text: {
-    color: androidDarkTheme.colors.chipText,
+    color: t.colors.chipText,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "700",
   },
   yes: {
-    backgroundColor: androidDarkTheme.colors.successContainer
+    backgroundColor: t.colors.successContainer,
   },
   no: {
-    backgroundColor: androidDarkTheme.colors.errorContainer
+    backgroundColor: t.colors.errorContainer,
   },
   maybe: {
-    backgroundColor: androidDarkTheme.colors.warningContainer
+    backgroundColor: t.colors.warningContainer,
   },
   yesText: {
-    color: androidDarkTheme.colors.onSuccess
+    color: t.colors.onSuccess,
   },
   noText: {
-    color: androidDarkTheme.colors.onError
+    color: t.colors.onError,
   },
   maybeText: {
-    color: androidDarkTheme.colors.onWarning
-  }
+    color: t.colors.onWarning,
+  },
 });

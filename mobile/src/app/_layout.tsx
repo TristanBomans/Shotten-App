@@ -8,18 +8,19 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" backgroundColor={colors.surface} />
+      <StatusBar style="light" backgroundColor={colors.background} />
       <Stack
         screenOptions={{
           contentStyle: { backgroundColor: colors.background },
-          headerStyle: { backgroundColor: colors.surface },
+          headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.onSurface,
           headerTitleStyle: { color: colors.onSurface, fontWeight: "700" },
           headerShadowVisible: false,
           statusBarStyle: "light",
+          animation: "slide_from_right",
         }}
       >
-        <Stack.Screen name="index" options={{ title: "Choose player" }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
     </SafeAreaProvider>

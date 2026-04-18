@@ -1,15 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, Image, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { fetchPlayers } from "../lib/api";
 import type { Player } from "../lib/types";
 import { getPlayerSession, setPlayerSession } from "../state/player-session";
 import { ErrorState } from "../components/ErrorState";
 import { LoadingState } from "../components/LoadingState";
-import { PlayerListItem } from "../components/PlayerListItem";
 import { androidDarkTheme } from "../theme/androidDark";
+
+const t = androidDarkTheme;
 
 export default function PlayerSelectScreen() {
   const router = useRouter();
@@ -65,49 +75,83 @@ export default function PlayerSelectScreen() {
     router.replace("/home");
   };
 
+  const renderPlayer = ({ item, index }: { item: Player; index: number }) => {
+    const isFirst = index === 0;
+    const isLast = index === filteredPlayers.length - 1;
+
+    return (
+      <Pressable
+        android_ripple={{ color: t.colors.ripple, borderless: false }}
+        onPress={() => void handlePlayerPress(item)}
+        style={({ pressed }) => [
+          styles.playerRow,
+          isFirst && styles.playerRowFirst,
+          isLast && styles.playerRowLast,
+          !isLast && styles.playerRowDivider,
+          pressed && styles.playerRowPressed,
+        ]}
+      >
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
+        </View>
+        <Text style={styles.playerName}>{item.name}</Text>
+        <MaterialCommunityIcons name="chevron-right" size={20} color={t.colors.onSurfaceDim} />
+      </Pressable>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Brand hero */}
         <View style={styles.hero}>
-          <View style={styles.brandRow}>
-            <View style={styles.logoWrap}>
-              <Image source={require("../../assets/icon.png")} style={styles.logo} />
-              {isPreviewBuild ? (
-                <View style={styles.logoPreviewBadge}>
-                  <Text style={styles.logoPreviewBadgeText}>Preview</Text>
-                </View>
-              ) : null}
-            </View>
-            <View style={styles.heroText}>
-              <Text style={styles.title}>Welcome to Shotten</Text>
-              <Text style={styles.subtitle}>Select your player to manage attendance.</Text>
-            </View>
+          <View style={styles.logoContainer}>
+            <Image source={require("../../assets/icon.png")} style={styles.logo} />
+            {isPreviewBuild ? (
+              <View style={styles.previewBadge}>
+                <Text style={styles.previewBadgeText}>Preview</Text>
+              </View>
+            ) : null}
           </View>
+          <Text style={styles.title}>Shotten</Text>
+          <Text style={styles.subtitle}>Who are you?</Text>
         </View>
 
-        <TextInput
-          autoCapitalize="none"
-          autoCorrect={false}
-          onChangeText={setSearchQuery}
-          placeholder="Search player..."
-          placeholderTextColor={androidDarkTheme.colors.onSurfaceMuted}
-          selectionColor={androidDarkTheme.colors.primary}
-          style={styles.searchInput}
-          value={searchQuery}
-        />
+        {/* Search */}
+        <View style={styles.searchContainer}>
+          <MaterialCommunityIcons
+            name="magnify"
+            size={20}
+            color={t.colors.onSurfaceDim}
+            style={styles.searchIcon}
+          />
+          <TextInput
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={setSearchQuery}
+            placeholder="Search players..."
+            placeholderTextColor={t.colors.onSurfaceDim}
+            selectionColor={t.colors.primary}
+            style={styles.searchInput}
+            value={searchQuery}
+          />
+        </View>
 
         {loading ? <LoadingState message="Loading players..." /> : null}
 
         {!loading && error ? <ErrorState message={error} onRetry={() => void loadPlayers()} /> : null}
 
         {!loading && !error ? (
-          <FlatList
-            contentContainerStyle={styles.listContent}
-            data={filteredPlayers}
-            keyExtractor={(item) => String(item.id)}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => <PlayerListItem player={item} onPress={() => void handlePlayerPress(item)} />}
-          />
+          <View style={styles.listWrapper}>
+            <FlatList
+              contentContainerStyle={styles.listContent}
+              data={filteredPlayers}
+              keyExtractor={(item) => String(item.id)}
+              keyboardShouldPersistTaps="handled"
+              renderItem={renderPlayer}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
         ) : null}
       </View>
     </SafeAreaView>
@@ -116,76 +160,123 @@ export default function PlayerSelectScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: androidDarkTheme.colors.background,
-    flex: 1
+    backgroundColor: t.colors.background,
+    flex: 1,
   },
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.xl,
   },
   hero: {
-    marginBottom: 16
-  },
-  brandRow: {
     alignItems: "center",
-    flexDirection: "row",
-    gap: 12
+    marginBottom: t.spacing.xxl,
+    paddingTop: t.spacing.xxxl,
   },
-  logoWrap: {
-    alignSelf: "flex-start",
-    position: "relative"
+  logoContainer: {
+    position: "relative",
+    marginBottom: t.spacing.lg,
   },
   logo: {
-    borderColor: androidDarkTheme.colors.outline,
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 56,
-    width: 56
+    borderRadius: t.radius.xl,
+    height: 80,
+    width: 80,
   },
-  logoPreviewBadge: {
+  previewBadge: {
     alignSelf: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderColor: androidDarkTheme.colors.primary,
-    borderRadius: androidDarkTheme.radius.pill,
-    borderWidth: 1,
+    backgroundColor: t.colors.primary,
+    borderRadius: t.radius.pill,
     bottom: -8,
     paddingHorizontal: 8,
-    paddingVertical: 1,
-    position: "absolute"
+    paddingVertical: 2,
+    position: "absolute",
   },
-  logoPreviewBadgeText: {
-    color: androidDarkTheme.colors.primary,
-    fontSize: 10,
+  previewBadgeText: {
+    color: t.colors.onPrimary,
+    fontSize: 9,
     fontWeight: "700",
-    letterSpacing: 0.3,
-    textTransform: "uppercase"
-  },
-  heroText: {
-    flex: 1
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   title: {
-    color: androidDarkTheme.colors.onBackground,
-    fontSize: 24,
-    fontWeight: "800",
-    letterSpacing: 0.2
+    color: t.colors.onBackground,
+    ...t.typography.hero,
   },
   subtitle: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 14,
-    marginTop: 6
+    color: t.colors.onSurfaceMuted,
+    fontSize: 15,
+    marginTop: t.spacing.xs,
+  },
+
+  // Search
+  searchContainer: {
+    alignItems: "center",
+    backgroundColor: t.colors.surfaceAlt,
+    borderRadius: t.radius.md,
+    flexDirection: "row",
+    marginBottom: t.spacing.lg,
+    paddingHorizontal: t.spacing.md,
+  },
+  searchIcon: {
+    marginRight: t.spacing.sm,
   },
   searchInput: {
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderColor: androidDarkTheme.colors.outline,
-    borderRadius: androidDarkTheme.radius.md,
-    borderWidth: 1,
-    color: androidDarkTheme.colors.onSurface,
-    marginBottom: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12
+    color: t.colors.onSurface,
+    flex: 1,
+    paddingVertical: 14,
+    fontSize: 15,
+  },
+
+  // Player list — grouped, no individual card borders
+  listWrapper: {
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    flex: 1,
+    overflow: "hidden",
   },
   listContent: {
-    paddingBottom: 24
-  }
+    paddingBottom: t.spacing.sm,
+  },
+  playerRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: t.spacing.md,
+    minHeight: t.touch.minHeight,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
+  },
+  playerRowFirst: {
+    borderTopLeftRadius: t.radius.lg,
+    borderTopRightRadius: t.radius.lg,
+  },
+  playerRowLast: {
+    borderBottomLeftRadius: t.radius.lg,
+    borderBottomRightRadius: t.radius.lg,
+  },
+  playerRowDivider: {
+    borderBottomColor: t.colors.divider,
+    borderBottomWidth: 1,
+  },
+  playerRowPressed: {
+    backgroundColor: t.colors.surfaceAlt,
+  },
+  avatar: {
+    alignItems: "center",
+    backgroundColor: t.colors.primaryMuted,
+    borderRadius: t.radius.pill,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  avatarText: {
+    color: t.colors.primary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  playerName: {
+    color: t.colors.onSurface,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });

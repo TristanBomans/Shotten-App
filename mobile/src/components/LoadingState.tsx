@@ -1,6 +1,8 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { androidDarkTheme } from "../theme/androidDark";
 
+const t = androidDarkTheme;
+
 interface LoadingStateProps {
   message?: string;
 }
@@ -8,7 +10,7 @@ interface LoadingStateProps {
 export function LoadingState({ message = "Loading..." }: LoadingStateProps) {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="small" color={androidDarkTheme.colors.primary} />
+      <ActivityIndicator size="small" color={t.colors.primary} />
       <Text style={styles.text}>{message}</Text>
     </View>
   );
@@ -18,11 +20,11 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 24,
-    gap: 10
+    paddingVertical: t.spacing.xxxl,
+    gap: t.spacing.md,
   },
   text: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 14
-  }
+    color: t.colors.onSurfaceDim,
+    ...t.typography.bodySmall,
+  },
 });

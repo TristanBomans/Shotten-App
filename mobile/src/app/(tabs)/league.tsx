@@ -11,11 +11,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { fetchScraperTeams, fetchScraperPlayers } from "../../lib/api";
 import type { ScraperTeam, ScraperPlayer } from "../../lib/types";
 import { usePreferences } from "../../state/preferences-context";
 import { setDefaultLeague, clearDefaultLeague } from "../../state/preferences";
 import { androidDarkTheme } from "../../theme/androidDark";
+
+const t = androidDarkTheme;
 
 type LeagueTab = "standings" | "players";
 
@@ -52,7 +55,7 @@ export default function LeagueScreen() {
   useEffect(() => { void loadData(); }, [loadData]);
 
   const leagues = useMemo(() => {
-    return Array.from(new Set(teams.map((t) => t.leagueName).filter(Boolean))).sort() as string[];
+    return Array.from(new Set(teams.map((tTeam) => tTeam.leagueName).filter(Boolean))).sort() as string[];
   }, [teams]);
 
   useEffect(() => {
@@ -71,12 +74,12 @@ export default function LeagueScreen() {
   const filteredTeams = useMemo(() => {
     if (!selectedLeague) return [];
     return teams
-      .filter((t) => t.leagueName === selectedLeague)
+      .filter((tTeam) => tTeam.leagueName === selectedLeague)
       .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
   }, [teams, selectedLeague]);
 
   const validTeamIds = useMemo(
-    () => new Set(filteredTeams.map((t) => t.externalId)),
+    () => new Set(filteredTeams.map((tTeam) => tTeam.externalId)),
     [filteredTeams],
   );
 
@@ -98,7 +101,9 @@ export default function LeagueScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-        <ActivityIndicator size="large" color={androidDarkTheme.colors.primary} style={styles.loader} />
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="large" color={t.colors.primary} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -107,10 +112,11 @@ export default function LeagueScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
         <View style={styles.errorContainer}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={40} color={t.colors.onSurfaceDim} />
           <Text style={styles.errorTitle}>Could not load league data</Text>
           <Text style={styles.errorSubtext}>{error}</Text>
           <Pressable
-            android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
+            android_ripple={{ color: t.colors.ripple, borderless: false }}
             onPress={() => void loadData()}
             style={styles.errorButton}
           >
@@ -123,40 +129,43 @@ export default function LeagueScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+      {/* Controls: segmented tabs + league picker */}
       <View style={styles.controlsBar}>
         <View style={styles.segmentedControl}>
           <Pressable
-            android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
+            android_ripple={{ color: t.colors.ripple, borderless: false }}
             onPress={() => setActiveTab("standings")}
             style={[styles.segment, activeTab === "standings" && styles.segmentActive]}
           >
             <Text style={[styles.segmentText, activeTab === "standings" && styles.segmentTextActive]}>Standings</Text>
           </Pressable>
           <Pressable
-            android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
+            android_ripple={{ color: t.colors.ripple, borderless: false }}
             onPress={() => setActiveTab("players")}
             style={[styles.segment, activeTab === "players" && styles.segmentActive]}
           >
             <Text style={[styles.segmentText, activeTab === "players" && styles.segmentTextActive]}>Players</Text>
           </Pressable>
         </View>
+
         <Pressable
-          android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
+          android_ripple={{ color: t.colors.ripple, borderless: false }}
           onPress={() => setLeaguePickerOpen(true)}
           style={styles.leagueChip}
         >
-          <Text style={styles.leagueChipText} numberOfLines={1}>{selectedLeague || "Select league"}</Text>
-          <Text style={styles.leagueChipArrow}>{"\u25BE"}</Text>
+          <Text style={styles.leagueChipText} numberOfLines={1}>{selectedLeague || "Select"}</Text>
+          <MaterialCommunityIcons name="chevron-down" size={16} color={t.colors.onSurfaceDim} />
         </Pressable>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => void loadData(true)}
-            tintColor={androidDarkTheme.colors.primary}
+            tintColor={t.colors.primary}
           />
         }
       >
@@ -167,33 +176,40 @@ export default function LeagueScreen() {
         )}
       </ScrollView>
 
+      {/* League picker — bottom sheet modal */}
       <Modal
         animationType="slide"
         presentationStyle="pageSheet"
         visible={leaguePickerOpen}
         onRequestClose={() => setLeaguePickerOpen(false)}
       >
-        <StatusBar barStyle="light-content" backgroundColor={androidDarkTheme.colors.surface} />
+        <StatusBar barStyle="light-content" backgroundColor={t.colors.surface} />
         <SafeAreaView style={styles.pickerSafeArea} edges={["top", "bottom"]}>
-          <View style={styles.pickerToolbar}>
-            <Pressable
-              android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: true }}
-              onPress={() => setLeaguePickerOpen(false)}
-              style={styles.pickerClose}
-            >
-              <Text style={styles.pickerCloseText}>Close</Text>
-            </Pressable>
-            <Text style={styles.pickerTitle}>Select League</Text>
-            <View style={styles.pickerSpacer} />
+          {/* Drag handle */}
+          <View style={styles.pickerHandleBar}>
+            <View style={styles.pickerHandle} />
           </View>
-          <ScrollView contentContainerStyle={styles.pickerList}>
+
+          <View style={styles.pickerToolbar}>
+            <Text style={styles.pickerTitle}>Select League</Text>
+            <Pressable
+              android_ripple={{ color: t.colors.ripple, borderless: true }}
+              onPress={() => setLeaguePickerOpen(false)}
+              style={styles.pickerCloseBtn}
+              hitSlop={12}
+            >
+              <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurfaceMuted} />
+            </Pressable>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.pickerList} showsVerticalScrollIndicator={false}>
             {leagues.map((league) => {
-              const teamCount = teams.filter((t) => t.leagueName === league).length;
+              const teamCount = teams.filter((tTeam) => tTeam.leagueName === league).length;
               const isSelected = league === selectedLeague;
               return (
                 <Pressable
                   key={league}
-                  android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
+                  android_ripple={{ color: t.colors.ripple, borderless: false }}
                   onPress={() => {
                     setSelectedLeague(league);
                     setLeaguePickerOpen(false);
@@ -204,7 +220,9 @@ export default function LeagueScreen() {
                     <Text style={[styles.pickerItemName, isSelected && styles.pickerItemNameActive]}>{league}</Text>
                     <Text style={styles.pickerItemSubtext}>{teamCount} {teamCount === 1 ? "team" : "teams"}</Text>
                   </View>
-                  {isSelected ? <Text style={styles.pickerCheck}>{"\u2713"}</Text> : null}
+                  {isSelected ? (
+                    <MaterialCommunityIcons name="check" size={20} color={t.colors.primary} />
+                  ) : null}
                 </Pressable>
               );
             })}
@@ -216,8 +234,18 @@ export default function LeagueScreen() {
 }
 
 function StandingsTable({ teams }: { teams: ScraperTeam[] }) {
+  if (teams.length === 0) {
+    return (
+      <View style={styles.emptyTable}>
+        <MaterialCommunityIcons name="format-list-bulleted" size={32} color={t.colors.onSurfaceDim} />
+        <Text style={styles.emptyTableText}>No teams found for this league</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.table}>
+      {/* Compact header */}
       <View style={styles.tableHeader}>
         <Text style={styles.thRank}>#</Text>
         <Text style={styles.thTeam}>Team</Text>
@@ -225,13 +253,13 @@ function StandingsTable({ teams }: { teams: ScraperTeam[] }) {
         <Text style={styles.thNum}>GD</Text>
         <Text style={styles.thPts}>Pts</Text>
       </View>
-      {teams.length > 0 ? teams.map((team, i) => {
+
+      {teams.map((team, i) => {
         const gd = team.goalDifference ?? 0;
         const gdText = gd > 0 ? `+${gd}` : String(gd);
-        const isLast = i === teams.length - 1;
         return (
-          <View key={team.externalId} style={[styles.tableRow, isLast && styles.tableRowLast]}>
-            <Text style={[styles.tdRank, team.rank === 1 && styles.tdRankFirst, isLast && styles.tdRankLast]}>
+          <View key={team.externalId} style={styles.tableRow}>
+            <Text style={[styles.tdRank, team.rank === 1 && styles.tdRankFirst, i === teams.length - 1 && styles.tdRankLast]}>
               {team.rank ?? "-"}
             </Text>
             <Text style={styles.tdTeam} numberOfLines={1}>{team.name}</Text>
@@ -240,36 +268,42 @@ function StandingsTable({ teams }: { teams: ScraperTeam[] }) {
             <Text style={styles.tdPts}>{team.points ?? 0}</Text>
           </View>
         );
-      }) : (
-        <View style={styles.emptyTable}>
-          <Text style={styles.emptyTableText}>No teams found for this league</Text>
-        </View>
-      )}
+      })}
     </View>
   );
 }
 
 function PlayersList({ players, teams, hasMore, onLoadMore }: { players: ScraperPlayer[]; teams: ScraperTeam[]; hasMore: boolean; onLoadMore: () => void }) {
+  if (players.length === 0) {
+    return (
+      <View style={styles.emptyTable}>
+        <MaterialCommunityIcons name="account-outline" size={32} color={t.colors.onSurfaceDim} />
+        <Text style={styles.emptyTableText}>No player data available for this league</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.playersList}>
-      {players.length > 0 ? players.map((player, index) => {
+      {players.map((player, index) => {
         const playerTeamIds = player.teamIds ?? [player.teamId];
-        const playerTeams = teams.filter((t) => playerTeamIds.includes(t.externalId));
+        const playerTeams = teams.filter((tTeam) => playerTeamIds.includes(tTeam.externalId));
         const primaryTeam = playerTeams[0];
         const isMultiTeam = playerTeams.length > 1;
 
         return (
-          <View key={player.externalId} style={[styles.playerCard, index === 0 && styles.playerCardTop, index === players.length - 1 && styles.playerCardBottom]}>
+          <View key={player.externalId} style={styles.playerCard}>
             <Text style={[styles.playerCardRank, index < 3 && styles.playerCardRankTop]}>
               {index + 1}
             </Text>
             <View style={styles.playerCardInfo}>
               <Text style={styles.playerCardName} numberOfLines={1}>
-                {player.name}{isMultiTeam ? <Text style={styles.playerCardMulti}> {playerTeams.length} teams</Text> : null}
+                {player.name}
+                {isMultiTeam ? <Text style={styles.playerCardMulti}> {playerTeams.length} teams</Text> : null}
               </Text>
               <Text style={styles.playerCardSubtext} numberOfLines={1}>
-                {isMultiTeam ? playerTeams.map((t) => t.name).join(" & ") : primaryTeam?.name ?? "Unknown"}
-                {" \u00B7 "}{player.gamesPlayed}g
+                {isMultiTeam ? playerTeams.map((tm) => tm.name).join(" & ") : primaryTeam?.name ?? "Unknown"}
+                {" · "}{player.gamesPlayed}g
               </Text>
             </View>
             <View style={styles.playerCardStats}>
@@ -285,18 +319,16 @@ function PlayersList({ players, teams, hasMore, onLoadMore }: { players: Scraper
             </View>
           </View>
         );
-      }) : (
-        <View style={styles.emptyTable}>
-          <Text style={styles.emptyTableText}>No player data available for this league</Text>
-        </View>
-      )}
+      })}
+
       {hasMore ? (
         <Pressable
-          android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
+          android_ripple={{ color: t.colors.ripple, borderless: false }}
           onPress={onLoadMore}
           style={styles.showMoreButton}
         >
           <Text style={styles.showMoreText}>Show more</Text>
+          <MaterialCommunityIcons name="chevron-down" size={18} color={t.colors.onSurfaceMuted} />
         </Pressable>
       ) : null}
     </View>
@@ -305,10 +337,10 @@ function PlayersList({ players, teams, hasMore, onLoadMore }: { players: Scraper
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: androidDarkTheme.colors.background,
+    backgroundColor: t.colors.background,
     flex: 1,
   },
-  loader: {
+  loaderWrap: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -317,182 +349,174 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
+    gap: t.spacing.sm,
+    paddingHorizontal: t.spacing.xxl,
   },
   errorTitle: {
-    color: androidDarkTheme.colors.onSurface,
-    fontSize: 18,
-    fontWeight: "700",
+    color: t.colors.onSurface,
+    ...t.typography.subtitle,
+    marginTop: t.spacing.md,
   },
   errorSubtext: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 14,
-    marginTop: 6,
+    color: t.colors.onSurfaceMuted,
+    ...t.typography.bodySmall,
     textAlign: "center",
   },
   errorButton: {
-    backgroundColor: androidDarkTheme.colors.primary,
-    borderRadius: androidDarkTheme.radius.pill,
-    marginTop: 16,
+    backgroundColor: t.colors.primary,
+    borderRadius: t.radius.pill,
+    marginTop: t.spacing.md,
     overflow: "hidden",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: t.spacing.xxl,
+    paddingVertical: t.spacing.md,
   },
   errorButtonText: {
-    color: androidDarkTheme.colors.onPrimary,
+    color: t.colors.onPrimary,
     fontWeight: "700",
+    fontSize: 14,
   },
+
+  // Controls bar
   controlsBar: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 10,
-    paddingBottom: 8,
-    paddingHorizontal: 16,
-    paddingTop: 6,
+    gap: t.spacing.sm,
+    paddingBottom: t.spacing.sm,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.sm,
   },
   segmentedControl: {
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderRadius: androidDarkTheme.radius.pill,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.pill,
     flexDirection: "row",
     overflow: "hidden",
+    padding: 3,
   },
   segment: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    borderRadius: t.radius.pill,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: 8,
   },
   segmentActive: {
-    backgroundColor: androidDarkTheme.colors.primary,
-    borderRadius: androidDarkTheme.radius.pill,
+    backgroundColor: t.colors.primary,
   },
   segmentText: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
+    color: t.colors.onSurfaceMuted,
     fontSize: 13,
     fontWeight: "600",
   },
   segmentTextActive: {
-    color: androidDarkTheme.colors.onPrimary,
+    color: t.colors.onPrimary,
   },
   leagueChip: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderColor: androidDarkTheme.colors.outline,
-    borderRadius: androidDarkTheme.radius.pill,
-    borderWidth: 1,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.pill,
     flexDirection: "row",
     flex: 1,
-    gap: 4,
+    gap: t.spacing.xs,
     overflow: "hidden",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: 8,
   },
   leagueChipText: {
-    color: androidDarkTheme.colors.onSurface,
+    color: t.colors.onSurface,
     flex: 1,
     fontSize: 13,
     fontWeight: "600",
   },
-  leagueChipArrow: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 12,
-  },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: t.spacing.xxl,
   },
+
+  // Table
   table: {
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderColor: androidDarkTheme.colors.outline,
-    borderRadius: androidDarkTheme.radius.lg,
-    borderWidth: 1,
-    marginHorizontal: 16,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    marginHorizontal: t.spacing.lg,
     overflow: "hidden",
   },
   tableHeader: {
     alignItems: "center",
-    borderBottomColor: androidDarkTheme.colors.outline,
+    borderBottomColor: t.colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.sm,
   },
   thRank: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 10,
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
     fontWeight: "700",
-    letterSpacing: 0.5,
     textTransform: "uppercase",
     width: 28,
   },
   thTeam: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
+    color: t.colors.onSurfaceDim,
     flex: 1,
-    fontSize: 10,
+    ...t.typography.caption,
     fontWeight: "700",
-    letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   thNum: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 10,
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
     fontWeight: "700",
-    letterSpacing: 0.5,
     textAlign: "center",
     textTransform: "uppercase",
     width: 30,
   },
   thPts: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 10,
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
     fontWeight: "700",
-    letterSpacing: 0.5,
     textAlign: "center",
     textTransform: "uppercase",
     width: 30,
   },
   tableRow: {
     alignItems: "center",
-    borderBottomColor: androidDarkTheme.colors.outline,
+    borderBottomColor: t.colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  tableRowLast: {
-    borderBottomWidth: 0,
+    minHeight: t.touch.minHeight,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.sm,
   },
   tdRank: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
+    color: t.colors.onSurfaceMuted,
     fontSize: 14,
     fontWeight: "600",
     width: 28,
   },
   tdRankFirst: {
-    color: "#f7cb61",
+    color: t.colors.warningAccent,
   },
   tdRankLast: {
-    color: "#ff5f85",
+    color: t.colors.errorAccent,
   },
   tdTeam: {
-    color: androidDarkTheme.colors.onSurface,
+    color: t.colors.onSurface,
     flex: 1,
     fontSize: 14,
     fontWeight: "500",
   },
   tdNum: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
+    color: t.colors.onSurfaceMuted,
     fontSize: 13,
     textAlign: "center",
     width: 30,
   },
   tdGdPositive: {
-    color: androidDarkTheme.colors.primary,
+    color: t.colors.primary,
   },
   tdGdNegative: {
-    color: "#ff5f85",
+    color: t.colors.errorAccent,
   },
   tdPts: {
-    color: androidDarkTheme.colors.onSurface,
+    color: t.colors.onSurface,
     fontSize: 14,
     fontWeight: "800",
     textAlign: "center",
@@ -500,42 +524,38 @@ const styles = StyleSheet.create({
   },
   emptyTable: {
     alignItems: "center",
-    padding: 24,
+    gap: t.spacing.md,
+    paddingVertical: t.spacing.xxxl,
   },
   emptyTableText: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 14,
+    color: t.colors.onSurfaceDim,
+    ...t.typography.bodySmall,
   },
+
+  // Players list
   playersList: {
-    marginHorizontal: 16,
+    marginHorizontal: t.spacing.lg,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    overflow: "hidden",
   },
   playerCard: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderBottomColor: androidDarkTheme.colors.outline,
+    borderBottomColor: t.colors.divider,
     borderBottomWidth: 1,
-    borderTopColor: androidDarkTheme.colors.outline,
     flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  playerCardTop: {
-    borderTopLeftRadius: androidDarkTheme.radius.lg,
-    borderTopRightRadius: androidDarkTheme.radius.lg,
-  },
-  playerCardBottom: {
-    borderBottomLeftRadius: androidDarkTheme.radius.lg,
-    borderBottomRightRadius: androidDarkTheme.radius.lg,
-    borderBottomWidth: 0,
+    minHeight: t.touch.minHeight,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.sm,
   },
   playerCardRank: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
+    color: t.colors.onSurfaceDim,
     fontSize: 13,
     fontWeight: "600",
     width: 26,
   },
   playerCardRankTop: {
-    color: "#f7cb61",
+    color: t.colors.warningAccent,
     fontWeight: "700",
   },
   playerCardInfo: {
@@ -543,17 +563,17 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   playerCardName: {
-    color: androidDarkTheme.colors.onSurface,
+    color: t.colors.onSurface,
     fontSize: 14,
     fontWeight: "600",
   },
   playerCardMulti: {
-    color: androidDarkTheme.colors.primary,
+    color: t.colors.primary,
     fontSize: 10,
     fontWeight: "600",
   },
   playerCardSubtext: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
+    color: t.colors.onSurfaceDim,
     fontSize: 12,
     marginTop: 1,
   },
@@ -561,122 +581,113 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     flexShrink: 0,
-    gap: 10,
+    gap: t.spacing.sm,
   },
   playerCardStat: {
     alignItems: "center",
   },
   playerCardGoals: {
-    color: androidDarkTheme.colors.primary,
+    color: t.colors.primary,
     fontSize: 16,
     fontWeight: "800",
   },
   playerCardAssists: {
-    color: "#f7cb61",
+    color: t.colors.warningAccent,
     fontSize: 16,
     fontWeight: "800",
   },
   playerCardStatLabel: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 9,
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
     fontWeight: "600",
-    letterSpacing: 0.3,
     marginTop: 1,
     textTransform: "uppercase",
   },
   playerCardDivider: {
-    backgroundColor: androidDarkTheme.colors.outline,
+    backgroundColor: t.colors.divider,
     height: 18,
     width: 1,
   },
   showMoreButton: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderBottomColor: androidDarkTheme.colors.outline,
-    borderBottomWidth: 1,
-    borderColor: androidDarkTheme.colors.outline,
-    borderWidth: 1,
-    marginTop: -1,
+    flexDirection: "row",
+    gap: t.spacing.xs,
+    justifyContent: "center",
     overflow: "hidden",
-    paddingVertical: 14,
+    paddingVertical: t.spacing.md,
   },
   showMoreText: {
-    color: androidDarkTheme.colors.onSurface,
+    color: t.colors.onSurfaceMuted,
     fontSize: 14,
     fontWeight: "600",
   },
+
+  // Picker — bottom sheet
   pickerSafeArea: {
-    backgroundColor: androidDarkTheme.colors.background,
+    backgroundColor: t.colors.background,
     flex: 1,
+  },
+  pickerHandleBar: {
+    alignItems: "center",
+    backgroundColor: t.colors.surface,
+    paddingTop: t.spacing.sm,
+  },
+  pickerHandle: {
+    backgroundColor: t.colors.surfaceElevated,
+    borderRadius: t.radius.pill,
+    height: 4,
+    width: 36,
   },
   pickerToolbar: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderBottomColor: androidDarkTheme.colors.outline,
-    borderBottomWidth: 1,
+    backgroundColor: t.colors.surface,
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  pickerClose: {
-    borderRadius: androidDarkTheme.radius.pill,
-    overflow: "hidden",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  pickerCloseText: {
-    color: androidDarkTheme.colors.primary,
-    fontSize: 16,
+    paddingBottom: t.spacing.md,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.md,
   },
   pickerTitle: {
-    color: androidDarkTheme.colors.onSurface,
-    fontSize: 17,
-    fontWeight: "700",
+    color: t.colors.onSurface,
+    ...t.typography.title,
+    flex: 1,
   },
-  pickerSpacer: {
-    width: 60,
+  pickerCloseBtn: {
+    borderRadius: t.radius.pill,
+    padding: t.spacing.xs,
   },
   pickerList: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
+    gap: t.spacing.sm,
   },
   pickerItem: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderColor: androidDarkTheme.colors.outline,
-    borderRadius: androidDarkTheme.radius.md,
-    borderWidth: 1,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.md,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
     overflow: "hidden",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.lg,
   },
   pickerItemActive: {
-    backgroundColor: "rgba(61, 220, 132, 0.08)",
-    borderColor: androidDarkTheme.colors.primary,
+    backgroundColor: t.colors.primaryMuted,
   },
   pickerItemContent: {
     flex: 1,
   },
   pickerItemName: {
-    color: androidDarkTheme.colors.onSurface,
+    color: t.colors.onSurface,
     fontSize: 15,
     fontWeight: "600",
   },
   pickerItemNameActive: {
-    color: androidDarkTheme.colors.primary,
+    color: t.colors.primary,
   },
   pickerItemSubtext: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
+    color: t.colors.onSurfaceDim,
     fontSize: 12,
     marginTop: 2,
-  },
-  pickerCheck: {
-    color: androidDarkTheme.colors.primary,
-    fontSize: 18,
-    fontWeight: "700",
   },
 });

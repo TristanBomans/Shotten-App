@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { fetchMatches, fetchPlayers } from "../../lib/api";
 import { buildLeaderboard, type PlayerWithStats } from "../../lib/leaderboard";
 import type { Match, Player } from "../../lib/types";
@@ -18,11 +19,13 @@ import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
 import { androidDarkTheme } from "../../theme/androidDark";
 
+const t = androidDarkTheme;
+
 const FORM_DOT_COLORS: Record<string, string> = {
-  present: androidDarkTheme.colors.primary,
-  maybe: "#f7cb61",
-  notPresent: "#ff5f85",
-  ghost: androidDarkTheme.colors.onSurfaceMuted,
+  present: t.colors.primary,
+  maybe: t.colors.warningAccent,
+  notPresent: t.colors.errorAccent,
+  ghost: t.colors.onSurfaceDim,
 };
 
 export default function StatsScreen() {
@@ -94,7 +97,9 @@ export default function StatsScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-        <ErrorState message={error} onRetry={() => void loadData()} />
+        <View style={styles.errorWrapper}>
+          <ErrorState message={error} onRetry={() => void loadData()} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -103,34 +108,44 @@ export default function StatsScreen() {
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => void loadData(true)}
-            tintColor={androidDarkTheme.colors.primary}
-            colors={[androidDarkTheme.colors.primary]}
-            progressBackgroundColor={androidDarkTheme.colors.surfaceRaised}
+            tintColor={t.colors.primary}
+            colors={[t.colors.primary]}
+            progressBackgroundColor={t.colors.surfaceRaised}
           />
         }
       >
-        <View style={styles.highlightsRow}>
-          <HighlightCard emoji="🏆" title="THE LEGEND" name={topScorer?.name ?? "—"} />
-          <HighlightCard emoji="👻" title="CASPER" name={mostGhosts?.name ?? "—"} />
-          <HighlightCard emoji="🤔" title="MISS MAYBE" name={mostMaybe?.name ?? "—"} />
-        </View>
+        {/* Highlight banner — horizontal scroll */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.highlightsScroll}
+        >
+          <HighlightChip emoji="🏆" title="Legend" name={topScorer?.name ?? "—"} color={t.colors.warningAccent} />
+          <HighlightChip emoji="👻" title="Casper" name={mostGhosts?.name ?? "—"} color={t.colors.errorAccent} />
+          <HighlightChip emoji="🤔" title="Miss Maybe" name={mostMaybe?.name ?? "—"} color={t.colors.warningAccent} />
+        </ScrollView>
 
+        {/* Leaderboard */}
         <View style={styles.leaderboard}>
           {leaderboard.map((player, i) => {
             const isOwnPlayer = player.id === session.playerId;
             return (
               <Pressable
                 key={player.id}
-                android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
+                android_ripple={{ color: t.colors.ripple, borderless: false }}
                 onPress={() => setSelectedPlayer(player)}
-                style={[styles.playerRow, isOwnPlayer && styles.playerRowOwn, i === leaderboard.length - 1 && styles.playerRowLast]}
+                style={[
+                  styles.playerRow,
+                  isOwnPlayer && styles.playerRowOwn,
+                ]}
               >
                 <Text style={[styles.playerRank, i < 3 && styles.playerRankTop]}>
-                  {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                  {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
                 </Text>
 
                 <View style={[styles.rankIcon, { backgroundColor: player.stats.rank.bgColor }]}>
@@ -138,7 +153,7 @@ export default function StatsScreen() {
                 </View>
 
                 <View style={styles.playerInfo}>
-                  <Text style={[styles.playerName, isOwnPlayer && styles.playerNameOwn]}>
+                  <Text style={[styles.playerName, isOwnPlayer && styles.playerNameOwn]} numberOfLines={1}>
                     {player.name}
                   </Text>
                   <View style={styles.formRow}>
@@ -151,7 +166,9 @@ export default function StatsScreen() {
                   </View>
                 </View>
 
-                <Text style={styles.playerScore}>{player.stats.score}</Text>
+                <Text style={[styles.playerScore, isOwnPlayer && styles.playerScoreOwn]}>
+                  {player.stats.score}
+                </Text>
               </Pressable>
             );
           })}
@@ -159,33 +176,41 @@ export default function StatsScreen() {
 
         {leaderboard.length === 0 ? (
           <View style={styles.emptyState}>
+            <MaterialCommunityIcons name="trophy-outline" size={40} color={t.colors.onSurfaceDim} />
             <Text style={styles.emptyTitle}>No data yet</Text>
             <Text style={styles.emptySubtitle}>Leaderboard data will appear once matches are played.</Text>
           </View>
         ) : null}
       </ScrollView>
 
+      {/* Player detail — bottom sheet style modal */}
       <Modal
         animationType="slide"
         presentationStyle="pageSheet"
         visible={selectedPlayer !== null}
         onRequestClose={() => setSelectedPlayer(null)}
       >
-        <StatusBar barStyle="light-content" backgroundColor={androidDarkTheme.colors.surface} />
+        <StatusBar barStyle="light-content" backgroundColor={t.colors.surface} />
         <SafeAreaView style={styles.modalSafeArea} edges={["top", "bottom"]}>
+          {/* Drag handle */}
+          <View style={styles.modalHandleBar}>
+            <View style={styles.modalHandle} />
+          </View>
+
           <View style={styles.modalToolbar}>
-            <Pressable
-              android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: true }}
-              onPress={() => setSelectedPlayer(null)}
-              style={styles.modalClose}
-            >
-              <Text style={styles.modalCloseText}>Close</Text>
-            </Pressable>
             <Text style={styles.modalTitle} numberOfLines={1}>
               {selectedPlayer?.name ?? ""}
             </Text>
-            <View style={styles.modalClosePlaceholder} />
+            <Pressable
+              android_ripple={{ color: t.colors.ripple, borderless: true }}
+              onPress={() => setSelectedPlayer(null)}
+              style={styles.modalCloseBtn}
+              hitSlop={12}
+            >
+              <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurfaceMuted} />
+            </Pressable>
           </View>
+
           {selectedPlayer ? (
             <PlayerDetailContent player={selectedPlayer} rank={selectedRank} />
           ) : null}
@@ -195,12 +220,14 @@ export default function StatsScreen() {
   );
 }
 
-function HighlightCard({ emoji, title, name }: { emoji: string; title: string; name: string }) {
+function HighlightChip({ emoji, title, name, color }: { emoji: string; title: string; name: string; color: string }) {
   return (
-    <View style={styles.highlightCard}>
+    <View style={styles.highlightChip}>
       <Text style={styles.highlightEmoji}>{emoji}</Text>
-      <Text style={styles.highlightTitle}>{title}</Text>
-      <Text style={styles.highlightName} numberOfLines={1}>{name}</Text>
+      <View style={styles.highlightTextWrap}>
+        <Text style={[styles.highlightTitle, { color }]}>{title}</Text>
+        <Text style={styles.highlightName} numberOfLines={1}>{name}</Text>
+      </View>
     </View>
   );
 }
@@ -209,7 +236,8 @@ function PlayerDetailContent({ player, rank }: { player: PlayerWithStats; rank: 
   const s = player.stats;
 
   return (
-    <ScrollView contentContainerStyle={styles.modalScrollContent}>
+    <ScrollView contentContainerStyle={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
+      {/* Hero rank */}
       <View style={styles.modalHero}>
         <View style={[styles.modalRankBadge, { backgroundColor: s.rank.bgColor }]}>
           <Text style={styles.modalRankEmoji}>{s.rank.emoji}</Text>
@@ -218,149 +246,157 @@ function PlayerDetailContent({ player, rank }: { player: PlayerWithStats; rank: 
         <Text style={styles.modalRankPosition}>#{rank}</Text>
       </View>
 
+      {/* Big score */}
       <View style={styles.modalScoreCard}>
         <Text style={[styles.modalScoreNumber, { color: s.rank.color }]}>{s.score}</Text>
-        <Text style={styles.modalScoreLabel}>SHOTTEN POINTS</Text>
+        <Text style={styles.modalScoreLabel}>Shotten Points</Text>
       </View>
 
+      {/* Stats grid */}
       <View style={styles.modalStatGrid}>
-        <View style={[styles.modalStatCell, { backgroundColor: androidDarkTheme.colors.successContainer }]}>
-          <Text style={[styles.modalStatValue, { color: androidDarkTheme.colors.primary }]}>{s.presentCount}</Text>
-          <Text style={styles.modalStatSublabel}>Present</Text>
-        </View>
-        <View style={[styles.modalStatCell, { backgroundColor: androidDarkTheme.colors.warningContainer }]}>
-          <Text style={[styles.modalStatValue, { color: "#f7cb61" }]}>{s.maybeCount}</Text>
-          <Text style={styles.modalStatSublabel}>Maybe</Text>
-        </View>
-        <View style={[styles.modalStatCell, { backgroundColor: androidDarkTheme.colors.errorContainer }]}>
-          <Text style={[styles.modalStatValue, { color: "#ff5f85" }]}>{s.absentCount}</Text>
-          <Text style={styles.modalStatSublabel}>Absent</Text>
-        </View>
-        <View style={[styles.modalStatCell, { backgroundColor: androidDarkTheme.colors.surfaceRaised }]}>
-          <Text style={[styles.modalStatValue, { color: androidDarkTheme.colors.onSurfaceMuted }]}>{s.ghostCount}</Text>
-          <Text style={styles.modalStatSublabel}>Ghost</Text>
-        </View>
+        <StatCell label="Present" value={s.presentCount} color={t.colors.primary} bg={t.colors.successContainer} />
+        <StatCell label="Maybe" value={s.maybeCount} color={t.colors.warningAccent} bg={t.colors.warningContainer} />
+        <StatCell label="Absent" value={s.absentCount} color={t.colors.errorAccent} bg={t.colors.errorContainer} />
+        <StatCell label="Ghost" value={s.ghostCount} color={t.colors.onSurfaceDim} bg={t.colors.surfaceRaised} />
       </View>
 
+      {/* Match history */}
       {s.matchResults.length > 0 ? (
         <View style={styles.modalHistory}>
           <Text style={styles.modalSectionTitle}>Match History</Text>
-          {s.matchResults.map((result) => (
-            <View key={result.matchId} style={styles.modalHistoryRow}>
-              <Text style={styles.modalHistoryName} numberOfLines={1}>{result.matchName}</Text>
-              <Text style={styles.modalHistoryEmoji}>
-                {result.status === "present" ? "✅" : result.status === "maybe" ? "⚠️" : result.status === "notPresent" ? "❌" : "👻"}
-              </Text>
-              <Text style={[styles.modalHistoryPoints, { color: result.points > 0 ? androidDarkTheme.colors.primary : "#ff5f85" }]}>
-                {result.points > 0 ? `+${result.points}` : String(result.points)}
-              </Text>
-            </View>
-          ))}
+          <View style={styles.modalHistoryList}>
+            {s.matchResults.map((result) => (
+              <View key={result.matchId} style={styles.modalHistoryRow}>
+                <MaterialCommunityIcons
+                  name={
+                    result.status === "present" ? "check-circle" :
+                    result.status === "maybe" ? "help-circle" :
+                    result.status === "notPresent" ? "close-circle" :
+                    "ghost"
+                  }
+                  size={16}
+                  color={FORM_DOT_COLORS[result.status] ?? t.colors.onSurfaceDim}
+                />
+                <Text style={styles.modalHistoryName} numberOfLines={1}>{result.matchName}</Text>
+                <Text style={[styles.modalHistoryPoints, { color: result.points > 0 ? t.colors.primary : t.colors.errorAccent }]}>
+                  {result.points > 0 ? `+${result.points}` : String(result.points)}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
       ) : null}
     </ScrollView>
   );
 }
 
+function StatCell({ label, value, color, bg }: { label: string; value: number; color: string; bg: string }) {
+  return (
+    <View style={[styles.modalStatCell, { backgroundColor: bg }]}>
+      <Text style={[styles.modalStatValue, { color }]}>{value}</Text>
+      <Text style={styles.modalStatSublabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: androidDarkTheme.colors.background,
+    backgroundColor: t.colors.background,
     flex: 1,
+  },
+  errorWrapper: {
+    padding: t.spacing.lg,
   },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: t.spacing.xxl,
   },
-  highlightsRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 12,
+
+  // Highlights — horizontal scroll chips
+  highlightsScroll: {
+    gap: t.spacing.sm,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.md,
   },
-  highlightCard: {
+  highlightChip: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderColor: androidDarkTheme.colors.outline,
-    borderRadius: androidDarkTheme.radius.md,
-    borderWidth: 1,
-    flex: 1,
-    paddingBottom: 10,
-    paddingHorizontal: 6,
-    paddingTop: 10,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    flexDirection: "row",
+    gap: t.spacing.md,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
+    minWidth: 140,
   },
   highlightEmoji: {
-    fontSize: 20,
-    marginBottom: 4,
+    fontSize: 24,
+  },
+  highlightTextWrap: {
+    flex: 1,
   },
   highlightTitle: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 9,
+    ...t.typography.caption,
     fontWeight: "700",
-    letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   highlightName: {
-    color: androidDarkTheme.colors.onSurface,
-    fontSize: 13,
+    color: t.colors.onSurface,
+    fontSize: 14,
     fontWeight: "600",
-    marginTop: 4,
+    marginTop: 2,
   },
+
+  // Leaderboard
   leaderboard: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderColor: androidDarkTheme.colors.outline,
-    borderRadius: androidDarkTheme.radius.lg,
-    borderWidth: 1,
+    marginHorizontal: t.spacing.lg,
+    marginTop: t.spacing.lg,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
     overflow: "hidden",
   },
   playerRow: {
     alignItems: "center",
-    borderBottomColor: androidDarkTheme.colors.outline,
+    borderBottomColor: t.colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  playerRowLast: {
-    borderBottomWidth: 0,
+    gap: t.spacing.sm,
+    minHeight: t.touch.minHeight,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
   },
   playerRowOwn: {
-    backgroundColor: "rgba(61, 220, 132, 0.08)",
-    borderLeftColor: androidDarkTheme.colors.primary,
-    borderLeftWidth: 3,
+    backgroundColor: t.colors.primaryMuted,
   },
   playerRank: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
+    color: t.colors.onSurfaceDim,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
     textAlign: "center",
     width: 28,
   },
   playerRankTop: {
-    fontSize: 16,
+    fontSize: 18,
   },
   rankIcon: {
     alignItems: "center",
-    borderRadius: 20,
-    height: 40,
+    borderRadius: t.radius.pill,
+    height: 36,
     justifyContent: "center",
-    width: 40,
+    width: 36,
   },
   rankIconText: {
-    fontSize: 18,
+    fontSize: 16,
   },
   playerInfo: {
     flex: 1,
     minWidth: 0,
   },
   playerName: {
-    color: androidDarkTheme.colors.onSurface,
+    color: t.colors.onSurface,
     fontSize: 15,
     fontWeight: "600",
   },
   playerNameOwn: {
-    color: androidDarkTheme.colors.primary,
+    color: t.colors.primary,
   },
   formRow: {
     flexDirection: "row",
@@ -368,78 +404,80 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   formDot: {
-    borderRadius: 4,
+    borderRadius: t.radius.pill,
     height: 8,
     width: 8,
   },
   playerScore: {
-    color: androidDarkTheme.colors.onSurface,
-    fontSize: 20,
-    fontWeight: "800",
+    color: t.colors.onSurface,
+    ...t.typography.score,
+  },
+  playerScoreOwn: {
+    color: t.colors.primary,
   },
   emptyState: {
     alignItems: "center",
-    marginHorizontal: 16,
-    marginTop: 24,
-    padding: 24,
+    marginTop: t.spacing.xxxl,
+    padding: t.spacing.xxl,
   },
   emptyTitle: {
-    color: androidDarkTheme.colors.onSurface,
-    fontSize: 16,
-    fontWeight: "700",
+    color: t.colors.onSurface,
+    ...t.typography.subtitle,
+    marginTop: t.spacing.lg,
   },
   emptySubtitle: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 13,
-    marginTop: 6,
+    color: t.colors.onSurfaceDim,
+    ...t.typography.bodySmall,
+    marginTop: t.spacing.sm,
     textAlign: "center",
   },
+
+  // Modal — bottom sheet feel
   modalSafeArea: {
-    backgroundColor: androidDarkTheme.colors.background,
+    backgroundColor: t.colors.background,
     flex: 1,
+  },
+  modalHandleBar: {
+    alignItems: "center",
+    backgroundColor: t.colors.surface,
+    paddingTop: t.spacing.sm,
+  },
+  modalHandle: {
+    backgroundColor: t.colors.surfaceElevated,
+    borderRadius: t.radius.pill,
+    height: 4,
+    width: 36,
   },
   modalToolbar: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderBottomColor: androidDarkTheme.colors.outline,
-    borderBottomWidth: 1,
+    backgroundColor: t.colors.surface,
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  modalClose: {
-    borderRadius: androidDarkTheme.radius.pill,
-    overflow: "hidden",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  modalCloseText: {
-    color: androidDarkTheme.colors.primary,
-    fontSize: 16,
+    paddingBottom: t.spacing.md,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.md,
   },
   modalTitle: {
-    color: androidDarkTheme.colors.onSurface,
-    fontSize: 17,
-    fontWeight: "700",
+    color: t.colors.onSurface,
+    ...t.typography.title,
     flex: 1,
-    textAlign: "center",
   },
-  modalClosePlaceholder: {
-    width: 60,
+  modalCloseBtn: {
+    borderRadius: t.radius.pill,
+    padding: t.spacing.xs,
   },
   modalScrollContent: {
-    paddingBottom: 32,
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingBottom: t.spacing.xxxl,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.lg,
   },
   modalHero: {
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: t.spacing.lg,
   },
   modalRankBadge: {
     alignItems: "center",
-    borderRadius: 28,
+    borderRadius: t.radius.pill,
     height: 56,
     justifyContent: "center",
     width: 56,
@@ -448,88 +486,78 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   modalRankLabel: {
-    color: androidDarkTheme.colors.onSurface,
-    fontSize: 16,
-    fontWeight: "700",
-    marginTop: 8,
+    color: t.colors.onSurface,
+    ...t.typography.subtitle,
+    marginTop: t.spacing.sm,
   },
   modalRankPosition: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 13,
+    color: t.colors.onSurfaceMuted,
+    ...t.typography.bodySmall,
     marginTop: 2,
   },
   modalScoreCard: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderColor: androidDarkTheme.colors.outline,
-    borderRadius: androidDarkTheme.radius.lg,
-    borderWidth: 1,
-    marginHorizontal: 24,
-    padding: 20,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    paddingHorizontal: t.spacing.xxl,
+    paddingVertical: t.spacing.xl,
   },
   modalScoreNumber: {
-    fontSize: 48,
-    fontWeight: "800",
+    ...t.typography.bigScore,
   },
   modalScoreLabel: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginTop: 4,
-    textTransform: "uppercase",
+    color: t.colors.onSurfaceDim,
+    ...t.typography.label,
+    marginTop: t.spacing.xs,
   },
   modalStatGrid: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 16,
+    gap: t.spacing.sm,
+    marginTop: t.spacing.lg,
   },
   modalStatCell: {
     alignItems: "center",
-    borderRadius: androidDarkTheme.radius.md,
+    borderRadius: t.radius.md,
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: t.spacing.md,
   },
   modalStatValue: {
-    fontSize: 22,
-    fontWeight: "800",
+    ...t.typography.score,
   },
   modalStatSublabel: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 10,
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
     fontWeight: "600",
-    letterSpacing: 0.3,
     marginTop: 2,
     textTransform: "uppercase",
   },
   modalHistory: {
-    marginTop: 20,
+    marginTop: t.spacing.xl,
   },
   modalSectionTitle: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    marginBottom: 8,
-    textTransform: "uppercase",
+    color: t.colors.onSurfaceMuted,
+    ...t.typography.label,
+    marginBottom: t.spacing.sm,
+  },
+  modalHistoryList: {
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    overflow: "hidden",
   },
   modalHistoryRow: {
     alignItems: "center",
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderBottomColor: androidDarkTheme.colors.outline,
+    borderBottomColor: t.colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
-    paddingVertical: 11,
+    gap: t.spacing.md,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
   },
   modalHistoryName: {
-    color: androidDarkTheme.colors.onSurface,
+    color: t.colors.onSurface,
     flex: 1,
     fontSize: 14,
     fontWeight: "500",
-  },
-  modalHistoryEmoji: {
-    fontSize: 14,
-    marginHorizontal: 8,
   },
   modalHistoryPoints: {
     fontSize: 14,

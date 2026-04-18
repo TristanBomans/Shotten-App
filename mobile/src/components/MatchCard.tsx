@@ -5,6 +5,8 @@ import type { AttendanceStatus, Match } from "../lib/types";
 import { usePreferences } from "../state/preferences-context";
 import { androidDarkTheme } from "../theme/androidDark";
 
+const t = androidDarkTheme;
+
 interface MatchCardProps {
   match: Match;
   currentStatus: AttendanceStatus | null;
@@ -48,16 +50,16 @@ function buildSquadSections(
   const sections: SquadSection[] = [];
 
   if (present.length > 0) {
-    sections.push({ label: "In", count: present.length, color: "#3ddc84", nameColor: androidDarkTheme.colors.onSurfaceMuted, players: present });
+    sections.push({ label: "In", count: present.length, color: t.colors.primary, nameColor: t.colors.onSurfaceMuted, players: present });
   }
   if (maybe.length > 0) {
-    sections.push({ label: "Maybe", count: maybe.length, color: "#f7cb61", nameColor: androidDarkTheme.colors.onSurfaceMuted, players: maybe });
+    sections.push({ label: "Maybe", count: maybe.length, color: t.colors.warningAccent, nameColor: t.colors.onSurfaceMuted, players: maybe });
   }
   if (notPresent.length > 0) {
-    sections.push({ label: "Out", count: notPresent.length, color: "#ff5f85", nameColor: androidDarkTheme.colors.onSurfaceMuted, players: notPresent });
+    sections.push({ label: "Out", count: notPresent.length, color: t.colors.errorAccent, nameColor: t.colors.onSurfaceMuted, players: notPresent });
   }
   if (unknown.length > 0) {
-    sections.push({ label: "TBD", count: unknown.length, color: androidDarkTheme.colors.onSurfaceMuted, nameColor: androidDarkTheme.colors.onSurfaceMuted, players: unknown });
+    sections.push({ label: "TBD", count: unknown.length, color: t.colors.onSurfaceDim, nameColor: t.colors.onSurfaceDim, players: unknown });
   }
 
   return sections;
@@ -72,7 +74,7 @@ function formatPlayerNames(players: { id: number; name: string }[], currentPlaye
       return "you";
     }
     return p.name;
-  }).join(" \u00B7 ");
+  }).join(" · ");
 }
 
 export function MatchCard({ match, currentStatus, isUpdating, onYes, onNo, variant = "default", currentPlayerId }: MatchCardProps) {
@@ -83,99 +85,126 @@ export function MatchCard({ match, currentStatus, isUpdating, onYes, onNo, varia
 
   return (
     <View style={[styles.card, isHero && styles.heroCard]}>
-      <Text style={styles.title}>{match.name}</Text>
-      <Text style={styles.meta}>{formatMatchDate(match.date)}</Text>
-      {match.location ? <Text style={styles.meta}>{match.location}</Text> : null}
-
-      {hasResponses ? (
-        <View style={styles.squadSection}>
-          {sections.map((section) => (
-            <View key={section.label} style={styles.squadRow}>
-              <Text style={[styles.squadLabel, { color: section.color }]}>
-                {section.label}
-              </Text>
-              <Text style={[styles.squadNames, { color: section.nameColor }]} numberOfLines={2}>
-                {formatPlayerNames(section.players, currentPlayerId, preferences.showFullNames)}
-              </Text>
-              <Text style={[styles.squadCount, { color: section.color }]}>
-                {section.count}
-              </Text>
-            </View>
-          ))}
+      {isHero ? <View style={styles.heroAccent} /> : null}
+      <View style={styles.cardInner}>
+        <View style={styles.headerRow}>
+          <View style={styles.headerText}>
+            <Text style={[styles.title, isHero && styles.heroTitle]}>{match.name}</Text>
+            <Text style={styles.meta}>{formatMatchDate(match.date)}</Text>
+            {match.location ? <Text style={styles.metaLocation}>{match.location}</Text> : null}
+          </View>
         </View>
-      ) : null}
 
-      {!hasResponses ? (
-        <Text style={styles.noResponses}>No responses yet</Text>
-      ) : null}
+        {hasResponses ? (
+          <View style={styles.squadSection}>
+            {sections.map((section) => (
+              <View key={section.label} style={styles.squadRow}>
+                <View style={[styles.squadDot, { backgroundColor: section.color }]} />
+                <Text style={[styles.squadLabel, { color: section.color }]}>
+                  {section.label}
+                </Text>
+                <Text style={[styles.squadNames, { color: section.nameColor }]} numberOfLines={2}>
+                  {formatPlayerNames(section.players, currentPlayerId, preferences.showFullNames)}
+                </Text>
+                <Text style={[styles.squadCount, { color: section.color }]}>
+                  {section.count}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noResponses}>No responses yet</Text>
+        )}
 
-      <ResponseButtons
-        currentState={resolveAttendanceState(currentStatus)}
-        isUpdating={isUpdating}
-        onYes={onYes}
-        onNo={onNo}
-      />
+        <ResponseButtons
+          currentState={resolveAttendanceState(currentStatus)}
+          isUpdating={isUpdating}
+          onYes={onYes}
+          onNo={onNo}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: androidDarkTheme.colors.surface,
-    borderColor: androidDarkTheme.colors.outline,
-    borderRadius: androidDarkTheme.radius.lg,
-    borderWidth: 1,
-    elevation: 1,
-    marginBottom: 12,
-    padding: 14,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    marginBottom: t.spacing.md,
+    overflow: "hidden",
   },
   heroCard: {
-    borderColor: androidDarkTheme.colors.primary,
-    borderWidth: 1.5,
+    backgroundColor: t.colors.surfaceAlt,
     marginBottom: 0,
   },
+  heroAccent: {
+    backgroundColor: t.colors.primary,
+    height: 3,
+  },
+  cardInner: {
+    padding: t.spacing.lg,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  headerText: {
+    flex: 1,
+  },
   title: {
-    color: androidDarkTheme.colors.onSurface,
-    fontSize: 16,
-    fontWeight: "700",
+    color: t.colors.onSurface,
+    ...t.typography.subtitle,
+  },
+  heroTitle: {
+    color: t.colors.onSurface,
+    ...t.typography.title,
   },
   meta: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 13,
-    marginTop: 4,
+    color: t.colors.onSurfaceMuted,
+    ...t.typography.bodySmall,
+    marginTop: t.spacing.xs,
+  },
+  metaLocation: {
+    color: t.colors.onSurfaceDim,
+    ...t.typography.bodySmall,
+    marginTop: 2,
   },
   squadSection: {
-    gap: 4,
-    marginTop: 12,
+    gap: 6,
+    marginTop: t.spacing.lg,
   },
   squadRow: {
-    alignItems: "flex-start",
+    alignItems: "center",
     flexDirection: "row",
-    gap: 6,
+    gap: t.spacing.sm,
+  },
+  squadDot: {
+    borderRadius: t.radius.pill,
+    height: 6,
+    width: 6,
   },
   squadLabel: {
-    fontSize: 11,
+    ...t.typography.caption,
     fontWeight: "700",
-    letterSpacing: 0.3,
-    minWidth: 38,
-    paddingTop: 1,
+    minWidth: 36,
   },
   squadNames: {
-    fontSize: 12,
+    color: t.colors.onSurfaceMuted,
     flex: 1,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
   },
   squadCount: {
-    fontSize: 12,
-    fontWeight: "700",
+    ...t.typography.caption,
+    fontWeight: "800",
     minWidth: 16,
-    paddingTop: 1,
     textAlign: "right",
   },
   noResponses: {
-    color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 12,
+    color: t.colors.onSurfaceDim,
+    fontSize: 13,
     fontStyle: "italic",
-    marginTop: 8,
+    marginTop: t.spacing.md,
   },
 });

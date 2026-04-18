@@ -1,5 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { androidDarkTheme } from "../theme/androidDark";
+
+const t = androidDarkTheme;
 
 interface ErrorStateProps {
   message: string;
@@ -9,15 +12,18 @@ interface ErrorStateProps {
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Something went wrong</Text>
-      <Text style={styles.message}>{message}</Text>
+      <MaterialCommunityIcons name="alert-circle-outline" size={24} color={t.colors.errorAccent} />
+      <View style={styles.textWrap}>
+        <Text style={styles.title}>Something went wrong</Text>
+        <Text style={styles.message}>{message}</Text>
+      </View>
       {onRetry ? (
         <Pressable
-          android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
+          android_ripple={{ color: "rgba(255, 95, 133, 0.12)", borderless: false }}
           onPress={onRetry}
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
         >
-          <Text style={styles.buttonText}>Try again</Text>
+          <Text style={styles.buttonText}>Retry</Text>
         </Pressable>
       ) : null}
     </View>
@@ -26,37 +32,41 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: androidDarkTheme.colors.errorContainer,
-    borderColor: "#4a1525",
-    borderWidth: 1,
-    borderRadius: androidDarkTheme.radius.md,
-    padding: 14,
-    gap: 10
+    alignItems: "center",
+    backgroundColor: t.colors.errorContainer,
+    borderRadius: t.radius.md,
+    flexDirection: "row",
+    gap: t.spacing.md,
+    padding: t.spacing.lg,
+  },
+  textWrap: {
+    flex: 1,
   },
   title: {
-    color: androidDarkTheme.colors.onError,
+    color: t.colors.onError,
     fontWeight: "700",
-    fontSize: 15
+    fontSize: 14,
   },
   message: {
-    color: "#ffb4c5",
-    fontSize: 14,
-    lineHeight: 20
+    color: t.colors.onError,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
+    opacity: 0.8,
   },
   button: {
-    alignSelf: "flex-start",
-    backgroundColor: "#ff5f85",
-    borderRadius: 999,
+    backgroundColor: t.colors.errorAccent,
+    borderRadius: t.radius.pill,
     overflow: "hidden",
     paddingVertical: 8,
-    paddingHorizontal: 12
+    paddingHorizontal: 16,
   },
   buttonPressed: {
-    opacity: 0.88
+    opacity: 0.85,
   },
   buttonText: {
     color: "#1a0008",
     fontWeight: "700",
-    fontSize: 13
-  }
+    fontSize: 13,
+  },
 });
