@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
+  Dimensions,
+  Easing,
   Modal,
   Pressable,
   RefreshControl,
@@ -7,12 +10,13 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { fetchMatches, fetchPlayers } from "../../lib/api";
-import { buildLeaderboard, type PlayerWithStats } from "../../lib/leaderboard";
+import { buildLeaderboard, type PlayerWithStats, POINTS, RANKS } from "../../lib/leaderboard";
 import type { Match, Player } from "../../lib/types";
 import { useSession } from "../../state/session-context";
 import { ErrorState } from "../../components/ErrorState";
@@ -20,12 +24,19 @@ import { LoadingState } from "../../components/LoadingState";
 import { androidDarkTheme } from "../../theme/androidDark";
 
 const t = androidDarkTheme;
+const { width: SCREEN_W } = Dimensions.get("window");
 
-const FORM_DOT_COLORS: Record<string, string> = {
+const FORM_COLORS: Record<string, string> = {
   present: t.colors.primary,
   maybe: t.colors.warningAccent,
   notPresent: t.colors.errorAccent,
   ghost: t.colors.onSurfaceDim,
+};
+
+const PODIUM_COLORS = {
+  0: { bg: "#1e1808", accent: "#f7cb61", icon: "crown" as const },
+  1: { bg: "#18181c", accent: "#c0c0c0", icon: "medal" as const },
+  2: { bg: "#1c1408", accent: "#cd7f32", icon: "medal-outline" as const },
 };
 
 export default function StatsScreen() {
@@ -37,15 +48,14 @@ export default function StatsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null);
 
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
   const loadData = useCallback(
     async (isRefresh = false) => {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
       setError(null);
-
       try {
         const [matchData, playerData] = await Promise.all([
           fetchMatches(session.playerId),
@@ -67,20 +77,22 @@ export default function StatsScreen() {
     void loadData();
   }, [loadData]);
 
-  const leaderboard = useMemo(
-    () => buildLeaderboard(players, matches),
-    [players, matches],
-  );
+  useEffect(() => {
+    if (!loading) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+    }
+  }, [loading]);
 
-  const topScorer = leaderboard[0] ?? null;
-  const mostGhosts =
-    leaderboard.length > 0
-      ? leaderboard.reduce((a, b) => (a.stats.ghostCount > b.stats.ghostCount ? a : b))
-      : null;
-  const mostMaybe =
-    leaderboard.length > 0
-      ? leaderboard.reduce((a, b) => (a.stats.maybeCount > b.stats.maybeCount ? a : b))
-      : null;
+  const leaderboard = useMemo(() => buildLeaderboard(players, matches), [players, matches]);
+
+  const topThree = leaderboard.slice(0, 3);
+  const rest = leaderboard.slice(3);
+
+  const ownPlayer = leaderboard.find((p) => p.id === session.playerId);
+  const ownRank = ownPlayer ? leaderboard.findIndex((p) => p.id === session.playerId) + 1 : 0;
 
   const selectedRank = selectedPlayer
     ? leaderboard.findIndex((p) => p.id === selectedPlayer.id) + 1
@@ -97,7 +109,7 @@ export default function StatsScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-        <View style={styles.errorWrapper}>
+        <View style={{ padding: t.spacing.lg }}>
           <ErrorState message={error} onRetry={() => void loadData()} />
         </View>
       </SafeAreaView>
@@ -106,195 +118,386 @@ export default function StatsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void loadData(true)}
-            tintColor={t.colors.primary}
-            colors={[t.colors.primary]}
-            progressBackgroundColor={t.colors.surfaceRaised}
-          />
-        }
-      >
-        {/* Highlight banner — horizontal scroll */}
+      <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.highlightsScroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => void loadData(true)}
+              tintColor={t.colors.primary}
+              colors={[t.colors.primary]}
+              progressBackgroundColor={t.colors.surfaceRaised}
+            />
+          }
         >
-          <HighlightChip emoji="🏆" title="Legend" name={topScorer?.name ?? "—"} color={t.colors.warningAccent} />
-          <HighlightChip emoji="👻" title="Casper" name={mostGhosts?.name ?? "—"} color={t.colors.errorAccent} />
-          <HighlightChip emoji="🤔" title="Miss Maybe" name={mostMaybe?.name ?? "—"} color={t.colors.warningAccent} />
-        </ScrollView>
-
-        {/* Leaderboard */}
-        <View style={styles.leaderboard}>
-          {leaderboard.map((player, i) => {
-            const isOwnPlayer = player.id === session.playerId;
-            return (
-              <Pressable
-                key={player.id}
-                android_ripple={{ color: t.colors.ripple, borderless: false }}
-                onPress={() => setSelectedPlayer(player)}
-                style={[
-                  styles.playerRow,
-                  isOwnPlayer && styles.playerRowOwn,
-                ]}
-              >
-                <Text style={[styles.playerRank, i < 3 && styles.playerRankTop]}>
-                  {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
-                </Text>
-
-                <View style={[styles.rankIcon, { backgroundColor: player.stats.rank.bgColor }]}>
-                  <Text style={styles.rankIconText}>{player.stats.rank.emoji}</Text>
-                </View>
-
-                <View style={styles.playerInfo}>
-                  <Text style={[styles.playerName, isOwnPlayer && styles.playerNameOwn]} numberOfLines={1}>
-                    {player.name}
-                  </Text>
-                  <View style={styles.formRow}>
-                    {player.stats.recentForm.map((status, j) => (
-                      <View
-                        key={j}
-                        style={[styles.formDot, { backgroundColor: FORM_DOT_COLORS[status] ?? FORM_DOT_COLORS.ghost }]}
-                      />
-                    ))}
+          {/* Podium */}
+          {topThree.length > 0 && (
+            <View style={styles.podiumSection}>
+              {/* #1 — top center */}
+              {topThree[0] && (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setSelectedPlayer(topThree[0])}
+                  style={[
+                    styles.podiumFirst,
+                    topThree[0].id === session.playerId && styles.podiumFirstOwn,
+                  ]}
+                >
+                  <View style={styles.podiumFirstAvatarWrap}>
+                    <View style={[styles.podiumFirstAvatar, { borderColor: PODIUM_COLORS[0].accent }]}>
+                      <Text style={[styles.podiumFirstAvatarText, { color: PODIUM_COLORS[0].accent }]}>
+                        {topThree[0].name.charAt(0)}
+                      </Text>
+                    </View>
+                    <View style={[styles.podiumFirstCrown, { backgroundColor: PODIUM_COLORS[0].accent }]}>
+                      <MaterialCommunityIcons name="crown" size={14} color={t.colors.background} />
+                    </View>
                   </View>
+                  <Text style={styles.podiumFirstName} numberOfLines={1}>{topThree[0].name}</Text>
+                  <Text style={styles.podiumFirstScore}>{topThree[0].stats.score}</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* #2 and #3 — side by side */}
+              {topThree.length > 1 && (
+                <View style={styles.podiumRow}>
+                  {[1, 2].map((idx) => {
+                    const player = topThree[idx];
+                    if (!player) return <View key={idx} style={styles.podiumSidePlaceholder} />;
+                    const isOwn = player.id === session.playerId;
+                    const style = PODIUM_COLORS[idx as keyof typeof PODIUM_COLORS] ?? PODIUM_COLORS[2];
+                    return (
+                      <TouchableOpacity
+                        key={player.id}
+                        activeOpacity={0.85}
+                        onPress={() => setSelectedPlayer(player)}
+                        style={[
+                          styles.podiumSide,
+                          { backgroundColor: style.bg, borderColor: style.accent },
+                          isOwn && styles.podiumSideOwn,
+                        ]}
+                      >
+                        <MaterialCommunityIcons name={style.icon} size={22} color={style.accent} />
+                        <View style={[styles.podiumSideAvatar, { borderColor: style.accent }]}>
+                          <Text style={[styles.podiumSideAvatarText, { color: style.accent }]}>
+                            {player.name.charAt(0)}
+                          </Text>
+                        </View>
+                        <Text style={styles.podiumSideName} numberOfLines={1}>{player.name}</Text>
+                        <Text style={[styles.podiumSideScore, { color: style.accent }]}>{player.stats.score}</Text>
+                        <Text style={styles.podiumSideLabel}>pts</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
+              )}
+            </View>
+          )}
 
-                <Text style={[styles.playerScore, isOwnPlayer && styles.playerScoreOwn]}>
-                  {player.stats.score}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+          {/* Own rank card (sticky summary) */}
+          {ownPlayer && ownRank > 3 && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setSelectedPlayer(ownPlayer)}
+              style={styles.ownCard}
+            >
+              <View style={styles.ownCardLeft}>
+                <Text style={styles.ownCardRank}>#{ownRank}</Text>
+                <View style={[styles.ownCardAvatar, { backgroundColor: ownPlayer.stats.rank.color + "20" }]}>
+                  <Text style={[styles.ownCardAvatarText, { color: ownPlayer.stats.rank.color }]}>
+                    {ownPlayer.name.charAt(0)}
+                  </Text>
+                </View>
+                <View>
+                  <Text style={styles.ownCardName}>{ownPlayer.name} <Text style={styles.ownCardYou}>(You)</Text></Text>
+                  <Text style={styles.ownCardSubtitle}>{ownPlayer.stats.rank.name}</Text>
+                </View>
+              </View>
+              <Text style={styles.ownCardScore}>{ownPlayer.stats.score}</Text>
+            </TouchableOpacity>
+          )}
 
-        {leaderboard.length === 0 ? (
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="trophy-outline" size={40} color={t.colors.onSurfaceDim} />
-            <Text style={styles.emptyTitle}>No data yet</Text>
-            <Text style={styles.emptySubtitle}>Leaderboard data will appear once matches are played.</Text>
+          {/* Rest of leaderboard */}
+          <View style={styles.leaderboardList}>
+            {rest.map((player, i) => (
+              <RankCard
+                key={player.id}
+                player={player}
+                rank={i + 4}
+                isOwn={player.id === session.playerId}
+                onPress={() => setSelectedPlayer(player)}
+              />
+            ))}
           </View>
-        ) : null}
-      </ScrollView>
 
-      {/* Player detail — bottom sheet style modal */}
+          {leaderboard.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons name="trophy-outline" size={48} color={t.colors.onSurfaceDim} />
+              <Text style={styles.emptyTitle}>No matches yet</Text>
+              <Text style={styles.emptySubtitle}>Leaderboard will appear once matches are played.</Text>
+            </View>
+          ) : null}
+        </ScrollView>
+      </Animated.View>
+
+      {/* Player Detail Modal */}
       <Modal
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent={false}
         visible={selectedPlayer !== null}
         onRequestClose={() => setSelectedPlayer(null)}
       >
-        <StatusBar barStyle="light-content" backgroundColor={t.colors.surface} />
+        <StatusBar barStyle="light-content" backgroundColor={t.colors.background} />
         <SafeAreaView style={styles.modalSafeArea} edges={["top", "bottom"]}>
-          {/* Drag handle */}
-          <View style={styles.modalHandleBar}>
-            <View style={styles.modalHandle} />
-          </View>
-
-          <View style={styles.modalToolbar}>
-            <Text style={styles.modalTitle} numberOfLines={1}>
-              {selectedPlayer?.name ?? ""}
-            </Text>
-            <Pressable
-              android_ripple={{ color: t.colors.ripple, borderless: true }}
-              onPress={() => setSelectedPlayer(null)}
-              style={styles.modalCloseBtn}
-              hitSlop={12}
-            >
-              <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurfaceMuted} />
-            </Pressable>
-          </View>
-
-          {selectedPlayer ? (
-            <PlayerDetailContent player={selectedPlayer} rank={selectedRank} />
-          ) : null}
+          <PlayerDetailModal
+            player={selectedPlayer}
+            rank={selectedRank}
+            onClose={() => setSelectedPlayer(null)}
+          />
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
 }
 
-function HighlightChip({ emoji, title, name, color }: { emoji: string; title: string; name: string; color: string }) {
+function RankCard({
+  player,
+  rank,
+  isOwn,
+  onPress,
+}: {
+  player: PlayerWithStats;
+  rank: number;
+  isOwn: boolean;
+  onPress: () => void;
+}) {
   return (
-    <View style={styles.highlightChip}>
-      <Text style={styles.highlightEmoji}>{emoji}</Text>
-      <View style={styles.highlightTextWrap}>
-        <Text style={[styles.highlightTitle, { color }]}>{title}</Text>
-        <Text style={styles.highlightName} numberOfLines={1}>{name}</Text>
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={[styles.rankCard, isOwn && styles.rankCardOwn]}>
+      <View style={styles.rankCardLeft}>
+        <Text style={[styles.rankCardNumber, rank <= 10 && styles.rankCardNumberTop]}>#{rank}</Text>
+        <View style={[styles.rankCardAvatar, { backgroundColor: player.stats.rank.color + "18" }]}>
+          <Text style={[styles.rankCardAvatarText, { color: player.stats.rank.color }]}>{player.name.charAt(0)}</Text>
+        </View>
+        <View style={styles.rankCardInfo}>
+          <Text style={[styles.rankCardName, isOwn && styles.rankCardNameOwn]} numberOfLines={1}>
+            {player.name}
+          </Text>
+          <View style={styles.rankCardForm}>
+            {player.stats.recentForm.map((status, j) => (
+              <View
+                key={j}
+                style={[styles.formDot, { backgroundColor: FORM_COLORS[status] ?? FORM_COLORS.ghost }]}
+              />
+            ))}
+            {player.stats.recentForm.length === 0 && (
+              <Text style={styles.noFormText}>No recent matches</Text>
+            )}
+          </View>
+        </View>
       </View>
+
+      <View style={styles.rankCardRight}>
+        <Text style={[styles.rankCardScore, isOwn && styles.rankCardScoreOwn]}>{player.stats.score}</Text>
+        <Text style={styles.rankCardPointsLabel}>pts</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function PlayerDetailModal({
+  player,
+  rank,
+  onClose,
+}: {
+  player: PlayerWithStats | null;
+  rank: number;
+  onClose: () => void;
+}) {
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  if (!player) return null;
+  const s = player.stats;
+  const nextRank = RANKS.find((r) => r.minScore > s.score);
+  const prevRank = RANKS.slice()
+    .reverse()
+    .find((r) => r.minScore <= s.score);
+  const progressToNext = nextRank && prevRank
+    ? Math.min(1, (s.score - prevRank.minScore) / (nextRank.minScore - prevRank.minScore))
+    : 1;
+
+  const presentPct = s.totalMatches > 0 ? Math.round((s.presentCount / s.totalMatches) * 100) : 0;
+
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 120, 160],
+    outputRange: [0, 0, 1],
+    extrapolate: "clamp",
+  });
+
+  return (
+    <View style={{ flex: 1 }}>
+      {/* Sticky header that fades in on scroll */}
+      <Animated.View style={[styles.detailStickyHeader, { opacity: headerOpacity }]}>
+        <View style={styles.detailStickyInner}>
+          <Text style={styles.detailStickyTitle} numberOfLines={1}>{player.name}</Text>
+          <Text style={styles.detailStickySubtitle}>#{rank} — {s.rank.name}</Text>
+        </View>
+      </Animated.View>
+
+      {/* Toolbar */}
+      <View style={styles.detailToolbar}>
+        <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.detailCloseBtn}>
+          <MaterialCommunityIcons name="arrow-left" size={24} color={t.colors.onSurface} />
+        </TouchableOpacity>
+        <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.detailCloseBtn}>
+          <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurfaceMuted} />
+        </TouchableOpacity>
+      </View>
+
+      <Animated.ScrollView
+        contentContainerStyle={styles.detailScroll}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
+      >
+        {/* Hero */}
+        <View style={[styles.detailHero, { backgroundColor: s.rank.color + "12" }]}>
+          <View style={[styles.detailHeroAvatar, { borderColor: s.rank.color }]}>
+            <Text style={[styles.detailHeroAvatarText, { color: s.rank.color }]}>{player.name.charAt(0)}</Text>
+          </View>
+          <Text style={styles.detailHeroName}>{player.name}</Text>
+          <View style={styles.detailHeroBadgeRow}>
+            <View style={[styles.detailHeroBadge, { backgroundColor: s.rank.bgColor }]}>
+              <Text style={styles.detailHeroBadgeEmoji}>{s.rank.emoji}</Text>
+              <Text style={[styles.detailHeroBadgeText, { color: s.rank.color }]}>{s.rank.name}</Text>
+            </View>
+            <View style={[styles.detailHeroBadge, { backgroundColor: t.colors.surfaceRaised }]}>
+              <Text style={styles.detailHeroBadgeText}>#{rank}</Text>
+            </View>
+          </View>
+
+          {/* Big Score */}
+          <View style={styles.detailScoreWrap}>
+            <Text style={[styles.detailScoreNumber, { color: s.rank.color }]}>{s.score}</Text>
+            <Text style={styles.detailScoreLabel}>Shotten Points</Text>
+          </View>
+
+          {/* Progress to next rank */}
+          {nextRank && (
+            <View style={styles.detailProgressWrap}>
+              <View style={styles.detailProgressTrack}>
+                <View style={[styles.detailProgressFill, { width: `${progressToNext * 100}%`, backgroundColor: s.rank.color }]} />
+              </View>
+              <Text style={styles.detailProgressText}>
+                {nextRank.minScore - s.score} pts to {nextRank.name}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Stats Carousel */}
+        <Text style={styles.detailSectionTitle}>Season Stats</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsCarousel}>
+          <StatCircle label="Presence" value={`${presentPct}%`} sub={`${s.presentCount}/${s.totalMatches}`} color={t.colors.primary} />
+          <StatCircle label="Present" value={String(s.presentCount)} color={t.colors.primary} />
+          <StatCircle label="Maybe" value={String(s.maybeCount)} color={t.colors.warningAccent} />
+          <StatCircle label="Absent" value={String(s.absentCount)} color={t.colors.errorAccent} />
+          <StatCircle label="Ghost" value={String(s.ghostCount)} color={t.colors.onSurfaceDim} />
+        </ScrollView>
+
+        {/* Form Trend */}
+        <Text style={styles.detailSectionTitle}>Recent Form</Text>
+        <View style={styles.formTrend}>
+          {s.recentForm.length > 0 ? (
+            s.recentForm.map((status, i) => (
+              <View key={i} style={styles.formTrendItem}>
+                <View style={[styles.formTrendDot, { backgroundColor: FORM_COLORS[status] }]}>
+                  <Text style={styles.formTrendEmoji}>
+                    {status === "present" ? "✓" : status === "maybe" ? "?" : status === "notPresent" ? "✕" : "👻"}
+                  </Text>
+                </View>
+                {i < s.recentForm.length - 1 && <View style={styles.formTrendLine} />}
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyFormText}>No matches played yet</Text>
+          )}
+        </View>
+
+        {/* Match History Timeline */}
+        {s.matchResults.length > 0 && (
+          <>
+            <Text style={styles.detailSectionTitle}>Match History</Text>
+            <View style={styles.timeline}>
+              {s.matchResults.map((result, i) => {
+                const isLast = i === s.matchResults.length - 1;
+                return (
+                  <View key={result.matchId} style={styles.timelineRow}>
+                    <View style={styles.timelineLineWrap}>
+                      <View style={[styles.timelineDot, { backgroundColor: FORM_COLORS[result.status] }]} />
+                      {!isLast && <View style={styles.timelineLine} />}
+                    </View>
+                    <View style={[styles.timelineCard, isLast && styles.timelineCardLast]}>
+                      <View style={styles.timelineCardHeader}>
+                        <Text style={styles.timelineCardName} numberOfLines={1}>{result.matchName}</Text>
+                        <Text
+                          style={[
+                            styles.timelineCardPoints,
+                            { color: result.points > 0 ? t.colors.primary : t.colors.errorAccent },
+                          ]}
+                        >
+                          {result.points > 0 ? `+${result.points}` : result.points}
+                        </Text>
+                      </View>
+                      <View style={styles.timelineCardFooter}>
+                        <MaterialCommunityIcons
+                          name={
+                            result.status === "present"
+                              ? "check-circle"
+                              : result.status === "maybe"
+                                ? "help-circle"
+                                : result.status === "notPresent"
+                                  ? "close-circle"
+                                  : "ghost"
+                          }
+                          size={14}
+                          color={FORM_COLORS[result.status]}
+                        />
+                        <Text style={[styles.timelineCardStatus, { color: FORM_COLORS[result.status] }]}>
+                          {result.status === "present" ? "Present" : result.status === "maybe" ? "Maybe" : result.status === "notPresent" ? "Absent" : "Ghost"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        <View style={{ height: 40 }} />
+      </Animated.ScrollView>
     </View>
   );
 }
 
-function PlayerDetailContent({ player, rank }: { player: PlayerWithStats; rank: number }) {
-  const s = player.stats;
-
+function StatCircle({
+  label,
+  value,
+  sub,
+  color,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  color: string;
+}) {
   return (
-    <ScrollView contentContainerStyle={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
-      {/* Hero rank */}
-      <View style={styles.modalHero}>
-        <View style={[styles.modalRankBadge, { backgroundColor: s.rank.bgColor }]}>
-          <Text style={styles.modalRankEmoji}>{s.rank.emoji}</Text>
-        </View>
-        <Text style={styles.modalRankLabel}>{s.rank.name}</Text>
-        <Text style={styles.modalRankPosition}>#{rank}</Text>
-      </View>
-
-      {/* Big score */}
-      <View style={styles.modalScoreCard}>
-        <Text style={[styles.modalScoreNumber, { color: s.rank.color }]}>{s.score}</Text>
-        <Text style={styles.modalScoreLabel}>Shotten Points</Text>
-      </View>
-
-      {/* Stats grid */}
-      <View style={styles.modalStatGrid}>
-        <StatCell label="Present" value={s.presentCount} color={t.colors.primary} bg={t.colors.successContainer} />
-        <StatCell label="Maybe" value={s.maybeCount} color={t.colors.warningAccent} bg={t.colors.warningContainer} />
-        <StatCell label="Absent" value={s.absentCount} color={t.colors.errorAccent} bg={t.colors.errorContainer} />
-        <StatCell label="Ghost" value={s.ghostCount} color={t.colors.onSurfaceDim} bg={t.colors.surfaceRaised} />
-      </View>
-
-      {/* Match history */}
-      {s.matchResults.length > 0 ? (
-        <View style={styles.modalHistory}>
-          <Text style={styles.modalSectionTitle}>Match History</Text>
-          <View style={styles.modalHistoryList}>
-            {s.matchResults.map((result) => (
-              <View key={result.matchId} style={styles.modalHistoryRow}>
-                <MaterialCommunityIcons
-                  name={
-                    result.status === "present" ? "check-circle" :
-                    result.status === "maybe" ? "help-circle" :
-                    result.status === "notPresent" ? "close-circle" :
-                    "ghost"
-                  }
-                  size={16}
-                  color={FORM_DOT_COLORS[result.status] ?? t.colors.onSurfaceDim}
-                />
-                <Text style={styles.modalHistoryName} numberOfLines={1}>{result.matchName}</Text>
-                <Text style={[styles.modalHistoryPoints, { color: result.points > 0 ? t.colors.primary : t.colors.errorAccent }]}>
-                  {result.points > 0 ? `+${result.points}` : String(result.points)}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      ) : null}
-    </ScrollView>
-  );
-}
-
-function StatCell({ label, value, color, bg }: { label: string; value: number; color: string; bg: string }) {
-  return (
-    <View style={[styles.modalStatCell, { backgroundColor: bg }]}>
-      <Text style={[styles.modalStatValue, { color }]}>{value}</Text>
-      <Text style={styles.modalStatSublabel}>{label}</Text>
+    <View style={styles.statCircle}>
+      <Text style={[styles.statCircleValue, { color }]}>{value}</Text>
+      {sub ? <Text style={styles.statCircleSub}>{sub}</Text> : null}
+      <Text style={styles.statCircleLabel}>{label}</Text>
     </View>
   );
 }
@@ -304,117 +507,270 @@ const styles = StyleSheet.create({
     backgroundColor: t.colors.background,
     flex: 1,
   },
-  errorWrapper: {
-    padding: t.spacing.lg,
-  },
-  scrollContent: {
-    paddingBottom: t.spacing.xxl,
-  },
-
-  // Highlights — horizontal scroll chips
-  highlightsScroll: {
-    gap: t.spacing.sm,
-    paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.md,
-  },
-  highlightChip: {
-    alignItems: "center",
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.lg,
-    flexDirection: "row",
-    gap: t.spacing.md,
-    paddingHorizontal: t.spacing.lg,
-    paddingVertical: t.spacing.md,
-    minWidth: 140,
-  },
-  highlightEmoji: {
-    fontSize: 24,
-  },
-  highlightTextWrap: {
+  container: {
     flex: 1,
   },
-  highlightTitle: {
-    ...t.typography.caption,
-    fontWeight: "700",
-    textTransform: "uppercase",
+
+  scrollContent: {
+    paddingTop: t.spacing.md,
+    paddingBottom: t.spacing.xxxl,
   },
-  highlightName: {
+
+  // Podium
+  podiumSection: {
+    paddingHorizontal: t.spacing.lg,
+    alignItems: "center",
+    gap: t.spacing.md,
+  },
+  podiumFirst: {
+    backgroundColor: PODIUM_COLORS[0].bg,
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    borderColor: PODIUM_COLORS[0].accent,
+    alignItems: "center",
+    padding: t.spacing.lg,
+    paddingTop: t.spacing.xl,
+    width: 160,
+  },
+  podiumFirstOwn: {
+    borderWidth: 2,
+    borderColor: t.colors.primary,
+  },
+  podiumFirstAvatarWrap: {
+    position: "relative",
+    marginBottom: t.spacing.md,
+  },
+  podiumFirstAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 3,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: t.colors.background,
+  },
+  podiumFirstAvatarText: {
+    fontSize: 28,
+    fontWeight: "800",
+  },
+  podiumFirstCrown: {
+    position: "absolute",
+    bottom: -6,
+    alignSelf: "center",
+    borderRadius: t.radius.pill,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  podiumFirstName: {
+    color: t.colors.onSurface,
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  podiumFirstScore: {
+    color: PODIUM_COLORS[0].accent,
+    fontSize: 24,
+    fontWeight: "800",
+    marginTop: 4,
+  },
+  podiumRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: t.spacing.md,
+    width: "100%",
+  },
+  podiumSide: {
+    flex: 1,
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    alignItems: "center",
+    padding: t.spacing.md,
+    paddingVertical: t.spacing.lg,
+    maxWidth: (SCREEN_W - t.spacing.lg * 2 - t.spacing.md) / 2,
+  },
+  podiumSideOwn: {
+    borderColor: t.colors.primary,
+    borderWidth: 2,
+  },
+  podiumSidePlaceholder: {
+    flex: 1,
+    maxWidth: (SCREEN_W - t.spacing.lg * 2 - t.spacing.md) / 2,
+  },
+  podiumSideAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: t.spacing.sm,
+    marginBottom: t.spacing.sm,
+    backgroundColor: t.colors.background,
+  },
+  podiumSideAvatarText: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  podiumSideName: {
     color: t.colors.onSurface,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  podiumSideScore: {
+    fontSize: 20,
+    fontWeight: "800",
+    marginTop: 2,
+  },
+  podiumSideLabel: {
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
     marginTop: 2,
   },
 
-  // Leaderboard
-  leaderboard: {
+  // Own card
+  ownCard: {
     marginHorizontal: t.spacing.lg,
     marginTop: t.spacing.lg,
     backgroundColor: t.colors.surface,
     borderRadius: t.radius.lg,
-    overflow: "hidden",
-  },
-  playerRow: {
-    alignItems: "center",
-    borderBottomColor: t.colors.divider,
-    borderBottomWidth: 1,
+    padding: t.spacing.lg,
     flexDirection: "row",
-    gap: t.spacing.sm,
-    minHeight: t.touch.minHeight,
-    paddingHorizontal: t.spacing.lg,
-    paddingVertical: t.spacing.md,
-  },
-  playerRowOwn: {
-    backgroundColor: t.colors.primaryMuted,
-  },
-  playerRank: {
-    color: t.colors.onSurfaceDim,
-    fontSize: 14,
-    fontWeight: "700",
-    textAlign: "center",
-    width: 28,
-  },
-  playerRankTop: {
-    fontSize: 18,
-  },
-  rankIcon: {
     alignItems: "center",
-    borderRadius: t.radius.pill,
-    height: 36,
-    justifyContent: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: t.colors.primary + "30",
+  },
+  ownCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: t.spacing.md,
+    flex: 1,
+  },
+  ownCardRank: {
+    color: t.colors.primary,
+    fontSize: 18,
+    fontWeight: "800",
     width: 36,
   },
-  rankIconText: {
+  ownCardAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ownCardAvatarText: {
     fontSize: 16,
+    fontWeight: "700",
   },
-  playerInfo: {
-    flex: 1,
-    minWidth: 0,
-  },
-  playerName: {
+  ownCardName: {
     color: t.colors.onSurface,
     fontSize: 15,
+    fontWeight: "700",
+  },
+  ownCardYou: {
+    color: t.colors.primary,
     fontWeight: "600",
   },
-  playerNameOwn: {
-    color: t.colors.primary,
+  ownCardSubtitle: {
+    color: t.colors.onSurfaceMuted,
+    ...t.typography.caption,
+    marginTop: 2,
   },
-  formRow: {
-    flexDirection: "row",
-    gap: 3,
-    marginTop: 4,
-  },
-  formDot: {
-    borderRadius: t.radius.pill,
-    height: 8,
-    width: 8,
-  },
-  playerScore: {
+  ownCardScore: {
     color: t.colors.onSurface,
     ...t.typography.score,
   },
-  playerScoreOwn: {
+
+  // Leaderboard list
+  leaderboardList: {
+    gap: t.spacing.sm,
+    paddingHorizontal: t.spacing.lg,
+  },
+  rankCard: {
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    padding: t.spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  rankCardOwn: {
+    borderWidth: 1,
+    borderColor: t.colors.primary + "30",
+  },
+  rankCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: t.spacing.md,
+    flex: 1,
+  },
+  rankCardNumber: {
+    color: t.colors.onSurfaceDim,
+    fontSize: 14,
+    fontWeight: "800",
+    width: 32,
+    textAlign: "center",
+  },
+  rankCardNumberTop: {
+    color: t.colors.warningAccent,
+  },
+  rankCardAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rankCardAvatarText: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  rankCardInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  rankCardName: {
+    color: t.colors.onSurface,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  rankCardNameOwn: {
     color: t.colors.primary,
   },
+  rankCardForm: {
+    flexDirection: "row",
+    gap: 4,
+    marginTop: 4,
+    alignItems: "center",
+  },
+  formDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  noFormText: {
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
+  },
+  rankCardRight: {
+    alignItems: "flex-end",
+  },
+  rankCardScore: {
+    color: t.colors.onSurface,
+    ...t.typography.score,
+    fontSize: 20,
+  },
+  rankCardScoreOwn: {
+    color: t.colors.primary,
+  },
+  rankCardPointsLabel: {
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
+  },
+
+  // Empty
   emptyState: {
     alignItems: "center",
     marginTop: t.spacing.xxxl,
@@ -432,137 +788,279 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // Modal — bottom sheet feel
+  // Modal base
   modalSafeArea: {
     backgroundColor: t.colors.background,
     flex: 1,
   },
-  modalHandleBar: {
-    alignItems: "center",
-    backgroundColor: t.colors.surface,
-    paddingTop: t.spacing.sm,
-  },
-  modalHandle: {
-    backgroundColor: t.colors.surfaceElevated,
-    borderRadius: t.radius.pill,
-    height: 4,
-    width: 36,
-  },
-  modalToolbar: {
-    alignItems: "center",
-    backgroundColor: t.colors.surface,
+
+  // Detail — toolbar
+  detailToolbar: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.sm,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  detailCloseBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: t.colors.surface + "cc",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // Detail — sticky header
+  detailStickyHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: t.colors.background + "ee",
+    borderBottomWidth: 1,
+    borderBottomColor: t.colors.divider,
+    zIndex: 5,
+    paddingTop: 50,
     paddingBottom: t.spacing.md,
     paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.md,
   },
-  modalTitle: {
-    color: t.colors.onSurface,
-    ...t.typography.title,
-    flex: 1,
-  },
-  modalCloseBtn: {
-    borderRadius: t.radius.pill,
-    padding: t.spacing.xs,
-  },
-  modalScrollContent: {
-    paddingBottom: t.spacing.xxxl,
-    paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.lg,
-  },
-  modalHero: {
+  detailStickyInner: {
     alignItems: "center",
-    marginBottom: t.spacing.lg,
   },
-  modalRankBadge: {
-    alignItems: "center",
-    borderRadius: t.radius.pill,
-    height: 56,
-    justifyContent: "center",
-    width: 56,
-  },
-  modalRankEmoji: {
-    fontSize: 28,
-  },
-  modalRankLabel: {
+  detailStickyTitle: {
     color: t.colors.onSurface,
     ...t.typography.subtitle,
-    marginTop: t.spacing.sm,
   },
-  modalRankPosition: {
+  detailStickySubtitle: {
     color: t.colors.onSurfaceMuted,
-    ...t.typography.bodySmall,
+    ...t.typography.caption,
     marginTop: 2,
   },
-  modalScoreCard: {
+
+  // Detail — scroll
+  detailScroll: {
+    paddingBottom: t.spacing.xxxl,
+  },
+
+  // Detail — hero
+  detailHero: {
     alignItems: "center",
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.lg,
-    paddingHorizontal: t.spacing.xxl,
-    paddingVertical: t.spacing.xl,
+    paddingTop: 60,
+    paddingBottom: t.spacing.xxl,
+    paddingHorizontal: t.spacing.lg,
+    borderBottomLeftRadius: t.radius.xl,
+    borderBottomRightRadius: t.radius.xl,
+    marginBottom: t.spacing.lg,
   },
-  modalScoreNumber: {
-    ...t.typography.bigScore,
+  detailHeroAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: t.colors.background,
   },
-  modalScoreLabel: {
-    color: t.colors.onSurfaceDim,
-    ...t.typography.label,
-    marginTop: t.spacing.xs,
+  detailHeroAvatarText: {
+    fontSize: 32,
+    fontWeight: "800",
   },
-  modalStatGrid: {
+  detailHeroName: {
+    color: t.colors.onSurface,
+    ...t.typography.title,
+    marginTop: t.spacing.md,
+  },
+  detailHeroBadgeRow: {
     flexDirection: "row",
     gap: t.spacing.sm,
+    marginTop: t.spacing.sm,
+  },
+  detailHeroBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: t.radius.pill,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs,
+  },
+  detailHeroBadgeEmoji: {
+    fontSize: 12,
+  },
+  detailHeroBadgeText: {
+    ...t.typography.caption,
+    fontWeight: "700",
+  },
+  detailScoreWrap: {
+    alignItems: "center",
     marginTop: t.spacing.lg,
   },
-  modalStatCell: {
-    alignItems: "center",
-    borderRadius: t.radius.md,
-    flex: 1,
-    paddingVertical: t.spacing.md,
+  detailScoreNumber: {
+    ...t.typography.bigScore,
+    fontSize: 56,
   },
-  modalStatValue: {
-    ...t.typography.score,
-  },
-  modalStatSublabel: {
-    color: t.colors.onSurfaceDim,
-    ...t.typography.caption,
-    fontWeight: "600",
-    marginTop: 2,
-    textTransform: "uppercase",
-  },
-  modalHistory: {
-    marginTop: t.spacing.xl,
-  },
-  modalSectionTitle: {
+  detailScoreLabel: {
     color: t.colors.onSurfaceMuted,
     ...t.typography.label,
-    marginBottom: t.spacing.sm,
+    marginTop: 4,
   },
-  modalHistoryList: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.lg,
+  detailProgressWrap: {
+    width: "100%",
+    marginTop: t.spacing.lg,
+  },
+  detailProgressTrack: {
+    height: 6,
+    backgroundColor: t.colors.surfaceRaised,
+    borderRadius: t.radius.pill,
     overflow: "hidden",
   },
-  modalHistoryRow: {
-    alignItems: "center",
-    borderBottomColor: t.colors.divider,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    gap: t.spacing.md,
+  detailProgressFill: {
+    height: "100%",
+    borderRadius: t.radius.pill,
+  },
+  detailProgressText: {
+    color: t.colors.onSurfaceMuted,
+    ...t.typography.caption,
+    marginTop: 6,
+    textAlign: "center",
+  },
+
+  // Detail — sections
+  detailSectionTitle: {
+    color: t.colors.onSurfaceMuted,
+    ...t.typography.label,
+    marginHorizontal: t.spacing.lg,
+    marginTop: t.spacing.xl,
+    marginBottom: t.spacing.md,
+  },
+
+  // Stats carousel
+  statsCarousel: {
     paddingHorizontal: t.spacing.lg,
-    paddingVertical: t.spacing.md,
+    gap: t.spacing.md,
   },
-  modalHistoryName: {
-    color: t.colors.onSurface,
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
+  statCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: t.colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: t.colors.divider,
   },
-  modalHistoryPoints: {
+  statCircleValue: {
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  statCircleSub: {
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
+    marginTop: 2,
+  },
+  statCircleLabel: {
+    color: t.colors.onSurfaceMuted,
+    ...t.typography.caption,
+    marginTop: 2,
+  },
+
+  // Form trend
+  formTrend: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: t.spacing.lg,
+  },
+  formTrendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  formTrendDot: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  formTrendEmoji: {
+    color: t.colors.background,
     fontSize: 14,
     fontWeight: "700",
-    width: 40,
-    textAlign: "right",
+  },
+  formTrendLine: {
+    width: 20,
+    height: 2,
+    backgroundColor: t.colors.divider,
+  },
+  emptyFormText: {
+    color: t.colors.onSurfaceDim,
+    ...t.typography.bodySmall,
+  },
+
+  // Timeline
+  timeline: {
+    paddingHorizontal: t.spacing.lg,
+  },
+  timelineRow: {
+    flexDirection: "row",
+  },
+  timelineLineWrap: {
+    width: 24,
+    alignItems: "center",
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: t.colors.background,
+    marginTop: 14,
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: t.colors.divider,
+    marginTop: 2,
+  },
+  timelineCard: {
+    flex: 1,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    padding: t.spacing.md,
+    marginBottom: t.spacing.md,
+    marginLeft: t.spacing.sm,
+  },
+  timelineCardLast: {
+    marginBottom: 0,
+  },
+  timelineCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: t.spacing.md,
+  },
+  timelineCardName: {
+    color: t.colors.onSurface,
+    fontSize: 14,
+    fontWeight: "600",
+    flex: 1,
+  },
+  timelineCardPoints: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  timelineCardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+  },
+  timelineCardStatus: {
+    ...t.typography.caption,
+    fontWeight: "600",
   },
 });
