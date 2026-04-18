@@ -41,21 +41,32 @@ const VARIANT_CONFIG: Record<
 };
 
 const variant = VARIANT_CONFIG[appVariant];
+const isPreview = appVariant === "preview";
+const iconPath = isPreview ? "./assets/icon-preview.png" : "./assets/icon.png";
+const adaptiveIconPath = isPreview
+  ? "./assets/adaptive-icon-preview.png"
+  : "./assets/adaptive-icon.png";
 
 const config: ExpoConfig = {
   name: variant.appName,
   slug: "shotten-mobile",
   scheme: variant.scheme,
   version: "0.1.0",
+  icon: iconPath,
   orientation: "portrait",
   userInterfaceStyle: "automatic",
   ios: {
+    icon: iconPath,
     bundleIdentifier: variant.iosBundleIdentifier,
     supportsTablet: false
   },
   android: {
     package: variant.androidPackage,
-    predictiveBackGestureEnabled: false
+    predictiveBackGestureEnabled: false,
+    adaptiveIcon: {
+      foregroundImage: adaptiveIconPath,
+      backgroundColor: "#050508"
+    }
   },
   plugins: ["expo-router"],
   experiments: {

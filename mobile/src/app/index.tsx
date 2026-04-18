@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Image, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import Constants from "expo-constants";
 import { fetchPlayers } from "../lib/api";
 import type { Player } from "../lib/types";
 import { getPlayerSession, setPlayerSession } from "../state/player-session";
@@ -12,6 +13,7 @@ import { androidDarkTheme } from "../theme/androidDark";
 
 export default function PlayerSelectScreen() {
   const router = useRouter();
+  const isPreviewBuild = Constants.expoConfig?.extra?.appVariant === "preview";
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,8 +69,20 @@ export default function PlayerSelectScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.hero}>
-          <Text style={styles.title}>Welcome to Shotten</Text>
-          <Text style={styles.subtitle}>Select your player to manage attendance.</Text>
+          <View style={styles.brandRow}>
+            <View style={styles.logoWrap}>
+              <Image source={require("../../assets/icon.png")} style={styles.logo} />
+              {isPreviewBuild ? (
+                <View style={styles.logoPreviewBadge}>
+                  <Text style={styles.logoPreviewBadgeText}>Preview</Text>
+                </View>
+              ) : null}
+            </View>
+            <View style={styles.heroText}>
+              <Text style={styles.title}>Welcome to Shotten</Text>
+              <Text style={styles.subtitle}>Select your player to manage attendance.</Text>
+            </View>
+          </View>
         </View>
 
         <TextInput
@@ -112,6 +126,43 @@ const styles = StyleSheet.create({
   },
   hero: {
     marginBottom: 16
+  },
+  brandRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12
+  },
+  logoWrap: {
+    alignSelf: "flex-start",
+    position: "relative"
+  },
+  logo: {
+    borderColor: androidDarkTheme.colors.outline,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 56,
+    width: 56
+  },
+  logoPreviewBadge: {
+    alignSelf: "center",
+    backgroundColor: androidDarkTheme.colors.surface,
+    borderColor: androidDarkTheme.colors.primary,
+    borderRadius: androidDarkTheme.radius.pill,
+    borderWidth: 1,
+    bottom: -8,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    position: "absolute"
+  },
+  logoPreviewBadgeText: {
+    color: androidDarkTheme.colors.primary,
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    textTransform: "uppercase"
+  },
+  heroText: {
+    flex: 1
   },
   title: {
     color: androidDarkTheme.colors.onBackground,
