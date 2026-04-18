@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { fetchMatches, fetchPlayers } from "../../lib/api";
 import { buildLeaderboard, type PlayerWithStats } from "../../lib/leaderboard";
@@ -70,6 +79,10 @@ export default function StatsScreen() {
       ? leaderboard.reduce((a, b) => (a.stats.maybeCount > b.stats.maybeCount ? a : b))
       : null;
 
+  const selectedRank = selectedPlayer
+    ? leaderboard.findIndex((p) => p.id === selectedPlayer.id) + 1
+    : 0;
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
@@ -82,18 +95,6 @@ export default function StatsScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
         <ErrorState message={error} onRetry={() => void loadData()} />
-      </SafeAreaView>
-    );
-  }
-
-  if (selectedPlayer) {
-    return (
-      <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-        <PlayerDetail
-          player={selectedPlayer}
-          rank={leaderboard.findIndex((p) => p.id === selectedPlayer.id) + 1}
-          onBack={() => setSelectedPlayer(null)}
-        />
       </SafeAreaView>
     );
   }
@@ -126,7 +127,7 @@ export default function StatsScreen() {
                 key={player.id}
                 android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
                 onPress={() => setSelectedPlayer(player)}
-                style={[styles.playerRow, isOwnPlayer && styles.playerRowOwn]}
+                style={[styles.playerRow, isOwnPlayer && styles.playerRowOwn, i === leaderboard.length - 1 && styles.playerRowLast]}
               >
                 <Text style={[styles.playerRank, i < 3 && styles.playerRankTop]}>
                   {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
@@ -163,6 +164,33 @@ export default function StatsScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <Modal
+        animationType="slide"
+        presentationStyle="pageSheet"
+        visible={selectedPlayer !== null}
+        onRequestClose={() => setSelectedPlayer(null)}
+      >
+        <StatusBar barStyle="light-content" backgroundColor={androidDarkTheme.colors.surface} />
+        <SafeAreaView style={styles.modalSafeArea} edges={["top", "bottom"]}>
+          <View style={styles.modalToolbar}>
+            <Pressable
+              android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: true }}
+              onPress={() => setSelectedPlayer(null)}
+              style={styles.modalClose}
+            >
+              <Text style={styles.modalCloseText}>Close</Text>
+            </Pressable>
+            <Text style={styles.modalTitle} numberOfLines={1}>
+              {selectedPlayer?.name ?? ""}
+            </Text>
+            <View style={styles.modalClosePlaceholder} />
+          </View>
+          {selectedPlayer ? (
+            <PlayerDetailContent player={selectedPlayer} rank={selectedRank} />
+          ) : null}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -177,64 +205,60 @@ function HighlightCard({ emoji, title, name }: { emoji: string; title: string; n
   );
 }
 
-function PlayerDetail({ player, rank, onBack }: { player: PlayerWithStats; rank: number; onBack: () => void }) {
+function PlayerDetailContent({ player, rank }: { player: PlayerWithStats; rank: number }) {
   const s = player.stats;
 
   return (
-    <ScrollView contentContainerStyle={styles.detailContent}>
-      <Pressable
-        android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
-        onPress={onBack}
-        style={styles.backButton}
-      >
-        <Text style={styles.backButtonText}>{"\u2190"} Back</Text>
-      </Pressable>
+    <ScrollView contentContainerStyle={styles.modalScrollContent}>
+      <View style={styles.modalHero}>
+        <View style={[styles.modalRankBadge, { backgroundColor: s.rank.bgColor }]}>
+          <Text style={styles.modalRankEmoji}>{s.rank.emoji}</Text>
+        </View>
+        <Text style={styles.modalRankLabel}>{s.rank.name}</Text>
+        <Text style={styles.modalRankPosition}>#{rank}</Text>
+      </View>
 
-      <View style={styles.detailHeader}>
-        <Text style={styles.detailSubtext}>#{rank}  {s.rank.emoji} {s.rank.name}</Text>
-        <View style={styles.scoreCard}>
-          <Text style={[styles.scoreNumber, { color: s.rank.color }]}>{s.score}</Text>
-          <Text style={styles.scoreLabel}>Shotten Points</Text>
+      <View style={styles.modalScoreCard}>
+        <Text style={[styles.modalScoreNumber, { color: s.rank.color }]}>{s.score}</Text>
+        <Text style={styles.modalScoreLabel}>SHOTTEN POINTS</Text>
+      </View>
+
+      <View style={styles.modalStatGrid}>
+        <View style={[styles.modalStatCell, { backgroundColor: androidDarkTheme.colors.successContainer }]}>
+          <Text style={[styles.modalStatValue, { color: androidDarkTheme.colors.primary }]}>{s.presentCount}</Text>
+          <Text style={styles.modalStatSublabel}>Present</Text>
+        </View>
+        <View style={[styles.modalStatCell, { backgroundColor: androidDarkTheme.colors.warningContainer }]}>
+          <Text style={[styles.modalStatValue, { color: "#f7cb61" }]}>{s.maybeCount}</Text>
+          <Text style={styles.modalStatSublabel}>Maybe</Text>
+        </View>
+        <View style={[styles.modalStatCell, { backgroundColor: androidDarkTheme.colors.errorContainer }]}>
+          <Text style={[styles.modalStatValue, { color: "#ff5f85" }]}>{s.absentCount}</Text>
+          <Text style={styles.modalStatSublabel}>Absent</Text>
+        </View>
+        <View style={[styles.modalStatCell, { backgroundColor: androidDarkTheme.colors.surfaceRaised }]}>
+          <Text style={[styles.modalStatValue, { color: androidDarkTheme.colors.onSurfaceMuted }]}>{s.ghostCount}</Text>
+          <Text style={styles.modalStatSublabel}>Ghost</Text>
         </View>
       </View>
 
-      <View style={styles.statGrid}>
-        <StatMini label="Present" value={s.presentCount} color={androidDarkTheme.colors.primary} />
-        <StatMini label="Maybe" value={s.maybeCount} color="#f7cb61" />
-        <StatMini label="Absent" value={s.absentCount} color="#ff5f85" />
-        <StatMini label="Ghost" value={s.ghostCount} color={androidDarkTheme.colors.onSurfaceMuted} />
-      </View>
-
       {s.matchResults.length > 0 ? (
-        <View style={styles.historySection}>
-          <Text style={styles.sectionTitle}>Match History</Text>
+        <View style={styles.modalHistory}>
+          <Text style={styles.modalSectionTitle}>Match History</Text>
           {s.matchResults.map((result) => (
-            <View key={result.matchId} style={styles.historyRow}>
-              <View style={styles.historyInfo}>
-                <Text style={styles.historyName} numberOfLines={1}>{result.matchName}</Text>
-              </View>
-              <View style={styles.historyRight}>
-                <Text style={styles.historyEmoji}>
-                  {result.status === "present" ? "✅" : result.status === "maybe" ? "⚠️" : result.status === "notPresent" ? "❌" : "👻"}
-                </Text>
-                <Text style={[styles.historyPoints, { color: result.points > 0 ? androidDarkTheme.colors.primary : "#ff5f85" }]}>
-                  {result.points > 0 ? `+${result.points}` : String(result.points)}
-                </Text>
-              </View>
+            <View key={result.matchId} style={styles.modalHistoryRow}>
+              <Text style={styles.modalHistoryName} numberOfLines={1}>{result.matchName}</Text>
+              <Text style={styles.modalHistoryEmoji}>
+                {result.status === "present" ? "✅" : result.status === "maybe" ? "⚠️" : result.status === "notPresent" ? "❌" : "👻"}
+              </Text>
+              <Text style={[styles.modalHistoryPoints, { color: result.points > 0 ? androidDarkTheme.colors.primary : "#ff5f85" }]}>
+                {result.points > 0 ? `+${result.points}` : String(result.points)}
+              </Text>
             </View>
           ))}
         </View>
       ) : null}
     </ScrollView>
-  );
-}
-
-function StatMini({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <View style={styles.statMini}>
-      <Text style={[styles.statMiniValue, { color }]}>{value}</Text>
-      <Text style={styles.statMiniLabel}>{label}</Text>
-    </View>
   );
 }
 
@@ -297,6 +321,9 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
+  },
+  playerRowLast: {
+    borderBottomWidth: 0,
   },
   playerRowOwn: {
     backgroundColor: "rgba(61, 220, 132, 0.08)",
@@ -367,63 +394,107 @@ const styles = StyleSheet.create({
     marginTop: 6,
     textAlign: "center",
   },
-  detailContent: {
-    paddingBottom: 32,
+  modalSafeArea: {
+    backgroundColor: androidDarkTheme.colors.background,
+    flex: 1,
+  },
+  modalToolbar: {
+    alignItems: "center",
+    backgroundColor: androidDarkTheme.colors.surface,
+    borderBottomColor: androidDarkTheme.colors.outline,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingVertical: 14,
   },
-  backButton: {
-    alignSelf: "flex-start",
-    marginBottom: 12,
-    paddingHorizontal: 4,
-    paddingVertical: 8,
+  modalClose: {
+    borderRadius: androidDarkTheme.radius.pill,
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  backButtonText: {
+  modalCloseText: {
     color: androidDarkTheme.colors.primary,
     fontSize: 16,
   },
-  detailHeader: {
+  modalTitle: {
+    color: androidDarkTheme.colors.onSurface,
+    fontSize: 17,
+    fontWeight: "700",
+    flex: 1,
+    textAlign: "center",
+  },
+  modalClosePlaceholder: {
+    width: 60,
+  },
+  modalScrollContent: {
+    paddingBottom: 32,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  modalHero: {
+    alignItems: "center",
     marginBottom: 16,
   },
-  detailSubtext: {
+  modalRankBadge: {
+    alignItems: "center",
+    borderRadius: 28,
+    height: 56,
+    justifyContent: "center",
+    width: 56,
+  },
+  modalRankEmoji: {
+    fontSize: 28,
+  },
+  modalRankLabel: {
+    color: androidDarkTheme.colors.onSurface,
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 8,
+  },
+  modalRankPosition: {
     color: androidDarkTheme.colors.onSurfaceMuted,
     fontSize: 13,
-    marginBottom: 14,
+    marginTop: 2,
   },
-  scoreCard: {
+  modalScoreCard: {
     alignItems: "center",
     backgroundColor: androidDarkTheme.colors.surface,
     borderColor: androidDarkTheme.colors.outline,
     borderRadius: androidDarkTheme.radius.lg,
     borderWidth: 1,
-    padding: 18,
+    marginHorizontal: 24,
+    padding: 20,
   },
-  scoreNumber: {
-    fontSize: 44,
+  modalScoreNumber: {
+    fontSize: 48,
     fontWeight: "800",
   },
-  scoreLabel: {
+  modalScoreLabel: {
     color: androidDarkTheme.colors.onSurfaceMuted,
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 0.5,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
     marginTop: 4,
     textTransform: "uppercase",
   },
-  statGrid: {
+  modalStatGrid: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 20,
+    marginTop: 16,
   },
-  statMini: {
+  modalStatCell: {
     alignItems: "center",
+    borderRadius: androidDarkTheme.radius.md,
     flex: 1,
+    paddingVertical: 12,
   },
-  statMiniValue: {
-    fontSize: 20,
+  modalStatValue: {
+    fontSize: 22,
     fontWeight: "800",
   },
-  statMiniLabel: {
+  modalStatSublabel: {
     color: androidDarkTheme.colors.onSurfaceMuted,
     fontSize: 10,
     fontWeight: "600",
@@ -431,10 +502,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textTransform: "uppercase",
   },
-  historySection: {
-    marginTop: 4,
+  modalHistory: {
+    marginTop: 20,
   },
-  sectionTitle: {
+  modalSectionTitle: {
     color: androidDarkTheme.colors.onSurfaceMuted,
     fontSize: 13,
     fontWeight: "700",
@@ -442,37 +513,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: "uppercase",
   },
-  historyRow: {
+  modalHistoryRow: {
     alignItems: "center",
     backgroundColor: androidDarkTheme.colors.surface,
     borderBottomColor: androidDarkTheme.colors.outline,
     borderBottomWidth: 1,
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginHorizontal: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 11,
   },
-  historyInfo: {
-    flex: 1,
-    minWidth: 0,
-  },
-  historyName: {
+  modalHistoryName: {
     color: androidDarkTheme.colors.onSurface,
+    flex: 1,
     fontSize: 14,
     fontWeight: "500",
   },
-  historyRight: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexShrink: 0,
-    gap: 8,
-  },
-  historyEmoji: {
+  modalHistoryEmoji: {
     fontSize: 14,
+    marginHorizontal: 8,
   },
-  historyPoints: {
+  modalHistoryPoints: {
     fontSize: 14,
     fontWeight: "700",
+    width: 40,
+    textAlign: "right",
   },
 });
