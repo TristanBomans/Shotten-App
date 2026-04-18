@@ -1,5 +1,5 @@
 import { buildApiUrl } from "./config";
-import type { AttendanceStatus, AttendanceUpdateResponse, Match, Player } from "./types";
+import type { AttendanceStatus, AttendanceUpdateResponse, Match, Player, ScraperTeam, ScraperPlayer } from "./types";
 
 async function readErrorMessage(response: Response): Promise<string> {
   try {
@@ -53,4 +53,12 @@ export async function updateAttendance(
       }
     }
   );
+}
+
+export async function fetchScraperTeams(): Promise<ScraperTeam[]> {
+  return requestJson<ScraperTeam[]>("/api/lzv/stats");
+}
+
+export async function fetchScraperPlayers(): Promise<ScraperPlayer[]> {
+  return requestJson<ScraperPlayer[]>("/api/lzv/players");
 }

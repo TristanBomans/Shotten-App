@@ -28,3 +28,33 @@ export interface AttendanceUpdateResponse {
   playerId: number;
   status: AttendanceStatus;
 }
+
+export interface ScraperTeam {
+  externalId: number;
+  name: string;
+  leagueId?: number;
+  leagueName?: string;
+  rank?: number;
+  points?: number;
+  matchesPlayed?: number;
+  wins?: number;
+  draws?: number;
+  losses?: number;
+  goalsFor?: number;
+  goalsAgainst?: number;
+  goalDifference?: number;
+  pointsPerMatch?: number;
+  imageBase64?: string;
+}
+
+export interface ScraperPlayer {
+  externalId: number;
+  teamId: number;
+  name: string;
+  number?: number;
+  gamesPlayed: number;
+  goals: number;
+  assists: number;
+  fairplayRank?: number;
+  teamIds?: number[];
+}

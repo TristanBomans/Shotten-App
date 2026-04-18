@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { ResponseButtons } from "./ResponseButtons";
 import { formatMatchDate, resolveAttendanceState } from "../lib/matches";
 import type { AttendanceStatus, Match } from "../lib/types";
+import { usePreferences } from "../state/preferences-context";
 import { androidDarkTheme } from "../theme/androidDark";
 
 interface MatchCardProps {
@@ -62,7 +63,10 @@ function buildSquadSections(
   return sections;
 }
 
-function formatPlayerNames(players: { id: number; name: string }[], currentPlayerId?: number): string {
+function formatPlayerNames(players: { id: number; name: string }[], currentPlayerId?: number, showFullNames?: boolean): string {
+  if (!showFullNames) {
+    return String(players.length);
+  }
   return players.map((p) => {
     if (currentPlayerId && p.id === currentPlayerId) {
       return "you";
@@ -72,6 +76,7 @@ function formatPlayerNames(players: { id: number; name: string }[], currentPlaye
 }
 
 export function MatchCard({ match, currentStatus, isUpdating, onYes, onNo, variant = "default", currentPlayerId }: MatchCardProps) {
+  const { preferences } = usePreferences();
   const isHero = variant === "hero";
   const sections = buildSquadSections(match.attendances, currentPlayerId);
   const hasResponses = sections.length > 0;
@@ -90,7 +95,7 @@ export function MatchCard({ match, currentStatus, isUpdating, onYes, onNo, varia
                 {section.label}
               </Text>
               <Text style={[styles.squadNames, { color: section.nameColor }]} numberOfLines={2}>
-                {formatPlayerNames(section.players, currentPlayerId)}
+                {formatPlayerNames(section.players, currentPlayerId, preferences.showFullNames)}
               </Text>
               <Text style={[styles.squadCount, { color: section.color }]}>
                 {section.count}
