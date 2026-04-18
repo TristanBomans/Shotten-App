@@ -192,13 +192,13 @@ export default function StatsScreen() {
             </View>
           )}
 
-          {/* Leaderboard list */}
+          {/* Leaderboard list (skip top 3) */}
           <View style={styles.leaderboardList}>
-            {leaderboard.map((player, i) => (
+            {leaderboard.slice(3).map((player, i) => (
               <RankCard
                 key={player.id}
                 player={player}
-                rank={i + 1}
+                rank={i + 4}
                 isOwn={player.id === session.playerId}
                 onPress={() => setSelectedPlayer(player)}
               />
@@ -605,6 +605,7 @@ const styles = StyleSheet.create({
   leaderboardList: {
     gap: t.spacing.sm,
     paddingHorizontal: t.spacing.lg,
+    marginTop: t.spacing.lg,
   },
   rankCard: {
     backgroundColor: t.colors.surface,

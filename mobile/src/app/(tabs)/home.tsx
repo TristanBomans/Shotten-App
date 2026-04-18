@@ -581,11 +581,11 @@ export default function HomeScreen() {
           {activeMatch ? (
             <View style={styles.actionsContainer}>
               <ActionButton
-                icon="close"
-                color={t.colors.errorAccent}
-                bgColor={t.colors.errorContainer}
-                label="No"
-                onPress={() => void handleRespond(activeMatch.id, "no")}
+                icon="check"
+                color={t.colors.primary}
+                bgColor={t.colors.successContainer}
+                label="Yes"
+                onPress={() => void handleRespond(activeMatch.id, "yes")}
                 isUpdating={updatingMatchId === activeMatch.id}
               />
               <ActionButton
@@ -597,11 +597,11 @@ export default function HomeScreen() {
                 isUpdating={updatingMatchId === activeMatch.id}
               />
               <ActionButton
-                icon="check"
-                color={t.colors.primary}
-                bgColor={t.colors.successContainer}
-                label="Yes"
-                onPress={() => void handleRespond(activeMatch.id, "yes")}
+                icon="close"
+                color={t.colors.errorAccent}
+                bgColor={t.colors.errorContainer}
+                label="No"
+                onPress={() => void handleRespond(activeMatch.id, "no")}
                 isUpdating={updatingMatchId === activeMatch.id}
               />
             </View>
