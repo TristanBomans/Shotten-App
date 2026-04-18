@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Dimensions,
   Linking,
   Modal,
+  PanResponder,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -41,6 +43,41 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [activeTab, setActiveTab] = useState<TeamTab>("overview");
   const [matchFilter, setMatchFilter] = useState<MatchFilter>("all");
+  const panY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      panY.setValue(0);
+    }
+  }, [visible]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 2,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 80 || gestureState.vy > 0.5) {
+          Animated.timing(panY, {
+            toValue: SCREEN_W,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(onClose);
+        } else {
+          Animated.spring(panY, {
+            toValue: 0,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 40,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
     if (!visible || !team) return;
@@ -103,12 +140,13 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
     >
       <StatusBar barStyle="light-content" backgroundColor={t.colors.surface} />
       <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-        {/* Drag handle */}
-        <View style={styles.handleBar}>
-          <View style={styles.handle} />
-        </View>
+        <Animated.View style={{ flex: 1, transform: [{ translateY: panY }] }}>
+          {/* Drag handle — swipeable */}
+          <View style={styles.handleBar} {...panResponder.panHandlers}>
+            <View style={styles.handle} />
+          </View>
 
-        {/* Header */}
+          {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.closeBtn} hitSlop={12}>
             <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurfaceMuted} />
@@ -214,6 +252,7 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
             <SquadTab players={players} loading={loadingPlayers} />
           )}
         </ScrollView>
+        </Animated.View>
       </SafeAreaView>
     </Modal>
   );
@@ -541,7 +580,7 @@ const styles = StyleSheet.create({
   safeArea: { backgroundColor: t.colors.background, flex: 1 },
 
   // Handle
-  handleBar: { alignItems: "center", backgroundColor: t.colors.surface, paddingTop: t.spacing.sm },
+  handleBar: { alignItems: "center", justifyContent: "center", backgroundColor: t.colors.surface, paddingVertical: t.spacing.md, minHeight: 44 },
   handle: { backgroundColor: t.colors.surfaceElevated, borderRadius: t.radius.pill, height: 4, width: 36 },
 
   // Header
