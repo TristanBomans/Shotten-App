@@ -1,13 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Dimensions,
+  FlatList,
+  Linking,
   Modal,
-  Pressable,
   RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,16 +19,21 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { fetchScraperTeams, fetchScraperPlayers } from "../../lib/api";
 import type { ScraperTeam, ScraperPlayer } from "../../lib/types";
 import { usePreferences } from "../../state/preferences-context";
-import { setDefaultLeague, clearDefaultLeague } from "../../state/preferences";
 import { TeamDetailModal } from "../../components/TeamDetailModal";
+import { PlayerStatsModal } from "../../components/PlayerStatsModal";
 import { androidDarkTheme } from "../../theme/androidDark";
 
 const t = androidDarkTheme;
+const { width: SCREEN_W } = Dimensions.get("window");
 
 type LeagueTab = "standings" | "players";
 
+// =============================================================================
+// MAIN SCREEN
+// =============================================================================
+
 export default function LeagueScreen() {
-  const { preferences, reload: reloadPrefs } = usePreferences();
+  const { preferences } = usePreferences();
   const [teams, setTeams] = useState<ScraperTeam[]>([]);
   const [allPlayers, setAllPlayers] = useState<ScraperPlayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,10 +43,14 @@ export default function LeagueScreen() {
   const [selectedLeague, setSelectedLeague] = useState("");
   const [leaguePickerOpen, setLeaguePickerOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<ScraperTeam | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<ScraperPlayer | null>(null);
   const [visiblePlayers, setVisiblePlayers] = useState(50);
 
+  const tabAnim = useRef(new Animated.Value(0)).current;
+
   const loadData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) { setRefreshing(true); } else { setLoading(true); }
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(null);
     try {
       const [teamsData, playersData] = await Promise.all([
@@ -73,6 +86,15 @@ export default function LeagueScreen() {
 
   useEffect(() => { setVisiblePlayers(50); }, [activeTab, selectedLeague]);
 
+  useEffect(() => {
+    Animated.spring(tabAnim, {
+      toValue: activeTab === "standings" ? 0 : 1,
+      useNativeDriver: false,
+      friction: 8,
+      tension: 40,
+    }).start();
+  }, [activeTab]);
+
   const filteredTeams = useMemo(() => {
     if (!selectedLeague) return [];
     return teams
@@ -82,7 +104,7 @@ export default function LeagueScreen() {
 
   const validTeamIds = useMemo(
     () => new Set(filteredTeams.map((tTeam) => tTeam.externalId)),
-    [filteredTeams],
+    [filteredTeams]
   );
 
   const filteredPlayers = useMemo(() => {
@@ -99,6 +121,14 @@ export default function LeagueScreen() {
 
   const shownPlayers = filteredPlayers.slice(0, visiblePlayers);
   const hasMorePlayers = visiblePlayers < filteredPlayers.length;
+
+  // League summary stats
+  const leagueStats = useMemo(() => {
+    if (!filteredTeams.length) return null;
+    const totalMatches = filteredTeams.reduce((s, t) => s + (t.matchesPlayed ?? 0), 0);
+    const totalGoals = filteredTeams.reduce((s, t) => s + (t.goalsFor ?? 0), 0);
+    return { teamCount: filteredTeams.length, totalMatches, totalGoals };
+  }, [filteredTeams]);
 
   if (loading) {
     return (
@@ -117,13 +147,13 @@ export default function LeagueScreen() {
           <MaterialCommunityIcons name="alert-circle-outline" size={40} color={t.colors.onSurfaceDim} />
           <Text style={styles.errorTitle}>Could not load league data</Text>
           <Text style={styles.errorSubtext}>{error}</Text>
-          <Pressable
-            android_ripple={{ color: t.colors.ripple, borderless: false }}
+          <TouchableOpacity
+            activeOpacity={0.7}
             onPress={() => void loadData()}
             style={styles.errorButton}
           >
             <Text style={styles.errorButtonText}>Try again</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -131,35 +161,60 @@ export default function LeagueScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-      {/* Controls: segmented tabs + league picker */}
-      <View style={styles.controlsBar}>
-        <View style={styles.segmentedControl}>
-          <Pressable
-            android_ripple={{ color: t.colors.ripple, borderless: false }}
-            onPress={() => setActiveTab("standings")}
-            style={[styles.segment, activeTab === "standings" && styles.segmentActive]}
+      {/* ── Header ── */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerText}>
+            <Text style={styles.headerLeague} numberOfLines={1}>{selectedLeague}</Text>
+            {leagueStats && (
+              <Text style={styles.headerMeta}>
+                {leagueStats.teamCount} teams · {leagueStats.totalMatches} matches · {leagueStats.totalGoals} goals
+              </Text>
+            )}
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setLeaguePickerOpen(true)}
+            style={styles.leaguePickerBtn}
           >
-            <Text style={[styles.segmentText, activeTab === "standings" && styles.segmentTextActive]}>Standings</Text>
-          </Pressable>
-          <Pressable
-            android_ripple={{ color: t.colors.ripple, borderless: false }}
-            onPress={() => setActiveTab("players")}
-            style={[styles.segment, activeTab === "players" && styles.segmentActive]}
-          >
-            <Text style={[styles.segmentText, activeTab === "players" && styles.segmentTextActive]}>Players</Text>
-          </Pressable>
+            <MaterialCommunityIcons name="swap-horizontal" size={18} color={t.colors.primary} />
+          </TouchableOpacity>
         </View>
 
-        <Pressable
-          android_ripple={{ color: t.colors.ripple, borderless: false }}
-          onPress={() => setLeaguePickerOpen(true)}
-          style={styles.leagueChip}
-        >
-          <Text style={styles.leagueChipText} numberOfLines={1}>{selectedLeague || "Select"}</Text>
-          <MaterialCommunityIcons name="chevron-down" size={16} color={t.colors.onSurfaceDim} />
-        </Pressable>
+        {/* ── Tab Bar ── */}
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => setActiveTab("standings")}
+            style={[styles.tabBtn, activeTab === "standings" && styles.tabBtnActive]}
+          >
+            <MaterialCommunityIcons
+              name="format-list-numbered"
+              size={16}
+              color={activeTab === "standings" ? t.colors.onPrimary : t.colors.onSurfaceMuted}
+            />
+            <Text style={[styles.tabBtnText, activeTab === "standings" && styles.tabBtnTextActive]}>
+              Standings
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => setActiveTab("players")}
+            style={[styles.tabBtn, activeTab === "players" && styles.tabBtnActive]}
+          >
+            <MaterialCommunityIcons
+              name="account-group"
+              size={16}
+              color={activeTab === "players" ? t.colors.onPrimary : t.colors.onSurfaceMuted}
+            />
+            <Text style={[styles.tabBtnText, activeTab === "players" && styles.tabBtnTextActive]}>
+              Top Scorers
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
+      {/* ── Content ── */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -172,13 +227,19 @@ export default function LeagueScreen() {
         }
       >
         {activeTab === "standings" ? (
-          <StandingsTable teams={filteredTeams} onTeamPress={setSelectedTeam} />
+          <StandingsView teams={filteredTeams} onTeamPress={setSelectedTeam} />
         ) : (
-          <PlayersList players={shownPlayers} teams={teams} hasMore={hasMorePlayers} onLoadMore={() => setVisiblePlayers((p) => p + 50)} />
+          <PlayersView
+            players={shownPlayers}
+            teams={teams}
+            hasMore={hasMorePlayers}
+            onLoadMore={() => setVisiblePlayers((p) => p + 50)}
+            onPlayerPress={setSelectedPlayer}
+          />
         )}
       </ScrollView>
 
-      {/* League picker — bottom sheet modal */}
+      {/* ── League Picker Modal ── */}
       <Modal
         animationType="slide"
         presentationStyle="pageSheet"
@@ -187,31 +248,28 @@ export default function LeagueScreen() {
       >
         <StatusBar barStyle="light-content" backgroundColor={t.colors.surface} />
         <SafeAreaView style={styles.pickerSafeArea} edges={["top", "bottom"]}>
-          {/* Drag handle */}
           <View style={styles.pickerHandleBar}>
             <View style={styles.pickerHandle} />
           </View>
-
           <View style={styles.pickerToolbar}>
             <Text style={styles.pickerTitle}>Select League</Text>
-            <Pressable
-              android_ripple={{ color: t.colors.ripple, borderless: true }}
+            <TouchableOpacity
+              activeOpacity={0.7}
               onPress={() => setLeaguePickerOpen(false)}
               style={styles.pickerCloseBtn}
               hitSlop={12}
             >
               <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurfaceMuted} />
-            </Pressable>
+            </TouchableOpacity>
           </View>
-
           <ScrollView contentContainerStyle={styles.pickerList} showsVerticalScrollIndicator={false}>
             {leagues.map((league) => {
               const teamCount = teams.filter((tTeam) => tTeam.leagueName === league).length;
               const isSelected = league === selectedLeague;
               return (
-                <Pressable
+                <TouchableOpacity
                   key={league}
-                  android_ripple={{ color: t.colors.ripple, borderless: false }}
+                  activeOpacity={0.7}
                   onPress={() => {
                     setSelectedLeague(league);
                     setLeaguePickerOpen(false);
@@ -225,7 +283,7 @@ export default function LeagueScreen() {
                   {isSelected ? (
                     <MaterialCommunityIcons name="check" size={20} color={t.colors.primary} />
                   ) : null}
-                </Pressable>
+                </TouchableOpacity>
               );
             })}
           </ScrollView>
@@ -237,127 +295,341 @@ export default function LeagueScreen() {
         visible={selectedTeam !== null}
         onClose={() => setSelectedTeam(null)}
       />
+
+      <PlayerStatsModal
+        player={selectedPlayer}
+        teams={teams}
+        visible={selectedPlayer !== null}
+        onClose={() => setSelectedPlayer(null)}
+      />
     </SafeAreaView>
   );
 }
 
-function StandingsTable({ teams, onTeamPress }: { teams: ScraperTeam[]; onTeamPress: (team: ScraperTeam) => void }) {
+// =============================================================================
+// STANDINGS VIEW
+// =============================================================================
+
+function StandingsView({ teams, onTeamPress }: { teams: ScraperTeam[]; onTeamPress: (team: ScraperTeam) => void }) {
   if (teams.length === 0) {
     return (
-      <View style={styles.emptyTable}>
-        <MaterialCommunityIcons name="format-list-bulleted" size={32} color={t.colors.onSurfaceDim} />
-        <Text style={styles.emptyTableText}>No teams found for this league</Text>
+      <View style={styles.emptyState}>
+        <MaterialCommunityIcons name="trophy-outline" size={48} color={t.colors.onSurfaceDim} />
+        <Text style={styles.emptyStateText}>No teams found</Text>
       </View>
     );
   }
 
-  return (
-    <View style={styles.table}>
-      {/* Compact header */}
-      <View style={styles.tableHeader}>
-        <Text style={styles.thRank}>#</Text>
-        <Text style={styles.thTeam}>Team</Text>
-        <Text style={styles.thNum}>MP</Text>
-        <Text style={styles.thNum}>GD</Text>
-        <Text style={styles.thPts}>Pts</Text>
-      </View>
+  const top3 = teams.slice(0, 3);
+  const rest = teams.slice(3);
 
-      {teams.map((team, i) => {
-        const gd = team.goalDifference ?? 0;
-        const gdText = gd > 0 ? `+${gd}` : String(gd);
-        return (
-          <Pressable
-            key={team.externalId}
-            android_ripple={{ color: t.colors.ripple, borderless: false }}
-            onPress={() => onTeamPress(team)}
-            style={styles.tableRow}
-          >
-            <Text style={[styles.tdRank, team.rank === 1 && styles.tdRankFirst, i === teams.length - 1 && styles.tdRankLast]}>
-              {team.rank ?? "-"}
-            </Text>
-            <Text style={styles.tdTeam} numberOfLines={1}>{team.name}</Text>
-            <Text style={styles.tdNum}>{team.matchesPlayed ?? 0}</Text>
-            <Text style={[styles.tdNum, gd > 0 && styles.tdGdPositive, gd < 0 && styles.tdGdNegative]}>{gdText}</Text>
-            <Text style={styles.tdPts}>{team.points ?? 0}</Text>
-          </Pressable>
-        );
-      })}
+  return (
+    <View style={styles.standingsContainer}>
+      {/* Podium */}
+      {top3.length > 0 && (
+        <View style={styles.podiumSection}>
+          <Text style={styles.sectionTitle}>Top Teams</Text>
+          <View style={styles.podiumRow}>
+            {top3[1] && <PodiumCard team={top3[1]} rank={2} onPress={onTeamPress} />}
+            {top3[0] && <PodiumCard team={top3[0]} rank={1} onPress={onTeamPress} highlight />}
+            {top3[2] && <PodiumCard team={top3[2]} rank={3} onPress={onTeamPress} />}
+          </View>
+        </View>
+      )}
+
+      {/* Rest of table */}
+      {rest.length > 0 && (
+        <View style={styles.tableSection}>
+          <Text style={styles.sectionTitle}>Standings</Text>
+          {rest.map((team, i) => (
+            <TeamCard key={team.externalId} team={team} index={i + 4} onPress={onTeamPress} />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
-function PlayersList({ players, teams, hasMore, onLoadMore }: { players: ScraperPlayer[]; teams: ScraperTeam[]; hasMore: boolean; onLoadMore: () => void }) {
+function PodiumCard({ team, rank, onPress, highlight }: { team: ScraperTeam; rank: number; onPress: (t: ScraperTeam) => void; highlight?: boolean }) {
+  const rankColors: Record<number, string> = {
+    1: "#f7cb61", // gold
+    2: "#c9cdd2", // silver
+    3: "#cd7f32", // bronze
+  };
+  const rankColor = rankColors[rank] ?? t.colors.onSurfaceDim;
+  const gd = team.goalDifference ?? 0;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => onPress(team)}
+      style={[styles.podiumCard, highlight && styles.podiumCardHighlight]}
+    >
+      <View style={[styles.podiumRankBadge, { backgroundColor: `${rankColor}20`, borderColor: `${rankColor}40` }]}>
+        <Text style={[styles.podiumRankText, { color: rankColor }]}>{rank}</Text>
+      </View>
+      <View style={styles.podiumAvatar}>
+        <Text style={styles.podiumAvatarText}>{team.name.charAt(0)}</Text>
+      </View>
+      <Text style={[styles.podiumTeamName, highlight && styles.podiumTeamNameHighlight]} numberOfLines={2}>
+        {team.name}
+      </Text>
+      <Text style={styles.podiumPoints}>{team.points ?? 0} pts</Text>
+      <Text style={styles.podiumMeta}>{team.matchesPlayed ?? 0}M · {gd > 0 ? `+${gd}` : gd} GD</Text>
+      {/* Form dots */}
+      {team.form && team.form.length > 0 && (
+        <View style={styles.podiumForm}>
+          {team.form.slice(0, 5).map((result, i) => (
+            <FormDot key={i} result={result} size={6} />
+          ))}
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+function TeamCard({ team, index, onPress }: { team: ScraperTeam; index: number; onPress: (t: ScraperTeam) => void }) {
+  const gd = team.goalDifference ?? 0;
+  const gdText = gd > 0 ? `+${gd}` : String(gd);
+  const isRelegation = index > 12; // assume 14-team league
+  const isPromotion = index <= 3;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => onPress(team)}
+      style={styles.teamCard}
+    >
+      {/* Left: rank + avatar */}
+      <View style={styles.teamCardLeft}>
+        <View style={[styles.teamCardRank, isPromotion && styles.teamCardRankPromo, isRelegation && styles.teamCardRankReleg]}>
+          <Text style={[styles.teamCardRankText, isPromotion && styles.teamCardRankTextPromo, isRelegation && styles.teamCardRankTextReleg]}>
+            {index}
+          </Text>
+        </View>
+        <View style={styles.teamCardAvatar}>
+          <Text style={styles.teamCardAvatarText}>{team.name.charAt(0)}</Text>
+        </View>
+      </View>
+
+      {/* Middle: name + form */}
+      <View style={styles.teamCardMiddle}>
+        <Text style={styles.teamCardName} numberOfLines={1}>{team.name}</Text>
+        {team.form && team.form.length > 0 ? (
+          <View style={styles.teamCardFormRow}>
+            {team.form.slice(0, 5).map((result, i) => (
+              <FormDot key={i} result={result} size={5} />
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.teamCardSub}>MP {team.matchesPlayed ?? 0}</Text>
+        )}
+      </View>
+
+      {/* Right: stats */}
+      <View style={styles.teamCardRight}>
+        <Text style={styles.teamCardPts}>{team.points ?? 0}</Text>
+        <Text style={[styles.teamCardGd, gd > 0 && styles.teamCardGdPos, gd < 0 && styles.teamCardGdNeg]}>
+          {gdText}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function FormDot({ result, size }: { result: string; size: number }) {
+  const colors: Record<string, string> = {
+    W: t.colors.primary,
+    D: t.colors.warningAccent,
+    L: t.colors.errorAccent,
+  };
+  return (
+    <View style={[styles.formDot, { width: size, height: size, borderRadius: size / 2, backgroundColor: colors[result] ?? t.colors.onSurfaceDim }]} />
+  );
+}
+
+// =============================================================================
+// PLAYERS VIEW
+// =============================================================================
+
+function PlayersView({
+  players,
+  teams,
+  hasMore,
+  onLoadMore,
+  onPlayerPress,
+}: {
+  players: ScraperPlayer[];
+  teams: ScraperTeam[];
+  hasMore: boolean;
+  onLoadMore: () => void;
+  onPlayerPress: (p: ScraperPlayer) => void;
+}) {
   if (players.length === 0) {
     return (
-      <View style={styles.emptyTable}>
-        <MaterialCommunityIcons name="account-outline" size={32} color={t.colors.onSurfaceDim} />
-        <Text style={styles.emptyTableText}>No player data available for this league</Text>
+      <View style={styles.emptyState}>
+        <MaterialCommunityIcons name="account-outline" size={48} color={t.colors.onSurfaceDim} />
+        <Text style={styles.emptyStateText}>No player data available</Text>
       </View>
     );
   }
 
+  const top3 = players.slice(0, 3);
+  const rest = players.slice(3);
+
   return (
-    <View style={styles.playersList}>
-      {players.map((player, index) => {
-        const playerTeamIds = player.teamIds ?? [player.teamId];
-        const playerTeams = teams.filter((tTeam) => playerTeamIds.includes(tTeam.externalId));
-        const primaryTeam = playerTeams[0];
-        const isMultiTeam = playerTeams.length > 1;
-
-        return (
-          <View key={player.externalId} style={styles.playerCard}>
-            <Text style={[styles.playerCardRank, index < 3 && styles.playerCardRankTop]}>
-              {index + 1}
-            </Text>
-            <View style={styles.playerCardInfo}>
-              <Text style={styles.playerCardName} numberOfLines={1}>
-                {player.name}
-                {isMultiTeam ? <Text style={styles.playerCardMulti}> {playerTeams.length} teams</Text> : null}
-              </Text>
-              <Text style={styles.playerCardSubtext} numberOfLines={1}>
-                {isMultiTeam ? playerTeams.map((tm) => tm.name).join(" & ") : primaryTeam?.name ?? "Unknown"}
-                {" · "}{player.gamesPlayed}g
-              </Text>
-            </View>
-            <View style={styles.playerCardStats}>
-              <View style={styles.playerCardStat}>
-                <Text style={styles.playerCardGoals}>{player.goals}</Text>
-                <Text style={styles.playerCardStatLabel}>Goals</Text>
-              </View>
-              <View style={styles.playerCardDivider} />
-              <View style={styles.playerCardStat}>
-                <Text style={styles.playerCardAssists}>{player.assists}</Text>
-                <Text style={styles.playerCardStatLabel}>Asts</Text>
-              </View>
-            </View>
+    <View style={styles.playersContainer}>
+      {/* Top Scorers Podium */}
+      {top3.length > 0 && (
+        <View style={styles.podiumSection}>
+          <Text style={styles.sectionTitle}>Top Scorers</Text>
+          <View style={styles.podiumRow}>
+            {top3[1] && <PlayerPodiumCard player={top3[1]} teams={teams} rank={2} onPress={onPlayerPress} />}
+            {top3[0] && <PlayerPodiumCard player={top3[0]} teams={teams} rank={1} onPress={onPlayerPress} highlight />}
+            {top3[2] && <PlayerPodiumCard player={top3[2]} teams={teams} rank={3} onPress={onPlayerPress} />}
           </View>
-        );
-      })}
+        </View>
+      )}
 
-      {hasMore ? (
-        <Pressable
-          android_ripple={{ color: t.colors.ripple, borderless: false }}
-          onPress={onLoadMore}
-          style={styles.showMoreButton}
-        >
+      {/* Rest of players */}
+      {rest.length > 0 && (
+        <View style={styles.tableSection}>
+          <Text style={styles.sectionTitle}>All Scorers</Text>
+          {rest.map((player, index) => (
+            <PlayerCard key={player.externalId} player={player} teams={teams} index={index + 4} onPress={onPlayerPress} />
+          ))}
+        </View>
+      )}
+
+      {hasMore && (
+        <TouchableOpacity activeOpacity={0.7} onPress={onLoadMore} style={styles.showMoreBtn}>
           <Text style={styles.showMoreText}>Show more</Text>
           <MaterialCommunityIcons name="chevron-down" size={18} color={t.colors.onSurfaceMuted} />
-        </Pressable>
-      ) : null}
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
+function PlayerPodiumCard({
+  player,
+  teams,
+  rank,
+  onPress,
+  highlight,
+}: {
+  player: ScraperPlayer;
+  teams: ScraperTeam[];
+  rank: number;
+  onPress: (p: ScraperPlayer) => void;
+  highlight?: boolean;
+}) {
+  const rankColors: Record<number, string> = { 1: "#f7cb61", 2: "#c9cdd2", 3: "#cd7f32" };
+  const rankColor = rankColors[rank] ?? t.colors.onSurfaceDim;
+  const playerTeamIds = player.teamIds ?? [player.teamId];
+  const playerTeams = teams.filter((tm) => playerTeamIds.includes(tm.externalId));
+  const primaryTeam = playerTeams[0];
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => onPress(player)}
+      style={[styles.playerPodiumCard, highlight && styles.playerPodiumCardHighlight]}
+    >
+      <View style={[styles.playerPodiumRankBadge, { backgroundColor: `${rankColor}20` }]}>
+        <Text style={[styles.playerPodiumRankText, { color: rankColor }]}>{rank}</Text>
+      </View>
+      <View style={styles.playerPodiumAvatar}>
+        <Text style={styles.playerPodiumAvatarText}>{getInitials(player.name)}</Text>
+      </View>
+      <Text style={[styles.playerPodiumName, highlight && styles.playerPodiumNameHighlight]} numberOfLines={2}>
+        {player.name}
+      </Text>
+      <Text style={styles.playerPodiumGoals}>{player.goals} goals</Text>
+      <Text style={styles.playerPodiumSub}>{player.gamesPlayed}g · {player.assists}a</Text>
+      {primaryTeam && (
+        <View style={styles.playerPodiumTeamChip}>
+          <Text style={styles.playerPodiumTeamChipText} numberOfLines={1}>{primaryTeam.name}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+function PlayerCard({
+  player,
+  teams,
+  index,
+  onPress,
+}: {
+  player: ScraperPlayer;
+  teams: ScraperTeam[];
+  index: number;
+  onPress: (p: ScraperPlayer) => void;
+}) {
+  const playerTeamIds = player.teamIds ?? [player.teamId];
+  const playerTeams = teams.filter((tm) => playerTeamIds.includes(tm.externalId));
+  const primaryTeam = playerTeams[0];
+  const isMultiTeam = playerTeams.length > 1;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => onPress(player)}
+      style={styles.playerCard}
+    >
+      {/* Rank */}
+      <Text style={styles.playerCardRank}>{index}</Text>
+
+      {/* Avatar */}
+      <View style={styles.playerCardAvatar}>
+        <Text style={styles.playerCardAvatarText}>{getInitials(player.name)}</Text>
+      </View>
+
+      {/* Info */}
+      <View style={styles.playerCardInfo}>
+        <Text style={styles.playerCardName} numberOfLines={1}>
+          {player.name}
+        </Text>
+        <Text style={styles.playerCardTeam} numberOfLines={1}>
+          {isMultiTeam ? `${playerTeams.length} teams` : primaryTeam?.name ?? "Unknown"}
+          {" · "}{player.gamesPlayed} games
+        </Text>
+      </View>
+
+      {/* Stats */}
+      <View style={styles.playerCardStats}>
+        <View style={styles.playerCardStat}>
+          <Text style={styles.playerCardStatValue}>{player.goals}</Text>
+          <Text style={styles.playerCardStatLabel}>Goals</Text>
+        </View>
+        <View style={styles.playerCardStatDivider} />
+        <View style={styles.playerCardStat}>
+          <Text style={[styles.playerCardStatValue, { color: t.colors.warningAccent }]}>{player.assists}</Text>
+          <Text style={styles.playerCardStatLabel}>Assts</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+// =============================================================================
+// STYLES
+// =============================================================================
+
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: t.colors.background,
-    flex: 1,
-  },
-  loaderWrap: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  safeArea: { backgroundColor: t.colors.background, flex: 1 },
+  loaderWrap: { flex: 1, justifyContent: "center", alignItems: "center" },
+
   errorContainer: {
     alignItems: "center",
     flex: 1,
@@ -365,293 +637,258 @@ const styles = StyleSheet.create({
     gap: t.spacing.sm,
     paddingHorizontal: t.spacing.xxl,
   },
-  errorTitle: {
-    color: t.colors.onSurface,
-    ...t.typography.subtitle,
-    marginTop: t.spacing.md,
-  },
-  errorSubtext: {
-    color: t.colors.onSurfaceMuted,
-    ...t.typography.bodySmall,
-    textAlign: "center",
-  },
+  errorTitle: { color: t.colors.onSurface, ...t.typography.subtitle, marginTop: t.spacing.md },
+  errorSubtext: { color: t.colors.onSurfaceMuted, ...t.typography.bodySmall, textAlign: "center" },
   errorButton: {
     backgroundColor: t.colors.primary,
     borderRadius: t.radius.pill,
     marginTop: t.spacing.md,
-    overflow: "hidden",
     paddingHorizontal: t.spacing.xxl,
     paddingVertical: t.spacing.md,
   },
-  errorButtonText: {
-    color: t.colors.onPrimary,
-    fontWeight: "700",
-    fontSize: 14,
+  errorButtonText: { color: t.colors.onPrimary, fontWeight: "700", fontSize: 14 },
+
+  // Header
+  header: { paddingHorizontal: t.spacing.lg, paddingTop: t.spacing.md, paddingBottom: t.spacing.md },
+  headerTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: t.spacing.lg },
+  headerText: { flex: 1, marginRight: t.spacing.md },
+  headerLeague: { color: t.colors.onSurface, ...t.typography.hero },
+  headerMeta: { color: t.colors.onSurfaceMuted, ...t.typography.bodySmall, marginTop: 2 },
+  leaguePickerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  // Controls bar
-  controlsBar: {
-    alignItems: "center",
+  // Tab bar
+  tabBar: {
     flexDirection: "row",
-    gap: t.spacing.sm,
-    paddingBottom: t.spacing.sm,
-    paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.sm,
-  },
-  segmentedControl: {
     backgroundColor: t.colors.surface,
     borderRadius: t.radius.pill,
-    flexDirection: "row",
-    overflow: "hidden",
     padding: 3,
   },
-  segment: {
-    borderRadius: t.radius.pill,
-    paddingHorizontal: t.spacing.lg,
-    paddingVertical: 8,
-  },
-  segmentActive: {
-    backgroundColor: t.colors.primary,
-  },
-  segmentText: {
-    color: t.colors.onSurfaceMuted,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  segmentTextActive: {
-    color: t.colors.onPrimary,
-  },
-  leagueChip: {
-    alignItems: "center",
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.pill,
+  tabBtn: {
+    flex: 1,
     flexDirection: "row",
-    flex: 1,
-    gap: t.spacing.xs,
-    overflow: "hidden",
-    paddingHorizontal: t.spacing.md,
-    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: t.radius.pill,
   },
-  leagueChipText: {
-    color: t.colors.onSurface,
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  scrollContent: {
-    paddingBottom: t.spacing.xxl,
-  },
+  tabBtnActive: { backgroundColor: t.colors.primary },
+  tabBtnText: { color: t.colors.onSurfaceMuted, fontSize: 13, fontWeight: "700" },
+  tabBtnTextActive: { color: t.colors.onPrimary },
 
-  // Table
-  table: {
+  // Scroll
+  scrollContent: { paddingBottom: t.spacing.xxxl },
+
+  // Sections
+  standingsContainer: { paddingHorizontal: t.spacing.lg },
+  playersContainer: { paddingHorizontal: t.spacing.lg },
+  tableSection: { marginTop: t.spacing.xl },
+  sectionTitle: { color: t.colors.onSurfaceMuted, ...t.typography.label, marginBottom: t.spacing.md, marginTop: t.spacing.lg },
+
+  // Podium
+  podiumSection: { marginTop: t.spacing.sm },
+  podiumRow: { flexDirection: "row", gap: t.spacing.md, alignItems: "flex-end", justifyContent: "center" },
+
+  podiumCard: {
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.xl,
+    padding: t.spacing.lg,
+    alignItems: "center",
+    flex: 1,
+    borderWidth: 1,
+    borderColor: t.colors.outline,
+  },
+  podiumCardHighlight: {
+    backgroundColor: t.colors.surfaceAlt,
+    borderColor: "#f7cb6160",
+    paddingVertical: t.spacing.xl,
+    transform: [{ scale: 1.02 }],
+  },
+  podiumRankBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    marginBottom: t.spacing.sm,
+  },
+  podiumRankText: { fontSize: 13, fontWeight: "800" },
+  podiumAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: t.radius.lg,
+    backgroundColor: t.colors.surfaceRaised,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: t.spacing.sm,
+  },
+  podiumAvatarText: { color: t.colors.onSurface, fontSize: 20, fontWeight: "800" },
+  podiumTeamName: { color: t.colors.onSurface, fontSize: 13, fontWeight: "700", textAlign: "center", lineHeight: 18 },
+  podiumTeamNameHighlight: { fontSize: 14 },
+  podiumPoints: { color: t.colors.primary, fontSize: 18, fontWeight: "800", marginTop: t.spacing.xs },
+  podiumMeta: { color: t.colors.onSurfaceDim, fontSize: 11, fontWeight: "600", marginTop: 2 },
+  podiumForm: { flexDirection: "row", gap: 4, marginTop: t.spacing.sm },
+
+  // Form dot
+  formDot: { marginHorizontal: 1 },
+
+  // Team card
+  teamCard: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: t.colors.surface,
     borderRadius: t.radius.lg,
-    marginHorizontal: t.spacing.lg,
-    overflow: "hidden",
+    padding: t.spacing.md,
+    marginBottom: t.spacing.sm,
+    borderWidth: 1,
+    borderColor: t.colors.outline,
   },
-  tableHeader: {
-    alignItems: "center",
-    borderBottomColor: t.colors.divider,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    gap: 6,
-    paddingHorizontal: t.spacing.md,
-    paddingVertical: t.spacing.sm,
-  },
-  thRank: {
-    color: t.colors.onSurfaceDim,
-    ...t.typography.caption,
-    fontWeight: "700",
-    textTransform: "uppercase",
+  teamCardLeft: { flexDirection: "row", alignItems: "center", gap: t.spacing.sm },
+  teamCardRank: {
     width: 28,
-  },
-  thTeam: {
-    color: t.colors.onSurfaceDim,
-    flex: 1,
-    ...t.typography.caption,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  thNum: {
-    color: t.colors.onSurfaceDim,
-    ...t.typography.caption,
-    fontWeight: "700",
-    textAlign: "center",
-    textTransform: "uppercase",
-    width: 30,
-  },
-  thPts: {
-    color: t.colors.onSurfaceDim,
-    ...t.typography.caption,
-    fontWeight: "700",
-    textAlign: "center",
-    textTransform: "uppercase",
-    width: 30,
-  },
-  tableRow: {
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: t.colors.surfaceRaised,
     alignItems: "center",
-    borderBottomColor: t.colors.divider,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    gap: 6,
-    minHeight: t.touch.minHeight,
-    overflow: "hidden",
-    paddingHorizontal: t.spacing.md,
-    paddingVertical: t.spacing.sm,
+    justifyContent: "center",
   },
-  tdRank: {
-    color: t.colors.onSurfaceMuted,
-    fontSize: 14,
-    fontWeight: "600",
-    width: 28,
-  },
-  tdRankFirst: {
-    color: t.colors.warningAccent,
-  },
-  tdRankLast: {
-    color: t.colors.errorAccent,
-  },
-  tdTeam: {
-    color: t.colors.onSurface,
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  tdNum: {
-    color: t.colors.onSurfaceMuted,
-    fontSize: 13,
-    textAlign: "center",
-    width: 30,
-  },
-  tdGdPositive: {
-    color: t.colors.primary,
-  },
-  tdGdNegative: {
-    color: t.colors.errorAccent,
-  },
-  tdPts: {
-    color: t.colors.onSurface,
-    fontSize: 14,
-    fontWeight: "800",
-    textAlign: "center",
-    width: 30,
-  },
-  emptyTable: {
+  teamCardRankPromo: { backgroundColor: `${t.colors.primary}25` },
+  teamCardRankReleg: { backgroundColor: `${t.colors.errorAccent}20` },
+  teamCardRankText: { color: t.colors.onSurfaceMuted, fontSize: 13, fontWeight: "700" },
+  teamCardRankTextPromo: { color: t.colors.primary },
+  teamCardRankTextReleg: { color: t.colors.errorAccent },
+  teamCardAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.primaryMuted,
     alignItems: "center",
-    gap: t.spacing.md,
-    paddingVertical: t.spacing.xxxl,
+    justifyContent: "center",
   },
-  emptyTableText: {
-    color: t.colors.onSurfaceDim,
-    ...t.typography.bodySmall,
-  },
+  teamCardAvatarText: { color: t.colors.primary, fontSize: 16, fontWeight: "800" },
+  teamCardMiddle: { flex: 1, marginHorizontal: t.spacing.md, minWidth: 0 },
+  teamCardName: { color: t.colors.onSurface, fontSize: 15, fontWeight: "700" },
+  teamCardFormRow: { flexDirection: "row", gap: 3, marginTop: 4 },
+  teamCardSub: { color: t.colors.onSurfaceDim, fontSize: 12, marginTop: 2 },
+  teamCardRight: { alignItems: "flex-end", minWidth: 48 },
+  teamCardPts: { color: t.colors.onSurface, fontSize: 18, fontWeight: "800" },
+  teamCardGd: { color: t.colors.onSurfaceDim, fontSize: 12, fontWeight: "600", marginTop: 1 },
+  teamCardGdPos: { color: t.colors.primary },
+  teamCardGdNeg: { color: t.colors.errorAccent },
 
-  // Players list
-  playersList: {
-    marginHorizontal: t.spacing.lg,
+  // Player podium
+  playerPodiumCard: {
     backgroundColor: t.colors.surface,
-    borderRadius: t.radius.lg,
-    overflow: "hidden",
+    borderRadius: t.radius.xl,
+    padding: t.spacing.lg,
+    alignItems: "center",
+    flex: 1,
+    borderWidth: 1,
+    borderColor: t.colors.outline,
   },
+  playerPodiumCardHighlight: {
+    backgroundColor: t.colors.surfaceAlt,
+    borderColor: "#f7cb6160",
+    paddingVertical: t.spacing.xl,
+    transform: [{ scale: 1.02 }],
+  },
+  playerPodiumRankBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: t.spacing.sm,
+  },
+  playerPodiumRankText: { fontSize: 13, fontWeight: "800" },
+  playerPodiumAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.colors.surfaceRaised,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: t.spacing.sm,
+  },
+  playerPodiumAvatarText: { color: t.colors.onSurface, fontSize: 16, fontWeight: "800" },
+  playerPodiumName: { color: t.colors.onSurface, fontSize: 13, fontWeight: "700", textAlign: "center", lineHeight: 18 },
+  playerPodiumNameHighlight: { fontSize: 14 },
+  playerPodiumGoals: { color: t.colors.primary, fontSize: 18, fontWeight: "800", marginTop: t.spacing.xs },
+  playerPodiumSub: { color: t.colors.onSurfaceDim, fontSize: 11, fontWeight: "600", marginTop: 2 },
+  playerPodiumTeamChip: {
+    backgroundColor: t.colors.surfaceRaised,
+    borderRadius: t.radius.pill,
+    paddingHorizontal: t.spacing.sm,
+    paddingVertical: 3,
+    marginTop: t.spacing.sm,
+    maxWidth: "100%",
+  },
+  playerPodiumTeamChipText: { color: t.colors.onSurfaceMuted, fontSize: 10, fontWeight: "700" },
+
+  // Player card
   playerCard: {
-    alignItems: "center",
-    borderBottomColor: t.colors.divider,
-    borderBottomWidth: 1,
     flexDirection: "row",
-    minHeight: t.touch.minHeight,
-    paddingHorizontal: t.spacing.md,
-    paddingVertical: t.spacing.sm,
+    alignItems: "center",
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    padding: t.spacing.md,
+    marginBottom: t.spacing.sm,
+    borderWidth: 1,
+    borderColor: t.colors.outline,
   },
   playerCardRank: {
-    color: t.colors.onSurfaceDim,
-    fontSize: 13,
-    fontWeight: "600",
-    width: 26,
-  },
-  playerCardRankTop: {
-    color: t.colors.warningAccent,
-    fontWeight: "700",
-  },
-  playerCardInfo: {
-    flex: 1,
-    minWidth: 0,
-  },
-  playerCardName: {
-    color: t.colors.onSurface,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  playerCardMulti: {
-    color: t.colors.primary,
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  playerCardSubtext: {
-    color: t.colors.onSurfaceDim,
-    fontSize: 12,
-    marginTop: 1,
-  },
-  playerCardStats: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexShrink: 0,
-    gap: t.spacing.sm,
-  },
-  playerCardStat: {
-    alignItems: "center",
-  },
-  playerCardGoals: {
-    color: t.colors.primary,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  playerCardAssists: {
-    color: t.colors.warningAccent,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  playerCardStatLabel: {
-    color: t.colors.onSurfaceDim,
-    ...t.typography.caption,
-    fontWeight: "600",
-    marginTop: 1,
-    textTransform: "uppercase",
-  },
-  playerCardDivider: {
-    backgroundColor: t.colors.divider,
-    height: 18,
-    width: 1,
-  },
-  showMoreButton: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: t.spacing.xs,
-    justifyContent: "center",
-    overflow: "hidden",
-    paddingVertical: t.spacing.md,
-  },
-  showMoreText: {
+    width: 28,
     color: t.colors.onSurfaceMuted,
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center",
   },
-
-  // Picker — bottom sheet
-  pickerSafeArea: {
-    backgroundColor: t.colors.background,
-    flex: 1,
-  },
-  pickerHandleBar: {
-    alignItems: "center",
-    backgroundColor: t.colors.surface,
-    paddingTop: t.spacing.sm,
-  },
-  pickerHandle: {
-    backgroundColor: t.colors.surfaceElevated,
+  playerCardAvatar: {
+    width: 42,
+    height: 42,
     borderRadius: t.radius.pill,
-    height: 4,
-    width: 36,
+    backgroundColor: t.colors.surfaceRaised,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: t.spacing.sm,
   },
+  playerCardAvatarText: { color: t.colors.onSurface, fontSize: 14, fontWeight: "800" },
+  playerCardInfo: { flex: 1, marginHorizontal: t.spacing.md, minWidth: 0 },
+  playerCardName: { color: t.colors.onSurface, fontSize: 15, fontWeight: "700" },
+  playerCardTeam: { color: t.colors.onSurfaceDim, fontSize: 12, marginTop: 2 },
+  playerCardStats: { flexDirection: "row", alignItems: "center", gap: t.spacing.sm },
+  playerCardStat: { alignItems: "center", minWidth: 36 },
+  playerCardStatValue: { color: t.colors.primary, fontSize: 18, fontWeight: "800" },
+  playerCardStatLabel: { color: t.colors.onSurfaceDim, fontSize: 10, fontWeight: "700", textTransform: "uppercase", marginTop: 1 },
+  playerCardStatDivider: { width: 1, height: 24, backgroundColor: t.colors.divider },
+
+  // Show more
+  showMoreBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: t.spacing.xs,
+    paddingVertical: t.spacing.md,
+    marginTop: t.spacing.sm,
+  },
+  showMoreText: { color: t.colors.onSurfaceMuted, fontSize: 14, fontWeight: "600" },
+
+  // Empty
+  emptyState: { alignItems: "center", paddingVertical: t.spacing.xxxl * 2, gap: t.spacing.md },
+  emptyStateText: { color: t.colors.onSurfaceDim, ...t.typography.bodySmall },
+
+  // Picker
+  pickerSafeArea: { backgroundColor: t.colors.background, flex: 1 },
+  pickerHandleBar: { alignItems: "center", backgroundColor: t.colors.surface, paddingTop: t.spacing.sm },
+  pickerHandle: { backgroundColor: t.colors.surfaceElevated, borderRadius: t.radius.pill, height: 4, width: 36 },
   pickerToolbar: {
     alignItems: "center",
     backgroundColor: t.colors.surface,
@@ -661,47 +898,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: t.spacing.lg,
     paddingTop: t.spacing.md,
   },
-  pickerTitle: {
-    color: t.colors.onSurface,
-    ...t.typography.title,
-    flex: 1,
-  },
-  pickerCloseBtn: {
-    borderRadius: t.radius.pill,
-    padding: t.spacing.xs,
-  },
-  pickerList: {
-    paddingHorizontal: t.spacing.lg,
-    paddingVertical: t.spacing.md,
-    gap: t.spacing.sm,
-  },
+  pickerTitle: { color: t.colors.onSurface, ...t.typography.title, flex: 1 },
+  pickerCloseBtn: { borderRadius: t.radius.pill, padding: t.spacing.xs },
+  pickerList: { paddingHorizontal: t.spacing.lg, paddingVertical: t.spacing.md, gap: t.spacing.sm },
   pickerItem: {
     alignItems: "center",
     backgroundColor: t.colors.surface,
     borderRadius: t.radius.md,
     flexDirection: "row",
     justifyContent: "space-between",
-    overflow: "hidden",
     paddingHorizontal: t.spacing.lg,
     paddingVertical: t.spacing.lg,
   },
-  pickerItemActive: {
-    backgroundColor: t.colors.primaryMuted,
-  },
-  pickerItemContent: {
-    flex: 1,
-  },
-  pickerItemName: {
-    color: t.colors.onSurface,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  pickerItemNameActive: {
-    color: t.colors.primary,
-  },
-  pickerItemSubtext: {
-    color: t.colors.onSurfaceDim,
-    fontSize: 12,
-    marginTop: 2,
-  },
+  pickerItemActive: { backgroundColor: t.colors.primaryMuted },
+  pickerItemContent: { flex: 1 },
+  pickerItemName: { color: t.colors.onSurface, fontSize: 15, fontWeight: "600" },
+  pickerItemNameActive: { color: t.colors.primary },
+  pickerItemSubtext: { color: t.colors.onSurfaceDim, fontSize: 12, marginTop: 2 },
 });
