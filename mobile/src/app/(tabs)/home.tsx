@@ -492,16 +492,21 @@ export default function HomeScreen() {
 
       {/* Detail modal */}
       {selectedMatch ? (
-        <MatchDetailModal
-          match={selectedMatch}
-          currentPlayerId={session.playerId}
-          currentStatus={getPlayerAttendanceStatus(selectedMatch, session.playerId)}
-          isUpdating={updatingMatchId === selectedMatch.id}
-          onYes={() => void handleRespond(selectedMatch.id, "yes")}
-          onNo={() => void handleRespond(selectedMatch.id, "no")}
-          onMaybe={() => void handleRespond(selectedMatch.id, "maybe")}
-          onClose={() => setSelectedMatch(null)}
-        />
+        (() => {
+          const liveMatch = matches.find((m) => m.id === selectedMatch.id) ?? selectedMatch;
+          return (
+            <MatchDetailModal
+              match={liveMatch}
+              currentPlayerId={session.playerId}
+              currentStatus={getPlayerAttendanceStatus(liveMatch, session.playerId)}
+              isUpdating={updatingMatchId === selectedMatch.id}
+              onYes={() => void handleRespond(selectedMatch.id, "yes")}
+              onNo={() => void handleRespond(selectedMatch.id, "no")}
+              onMaybe={() => void handleRespond(selectedMatch.id, "maybe")}
+              onClose={() => setSelectedMatch(null)}
+            />
+          );
+        })()
       ) : null}
     </SafeAreaView>
   );
