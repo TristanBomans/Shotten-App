@@ -104,20 +104,16 @@ jobs:
         working-directory: mobile
         run: |
           OUTPUT_PATH="${RUNNER_TEMP}/shotten-android-${{ steps.release_meta.outputs.safe_tag }}.apk"
-          BUILD_JSON="$(bunx eas-cli@latest build --platform android --profile "${{ steps.release_meta.outputs.eas_profile }}" --local --non-interactive --output "${OUTPUT_PATH}" --json)"
-          printf '%s\n' "${BUILD_JSON}" > "${RUNNER_TEMP}/eas-build.json"
+          bunx eas-cli@latest build --platform android --profile "${{ steps.release_meta.outputs.eas_profile }}" --local --non-interactive --output "${OUTPUT_PATH}"
 
           if [ ! -f "${OUTPUT_PATH}" ]; then
             echo "Expected local artifact at ${OUTPUT_PATH}, but file was not found."
-            echo "EAS local build output:"
-            cat "${RUNNER_TEMP}/eas-build.json" || true
             exit 1
           fi
 
-          BUILD_ID="$(jq -r 'if type=="array" then .[0].id // empty else .id // empty end' "${RUNNER_TEMP}/eas-build.json")"
           echo "artifact_path=${OUTPUT_PATH}" >> "${GITHUB_OUTPUT}"
           echo "artifact_name=$(basename "${OUTPUT_PATH}")" >> "${GITHUB_OUTPUT}"
-          echo "build_id=${BUILD_ID}" >> "${GITHUB_OUTPUT}"
+          echo "build_id=local" >> "${GITHUB_OUTPUT}"
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
