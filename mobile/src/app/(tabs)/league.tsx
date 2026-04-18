@@ -6,6 +6,7 @@ import {
   FlatList,
   Linking,
   Modal,
+  PanResponder,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -54,6 +55,44 @@ export default function LeagueScreen() {
   const [visiblePlayers, setVisiblePlayers] = useState(50);
 
   const tabAnim = useRef(new Animated.Value(0)).current;
+  const pickerPanY = useRef(new Animated.Value(0)).current;
+
+  const pickerPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 2,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          pickerPanY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 80 || gestureState.vy > 0.5) {
+          Animated.timing(pickerPanY, {
+            toValue: SCREEN_W,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            pickerPanY.setValue(0);
+            setLeaguePickerOpen(false);
+          });
+        } else {
+          Animated.spring(pickerPanY, {
+            toValue: 0,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 40,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    if (leaguePickerOpen) {
+      pickerPanY.setValue(0);
+    }
+  }, [leaguePickerOpen]);
 
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -255,10 +294,12 @@ export default function LeagueScreen() {
       >
         <StatusBar barStyle="light-content" backgroundColor={t.colors.surface} />
         <SafeAreaView style={styles.pickerSafeArea} edges={["top", "bottom"]}>
-          <View style={styles.pickerHandleBar}>
-            <View style={styles.pickerHandle} />
-          </View>
-          <View style={styles.pickerToolbar}>
+          <Animated.View style={{ flex: 1, transform: [{ translateY: pickerPanY }] }}>
+            {/* Handle — swipeable */}
+            <View style={styles.pickerHandleBar} {...pickerPanResponder.panHandlers}>
+              <View style={styles.pickerHandle} />
+            </View>
+            <View style={styles.pickerToolbar}>
             <Text style={styles.pickerTitle}>Select League</Text>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -294,6 +335,7 @@ export default function LeagueScreen() {
               );
             })}
           </ScrollView>
+          </Animated.View>
         </SafeAreaView>
       </Modal>
 
@@ -906,7 +948,7 @@ const styles = StyleSheet.create({
 
   // Picker
   pickerSafeArea: { backgroundColor: t.colors.background, flex: 1 },
-  pickerHandleBar: { alignItems: "center", backgroundColor: t.colors.surface, paddingTop: t.spacing.sm },
+  pickerHandleBar: { alignItems: "center", justifyContent: "center", backgroundColor: t.colors.surface, paddingVertical: t.spacing.md, minHeight: 44 },
   pickerHandle: { backgroundColor: t.colors.surfaceElevated, borderRadius: t.radius.pill, height: 4, width: 36 },
   pickerToolbar: {
     alignItems: "center",
