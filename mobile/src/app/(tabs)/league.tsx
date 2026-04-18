@@ -27,9 +27,10 @@ const t = androidDarkTheme;
 const { width: SCREEN_W } = Dimensions.get("window");
 
 // Teams that belong to "us" — highlighted across the app
-const OUR_TEAM_KEYWORDS = ["Hattrick", "Shotten"];
+const OUR_TEAM_KEYWORDS = ["hattrick", "shotten", "wille", "degrade"];
 function isOurTeam(name: string): boolean {
-  return OUR_TEAM_KEYWORDS.some((k) => name.toLowerCase().includes(k.toLowerCase()));
+  const n = name.toLowerCase();
+  return OUR_TEAM_KEYWORDS.some((k) => n.includes(k));
 }
 
 type LeagueTab = "standings" | "players";
@@ -708,7 +709,7 @@ const styles = StyleSheet.create({
 
   // Podium
   podiumSection: { marginTop: t.spacing.sm },
-  podiumRow: { flexDirection: "row", gap: t.spacing.md, alignItems: "flex-end", justifyContent: "center" },
+  podiumRow: { flexDirection: "row", gap: t.spacing.md, alignItems: "stretch", justifyContent: "center" },
 
   podiumCard: {
     backgroundColor: t.colors.surface,
@@ -718,6 +719,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: t.colors.outline,
+    justifyContent: "space-between",
   },
   podiumCardHighlight: {
     backgroundColor: t.colors.surfaceAlt,
@@ -808,6 +810,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: t.colors.outline,
+    justifyContent: "space-between",
   },
   playerPodiumCardHighlight: {
     backgroundColor: t.colors.surfaceAlt,

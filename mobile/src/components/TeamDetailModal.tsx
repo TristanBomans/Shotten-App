@@ -72,6 +72,8 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
     return [...upcomingMatches, ...pastMatches];
   }, [matchFilter, upcomingMatches, pastMatches]);
 
+  if (!team) return null;
+
   // Recent form
   const recentForm = pastMatches.slice(0, 5).map((m) => {
     const isHome = isHomeTeam(team.name, m.homeTeam);
@@ -91,8 +93,6 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
   const openLZV = () => {
     Linking.openURL(`https://www.lzvcup.be/teams/detail/${team.externalId}`);
   };
-
-  if (!team) return null;
 
   return (
     <Modal

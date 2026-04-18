@@ -35,11 +35,13 @@ export function PlayerStatsModal({ player, teams, visible, onClose }: PlayerStat
   const scrollX = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const panY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
       setActiveTeamIndex(0);
       scrollRef.current?.scrollTo({ x: 0, animated: false });
+      panY.setValue(0);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 250,
@@ -49,6 +51,34 @@ export function PlayerStatsModal({ player, teams, visible, onClose }: PlayerStat
       fadeAnim.setValue(0);
     }
   }, [visible, player?.externalId]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 2,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 80 || gestureState.vy > 0.5) {
+          Animated.timing(panY, {
+            toValue: SCREEN_W,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(onClose);
+        } else {
+          Animated.spring(panY, {
+            toValue: 0,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 40,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   if (!player) return null;
 
@@ -70,10 +100,11 @@ export function PlayerStatsModal({ player, teams, visible, onClose }: PlayerStat
     >
       <StatusBar barStyle="light-content" backgroundColor={t.colors.surface} />
       <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-        {/* Handle */}
-        <View style={styles.handleBar}>
-          <View style={styles.handle} />
-        </View>
+        <Animated.View style={{ flex: 1, transform: [{ translateY: panY }] }}>
+          {/* Handle — swipeable */}
+          <View style={styles.handleBar} {...panResponder.panHandlers}>
+            <View style={styles.handle} />
+          </View>
 
         {/* Header */}
         <View style={styles.header}>
@@ -214,6 +245,7 @@ export function PlayerStatsModal({ player, teams, visible, onClose }: PlayerStat
             </View>
           )}
         </ScrollView>
+        </Animated.View>
       </SafeAreaView>
     </Modal>
   );
@@ -259,8 +291,8 @@ function getInitials(name: string): string {
 const styles = StyleSheet.create({
   safeArea: { backgroundColor: t.colors.background, flex: 1 },
 
-  // Handle
-  handleBar: { alignItems: "center", backgroundColor: t.colors.surface, paddingTop: t.spacing.sm },
+  // Handle — swipeable area
+  handleBar: { alignItems: "center", justifyContent: "center", backgroundColor: t.colors.surface, paddingVertical: t.spacing.md, minHeight: 44 },
   handle: { backgroundColor: t.colors.surfaceElevated, borderRadius: t.radius.pill, height: 4, width: 36 },
 
   // Header
