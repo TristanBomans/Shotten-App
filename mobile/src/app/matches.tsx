@@ -27,7 +27,7 @@ export default function MatchesScreen() {
       const response = await fetchMatches(playerId);
       setMatches(filterUpcomingMatches(response));
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Kon matches niet laden.");
+      setError(loadError instanceof Error ? loadError.message : "Could not load matches.");
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ export default function MatchesScreen() {
       await updateAttendance(matchId, session.playerId, nextStatus);
     } catch (updateError) {
       setMatches(previousMatchesSnapshot);
-      setActionError(updateError instanceof Error ? updateError.message : "Kon attendance niet opslaan.");
+      setActionError(updateError instanceof Error ? updateError.message : "Could not save attendance.");
     } finally {
       setUpdatingMatchId(null);
     }
@@ -100,19 +100,19 @@ export default function MatchesScreen() {
       <View style={styles.container}>
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.title}>Hi {session?.playerName ?? "speler"}</Text>
-            <Text style={styles.subtitle}>Upcoming matches en je aanwezigheid.</Text>
+            <Text style={styles.title}>Hi {session?.playerName ?? "player"}</Text>
+            <Text style={styles.subtitle}>Upcoming matches and your attendance.</Text>
           </View>
           <Pressable
             android_ripple={{ color: androidDarkTheme.colors.ripple, borderless: false }}
             onPress={() => void handleLogout()}
             style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}
           >
-            <Text style={styles.logoutText}>Wissel speler</Text>
+            <Text style={styles.logoutText}>Switch player</Text>
           </Pressable>
         </View>
 
-        {loading ? <LoadingState message="Upcoming matches laden..." /> : null}
+        {loading ? <LoadingState message="Loading upcoming matches..." /> : null}
 
         {!loading && error ? (
           <ErrorState message={error} onRetry={() => (session ? void loadMatchesForPlayer(session.playerId) : undefined)} />
@@ -127,8 +127,8 @@ export default function MatchesScreen() {
             keyExtractor={(item) => String(item.id)}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>Geen upcoming matches</Text>
-                <Text style={styles.emptySubtitle}>Zodra er nieuwe wedstrijden zijn, zie je ze hier.</Text>
+                <Text style={styles.emptyTitle}>No upcoming matches</Text>
+                <Text style={styles.emptySubtitle}>As soon as new matches are available, you will see them here.</Text>
               </View>
             }
             renderItem={({ item }) => {

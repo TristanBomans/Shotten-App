@@ -24,7 +24,7 @@ export default function PlayerSelectScreen() {
       const response = await fetchPlayers();
       setPlayers(response);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Kon spelers niet laden.");
+      setError(loadError instanceof Error ? loadError.message : "Could not load players.");
     } finally {
       setLoading(false);
     }
@@ -66,22 +66,22 @@ export default function PlayerSelectScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.hero}>
-          <Text style={styles.title}>Welkom bij Shotten</Text>
-          <Text style={styles.subtitle}>Selecteer je speler om attendance te beheren.</Text>
+          <Text style={styles.title}>Welcome to Shotten</Text>
+          <Text style={styles.subtitle}>Select your player to manage attendance.</Text>
         </View>
 
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
           onChangeText={setSearchQuery}
-          placeholder="Zoek speler..."
+          placeholder="Search player..."
           placeholderTextColor={androidDarkTheme.colors.onSurfaceMuted}
           selectionColor={androidDarkTheme.colors.primary}
           style={styles.searchInput}
           value={searchQuery}
         />
 
-        {loading ? <LoadingState message="Spelers laden..." /> : null}
+        {loading ? <LoadingState message="Loading players..." /> : null}
 
         {!loading && error ? <ErrorState message={error} onRetry={() => void loadPlayers()} /> : null}
 

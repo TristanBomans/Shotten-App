@@ -1,14 +1,14 @@
 # Shotten Mobile
 
-Expo Router mobiele app scaffold voor Shotten attendance.
+Expo Router mobile app scaffold for Shotten attendance.
 
-## Doel van deze fase
+## Goal of this phase
 
-- Speler selecteren
-- Upcoming matches tonen
-- Ja/Nee attendance updaten tegen `https://shotten.taltiko.com/`
+- Select a player
+- Show upcoming matches
+- Update Yes/No attendance against `https://shotten.taltiko.com/`
 
-QR flow werkt via Expo. Android release pipeline staat in `.github/workflows/android-apk-release.yml`.
+The QR flow works via Expo. The Android release pipeline is in `.github/workflows/android-apk-release.yml`.
 
 ## GitHub Android release pipeline
 
@@ -16,12 +16,12 @@ Workflow: `Android Release`
 
 Triggers:
 
-- stable release op tag push (`mobile-v*.*.*`) met EAS profiel `production`
-- preview release handmatig (`workflow_dispatch`) met EAS profiel `preview` (altijd prerelease)
+- Stable release on tag push (`mobile-v*.*.*`) using EAS profile `production`
+- Manual preview release (`workflow_dispatch`) using EAS profile `preview` (always prerelease)
 
-Vereiste repository secret:
+Required repository secret:
 
-- `EXPO_TOKEN` (Expo account/token met rechten om EAS builds te starten)
+- `EXPO_TOKEN` (Expo account/token with permissions to start EAS builds)
 
 Stable release via tag:
 
@@ -31,24 +31,24 @@ git tag mobile-v0.1.0
 git push origin mobile-v0.1.0
 ```
 
-Preview release handmatig:
+Manual preview release:
 
-1. Ga naar `Actions` -> `Android Release` -> `Run workflow`.
-2. Laat `preview_tag` leeg voor auto-tag, of geef zelf een tag in.
-3. Optioneel: vul `release_name` in.
+1. Go to `Actions` -> `Android Release` -> `Run workflow`.
+2. Leave `preview_tag` empty for an auto-generated tag, or provide your own.
+3. Optionally set `release_name`.
 
-Na een succesvolle run verschijnt het Android artifact als asset onder GitHub Releases.
+After a successful run, the Android artifact appears as an asset under GitHub Releases.
 
 ## Commands
 
-Run vanuit repo root:
+Run from the repo root:
 
 ```bash
 bun run mobile:install
 bun run mobile:dev
 ```
 
-Of direct in `mobile/`:
+Or directly in `mobile/`:
 
 ```bash
 bun install
@@ -58,17 +58,17 @@ bun run android
 bun run test
 ```
 
-## API configuratie
+## API configuration
 
-Standaard gebruikt de app:
+By default the app uses:
 
 - `https://shotten.taltiko.com`
 
-Optioneel overschrijven met:
+Optionally override with:
 
 - `EXPO_PUBLIC_API_BASE_URL`
 
-Voorbeeld:
+Example:
 
 ```bash
 EXPO_PUBLIC_API_BASE_URL=https://shotten.taltiko.com bun run dev

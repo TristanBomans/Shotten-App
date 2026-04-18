@@ -1,78 +1,78 @@
 # Mobile Feature Gap vs PWA
 
-Dit document vergelijkt de huidige `mobile/` app met de bestaande PWA-ervaring in de root van dit project.
+This document compares the current `mobile/` app with the existing PWA experience in the root of this project.
 
-## Scope van huidige mobile app
+## Scope of the current mobile app
 
-Aanwezig in `mobile/` vandaag:
+Currently present in `mobile/`:
 
-- Speler selecteren
-- Upcoming matches ophalen
-- Attendance zetten op `Present` of `NotPresent`
-- Session bewaren met `AsyncStorage`
+- Select a player
+- Fetch upcoming matches
+- Set attendance to `Present` or `NotPresent`
+- Persist session with `AsyncStorage`
 
-## Ontbrekende features (PWA heeft dit wel)
+## Missing features (available in the PWA)
 
-### Navigatie en informatie-architectuur
+### Navigation and information architecture
 
-- Multi-view navigatie (`home`, `stats`, `league`, `settings`) met swipe-gedrag
+- Multi-view navigation (`home`, `stats`, `league`, `settings`) with swipe behavior
 - Floating bottom navigation
-- Top overlay header met contextuele controls per view
-- URL/state-sync voor actieve view + modals
+- Top overlay header with contextual controls per view
+- URL/state sync for active view + modals
 
-### Match ervaring
+### Match experience
 
-- Hero card voor eerstvolgende match + aparte secties voor upcoming/past
-- `Maybe` attendance flow (mobile ondersteunt nu alleen `Ja/Nee`)
-- Uitgebreide match modal met opponent/squad detail
-- Squad weergave (avatars/namen/status) per match
-- Pull-to-refresh met skeleton loading states
-- Match highlight/focus flow vanuit reminders
+- Hero card for the next match + separate sections for upcoming/past
+- `Maybe` attendance flow (mobile currently supports only `Yes/No`)
+- Expanded match modal with opponent/squad details
+- Squad view (avatars/names/status) per match
+- Pull-to-refresh with skeleton loading states
+- Match highlight/focus flow from reminders
 
 ### Stats / leaderboard
 
-- Volledige leaderboard view met ranking systeem en puntenlogica
-- Player detail modal met score history chart en recente form
-- Rules modal voor score-regels
+- Full leaderboard view with ranking system and points logic
+- Player detail modal with score history chart and recent form
+- Rules modal for scoring rules
 - Highlight cards (legend/casper/miss maybe)
 
 ### League module
 
-- League view met tabs: standings + players
-- Ophalen en tonen van scraper league data (`/api/lzv/*`)
-- League selector + default league voorkeur
+- League view with tabs: standings + players
+- Fetch and display scraper league data (`/api/lzv/*`)
+- League selector + default league preference
 - Team detail modal
-- Player stats dialog voor league spelers
+- Player stats dialog for league players
 
-### Settings en beheer
+### Settings and management
 
-- Settings scherm met toggles (haptic, full names, theme)
-- Thema-keuze (`original`, `oled`, `white`)
+- Settings screen with toggles (haptic, full names, theme)
+- Theme selection (`original`, `oled`, `white`)
 - Mock/live data toggle
-- Default league voorkeur in settings
+- Default league preference in settings
 - Respond-as-player sheet
 - Player management sheet (CRUD + team assignment)
 - Hidden admin unlock + hidden admin dialog
 
-### Notificaties en recents
+### Notifications and recents
 
-- Notification sheet met reminder-prioriteiten
-- Recent matches sheet met W/D/L en attendance koppeling
-- Reminder aggregatie (`buildMatchReminders`)
+- Notification sheet with reminder priorities
+- Recent matches sheet with W/D/L and attendance mapping
+- Reminder aggregation (`buildMatchReminders`)
 
-### Versiebeheer en update UX
+### Versioning and update UX
 
 - PWA version checker / update flow (`/version.json`)
 - Version history modal/content
-- Service worker registratie + cache refresh flow
+- Service worker registration + cache refresh flow
 
-### Platformspecifieke / infra verschillen
+### Platform-specific / infrastructure differences
 
-- Mobile gebruikt nog niet de PWA data-hooks (`lib/useData.ts`) en scraper endpoints
-- Geen equivalent van browser events die PWA intern gebruikt voor cross-component sync
-- Geen parity met admin/worker tooling uit PWA
+- Mobile does not yet use the PWA data hooks (`lib/useData.ts`) and scraper endpoints
+- No equivalent of browser events used internally by the PWA for cross-component sync
+- No parity yet with admin/worker tooling from the PWA
 
-## Aanbevolen volgorde om parity te bouwen
+## Recommended order to build parity
 
 1. `Maybe` attendance + match detail parity
 2. Stats view parity

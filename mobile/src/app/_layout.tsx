@@ -26,7 +26,7 @@ export default function RootLayout() {
           statusBarStyle: "light"
         }}
       >
-        <Stack.Screen name="index" options={{ title: "Kies speler" }} />
+        <Stack.Screen name="index" options={{ title: "Choose player" }} />
         <Stack.Screen name="matches" options={{ title: "Upcoming matches" }} />
       </Stack>
     </SafeAreaProvider>
