@@ -89,9 +89,9 @@ const styles = StyleSheet.create({
     borderRadius: t.radius.md,
     flex: 1,
     justifyContent: "center",
-    minHeight: 44,
+    minHeight: 32,
     paddingHorizontal: 8,
-    paddingVertical: 10,
+    paddingVertical: 6,
   },
   segmentText: {
     fontSize: 14,

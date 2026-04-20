@@ -118,11 +118,11 @@ export function formatMatchDate(dateIso: string): string {
     return "Unknown date";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("en-GB", {
     weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
+    day: "numeric",
+    month: "short",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   }).format(date);
 }

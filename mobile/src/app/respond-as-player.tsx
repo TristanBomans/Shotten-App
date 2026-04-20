@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   FlatList,
   Pressable,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { fetchMatches, fetchPlayers, updateAttendance } from "../lib/api";
 import { formatMatchDate, resolveAttendanceState } from "../lib/matches";
@@ -21,6 +23,7 @@ type Step = "player" | "matches";
 
 export default function RespondAsPlayerScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const [step, setStep] = useState<Step>("player");
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -34,6 +37,46 @@ export default function RespondAsPlayerScreen() {
       .then(setPlayers)
       .finally(() => setLoadingPlayers(false));
   }, []);
+
+  useLayoutEffect(() => {
+    if (step === "matches") {
+      navigation.setOptions({
+        headerLeft: () => (
+          <Pressable
+            onPress={() => {
+              setStep("player");
+              setSelectedPlayer(null);
+              setMatches([]);
+            }}
+            style={styles.headerBtn}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color={t.colors.onSurface} />
+          </Pressable>
+        ),
+        headerRight: () => (
+          <Pressable onPress={() => router.back()} style={styles.headerBtn}>
+            <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurface} />
+          </Pressable>
+        ),
+      });
+    } else {
+      navigation.setOptions({
+        headerLeft: undefined,
+        headerRight: undefined,
+      });
+    }
+  }, [step, navigation, router]);
+
+  useEffect(() => {
+    if (step !== "matches") return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      setStep("player");
+      setSelectedPlayer(null);
+      setMatches([]);
+      return true;
+    });
+    return () => sub.remove();
+  }, [step]);
 
   const handleSelectPlayer = async (player: Player) => {
     setSelectedPlayer(player);
@@ -117,13 +160,15 @@ export default function RespondAsPlayerScreen() {
             ) : null}
           </View>
         </View>
-        <ResponseButtons
-          currentState={resolveAttendanceState(status)}
-          isUpdating={updatingMatchId === item.id}
-          onYes={() => void handleRespond(item.id, "Present")}
-          onMaybe={() => void handleRespond(item.id, "Maybe")}
-          onNo={() => void handleRespond(item.id, "NotPresent")}
-        />
+        <View style={styles.buttonsWrap}>
+          <ResponseButtons
+            currentState={resolveAttendanceState(status)}
+            isUpdating={updatingMatchId === item.id}
+            onYes={() => void handleRespond(item.id, "Present")}
+            onMaybe={() => void handleRespond(item.id, "Maybe")}
+            onNo={() => void handleRespond(item.id, "NotPresent")}
+          />
+        </View>
       </View>
     );
   };
@@ -149,14 +194,6 @@ export default function RespondAsPlayerScreen() {
         </>
       ) : (
         <>
-          <Pressable
-            android_ripple={{ color: t.colors.ripple, borderless: false }}
-            onPress={() => { setStep("player"); setSelectedPlayer(null); setMatches([]); }}
-            style={styles.backChip}
-          >
-            <MaterialCommunityIcons name="chevron-left" size={20} color={t.colors.primary} />
-            <Text style={styles.backChipText}>{selectedPlayer?.name}</Text>
-          </Pressable>
           {loadingMatches ? (
             <View style={styles.loaderWrap}>
               <ActivityIndicator size="large" color={t.colors.primary} />
@@ -192,9 +229,8 @@ const styles = StyleSheet.create({
   playerAvatarText: { color: t.colors.primary, fontSize: 16, fontWeight: "700" },
   playerName: { color: t.colors.onSurface, flex: 1, fontSize: 16, fontWeight: "600" },
   divider: { backgroundColor: t.colors.divider, height: 1 },
-  backChip: { alignItems: "center", flexDirection: "row", gap: t.spacing.xs, paddingHorizontal: t.spacing.lg, paddingVertical: t.spacing.md },
-  backChipText: { color: t.colors.primary, fontSize: 16, fontWeight: "600" },
   matchList: { paddingBottom: t.spacing.xxl, paddingHorizontal: t.spacing.lg },
+  buttonsWrap: { marginTop: t.spacing.md },
   matchCard: { backgroundColor: t.colors.surface, borderRadius: t.radius.lg, marginBottom: t.spacing.md, padding: t.spacing.lg },
   matchHeader: { flexDirection: "row", alignItems: "flex-start" },
   matchInfo: { flex: 1 },
@@ -204,4 +240,5 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", flex: 1, gap: t.spacing.sm, justifyContent: "center" },
   emptyTitle: { color: t.colors.onSurface, ...t.typography.subtitle },
   emptySubtext: { color: t.colors.onSurfaceDim, ...t.typography.bodySmall },
+  headerBtn: { padding: 8 },
 });
