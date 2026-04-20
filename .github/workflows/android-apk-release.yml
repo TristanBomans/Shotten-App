@@ -1,0 +1,140 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - "mobile-v*.*.*"
+  workflow_dispatch:
+    inputs:
+      preview_tag:
+        description: "Optional preview tag (default auto-generated)"
+        required: false
+        default: ""
+        type: string
+      release_name:
+        description: "Optional display name for the preview release"
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  build-android-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.6"
+
+      - name: Validate Expo token
+        run: |
+          if [ -z "${EXPO_TOKEN}" ]; then
+            echo "Missing EXPO_TOKEN secret. Add it in repository secrets before running this workflow."
+            exit 1
+          fi
+
+      - name: Resolve release metadata
+        id: release_meta
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            CHANNEL="preview"
+            EAS_PROFILE="preview"
+            APP_VARIANT="preview"
+            TAG="${{ github.event.inputs.preview_tag }}"
+            if [ -z "${TAG}" ]; then
+              TAG="mobile-preview-$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
+            fi
+            NAME="${{ github.event.inputs.release_name }}"
+            if [ -z "${NAME}" ]; then
+              NAME="Shotten Android Preview ${TAG}"
+            fi
+            PRERELEASE="true"
+            MAKE_LATEST="false"
+          else
+            CHANNEL="stable"
+            EAS_PROFILE="production"
+            APP_VARIANT="production"
+            TAG="${GITHUB_REF_NAME}"
+            NAME="Shotten Android ${TAG}"
+
+            VERSION="${TAG#mobile-v}"
+            if [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              PRERELEASE="false"
+              MAKE_LATEST="true"
+            else
+              PRERELEASE="true"
+              MAKE_LATEST="false"
+            fi
+          fi
+
+          SAFE_TAG="${TAG//\//-}"
+
+          echo "channel=${CHANNEL}" >> "${GITHUB_OUTPUT}"
+          echo "eas_profile=${EAS_PROFILE}" >> "${GITHUB_OUTPUT}"
+          echo "app_variant=${APP_VARIANT}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "safe_tag=${SAFE_TAG}" >> "${GITHUB_OUTPUT}"
+          echo "name=${NAME}" >> "${GITHUB_OUTPUT}"
+          echo "prerelease=${PRERELEASE}" >> "${GITHUB_OUTPUT}"
+          echo "make_latest=${MAKE_LATEST}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install mobile dependencies
+        run: bun install --cwd mobile --frozen-lockfile
+
+      - name: Build Android artifact with EAS
+        id: eas
+        working-directory: mobile
+        run: |
+          RELEASE_PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          OUTPUT_PATH="${RUNNER_TEMP}/shotten-android-${{ steps.release_meta.outputs.safe_tag }}.apk"
+          APP_VARIANT="${{ steps.release_meta.outputs.app_variant }}" \
+          RELEASE_TAG="${{ steps.release_meta.outputs.tag }}" \
+          RELEASE_PUBLISHED_AT="${RELEASE_PUBLISHED_AT}" \
+          bunx eas-cli@latest build --platform android --profile "${{ steps.release_meta.outputs.eas_profile }}" --local --non-interactive --output "${OUTPUT_PATH}"
+
+          if [ ! -f "${OUTPUT_PATH}" ]; then
+            echo "Expected local artifact at ${OUTPUT_PATH}, but file was not found."
+            exit 1
+          fi
+
+          echo "artifact_path=${OUTPUT_PATH}" >> "${GITHUB_OUTPUT}"
+          echo "artifact_name=$(basename "${OUTPUT_PATH}")" >> "${GITHUB_OUTPUT}"
+          echo "build_id=local" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ steps.release_meta.outputs.name }}
+          files: ${{ steps.eas.outputs.artifact_path }}
+          prerelease: ${{ steps.release_meta.outputs.prerelease }}
+          make_latest: ${{ steps.release_meta.outputs.make_latest }}
+          generate_release_notes: true
+          body: |
+            Android build generated via GitHub Actions (local EAS build on runner).
+
+            - Channel: `${{ steps.release_meta.outputs.channel }}`
+            - EAS profile: `${{ steps.release_meta.outputs.eas_profile }}`
+            - EAS build ID: `${{ steps.eas.outputs.build_id || 'local' }}`

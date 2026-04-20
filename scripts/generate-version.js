@@ -2,7 +2,42 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+function isMobileReleaseRef(ref) {
+  if (!ref) return false;
+  return /^mobile-v[^/]+$/.test(ref) || /^mobile-preview[^/]*$/.test(ref);
+}
+
+function resolveCurrentGitRef() {
+  const candidates = [
+    process.env.GITHUB_REF_NAME,
+    process.env.CF_GIT_TAG,
+    process.env.CF_PAGES_BRANCH,
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (isMobileReleaseRef(candidate)) {
+      return candidate;
+    }
+  }
+
+  const githubRef = process.env.GITHUB_REF;
+  if (githubRef && githubRef.startsWith('refs/tags/')) {
+    const tag = githubRef.replace('refs/tags/', '');
+    if (isMobileReleaseRef(tag)) {
+      return tag;
+    }
+  }
+
+  return null;
+}
+
 async function main() {
+  const releaseRef = resolveCurrentGitRef();
+  if (releaseRef) {
+    console.log(`Skipping version.json generation for mobile release ref: ${releaseRef}`);
+    return;
+  }
+
   const apiKey = process.env.MISTRAL_API_KEY;
 
   // Ensure full git history is available (Cloudflare Pages uses shallow clones)
