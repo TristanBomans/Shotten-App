@@ -10,6 +10,7 @@
 /pwa/.next/
 /pwa/out/
 /pwa/.open-next/
+/.open-next/
 
 # production
 /pwa/build
