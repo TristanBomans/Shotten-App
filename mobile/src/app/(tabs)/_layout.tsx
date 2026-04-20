@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { SessionProvider } from "../../state/session-context";
 import { PreferencesProvider } from "../../state/preferences-context";
 import { androidDarkTheme } from "../../theme/androidDark";
@@ -10,18 +10,11 @@ const t = androidDarkTheme;
 function TabIcon({
   name,
   color,
-  focused,
 }: {
   name: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
   color: string;
-  focused: boolean;
 }) {
-  return (
-    <View style={styles.tabIconWrap}>
-      {focused ? <View style={styles.activeIndicator} /> : null}
-      <MaterialCommunityIcons name={name} size={24} color={color} />
-    </View>
-  );
+  return <MaterialCommunityIcons name={name} size={24} color={color} />;
 }
 
 export default function TabLayout() {
@@ -34,7 +27,6 @@ export default function TabLayout() {
             tabBarActiveTintColor: t.colors.primary,
             tabBarInactiveTintColor: t.colors.onSurfaceDim,
             tabBarLabelStyle: styles.tabBarLabel,
-            tabBarIconStyle: styles.tabBarIcon,
             headerStyle: styles.header,
             headerTintColor: t.colors.onSurface,
             headerTitleStyle: styles.headerTitle,
@@ -47,8 +39,8 @@ export default function TabLayout() {
             name="home"
             options={{
               title: "Matches",
-              tabBarIcon: ({ color, focused }) => (
-                <TabIcon name="soccer" color={color} focused={focused} />
+              tabBarIcon: ({ color }) => (
+                <TabIcon name="soccer" color={color} />
               ),
             }}
           />
@@ -56,8 +48,8 @@ export default function TabLayout() {
             name="stats"
             options={{
               title: "Leaderboard",
-              tabBarIcon: ({ color, focused }) => (
-                <TabIcon name="trophy" color={color} focused={focused} />
+              tabBarIcon: ({ color }) => (
+                <TabIcon name="trophy" color={color} />
               ),
             }}
           />
@@ -65,8 +57,8 @@ export default function TabLayout() {
             name="league"
             options={{
               title: "Standings",
-              tabBarIcon: ({ color, focused }) => (
-                <TabIcon name="format-list-numbered" color={color} focused={focused} />
+              tabBarIcon: ({ color }) => (
+                <TabIcon name="format-list-numbered" color={color} />
               ),
             }}
           />
@@ -74,8 +66,8 @@ export default function TabLayout() {
             name="settings"
             options={{
               title: "Settings",
-              tabBarIcon: ({ color, focused }) => (
-                <TabIcon name="cog" color={color} focused={focused} />
+              tabBarIcon: ({ color }) => (
+                <TabIcon name="cog" color={color} />
               ),
             }}
           />
@@ -97,26 +89,7 @@ const styles = StyleSheet.create({
   },
   tabBarLabel: {
     ...t.typography.tabLabel,
-    marginTop: -2,
-  },
-  tabBarIcon: {
     marginTop: 2,
-  },
-  tabIconWrap: {
-    alignItems: "center",
-    height: 32,
-    justifyContent: "center",
-    position: "relative",
-    width: 48,
-  },
-  activeIndicator: {
-    backgroundColor: t.colors.primaryMuted,
-    borderRadius: t.radius.pill,
-    height: 32,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
   },
   header: {
     backgroundColor: t.colors.background,

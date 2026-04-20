@@ -948,16 +948,16 @@ const styles = StyleSheet.create({
 
   // Picker
   pickerSafeArea: { backgroundColor: t.colors.background, flex: 1 },
-  pickerHandleBar: { alignItems: "center", justifyContent: "center", backgroundColor: t.colors.surface, paddingVertical: t.spacing.md, minHeight: 44 },
+  pickerHandleBar: { alignItems: "center", justifyContent: "center", backgroundColor: t.colors.surface, paddingVertical: t.spacing.xs, minHeight: 20 },
   pickerHandle: { backgroundColor: t.colors.surfaceElevated, borderRadius: t.radius.pill, height: 4, width: 36 },
   pickerToolbar: {
     alignItems: "center",
     backgroundColor: t.colors.surface,
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingBottom: t.spacing.md,
+    paddingBottom: t.spacing.sm,
     paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.md,
+    paddingTop: t.spacing.sm,
   },
   pickerTitle: { color: t.colors.onSurface, ...t.typography.title, flex: 1 },
   pickerCloseBtn: { borderRadius: t.radius.pill, padding: t.spacing.xs },

@@ -108,11 +108,10 @@ export function PlayerStatsModal({ player, teams, visible, onClose }: PlayerStat
 
         {/* Header */}
         <View style={styles.header}>
+          <Text style={styles.headerTitle} numberOfLines={1}>{player.name}</Text>
           <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.closeBtn} hitSlop={12}>
             <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurfaceMuted} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle} numberOfLines={1}>{player.name}</Text>
-          <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -292,7 +291,7 @@ const styles = StyleSheet.create({
   safeArea: { backgroundColor: t.colors.background, flex: 1 },
 
   // Handle — swipeable area
-  handleBar: { alignItems: "center", justifyContent: "center", backgroundColor: t.colors.surface, paddingVertical: t.spacing.md, minHeight: 44 },
+  handleBar: { alignItems: "center", justifyContent: "center", backgroundColor: t.colors.surface, paddingVertical: t.spacing.xs, minHeight: 20 },
   handle: { backgroundColor: t.colors.surfaceElevated, borderRadius: t.radius.pill, height: 4, width: 36 },
 
   // Header
@@ -301,13 +300,12 @@ const styles = StyleSheet.create({
     backgroundColor: t.colors.surface,
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingBottom: t.spacing.md,
+    paddingBottom: t.spacing.sm,
     paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.md,
+    paddingTop: t.spacing.sm,
   },
-  headerTitle: { color: t.colors.onSurface, ...t.typography.subtitle, flex: 1, textAlign: "center" },
+  headerTitle: { color: t.colors.onSurface, ...t.typography.subtitle, flex: 1 },
   closeBtn: { borderRadius: t.radius.pill, padding: t.spacing.xs },
-  headerSpacer: { width: 40 },
 
   // Scroll
   scrollContent: { paddingBottom: t.spacing.xxxl },

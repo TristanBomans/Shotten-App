@@ -10,13 +10,24 @@ An app for our futsal team to track attendance at matches. The app revolves arou
 
 ## Project Structure
 
-The codebase is organized around a single Next.js App Router app:
+The project contains two apps:
 
-- `app/` for the page, layout, manifest, version screen, and API routes
-- `components/` for the dashboard and feature UI
-- `lib/` for Supabase access, data helpers, and shared utilities
-- `scripts/` for build, versioning, and Cloudflare deployment helpers
-- `open-next.config.ts` and `scripts/build-opennext.sh` for the Cloudflare/OpenNext build pipeline
+### PWA (`pwa/`)
+The original Next.js progressive web app:
+
+- `pwa/app/` for the page, layout, manifest, version screen, and API routes
+- `pwa/components/` for the dashboard and feature UI
+- `pwa/lib/` for Supabase access, data helpers, and shared utilities
+- `pwa/scripts/` for build, versioning, and Cloudflare deployment helpers
+- `pwa/open-next.config.ts` and `pwa/scripts/build-opennext.sh` for the Cloudflare/OpenNext build pipeline
+
+### Native Mobile (`mobile/`)
+A React Native app built with Expo Go, providing a native Android experience alongside the PWA:
+
+- `mobile/src/app/` for screens and navigation
+- `mobile/src/components/` for reusable UI components
+- `mobile/src/lib/` for API clients, types, and utilities
+- `mobile/src/theme/` for the Android dark theme
 
 ### Data Sync
 The app automatically fetches data from external sources:
@@ -28,14 +39,22 @@ The app automatically fetches data from external sources:
 
 ## Hosting & Deployments
 
-The app runs on **Cloudflare Pages** via the OpenNext adapter.
+### PWA
+The PWA runs on **Cloudflare Pages** via the OpenNext adapter.
 
 - **Production**: `main` branch automatically deploys to production
 - **Preview**: Each feature branch gets its own preview URL
 - **Build**: Happens automatically on every push
 
+### Mobile
+The native mobile app is distributed via **GitHub Releases** as an Android APK:
+
+- Push a tag like `mobile-v*.*.*` to trigger a release build
+- Preview builds can be created manually via GitHub Actions
+
 ## Tech Stack
 
+### PWA
 | Technology | Purpose |
 |------------|---------|
 | [Next.js 14](https://nextjs.org/docs) | React framework with App Router and API routes |
@@ -53,6 +72,15 @@ The app runs on **Cloudflare Pages** via the OpenNext adapter.
 | [Wrangler](https://developers.cloudflare.com/workers/wrangler/) | Cloudflare CLI |
 | `clsx`, `tailwind-merge`, `react-markdown`, `react-tooltip` | Supporting UI and content utilities |
 
+### Mobile
+| Technology | Purpose |
+|------------|---------|
+| [React Native](https://reactnative.dev/) | Native mobile UI |
+| [Expo](https://expo.dev/) | Development platform and build tooling |
+| [Expo Router](https://docs.expo.dev/router/introduction/) | File-based navigation |
+| [TypeScript](https://www.typescriptlang.org/) | Type safety |
+| [React Native Reanimated](https://docs.swmansion.com/react-native-reanimated/) | Smooth animations |
+
 ## Local Development
 
 ### Requirements
@@ -67,14 +95,15 @@ curl -fsSL https://bun.sh/install | bash
 powershell -c "irm bun.sh/install.ps1 | iex"
 ```
 
-### Setup
+### PWA
 
-1. **Clone the repo** and install dependencies:
+1. **Install dependencies**:
    ```bash
+   cd pwa
    bun install
    ```
 
-2. **Environment variables** - copy `.env.example` to `.env.local` and fill in your Supabase credentials
+2. **Environment variables** - copy `pwa/.env.example` to `pwa/.env.local` and fill in your Supabase credentials
 
 3. **Start the dev server**:
    ```bash
@@ -83,13 +112,33 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+### Mobile
+
+1. **Install dependencies**:
+   ```bash
+   cd mobile
+   bun install
+   ```
+
+2. **Start Expo**:
+   ```bash
+   bun start
+   ```
+
+3. Scan the QR code with the Expo Go app on your Android device
+
 ### Useful commands
 
 ```bash
-bun dev          # Start development server
-bun run build    # Build for production
-bun run lint     # ESLint check
-bun run deploy   # Deploy to Cloudflare (manual)
+# PWA
+cd pwa && bun dev          # Start PWA development server
+cd pwa && bun run build    # Build PWA for production
+cd pwa && bun run lint     # ESLint check
+cd pwa && bun run deploy   # Deploy PWA to Cloudflare (manual)
+
+# Mobile
+cd mobile && bun start     # Start Expo development server
+cd mobile && bun run android   # Run on Android emulator/device
 ```
 
 ## Contributing

@@ -148,11 +148,10 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
 
           {/* Header */}
         <View style={styles.header}>
+          <Text style={styles.headerTitle} numberOfLines={1}>{team.name}</Text>
           <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.closeBtn} hitSlop={12}>
             <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurfaceMuted} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle} numberOfLines={1}>{team.name}</Text>
-          <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView
@@ -432,7 +431,7 @@ function MatchesTab({
           const opponent = isHome ? match.awayTeam : match.homeTeam;
           const isPlayed = match.status === "Played";
           const d = new Date(match.date);
-          const dateStr = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+          const dateStr = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
           const timeStr = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
           let resultColor: string = t.colors.onSurfaceDim;
@@ -580,7 +579,7 @@ const styles = StyleSheet.create({
   safeArea: { backgroundColor: t.colors.background, flex: 1 },
 
   // Handle
-  handleBar: { alignItems: "center", justifyContent: "center", backgroundColor: t.colors.surface, paddingVertical: t.spacing.md, minHeight: 44 },
+  handleBar: { alignItems: "center", justifyContent: "center", backgroundColor: t.colors.surface, paddingVertical: t.spacing.xs, minHeight: 20 },
   handle: { backgroundColor: t.colors.surfaceElevated, borderRadius: t.radius.pill, height: 4, width: 36 },
 
   // Header
@@ -589,13 +588,12 @@ const styles = StyleSheet.create({
     backgroundColor: t.colors.surface,
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingBottom: t.spacing.md,
+    paddingBottom: t.spacing.sm,
     paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.md,
+    paddingTop: t.spacing.sm,
   },
-  headerTitle: { color: t.colors.onSurface, ...t.typography.subtitle, flex: 1, textAlign: "center" },
+  headerTitle: { color: t.colors.onSurface, ...t.typography.subtitle, flex: 1 },
   closeBtn: { borderRadius: t.radius.pill, padding: t.spacing.xs },
-  headerSpacer: { width: 40 },
 
   // Scroll
   scrollContent: { paddingBottom: t.spacing.xxxl },

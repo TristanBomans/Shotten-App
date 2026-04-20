@@ -1,18 +1,18 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+/pwa/node_modules
 
 # testing
-/coverage
+/pwa/coverage
 
 # next.js
-/.next/
-/out/
-/.open-next/
+/pwa/.next/
+/pwa/out/
+/pwa/.open-next/
 
 # production
-/build
+/pwa/build
 
 # misc
 .DS_Store
@@ -22,16 +22,16 @@
 npm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+/pwa/.env*
 
 # typescript
-*.tsbuildinfo
-next-env.d.ts
+/pwa/*.tsbuildinfo
+/pwa/next-env.d.ts
 .claude/settings.local.json
-public/version.json
+/pwa/public/version.json
 
 # package manager
-package-lock.json
+/pwa/package-lock.json
 
 # mobile (expo)
 /mobile/node_modules
