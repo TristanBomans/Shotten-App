@@ -1,0 +1,53 @@
+{
+  "name": "shotten-app",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "bun@1.3.6",
+  "scripts": {
+    "preinstall": "npx only-allow bun",
+    "predev": "node scripts/check-npm.js",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "mobile:install": "bun install --cwd ../mobile",
+    "mobile:dev": "bun run --cwd ../mobile dev",
+    "mobile:start": "bun run --cwd ../mobile start",
+    "mobile:android": "bun run --cwd ../mobile android",
+    "mobile:ios": "bun run --cwd ../mobile ios",
+    "lint": "eslint",
+    "build:cf": "bun install && bun scripts/generate-version.js && bunx next build && bash scripts/build-opennext.sh && bash scripts/prepare-pages.sh",
+    "preview": "bun run build:cf && wrangler dev",
+    "deploy": "bun run build:cf && wrangler deploy"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.90.1",
+    "@tailwindcss/postcss": "^4.1.17",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.25",
+    "lucide-react": "^0.556.0",
+    "next": "^14.2.23",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "react-tooltip": "^5.30.0",
+    "recharts": "^3.6.0",
+    "remark-gfm": "^4.0.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "@mistralai/mistralai": "^1.11.0",
+    "@opennextjs/cloudflare": "^1.14.4",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.22",
+    "esbuild": "^0.25.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5",
+    "wrangler": "^4.53.0"
+  }
+}

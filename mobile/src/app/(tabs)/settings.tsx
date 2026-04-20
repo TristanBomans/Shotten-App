@@ -62,9 +62,10 @@ function formatPublishedDate(isoString: string | null): string {
     return "";
   }
 
-  return date.toLocaleDateString("en-US", {
-    month: "short",
+  return date.toLocaleDateString("en-GB", {
+    weekday: "short",
     day: "numeric",
+    month: "short",
     year: "numeric",
   });
 }
@@ -716,8 +717,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: t.colors.surface,
-    paddingVertical: t.spacing.md,
-    minHeight: 44,
+    paddingVertical: t.spacing.xs,
+    minHeight: 20,
   },
   pickerHandle: {
     backgroundColor: t.colors.surfaceElevated,
@@ -730,9 +731,9 @@ const styles = StyleSheet.create({
     backgroundColor: t.colors.surface,
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingBottom: t.spacing.md,
+    paddingBottom: t.spacing.sm,
     paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.md,
+    paddingTop: t.spacing.sm,
   },
   pickerTitle: {
     color: t.colors.onSurface,

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
   Modal,
   Pressable,
@@ -243,18 +244,45 @@ function ActionButton({
   );
 }
 
+function SkeletonRow() {
+  const pulse = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [pulse]);
+
+  return (
+    <Animated.View style={[styles.pastRow, { opacity: pulse }]}>
+      <View style={[styles.skeletonCircle, { marginRight: 12 }]} />
+      <View style={{ flex: 1, gap: 6 }}>
+        <View style={[styles.skeletonLine, { width: "60%" }]} />
+        <View style={[styles.skeletonLine, { width: "40%", height: 12 }]} />
+      </View>
+      <View style={[styles.skeletonLine, { width: 60, height: 28, borderRadius: 8 }]} />
+    </Animated.View>
+  );
+}
+
 function HistoryModal({
   visible,
   onClose,
   pastMatches,
   playerId,
   scoreLookup,
+  loadingScores,
 }: {
   visible: boolean;
   onClose: () => void;
   pastMatches: Match[];
   playerId: number;
   scoreLookup: Map<number, MatchScore | null>;
+  loadingScores: boolean;
 }) {
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
@@ -271,6 +299,10 @@ function HistoryModal({
               <MaterialCommunityIcons name="history" size={40} color={t.colors.onSurfaceDim} />
               <Text style={styles.emptySubtitle}>No past matches</Text>
             </View>
+          ) : loadingScores ? (
+            Array.from({ length: Math.min(pastMatches.length, 8) }).map((_, i) => (
+              <SkeletonRow key={i} />
+            ))
           ) : (
             pastMatches.map((match) => (
               <PastMatchRow
@@ -360,6 +392,7 @@ export default function HomeScreen() {
   const [showHistory, setShowHistory] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [scoreLookup, setScoreLookup] = useState<Map<number, MatchScore | null>>(new Map());
+  const [loadingScores, setLoadingScores] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const loadMatches = useCallback(
@@ -437,6 +470,7 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!showHistory || pastMatches.length === 0) return;
     let cancelled = false;
+    setLoadingScores(true);
 
     async function fetchScores() {
       try {
@@ -469,6 +503,8 @@ export default function HomeScreen() {
         setScoreLookup(lookup);
       } catch {
         // Scores won't be shown if fetch fails
+      } finally {
+        if (!cancelled) setLoadingScores(false);
       }
     }
 
@@ -610,7 +646,7 @@ export default function HomeScreen() {
       )}
 
       {/* History modal */}
-      <HistoryModal visible={showHistory} onClose={() => setShowHistory(false)} pastMatches={pastMatches} playerId={session.playerId} scoreLookup={scoreLookup} />
+      <HistoryModal visible={showHistory} onClose={() => setShowHistory(false)} pastMatches={pastMatches} playerId={session.playerId} scoreLookup={scoreLookup} loadingScores={loadingScores} />
 
       {/* Detail modal */}
       {selectedMatch ? (
@@ -913,5 +949,16 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontVariant: ["tabular-nums"],
     letterSpacing: -0.02,
+  },
+  skeletonCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: t.colors.surfaceElevated,
+  },
+  skeletonLine: {
+    height: 14,
+    borderRadius: 4,
+    backgroundColor: t.colors.surfaceElevated,
   },
 });
