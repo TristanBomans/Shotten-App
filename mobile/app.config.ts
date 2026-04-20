@@ -62,7 +62,7 @@ const config: ExpoConfig = {
   name: variant.appName,
   slug: "shotten-mobile",
   scheme: variant.scheme,
-  version: "0.1.1",
+  version: "0.1.2",
   icon: iconPath,
   orientation: "portrait",
   userInterfaceStyle: "automatic",
