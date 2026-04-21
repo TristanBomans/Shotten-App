@@ -43,7 +43,7 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [activeTab, setActiveTab] = useState<TeamTab>("overview");
-  const [matchFilter, setMatchFilter] = useState<MatchFilter>("all");
+  const [matchFilter, setMatchFilter] = useState<MatchFilter>("past");
   const [showImage, setShowImage] = useState(false);
   const panY = useRef(new Animated.Value(0)).current;
 
@@ -84,7 +84,7 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
   useEffect(() => {
     if (!visible || !team) return;
     setActiveTab("overview");
-    setMatchFilter("all");
+    setMatchFilter("past");
     setLoadingMatches(true);
     setLoadingPlayers(true);
 
@@ -208,9 +208,9 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
           {/* ── TABS ── */}
           <View style={styles.tabs}>
             {([
-              { key: "overview" as TeamTab, label: "Overview", icon: "chart-bar" },
-              { key: "matches" as TeamTab, label: "Matches", icon: "soccer-field" },
-              { key: "squad" as TeamTab, label: "Squad", icon: "account-group" },
+              { key: "overview" as TeamTab, label: "Overview" },
+              { key: "matches" as TeamTab, label: "Matches" },
+              { key: "squad" as TeamTab, label: "Squad" },
             ]).map((tab) => (
               <TouchableOpacity
                 key={tab.key}
@@ -218,12 +218,6 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
                 onPress={() => setActiveTab(tab.key)}
                 style={[styles.tabBtn, activeTab === tab.key && styles.tabBtnActive]}
               >
-                <MaterialCommunityIcons
-                  name={tab.icon as any}
-                  size={14}
-                  color={activeTab === tab.key ? t.colors.primary : t.colors.onSurfaceMuted}
-                  style={{ marginBottom: 2 }}
-                />
                 <Text style={[styles.tabBtnText, activeTab === tab.key && styles.tabBtnTextActive]}>
                   {tab.label}
                 </Text>
@@ -677,23 +671,27 @@ const styles = StyleSheet.create({
   // Tabs
   tabs: {
     flexDirection: "row",
-    paddingHorizontal: t.spacing.lg,
     gap: t.spacing.sm,
     marginTop: t.spacing.sm,
+    marginHorizontal: t.spacing.lg,
+    padding: t.spacing.sm,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    borderColor: t.colors.outline,
   },
   tabBtn: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: t.spacing.sm,
+    paddingVertical: t.spacing.md,
     borderRadius: t.radius.md,
-    backgroundColor: t.colors.surface,
   },
   tabBtnActive: {
-    backgroundColor: t.colors.primaryMuted,
+    backgroundColor: t.colors.surfaceRaised,
   },
-  tabBtnText: { color: t.colors.onSurfaceMuted, fontSize: 12, fontWeight: "700", marginTop: 2 },
-  tabBtnTextActive: { color: t.colors.primary },
+  tabBtnText: { color: t.colors.onSurfaceMuted, fontSize: 14, fontWeight: "600" },
+  tabBtnTextActive: { color: t.colors.onSurface },
 
   // Tab content
   tabContent: { paddingHorizontal: t.spacing.lg, paddingTop: t.spacing.lg },
