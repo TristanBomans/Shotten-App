@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { fetchMatches, updateAttendance, fetchScraperTeams, fetchScraperTeamMatches } from "../../lib/api";
+import { fetchMatches, fetchPlayers, updateAttendance, fetchScraperTeams, fetchScraperTeamMatches } from "../../lib/api";
 import {
   filterPastMatches,
   getHeroMatch,
@@ -22,7 +22,7 @@ import {
   withPlayerAttendance,
   formatMatchDate,
 } from "../../lib/matches";
-import type { AttendanceStatus, Match, ScraperMatch } from "../../lib/types";
+import type { AttendanceStatus, Match, Player, ScraperMatch } from "../../lib/types";
 import { useSession } from "../../state/session-context";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -52,12 +52,14 @@ function getCountdown(dateIso: string): string {
   return `In ${diffDays} days`;
 }
 
-function getSquadCounts(match: Match) {
+function getSquadCounts(match: Match, allPlayers: Player[]) {
   const present = match.attendances.filter((a) => a.status === "Present").length;
   const maybe = match.attendances.filter((a) => a.status === "Maybe").length;
   const notPresent = match.attendances.filter((a) => a.status === "NotPresent").length;
-  const totalPlayers = match.players?.length ?? match.attendances.length;
-  return { present, maybe, notPresent, total: totalPlayers, unanswered: totalPlayers - present - maybe - notPresent };
+  const teamPlayerIds = new Set(match.attendances.map((a) => a.playerId));
+  const teamPlayers = allPlayers.filter((p) => p.teamIds.includes(match.teamId));
+  const unanswered = teamPlayers.filter((p) => !teamPlayerIds.has(p.id)).length;
+  return { present, maybe, notPresent, total: teamPlayers.length, unanswered };
 }
 
 type MatchScore = { scoreline: string; result: "W" | "L" | "D" };
@@ -120,8 +122,8 @@ function SquadCount({ color, label, count }: { color: string; label: string; cou
   );
 }
 
-function DeckCardContent({ match, playerId }: { match: Match; playerId: number }) {
-  const counts = getSquadCounts(match);
+function DeckCardContent({ match, playerId, allPlayers }: { match: Match; playerId: number; allPlayers: Player[] }) {
+  const counts = getSquadCounts(match, allPlayers);
   const status = getPlayerAttendanceStatus(match, playerId);
   const state = resolveAttendanceState(status);
   const countdown = getCountdown(match.date);
@@ -391,6 +393,7 @@ function PastMatchRow({ match, playerId, scoreInfo }: { match: Match; playerId: 
 export default function HomeScreen() {
   const session = useSession();
   const [matches, setMatches] = useState<Match[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -413,8 +416,12 @@ export default function HomeScreen() {
       setError(null);
 
       try {
-        const response = await fetchMatches(playerId);
-        setMatches(response);
+        const [matchesResponse, playersResponse] = await Promise.all([
+          fetchMatches(playerId),
+          fetchPlayers(),
+        ]);
+        setMatches(matchesResponse);
+        setPlayers(playersResponse);
         setCurrentIndex(0);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Could not load matches.");
@@ -608,7 +615,7 @@ export default function HomeScreen() {
                   onPress={() => setSelectedMatch(match)}
                   android_ripple={{ color: t.colors.ripple, borderless: false }}
                 >
-                  <DeckCardContent match={match} playerId={session.playerId} />
+                  <DeckCardContent match={match} playerId={session.playerId} allPlayers={players} />
                 </Pressable>
               </View>
             ))}
