@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Image,
   Linking,
   Modal,
   PanResponder,
@@ -43,6 +44,7 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [activeTab, setActiveTab] = useState<TeamTab>("overview");
   const [matchFilter, setMatchFilter] = useState<MatchFilter>("all");
+  const [showImage, setShowImage] = useState(false);
   const panY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -162,9 +164,15 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
           <View style={styles.hero}>
             <View style={styles.heroGradient}>
               <View style={styles.heroContent}>
-                <View style={styles.heroAvatar}>
-                  <Text style={styles.heroAvatarText}>{team.name.charAt(0)}</Text>
-                </View>
+                {team.imageBase64 ? (
+                  <TouchableOpacity activeOpacity={0.85} onPress={() => setShowImage(true)}>
+                    <Image source={{ uri: team.imageBase64 }} style={styles.heroAvatarImage} />
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.heroAvatar}>
+                    <Text style={styles.heroAvatarText}>{team.name.charAt(0)}</Text>
+                  </View>
+                )}
                 <View style={styles.heroText}>
                   <Text style={styles.heroName}>{team.name}</Text>
                   {team.leagueName && (
@@ -252,6 +260,16 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
           )}
         </ScrollView>
         </Animated.View>
+
+        {/* Full-screen image overlay */}
+        <Modal visible={showImage} transparent animationType="fade" onRequestClose={() => setShowImage(false)}>
+          <View style={styles.imageOverlay}>
+            <TouchableOpacity style={styles.imageOverlayClose} activeOpacity={0.7} onPress={() => setShowImage(false)}>
+              <MaterialCommunityIcons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
+            <Image source={{ uri: team.imageBase64 }} style={styles.imageOverlayImage} resizeMode="contain" />
+          </View>
+        </Modal>
       </SafeAreaView>
     </Modal>
   );
@@ -621,6 +639,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  heroAvatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: t.radius.xl,
+    resizeMode: "cover",
+  },
   heroAvatarText: { color: t.colors.primary, fontSize: 28, fontWeight: "800" },
   heroText: { flex: 1, minWidth: 0 },
   heroName: { color: t.colors.onSurface, ...t.typography.subtitle },
@@ -857,4 +881,25 @@ const styles = StyleSheet.create({
   // Empty
   emptyTab: { alignItems: "center", paddingVertical: t.spacing.xxxl, gap: t.spacing.md },
   emptyTabText: { color: t.colors.onSurfaceDim, ...t.typography.bodySmall },
+
+  // Image overlay
+  imageOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: t.spacing.lg,
+  },
+  imageOverlayClose: {
+    position: "absolute",
+    top: 48,
+    right: t.spacing.lg,
+    padding: t.spacing.sm,
+    zIndex: 1,
+  },
+  imageOverlayImage: {
+    width: "100%",
+    height: "80%",
+    borderRadius: t.radius.xl,
+  },
 });
