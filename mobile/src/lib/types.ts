@@ -26,6 +26,7 @@ export interface Match {
   teamName: string;
   teamId: number;
   attendances: MatchAttendance[];
+  players?: Player[];
 }
 
 export interface AttendanceUpdateResponse {

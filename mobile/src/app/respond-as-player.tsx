@@ -39,32 +39,33 @@ export default function RespondAsPlayerScreen() {
   }, []);
 
   useLayoutEffect(() => {
-    if (step === "matches") {
-      navigation.setOptions({
-        headerLeft: () => (
-          <Pressable
-            onPress={() => {
+    navigation.setOptions({
+      headerBackVisible: false,
+      headerLeft: () => (
+        <Pressable
+          onPress={() => {
+            if (step === "matches") {
               setStep("player");
               setSelectedPlayer(null);
               setMatches([]);
-            }}
-            style={styles.headerBtn}
-          >
-            <MaterialCommunityIcons name="arrow-left" size={24} color={t.colors.onSurface} />
-          </Pressable>
-        ),
-        headerRight: () => (
-          <Pressable onPress={() => router.back()} style={styles.headerBtn}>
-            <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurface} />
-          </Pressable>
-        ),
-      });
-    } else {
-      navigation.setOptions({
-        headerLeft: undefined,
-        headerRight: undefined,
-      });
-    }
+              return;
+            }
+            router.back();
+          }}
+          style={styles.headerBtn}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color={t.colors.onSurface} />
+        </Pressable>
+      ),
+      headerRight:
+        step === "matches"
+          ? () => (
+              <Pressable onPress={() => router.back()} style={styles.headerBtn}>
+                <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurface} />
+              </Pressable>
+            )
+          : undefined,
+    });
   }, [step, navigation, router]);
 
   useEffect(() => {
@@ -240,5 +241,10 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", flex: 1, gap: t.spacing.sm, justifyContent: "center" },
   emptyTitle: { color: t.colors.onSurface, ...t.typography.subtitle },
   emptySubtext: { color: t.colors.onSurfaceDim, ...t.typography.bodySmall },
-  headerBtn: { padding: 8 },
+  headerBtn: {
+    alignItems: "center",
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
 });

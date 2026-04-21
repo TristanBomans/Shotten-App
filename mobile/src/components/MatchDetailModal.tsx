@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
+  Image,
   Linking,
   Modal,
   Pressable,
@@ -8,6 +9,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -192,9 +194,15 @@ function SquadView({
   const present = match.attendances.filter((a) => a.status === "Present");
   const maybe = match.attendances.filter((a) => a.status === "Maybe");
   const notPresent = match.attendances.filter((a) => a.status === "NotPresent");
-  const unknown = match.attendances.filter(
-    (a) => a.status !== "Present" && a.status !== "Maybe" && a.status !== "NotPresent"
-  );
+  const attendancePlayerIds = new Set(match.attendances.map((a) => a.playerId));
+  const unknown = match.players
+    ?.filter((p) => !attendancePlayerIds.has(p.id))
+    .map((p) => ({
+      matchId: match.id,
+      playerId: p.id,
+      player: p,
+      status: "NotPresent" as AttendanceStatus,
+    })) ?? [];
 
   const statusGroups = [
     { title: "Coming", color: t.colors.primary, bgColor: t.colors.successContainer, players: present },
@@ -276,12 +284,14 @@ function OpponentView({
   opponentPlayers,
   recentForm,
   loading,
+  onImagePress,
 }: {
   match: Match;
   opponentData: ScraperTeam | null;
   opponentPlayers: ScraperPlayer[];
   recentForm: ("W" | "L" | "D")[];
   loading: boolean;
+  onImagePress?: () => void;
 }) {
   if (loading && !opponentData) {
     return (
@@ -335,9 +345,15 @@ function OpponentView({
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.tabScrollContent}>
       <SectionCard style={{ padding: 20 }}>
         <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
-          <View style={styles.teamLogoContainer}>
-            <Text style={styles.teamLogoText}>{opponentData.name.charAt(0)}</Text>
-          </View>
+          {opponentData.imageBase64 ? (
+            <TouchableOpacity activeOpacity={0.85} onPress={onImagePress}>
+              <Image source={{ uri: opponentData.imageBase64 }} style={styles.teamLogoImage} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.teamLogoContainer}>
+              <Text style={styles.teamLogoText}>{opponentData.name.charAt(0)}</Text>
+            </View>
+          )}
           <View style={{ flex: 1 }}>
             <Text style={styles.teamName} numberOfLines={1}>
               {opponentData.name}
@@ -520,6 +536,7 @@ export function MatchDetailModal({
   if (!match) return null;
 
   const [activeTab, setActiveTab] = useState<Tab>("squad");
+  const [showImage, setShowImage] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const lastTabRef = useRef<Tab>("squad");
 
@@ -640,6 +657,7 @@ export function MatchDetailModal({
               opponentPlayers={opponent.opponentPlayers}
               recentForm={opponent.recentForm}
               loading={opponent.loading}
+              onImagePress={() => setShowImage(true)}
             />
           </View>
         </ScrollView>
@@ -665,6 +683,16 @@ export function MatchDetailModal({
             <Text style={styles.actionButtonText}>Calendar</Text>
           </Pressable>
         </View>
+
+        {/* Full-screen image overlay */}
+        <Modal visible={showImage} transparent animationType="fade" onRequestClose={() => setShowImage(false)}>
+          <View style={styles.imageOverlay}>
+            <TouchableOpacity style={styles.imageOverlayClose} activeOpacity={0.7} onPress={() => setShowImage(false)}>
+              <MaterialCommunityIcons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
+            <Image source={{ uri: opponent.opponentData?.imageBase64 }} style={styles.imageOverlayImage} resizeMode="contain" />
+          </View>
+        </Modal>
       </SafeAreaView>
     </Modal>
   );
@@ -932,6 +960,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 72,
   },
+  teamLogoImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+    resizeMode: "cover",
+  },
   teamLogoText: {
     color: t.colors.primary,
     fontSize: 28,
@@ -1030,5 +1064,26 @@ const styles = StyleSheet.create({
   scorerStatText: {
     color: t.colors.onSurfaceMuted,
     fontSize: 13,
+  },
+
+  // Image overlay
+  imageOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: t.spacing.lg,
+  },
+  imageOverlayClose: {
+    position: "absolute",
+    top: 48,
+    right: t.spacing.lg,
+    padding: t.spacing.sm,
+    zIndex: 1,
+  },
+  imageOverlayImage: {
+    width: "100%",
+    height: "80%",
+    borderRadius: t.radius.xl,
   },
 });

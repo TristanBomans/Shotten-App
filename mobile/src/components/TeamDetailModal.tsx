@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Image,
   Linking,
   Modal,
   PanResponder,
@@ -24,6 +25,7 @@ const { width: SCREEN_W } = Dimensions.get("window");
 
 type TeamTab = "overview" | "matches" | "squad";
 type MatchFilter = "all" | "upcoming" | "past";
+const TEAM_TABS: TeamTab[] = ["overview", "matches", "squad"];
 
 interface TeamDetailModalProps {
   team: ScraperTeam | null;
@@ -42,8 +44,28 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [activeTab, setActiveTab] = useState<TeamTab>("overview");
-  const [matchFilter, setMatchFilter] = useState<MatchFilter>("all");
+  const [matchFilter, setMatchFilter] = useState<MatchFilter>("past");
+  const [showImage, setShowImage] = useState(false);
   const panY = useRef(new Animated.Value(0)).current;
+  const tabScrollRef = useRef<ScrollView>(null);
+  const lastTabRef = useRef<TeamTab>("overview");
+
+  const handleTabPagerScroll = useCallback((event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / SCREEN_W);
+    const nextTab = TEAM_TABS[index] ?? "overview";
+    if (nextTab !== lastTabRef.current) {
+      lastTabRef.current = nextTab;
+      setActiveTab(nextTab);
+    }
+  }, []);
+
+  const scrollToTab = useCallback((tab: TeamTab) => {
+    const index = TEAM_TABS.indexOf(tab);
+    tabScrollRef.current?.scrollTo({ x: index * SCREEN_W, animated: true });
+    lastTabRef.current = tab;
+    setActiveTab(tab);
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -82,7 +104,11 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
   useEffect(() => {
     if (!visible || !team) return;
     setActiveTab("overview");
-    setMatchFilter("all");
+    lastTabRef.current = "overview";
+    requestAnimationFrame(() => {
+      tabScrollRef.current?.scrollTo({ x: 0, animated: false });
+    });
+    setMatchFilter("past");
     setLoadingMatches(true);
     setLoadingPlayers(true);
 
@@ -147,75 +173,26 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
           </View>
 
           {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle} numberOfLines={1}>{team.name}</Text>
-          <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.closeBtn} hitSlop={12}>
-            <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurfaceMuted} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* ── HERO ── */}
-          <View style={styles.hero}>
-            <View style={styles.heroGradient}>
-              <View style={styles.heroContent}>
-                <View style={styles.heroAvatar}>
-                  <Text style={styles.heroAvatarText}>{team.name.charAt(0)}</Text>
-                </View>
-                <View style={styles.heroText}>
-                  <Text style={styles.heroName}>{team.name}</Text>
-                  {team.leagueName && (
-                    <Text style={styles.heroLeague}>{team.leagueName}</Text>
-                  )}
-                </View>
-                {team.rank !== undefined && (
-                  <View style={styles.heroRankBadge}>
-                    <Text style={styles.heroRankLabel}>RANK</Text>
-                    <Text style={styles.heroRankValue}>#{team.rank}</Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Season Stats Bar */}
-              {team.points !== undefined && (
-                <View style={styles.heroStatsBar}>
-                  <HeroStat label="Points" value={String(team.points)} accent />
-                  <View style={styles.heroStatDivider} />
-                  <HeroStat label="Played" value={String(team.matchesPlayed ?? 0)} />
-                  <View style={styles.heroStatDivider} />
-                  <HeroStat
-                    label="GD"
-                    value={`${(team.goalDifference ?? 0) >= 0 ? "+" : ""}${team.goalDifference ?? 0}`}
-                    accent={(team.goalDifference ?? 0) > 0}
-                    negative={(team.goalDifference ?? 0) < 0}
-                  />
-                </View>
-              )}
-            </View>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle} numberOfLines={1}>{team.name}</Text>
+            <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.closeBtn} hitSlop={12}>
+              <MaterialCommunityIcons name="close" size={24} color={t.colors.onSurfaceMuted} />
+            </TouchableOpacity>
           </View>
 
           {/* ── TABS ── */}
           <View style={styles.tabs}>
             {([
-              { key: "overview" as TeamTab, label: "Overview", icon: "chart-bar" },
-              { key: "matches" as TeamTab, label: "Matches", icon: "soccer-field" },
-              { key: "squad" as TeamTab, label: "Squad", icon: "account-group" },
+              { key: "overview" as TeamTab, label: "Overview" },
+              { key: "matches" as TeamTab, label: "Matches" },
+              { key: "squad" as TeamTab, label: "Squad" },
             ]).map((tab) => (
               <TouchableOpacity
                 key={tab.key}
                 activeOpacity={0.85}
-                onPress={() => setActiveTab(tab.key)}
+                onPress={() => scrollToTab(tab.key)}
                 style={[styles.tabBtn, activeTab === tab.key && styles.tabBtnActive]}
               >
-                <MaterialCommunityIcons
-                  name={tab.icon as any}
-                  size={14}
-                  color={activeTab === tab.key ? t.colors.primary : t.colors.onSurfaceMuted}
-                  style={{ marginBottom: 2 }}
-                />
                 <Text style={[styles.tabBtnText, activeTab === tab.key && styles.tabBtnTextActive]}>
                   {tab.label}
                 </Text>
@@ -223,35 +200,106 @@ export function TeamDetailModal({ team, visible, onClose }: TeamDetailModalProps
             ))}
           </View>
 
-          {/* ── TAB CONTENT ── */}
-          {activeTab === "overview" && (
-            <OverviewTab
-              team={team}
-              recentForm={recentForm}
-              formColors={formColors}
-              upcomingCount={upcomingMatches.length}
-              pastCount={pastMatches.length}
-              onOpenLZV={openLZV}
-            />
-          )}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* ── HERO ── */}
+            <View style={styles.hero}>
+              <View style={styles.heroGradient}>
+                <View style={styles.heroContent}>
+                  {team.imageBase64 ? (
+                    <TouchableOpacity activeOpacity={0.85} onPress={() => setShowImage(true)}>
+                      <Image source={{ uri: team.imageBase64 }} style={styles.heroAvatarImage} />
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.heroAvatar}>
+                      <Text style={styles.heroAvatarText}>{team.name.charAt(0)}</Text>
+                    </View>
+                  )}
+                  <View style={styles.heroText}>
+                    <Text style={styles.heroName}>{team.name}</Text>
+                    {team.leagueName && (
+                      <Text style={styles.heroLeague}>{team.leagueName}</Text>
+                    )}
+                  </View>
+                  {team.rank !== undefined && (
+                    <View style={styles.heroRankBadge}>
+                      <Text style={styles.heroRankLabel}>RANK</Text>
+                      <Text style={styles.heroRankValue}>#{team.rank}</Text>
+                    </View>
+                  )}
+                </View>
 
-          {activeTab === "matches" && (
-            <MatchesTab
-              matches={filteredMatches}
-              teamName={team.name}
-              loading={loadingMatches}
-              filter={matchFilter}
-              onFilterChange={setMatchFilter}
-              upcomingCount={upcomingMatches.length}
-              pastCount={pastMatches.length}
-            />
-          )}
+                {/* Season Stats Bar */}
+                {team.points !== undefined && (
+                  <View style={styles.heroStatsBar}>
+                    <HeroStat label="Points" value={String(team.points)} accent />
+                    <View style={styles.heroStatDivider} />
+                    <HeroStat label="Played" value={String(team.matchesPlayed ?? 0)} />
+                    <View style={styles.heroStatDivider} />
+                    <HeroStat
+                      label="GD"
+                      value={`${(team.goalDifference ?? 0) >= 0 ? "+" : ""}${team.goalDifference ?? 0}`}
+                      accent={(team.goalDifference ?? 0) > 0}
+                      negative={(team.goalDifference ?? 0) < 0}
+                    />
+                  </View>
+                )}
+              </View>
+            </View>
 
-          {activeTab === "squad" && (
-            <SquadTab players={players} loading={loadingPlayers} />
-          )}
-        </ScrollView>
+            {/* ── TAB CONTENT ── */}
+            <ScrollView
+              ref={tabScrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              scrollEventThrottle={16}
+              onScroll={handleTabPagerScroll}
+              directionalLockEnabled
+              nestedScrollEnabled
+              style={styles.tabPager}
+            >
+              <View style={styles.tabPage}>
+                <OverviewTab
+                  team={team}
+                  recentForm={recentForm}
+                  formColors={formColors}
+                  upcomingCount={upcomingMatches.length}
+                  pastCount={pastMatches.length}
+                  onOpenLZV={openLZV}
+                />
+              </View>
+
+              <View style={styles.tabPage}>
+                <MatchesTab
+                  matches={filteredMatches}
+                  teamName={team.name}
+                  loading={loadingMatches}
+                  filter={matchFilter}
+                  onFilterChange={setMatchFilter}
+                  upcomingCount={upcomingMatches.length}
+                  pastCount={pastMatches.length}
+                />
+              </View>
+
+              <View style={styles.tabPage}>
+                <SquadTab players={players} loading={loadingPlayers} />
+              </View>
+            </ScrollView>
+          </ScrollView>
         </Animated.View>
+
+        {/* Full-screen image overlay */}
+        <Modal visible={showImage} transparent animationType="fade" onRequestClose={() => setShowImage(false)}>
+          <View style={styles.imageOverlay}>
+            <TouchableOpacity style={styles.imageOverlayClose} activeOpacity={0.7} onPress={() => setShowImage(false)}>
+              <MaterialCommunityIcons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
+            <Image source={{ uri: team.imageBase64 }} style={styles.imageOverlayImage} resizeMode="contain" />
+          </View>
+        </Modal>
       </SafeAreaView>
     </Modal>
   );
@@ -621,6 +669,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  heroAvatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: t.radius.xl,
+    resizeMode: "cover",
+  },
   heroAvatarText: { color: t.colors.primary, fontSize: 28, fontWeight: "800" },
   heroText: { flex: 1, minWidth: 0 },
   heroName: { color: t.colors.onSurface, ...t.typography.subtitle },
@@ -652,24 +706,27 @@ const styles = StyleSheet.create({
 
   // Tabs
   tabs: {
+    backgroundColor: t.colors.surface,
+    borderBottomColor: t.colors.divider,
+    borderBottomWidth: 1,
     flexDirection: "row",
-    paddingHorizontal: t.spacing.lg,
     gap: t.spacing.sm,
-    marginTop: t.spacing.sm,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
   },
   tabBtn: {
-    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: t.spacing.sm,
     borderRadius: t.radius.md,
-    backgroundColor: t.colors.surface,
+    flex: 1,
+    paddingVertical: t.spacing.md,
   },
   tabBtnActive: {
-    backgroundColor: t.colors.primaryMuted,
+    backgroundColor: t.colors.surfaceRaised,
   },
-  tabBtnText: { color: t.colors.onSurfaceMuted, fontSize: 12, fontWeight: "700", marginTop: 2 },
-  tabBtnTextActive: { color: t.colors.primary },
+  tabBtnText: { color: t.colors.onSurfaceMuted, fontSize: 14, fontWeight: "600" },
+  tabBtnTextActive: { color: t.colors.onSurface },
+  tabPager: { marginTop: t.spacing.sm },
+  tabPage: { width: SCREEN_W },
 
   // Tab content
   tabContent: { paddingHorizontal: t.spacing.lg, paddingTop: t.spacing.lg },
@@ -857,4 +914,25 @@ const styles = StyleSheet.create({
   // Empty
   emptyTab: { alignItems: "center", paddingVertical: t.spacing.xxxl, gap: t.spacing.md },
   emptyTabText: { color: t.colors.onSurfaceDim, ...t.typography.bodySmall },
+
+  // Image overlay
+  imageOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: t.spacing.lg,
+  },
+  imageOverlayClose: {
+    position: "absolute",
+    top: 48,
+    right: t.spacing.lg,
+    padding: t.spacing.sm,
+    zIndex: 1,
+  },
+  imageOverlayImage: {
+    width: "100%",
+    height: "80%",
+    borderRadius: t.radius.xl,
+  },
 });
