@@ -194,9 +194,15 @@ function SquadView({
   const present = match.attendances.filter((a) => a.status === "Present");
   const maybe = match.attendances.filter((a) => a.status === "Maybe");
   const notPresent = match.attendances.filter((a) => a.status === "NotPresent");
-  const unknown = match.attendances.filter(
-    (a) => a.status !== "Present" && a.status !== "Maybe" && a.status !== "NotPresent"
-  );
+  const attendancePlayerIds = new Set(match.attendances.map((a) => a.playerId));
+  const unknown = match.players
+    ?.filter((p) => !attendancePlayerIds.has(p.id))
+    .map((p) => ({
+      matchId: match.id,
+      playerId: p.id,
+      player: p,
+      status: "NotPresent" as AttendanceStatus,
+    })) ?? [];
 
   const statusGroups = [
     { title: "Coming", color: t.colors.primary, bgColor: t.colors.successContainer, players: present },
