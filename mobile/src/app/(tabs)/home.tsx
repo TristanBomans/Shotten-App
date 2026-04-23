@@ -717,6 +717,7 @@ export default function HomeScreen() {
           return (
             <MatchDetailModal
               match={liveMatch}
+              allPlayers={players}
               currentPlayerId={session.playerId}
               currentStatus={getPlayerAttendanceStatus(liveMatch, session.playerId)}
               isUpdating={updatingMatchId === selectedMatch.id}
