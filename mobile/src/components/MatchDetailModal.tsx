@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import type { AttendanceStatus, Match, ScraperPlayer, ScraperTeam } from "../lib/types";
+import type { AttendanceStatus, Match, Player, ScraperPlayer, ScraperTeam } from "../lib/types";
 import {
   formatMatchDate,
   resolveAttendanceState,
@@ -176,6 +176,7 @@ function SectionHeader({
 
 function SquadView({
   match,
+  allPlayers,
   currentPlayerId,
   currentStatus,
   isUpdating,
@@ -184,6 +185,7 @@ function SquadView({
   onMaybe,
 }: {
   match: Match;
+  allPlayers: Player[];
   currentPlayerId: number;
   currentStatus: AttendanceStatus | null;
   isUpdating: boolean;
@@ -195,14 +197,15 @@ function SquadView({
   const maybe = match.attendances.filter((a) => a.status === "Maybe");
   const notPresent = match.attendances.filter((a) => a.status === "NotPresent");
   const attendancePlayerIds = new Set(match.attendances.map((a) => a.playerId));
-  const unknown = match.players
-    ?.filter((p) => !attendancePlayerIds.has(p.id))
+  const teamPlayers = allPlayers.filter((p) => p.teamIds.includes(match.teamId));
+  const unknown = teamPlayers
+    .filter((p) => !attendancePlayerIds.has(p.id))
     .map((p) => ({
       matchId: match.id,
       playerId: p.id,
       player: p,
       status: "NotPresent" as AttendanceStatus,
-    })) ?? [];
+    }));
 
   const statusGroups = [
     { title: "Coming", color: t.colors.primary, bgColor: t.colors.successContainer, players: present },
@@ -512,6 +515,7 @@ function StatItem({
 
 interface MatchDetailModalProps {
   match: Match | null;
+  allPlayers: Player[];
   currentPlayerId: number;
   currentStatus: AttendanceStatus | null;
   isUpdating: boolean;
@@ -525,6 +529,7 @@ type Tab = "squad" | "opponent";
 
 export function MatchDetailModal({
   match,
+  allPlayers,
   currentPlayerId,
   currentStatus,
   isUpdating,
@@ -642,6 +647,7 @@ export function MatchDetailModal({
           <View style={styles.tabPage}>
             <SquadView
               match={match}
+              allPlayers={allPlayers}
               currentPlayerId={currentPlayerId}
               currentStatus={currentStatus}
               isUpdating={isUpdating}

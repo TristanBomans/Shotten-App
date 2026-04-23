@@ -254,6 +254,47 @@ function ActionButton({
   );
 }
 
+function SkeletonCard() {
+  const pulse = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [pulse]);
+
+  return (
+    <Animated.View style={[styles.cardInner, { opacity: pulse }]}>
+      <View>
+        <View style={[styles.skeletonLine, { width: 100, height: 28, borderRadius: t.radius.pill, marginBottom: t.spacing.lg }]} />
+        <View style={[styles.skeletonLine, { width: "85%", height: 32, borderRadius: 8, marginBottom: t.spacing.lg }]} />
+        <View style={[styles.skeletonLine, { width: "55%", height: 18, borderRadius: 4, marginBottom: t.spacing.sm }]} />
+        <View style={[styles.skeletonLine, { width: "45%", height: 18, borderRadius: 4 }]} />
+      </View>
+
+      <View style={styles.squadSection}>
+        <View style={[styles.skeletonLine, { width: 50, height: 14, marginBottom: t.spacing.sm }]} />
+        <View style={[styles.skeletonLine, { width: "100%", height: 8, borderRadius: t.radius.pill, marginBottom: t.spacing.md }]} />
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <View style={[styles.skeletonLine, { width: 40, height: 14 }]} />
+          <View style={[styles.skeletonLine, { width: 40, height: 14 }]} />
+          <View style={[styles.skeletonLine, { width: 40, height: 14 }]} />
+          <View style={[styles.skeletonLine, { width: 40, height: 14 }]} />
+        </View>
+      </View>
+
+      <View style={styles.statusSection}>
+        <View style={[styles.skeletonLine, { width: 80, height: 14, marginBottom: t.spacing.sm }]} />
+        <View style={[styles.skeletonLine, { width: 140, height: 44, borderRadius: t.radius.pill }]} />
+      </View>
+    </Animated.View>
+  );
+}
+
 function SkeletonRow() {
   const pulse = useRef(new Animated.Value(0.4)).current;
   useEffect(() => {
@@ -590,7 +631,13 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
-      {upcomingMatches.length === 0 ? (
+      {refreshing ? (
+        <View style={styles.skeletonDeck}>
+          <View style={styles.card}>
+            <SkeletonCard />
+          </View>
+        </View>
+      ) : upcomingMatches.length === 0 ? (
         <View style={styles.emptyState}>
           <MaterialCommunityIcons name="soccer" size={48} color={t.colors.onSurfaceDim} />
           <Text style={styles.emptyTitle}>No upcoming matches</Text>
@@ -670,6 +717,7 @@ export default function HomeScreen() {
           return (
             <MatchDetailModal
               match={liveMatch}
+              allPlayers={players}
               currentPlayerId={session.playerId}
               currentStatus={getPlayerAttendanceStatus(liveMatch, session.playerId)}
               isUpdating={updatingMatchId === selectedMatch.id}
@@ -737,6 +785,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: t.spacing.lg,
   },
   deckContainer: {},
+  skeletonDeck: {
+    flex: 1,
+    paddingHorizontal: CARD_MARGIN,
+    paddingVertical: t.spacing.md,
+  },
   page: {
     paddingHorizontal: CARD_MARGIN,
     paddingVertical: t.spacing.md,

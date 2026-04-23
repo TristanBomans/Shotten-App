@@ -38,6 +38,14 @@ export interface MatchResult {
   points: number;
 }
 
+export interface ScoreHistoryPoint {
+  index: number;
+  score: number;
+  matchName: string;
+  delta: number;
+  date: string;
+}
+
 export interface PlayerStats {
   score: number;
   presentCount: number;
@@ -48,6 +56,7 @@ export interface PlayerStats {
   rank: Rank;
   recentForm: MatchResultStatus[];
   matchResults: MatchResult[];
+  scoreHistory: ScoreHistoryPoint[];
 }
 
 function isRelevantMatch(match: Match, now = Date.now()): boolean {
@@ -110,6 +119,40 @@ export function calculatePlayerScore(player: Player, allMatches: Match[]): Playe
 
   const recentForm = matchResults.slice(0, 5).map((r) => r.status);
 
+  // Score history: chronological (oldest first) running total
+  const chronologicalMatches = [...relevantMatches].sort(
+    (a, b) => Date.parse(a.date) - Date.parse(b.date),
+  );
+  let runningScore = POINTS.base;
+  const scoreHistory: ScoreHistoryPoint[] = [{
+    index: 0,
+    score: POINTS.base,
+    matchName: "Start",
+    delta: 0,
+    date: chronologicalMatches.length > 0 ? chronologicalMatches[0].date : new Date().toISOString(),
+  }];
+  for (const match of chronologicalMatches) {
+    const attendance = match.attendances.find((a) => a.playerId === player.id);
+    let delta: number;
+    if (!attendance) {
+      delta = POINTS.ghost;
+    } else if (attendance.status === "Present") {
+      delta = POINTS.present;
+    } else if (attendance.status === "Maybe") {
+      delta = POINTS.maybe;
+    } else {
+      delta = POINTS.notPresent;
+    }
+    runningScore += delta;
+    scoreHistory.push({
+      index: scoreHistory.length,
+      score: runningScore,
+      matchName: match.name,
+      delta,
+      date: match.date,
+    });
+  }
+
   return {
     score,
     presentCount,
@@ -120,6 +163,7 @@ export function calculatePlayerScore(player: Player, allMatches: Match[]): Playe
     rank: getRank(score),
     recentForm,
     matchResults,
+    scoreHistory,
   };
 }
 
