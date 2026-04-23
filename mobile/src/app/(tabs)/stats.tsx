@@ -15,8 +15,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Svg, { Line, Path } from "react-native-svg";
 import { fetchMatches, fetchPlayers } from "../../lib/api";
-import { buildLeaderboard, type PlayerWithStats, POINTS, RANKS } from "../../lib/leaderboard";
+import { buildLeaderboard, type PlayerWithStats, type ScoreHistoryPoint, POINTS, RANKS } from "../../lib/leaderboard";
 import type { Match, Player } from "../../lib/types";
 import { useSession } from "../../state/session-context";
 import { ErrorState } from "../../components/ErrorState";
@@ -279,6 +280,104 @@ function RankCard({
   );
 }
 
+function smoothPath(pts: { x: number; y: number }[]) {
+  if (pts.length < 2) return "";
+  if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(pts.length - 1, i + 2)];
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+
+function formatMonthLabel(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("nl-NL", { month: "short" });
+}
+
+function ScoreSparkline({ history }: { history: ScoreHistoryPoint[] }) {
+  const [chartWidth, setChartWidth] = useState(0);
+
+  if (history.length < 2) return null;
+
+  const HEIGHT = 120;
+  const Y_AXIS_W = 40;
+  const PADDING = { top: 16, right: 16, bottom: 4, left: 16 };
+  const chartH = HEIGHT - PADDING.top - PADDING.bottom;
+
+  const scores = history.map((p) => p.score);
+  const startScore = history[0].score;
+  const endScore = history[history.length - 1].score;
+  const trendColor = endScore >= startScore ? t.colors.primary : t.colors.errorAccent;
+
+  const visualMin = Math.min(...scores, POINTS.base);
+  const visualMax = Math.max(...scores, POINTS.base);
+  const scoreRange = Math.max(visualMax - visualMin, 40);
+  const yPadding = Math.max(16, Math.round(scoreRange * 0.2));
+  const chartMin = visualMin - yPadding;
+  const chartMax = visualMax + yPadding;
+
+  const toX = (i: number) =>
+    PADDING.left + (i / (history.length - 1)) * (chartWidth - PADDING.left - PADDING.right);
+  const toY = (score: number) =>
+    PADDING.top + ((chartMax - score) / (chartMax - chartMin)) * chartH;
+
+  const points = history.map((p, i) => ({ x: toX(i), y: toY(p.score) }));
+  const pathD = smoothPath(points);
+  const baseY = toY(POINTS.base);
+
+  const firstDate = history[0].date;
+  const lastDate = history[history.length - 1].date;
+
+  const labelStyle = { color: t.colors.onSurfaceDim, fontSize: 10, fontWeight: "500" as const };
+
+  return (
+    <View style={styles.sparklineCard}>
+      <View style={{ flexDirection: "row", height: HEIGHT }}>
+        {/* Y-axis labels */}
+        <View style={{ width: Y_AXIS_W, justifyContent: "space-between", paddingVertical: PADDING.top }}>
+          <Text style={[labelStyle, { textAlign: "right", paddingRight: 6 }]}>{Math.round(chartMax)}</Text>
+          <Text style={[labelStyle, { textAlign: "right", paddingRight: 6 }]}>{POINTS.base}</Text>
+          <Text style={[labelStyle, { textAlign: "right", paddingRight: 6 }]}>{Math.round(chartMin)}</Text>
+        </View>
+
+        {/* Chart */}
+        <View style={{ flex: 1 }} onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}>
+          {chartWidth > 0 && (
+            <Svg width={chartWidth} height={HEIGHT}>
+              <Line
+                x1={PADDING.left}
+                y1={baseY}
+                x2={chartWidth - PADDING.right}
+                y2={baseY}
+                stroke={t.colors.outline}
+                strokeWidth={1}
+                strokeDasharray="3 3"
+              />
+              <Path d={pathD} fill="none" stroke={trendColor} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          )}
+        </View>
+      </View>
+
+      {/* X-axis labels */}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", marginLeft: Y_AXIS_W, paddingHorizontal: PADDING.left, paddingBottom: 10 }}>
+        <Text style={labelStyle}>{formatMonthLabel(firstDate)}</Text>
+        <Text style={labelStyle}>{formatMonthLabel(lastDate)}</Text>
+      </View>
+    </View>
+  );
+}
+
 function PlayerDetailModal({
   player,
   rank,
@@ -368,6 +467,14 @@ function PlayerDetailModal({
             </View>
           )}
         </View>
+
+        {/* Season Trend Sparkline */}
+        {s.scoreHistory.length > 1 && (
+          <>
+            <Text style={styles.detailSectionTitle}>Season Trend</Text>
+            <ScoreSparkline history={s.scoreHistory} />
+          </>
+        )}
 
         {/* Stats Carousel */}
         <Text style={styles.detailSectionTitle}>Season Stats</Text>
@@ -860,6 +967,14 @@ const styles = StyleSheet.create({
     marginHorizontal: t.spacing.lg,
     marginTop: t.spacing.xl,
     marginBottom: t.spacing.md,
+  },
+  sparklineCard: {
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    borderColor: t.colors.divider,
+    marginHorizontal: t.spacing.lg,
+    overflow: "hidden",
   },
 
   // Stats carousel
