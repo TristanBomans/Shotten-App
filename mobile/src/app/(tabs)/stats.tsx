@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Line, Path } from "react-native-svg";
@@ -468,6 +469,14 @@ function PlayerDetailModal({
           )}
         </View>
 
+        {/* Streaks */}
+        {s.matchResults.length > 0 && (
+          <>
+            <Text style={styles.detailSectionTitle}>Streaks</Text>
+            <StreakCards results={s.matchResults} />
+          </>
+        )}
+
         {/* Season Trend Sparkline */}
         {s.scoreHistory.length > 1 && (
           <>
@@ -558,6 +567,87 @@ function PlayerDetailModal({
 
         <View style={{ height: 40 }} />
       </Animated.ScrollView>
+    </View>
+  );
+}
+
+function StreakCards({ results }: { results: { status: string; matchName: string }[] }) {
+  const streaks = useMemo(() => {
+    if (results.length === 0) return { present: 0, absent: 0, bestPresent: 0 };
+
+    let currentPresent = 0;
+    let currentAbsent = 0;
+    let bestPresent = 0;
+
+    for (const r of results) {
+      if (r.status === "present") {
+        currentPresent++;
+        currentAbsent = 0;
+        bestPresent = Math.max(bestPresent, currentPresent);
+      } else if (r.status === "notPresent" || r.status === "ghost") {
+        currentAbsent++;
+        currentPresent = 0;
+      } else {
+        currentPresent = 0;
+        currentAbsent = 0;
+      }
+    }
+
+    return { present: currentPresent, absent: currentAbsent, bestPresent };
+  }, [results]);
+
+  const cards = [
+    {
+      label: "Current Streak",
+      value: streaks.present > 0 ? `${streaks.present}` : streaks.absent > 0 ? `${streaks.absent}` : "0",
+      sub: streaks.present > 0 ? "matches present" : streaks.absent > 0 ? "matches missed" : "no streak",
+      icon: streaks.present >= 3 ? "fire" : streaks.present > 0 ? "check-circle" : streaks.absent > 0 ? "alert-circle" : "minus-circle",
+      color: streaks.present > 0 ? "#ff6b35" : streaks.absent > 0 ? t.colors.errorAccent : t.colors.onSurfaceDim,
+      bgColor: streaks.present > 0 ? "rgba(255, 107, 53, 0.12)" : streaks.absent > 0 ? t.colors.errorContainer : t.colors.surface,
+      borderColor: streaks.present > 0 ? "rgba(255, 107, 53, 0.35)" : streaks.absent > 0 ? t.colors.errorAccent + "30" : t.colors.divider,
+      glow: streaks.present >= 3,
+    },
+    {
+      label: "Best Streak",
+      value: `${streaks.bestPresent}`,
+      sub: streaks.bestPresent === 1 ? "match present" : "matches present",
+      icon: "trophy",
+      color: "#f7cb61",
+      bgColor: "rgba(247, 203, 97, 0.10)",
+      borderColor: "rgba(247, 203, 97, 0.30)",
+      glow: false,
+    },
+  ];
+
+  return (
+    <View style={styles.streakRow}>
+      {cards.map((card) => (
+        <View
+          key={card.label}
+          style={[
+            styles.streakCard,
+            {
+              backgroundColor: card.bgColor,
+              borderColor: card.borderColor,
+            },
+          ]}
+        >
+          {card.glow && (
+            <LinearGradient
+              colors={["rgba(255, 107, 53, 0.15)", "transparent"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
+          <View style={styles.streakCardHeader}>
+            <MaterialCommunityIcons name={card.icon as any} size={18} color={card.color} />
+            <Text style={[styles.streakCardLabel, { color: card.color }]}>{card.label}</Text>
+          </View>
+          <Text style={[styles.streakCardValue, { color: card.color }]}>{card.value}</Text>
+          <Text style={styles.streakCardSub}>{card.sub}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -1100,5 +1190,41 @@ const styles = StyleSheet.create({
   timelineCardStatus: {
     ...t.typography.caption,
     fontWeight: "600",
+  },
+
+  // Streaks
+  streakRow: {
+    flexDirection: "row",
+    paddingHorizontal: t.spacing.lg,
+    gap: t.spacing.md,
+  },
+  streakCard: {
+    flex: 1,
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    padding: t.spacing.md,
+    paddingVertical: t.spacing.lg,
+    overflow: "hidden",
+  },
+  streakCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: t.spacing.sm,
+  },
+  streakCardLabel: {
+    ...t.typography.caption,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  streakCardValue: {
+    fontSize: 32,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+  streakCardSub: {
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
+    marginTop: 2,
   },
 });
