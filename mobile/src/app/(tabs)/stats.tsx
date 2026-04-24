@@ -575,21 +575,36 @@ function StreakCards({ results }: { results: { status: string; matchName: string
   const streaks = useMemo(() => {
     if (results.length === 0) return { present: 0, absent: 0, bestPresent: 0 };
 
+    // results are newest-first (index 0 = most recent match)
     let currentPresent = 0;
     let currentAbsent = 0;
     let bestPresent = 0;
+    let tempPresent = 0;
 
-    for (const r of results) {
-      if (r.status === "present") {
-        currentPresent++;
-        currentAbsent = 0;
-        bestPresent = Math.max(bestPresent, currentPresent);
-      } else if (r.status === "notPresent" || r.status === "ghost") {
-        currentAbsent++;
-        currentPresent = 0;
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+
+      // Current streak: count from the most recent match until the streak breaks
+      const isStreakActive = i === 0 || currentPresent > 0 || currentAbsent > 0;
+      if (isStreakActive) {
+        if (r.status === "present") {
+          currentPresent++;
+        } else if (r.status === "notPresent" || r.status === "ghost") {
+          currentAbsent++;
+        } else if (r.status === "maybe") {
+          // Maybe breaks the streak
+          break;
+        }
       } else {
-        currentPresent = 0;
-        currentAbsent = 0;
+        break;
+      }
+
+      // Best streak: count all consecutive present runs across the whole history
+      if (r.status === "present") {
+        tempPresent++;
+        bestPresent = Math.max(bestPresent, tempPresent);
+      } else {
+        tempPresent = 0;
       }
     }
 
