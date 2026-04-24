@@ -477,14 +477,6 @@ function PlayerDetailModal({
           </>
         )}
 
-        {/* Season Trend Sparkline */}
-        {s.scoreHistory.length > 1 && (
-          <>
-            <Text style={styles.detailSectionTitle}>Season Trend</Text>
-            <ScoreSparkline history={s.scoreHistory} />
-          </>
-        )}
-
         {/* Stats Carousel */}
         <Text style={styles.detailSectionTitle}>Season Stats</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsCarousel}>
@@ -494,6 +486,14 @@ function PlayerDetailModal({
           <StatCircle label="Absent" value={String(s.absentCount)} color={t.colors.errorAccent} />
           <StatCircle label="Ghost" value={String(s.ghostCount)} color={t.colors.onSurfaceDim} />
         </ScrollView>
+
+        {/* Season Trend Sparkline */}
+        {s.scoreHistory.length > 1 && (
+          <>
+            <Text style={styles.detailSectionTitle}>Season Trend</Text>
+            <ScoreSparkline history={s.scoreHistory} />
+          </>
+        )}
 
         {/* Form Trend */}
         <Text style={styles.detailSectionTitle}>Recent Form</Text>
