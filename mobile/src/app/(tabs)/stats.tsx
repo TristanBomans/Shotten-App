@@ -393,7 +393,8 @@ function PlayerDetailModal({
   if (!player) return null;
   const s = player.stats;
   const currentRank = RANKS.find((r) => s.score >= r.minScore) ?? RANKS[RANKS.length - 1];
-  const nextRank = RANKS.find((r) => r.minScore > s.score);
+  // RANKS is sorted high-to-low, so reverse to find the next higher rank
+  const nextRank = [...RANKS].reverse().find((r) => r.minScore > s.score);
   const progressToNext = nextRank
     ? Math.min(1, (s.score - currentRank.minScore) / (nextRank.minScore - currentRank.minScore))
     : 1;
