@@ -576,30 +576,28 @@ function StreakCards({ results }: { results: { status: string; matchName: string
     if (results.length === 0) return { present: 0, absent: 0, bestPresent: 0 };
 
     // results are newest-first (index 0 = most recent match)
+    // Determine current streak: count consecutive same-status matches from the start
     let currentPresent = 0;
     let currentAbsent = 0;
     let bestPresent = 0;
     let tempPresent = 0;
 
+    // First pass: current streak (only from most recent consecutive run)
     for (let i = 0; i < results.length; i++) {
       const r = results[i];
-
-      // Current streak: count from the most recent match until the streak breaks
-      const isStreakActive = i === 0 || currentPresent > 0 || currentAbsent > 0;
-      if (isStreakActive) {
-        if (r.status === "present") {
-          currentPresent++;
-        } else if (r.status === "notPresent" || r.status === "ghost") {
-          currentAbsent++;
-        } else if (r.status === "maybe") {
-          // Maybe breaks the streak
-          break;
-        }
-      } else {
+      if (r.status === "present") {
+        if (currentAbsent > 0) break;
+        currentPresent++;
+      } else if (r.status === "notPresent" || r.status === "ghost") {
+        if (currentPresent > 0) break;
+        currentAbsent++;
+      } else if (r.status === "maybe") {
         break;
       }
+    }
 
-      // Best streak: count all consecutive present runs across the whole history
+    // Second pass: best streak (all-time max consecutive present)
+    for (const r of results) {
       if (r.status === "present") {
         tempPresent++;
         bestPresent = Math.max(bestPresent, tempPresent);
