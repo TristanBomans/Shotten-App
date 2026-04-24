@@ -392,13 +392,10 @@ function PlayerDetailModal({
 
   if (!player) return null;
   const s = player.stats;
-  // RANKS is sorted high-to-low, so reverse to find next rank up
-  const ranksAsc = [...RANKS].reverse();
-  const currentRankIndex = ranksAsc.findIndex((r) => r.minScore <= s.score);
-  const prevRank = ranksAsc[currentRankIndex];
-  const nextRank = ranksAsc[currentRankIndex + 1];
-  const progressToNext = nextRank && prevRank
-    ? Math.min(1, (s.score - prevRank.minScore) / (nextRank.minScore - prevRank.minScore))
+  const currentRank = RANKS.find((r) => s.score >= r.minScore) ?? RANKS[RANKS.length - 1];
+  const nextRank = RANKS.find((r) => r.minScore > s.score);
+  const progressToNext = nextRank
+    ? Math.min(1, (s.score - currentRank.minScore) / (nextRank.minScore - currentRank.minScore))
     : 1;
 
   const presentPct = s.totalMatches > 0 ? Math.round((s.presentCount / s.totalMatches) * 100) : 0;
