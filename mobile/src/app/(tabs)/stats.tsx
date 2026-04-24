@@ -444,8 +444,8 @@ function PlayerDetailModal({
               <Text style={styles.detailHeroBadgeEmoji}>{s.rank.emoji}</Text>
               <Text style={[styles.detailHeroBadgeText, { color: s.rank.color }]}>{s.rank.name}</Text>
             </View>
-            <View style={[styles.detailHeroBadge, { backgroundColor: t.colors.surfaceRaised }]}>
-              <Text style={styles.detailHeroBadgeText}>#{rank}</Text>
+            <View style={[styles.detailHeroBadge, { backgroundColor: t.colors.primaryMuted, borderWidth: 1, borderColor: t.colors.primary + "40" }]}>
+              <Text style={[styles.detailHeroBadgeText, { color: t.colors.primary }]}>#{rank}</Text>
             </View>
           </View>
 
