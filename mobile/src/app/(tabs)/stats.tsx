@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Svg, { Line, Path } from "react-native-svg";
@@ -391,12 +392,11 @@ function PlayerDetailModal({
 
   if (!player) return null;
   const s = player.stats;
-  const nextRank = RANKS.find((r) => r.minScore > s.score);
-  const prevRank = RANKS.slice()
-    .reverse()
-    .find((r) => r.minScore <= s.score);
-  const progressToNext = nextRank && prevRank
-    ? Math.min(1, (s.score - prevRank.minScore) / (nextRank.minScore - prevRank.minScore))
+  const currentRank = RANKS.find((r) => s.score >= r.minScore) ?? RANKS[RANKS.length - 1];
+  // RANKS is sorted high-to-low, so reverse to find the next higher rank
+  const nextRank = [...RANKS].reverse().find((r) => r.minScore > s.score);
+  const progressToNext = nextRank
+    ? Math.min(1, (s.score - currentRank.minScore) / (nextRank.minScore - currentRank.minScore))
     : 1;
 
   const presentPct = s.totalMatches > 0 ? Math.round((s.presentCount / s.totalMatches) * 100) : 0;
@@ -444,8 +444,8 @@ function PlayerDetailModal({
               <Text style={styles.detailHeroBadgeEmoji}>{s.rank.emoji}</Text>
               <Text style={[styles.detailHeroBadgeText, { color: s.rank.color }]}>{s.rank.name}</Text>
             </View>
-            <View style={[styles.detailHeroBadge, { backgroundColor: t.colors.surfaceRaised }]}>
-              <Text style={styles.detailHeroBadgeText}>#{rank}</Text>
+            <View style={[styles.detailHeroBadge, { backgroundColor: t.colors.primaryMuted, borderWidth: 1, borderColor: t.colors.primary + "40" }]}>
+              <Text style={[styles.detailHeroBadgeText, { color: t.colors.primary }]}>#{rank}</Text>
             </View>
           </View>
 
@@ -468,11 +468,11 @@ function PlayerDetailModal({
           )}
         </View>
 
-        {/* Season Trend Sparkline */}
-        {s.scoreHistory.length > 1 && (
+        {/* Streaks */}
+        {s.matchResults.length > 0 && (
           <>
-            <Text style={styles.detailSectionTitle}>Season Trend</Text>
-            <ScoreSparkline history={s.scoreHistory} />
+            <Text style={styles.detailSectionTitle}>Streaks</Text>
+            <StreakCards results={s.matchResults} />
           </>
         )}
 
@@ -485,6 +485,14 @@ function PlayerDetailModal({
           <StatCircle label="Absent" value={String(s.absentCount)} color={t.colors.errorAccent} />
           <StatCircle label="Ghost" value={String(s.ghostCount)} color={t.colors.onSurfaceDim} />
         </ScrollView>
+
+        {/* Season Trend Sparkline */}
+        {s.scoreHistory.length > 1 && (
+          <>
+            <Text style={styles.detailSectionTitle}>Season Trend</Text>
+            <ScoreSparkline history={s.scoreHistory} />
+          </>
+        )}
 
         {/* Form Trend */}
         <Text style={styles.detailSectionTitle}>Recent Form</Text>
@@ -558,6 +566,100 @@ function PlayerDetailModal({
 
         <View style={{ height: 40 }} />
       </Animated.ScrollView>
+    </View>
+  );
+}
+
+function StreakCards({ results }: { results: { status: string; matchName: string }[] }) {
+  const streaks = useMemo(() => {
+    if (results.length === 0) return { present: 0, absent: 0, bestPresent: 0 };
+
+    // results are newest-first (index 0 = most recent match)
+    // Determine current streak: count consecutive same-status matches from the start
+    let currentPresent = 0;
+    let currentAbsent = 0;
+    let bestPresent = 0;
+    let tempPresent = 0;
+
+    // First pass: current streak (only from most recent consecutive run)
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      if (r.status === "present") {
+        if (currentAbsent > 0) break;
+        currentPresent++;
+      } else if (r.status === "notPresent" || r.status === "ghost") {
+        if (currentPresent > 0) break;
+        currentAbsent++;
+      } else if (r.status === "maybe") {
+        break;
+      }
+    }
+
+    // Second pass: best streak (all-time max consecutive present)
+    for (const r of results) {
+      if (r.status === "present") {
+        tempPresent++;
+        bestPresent = Math.max(bestPresent, tempPresent);
+      } else {
+        tempPresent = 0;
+      }
+    }
+
+    return { present: currentPresent, absent: currentAbsent, bestPresent };
+  }, [results]);
+
+  const cards = [
+    {
+      label: "Current Streak",
+      value: streaks.present > 0 ? `${streaks.present}` : streaks.absent > 0 ? `${streaks.absent}` : "0",
+      sub: streaks.present > 0 ? "matches present" : streaks.absent > 0 ? "matches missed" : "no streak",
+      icon: streaks.present >= 3 ? "fire" : streaks.present > 0 ? "check-circle" : streaks.absent > 0 ? "alert-circle" : "minus-circle",
+      color: streaks.present > 0 ? "#ff6b35" : streaks.absent > 0 ? t.colors.errorAccent : t.colors.onSurfaceDim,
+      bgColor: streaks.present > 0 ? "rgba(255, 107, 53, 0.12)" : streaks.absent > 0 ? t.colors.errorContainer : t.colors.surface,
+      borderColor: streaks.present > 0 ? "rgba(255, 107, 53, 0.35)" : streaks.absent > 0 ? t.colors.errorAccent + "30" : t.colors.divider,
+      glow: streaks.present >= 3,
+    },
+    {
+      label: "Best Streak",
+      value: `${streaks.bestPresent}`,
+      sub: streaks.bestPresent === 1 ? "match present" : "matches present",
+      icon: "trophy",
+      color: "#f7cb61",
+      bgColor: "rgba(247, 203, 97, 0.10)",
+      borderColor: "rgba(247, 203, 97, 0.30)",
+      glow: false,
+    },
+  ];
+
+  return (
+    <View style={styles.streakRow}>
+      {cards.map((card) => (
+        <View
+          key={card.label}
+          style={[
+            styles.streakCard,
+            {
+              backgroundColor: card.bgColor,
+              borderColor: card.borderColor,
+            },
+          ]}
+        >
+          {card.glow && (
+            <LinearGradient
+              colors={["rgba(255, 107, 53, 0.15)", "transparent"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
+          <View style={styles.streakCardHeader}>
+            <MaterialCommunityIcons name={card.icon as any} size={18} color={card.color} />
+            <Text style={[styles.streakCardLabel, { color: card.color }]}>{card.label}</Text>
+          </View>
+          <Text style={[styles.streakCardValue, { color: card.color }]}>{card.value}</Text>
+          <Text style={styles.streakCardSub}>{card.sub}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -1100,5 +1202,41 @@ const styles = StyleSheet.create({
   timelineCardStatus: {
     ...t.typography.caption,
     fontWeight: "600",
+  },
+
+  // Streaks
+  streakRow: {
+    flexDirection: "row",
+    paddingHorizontal: t.spacing.lg,
+    gap: t.spacing.md,
+  },
+  streakCard: {
+    flex: 1,
+    borderRadius: t.radius.lg,
+    borderWidth: 1,
+    padding: t.spacing.md,
+    paddingVertical: t.spacing.lg,
+    overflow: "hidden",
+  },
+  streakCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: t.spacing.sm,
+  },
+  streakCardLabel: {
+    ...t.typography.caption,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  streakCardValue: {
+    fontSize: 32,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+  streakCardSub: {
+    color: t.colors.onSurfaceDim,
+    ...t.typography.caption,
+    marginTop: 2,
   },
 });
