@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAllScraperTeams, fetchAllScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
 import { Loader2, ChevronDown } from 'lucide-react';
@@ -33,6 +33,7 @@ export default function LeagueView({
     const [allPlayers, setAllPlayers] = useState<ScraperPlayer[]>([]);
     const [loading, setLoading] = useState(true);
     const [visiblePlayers, setVisiblePlayers] = useState(50);
+    const dataLoadedRef = useRef(false);
 
     // Extract unique leagues
     const leagues = useMemo(() => {
@@ -80,6 +81,10 @@ export default function LeagueView({
     }, [activeTab, selectedLeague]);
 
     useEffect(() => {
+        if (dataLoadedRef.current) {
+            setLoading(false);
+            return;
+        }
         const loadData = async () => {
             try {
                 const [teamsData, playersData] = await Promise.all([
@@ -88,6 +93,7 @@ export default function LeagueView({
                 ]);
                 setTeams(teamsData);
                 setAllPlayers(playersData);
+                dataLoadedRef.current = true;
             } catch (err) {
                 console.error('Failed to load league data:', err);
             } finally {

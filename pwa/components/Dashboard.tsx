@@ -102,6 +102,7 @@ export default function Dashboard({
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const scrollEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isInitialMount = useRef(true);
+    const hasEverLoaded = useRef(false);
 
     const setMatchCardRef = useCallback((matchId: number, node: HTMLDivElement | null) => {
         if (!node) {
@@ -129,6 +130,13 @@ export default function Dashboard({
         fetchAllPlayers();
         fetchRecentMatches();
     }, [fetchMatches, fetchAllPlayers, fetchRecentMatches]);
+
+    // Track whether initial data has ever loaded to prevent skeleton flash on remount
+    useEffect(() => {
+        if (!loading && matches.length > 0) {
+            hasEverLoaded.current = true;
+        }
+    }, [loading, matches.length]);
 
     useEffect(() => {
         if (currentView !== 'league') {
@@ -508,7 +516,7 @@ export default function Dashboard({
     }, [currentView, onViewChange]);
 
     // Loading state - only show skeleton on initial load when no data yet
-    if (loading && matches.length === 0) {
+    if (loading && matches.length === 0 && !hasEverLoaded.current) {
         return (
             <>
                 <TopOverlayHeader

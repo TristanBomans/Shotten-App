@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
+import { ChevronLeft, Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost, Flame, Award } from 'lucide-react';
 import { LineChart, Line, ReferenceLine, YAxis } from 'recharts';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
@@ -163,6 +163,36 @@ function calculatePlayerScore(player: Player, allMatches: Match[]) {
     const recentForm = matchResults.slice(0, 5).map(r => r.status);
     const scoreHistory = calculateScoreHistory(player, allMatches);
 
+    // Streak calculation (matches newest-first in matchResults)
+    let currentPresent = 0;
+    let currentAbsent = 0;
+    let bestPresent = 0;
+    let tempPresent = 0;
+
+    for (let i = 0; i < matchResults.length; i++) {
+        const r = matchResults[i];
+        if (r.status === 'present') {
+            if (currentAbsent > 0) break;
+            currentPresent++;
+        } else if (r.status === 'notPresent' || r.status === 'ghost') {
+            if (currentPresent > 0) break;
+            currentAbsent++;
+        } else {
+            break;
+        }
+    }
+
+    for (const r of matchResults) {
+        if (r.status === 'present') {
+            tempPresent++;
+            bestPresent = Math.max(bestPresent, tempPresent);
+        } else {
+            tempPresent = 0;
+        }
+    }
+
+    const attendancePct = relevantMatches.length > 0 ? Math.round((presentCount / relevantMatches.length) * 100) : 0;
+
     return {
         score,
         presentCount,
@@ -174,6 +204,10 @@ function calculatePlayerScore(player: Player, allMatches: Match[]) {
         recentForm,
         matchResults,
         scoreHistory,
+        currentStreakPresent: currentPresent,
+        currentStreakAbsent: currentAbsent,
+        bestStreak: bestPresent,
+        attendancePct,
     };
 }
 
@@ -401,6 +435,19 @@ function PlayerDetailModal({ open, player, rank, onClose }: {
     onClose: () => void;
 }) {
     if (typeof document === 'undefined') return null;
+    if (!player?.stats) return null;
+
+    const s = player.stats;
+    const nextRank = [...RANKS].reverse().find(r => r.minScore > s.score);
+    const currentRank = s.rank;
+    const progressToNext = nextRank
+        ? Math.max(0.05, Math.min(1, (s.score - currentRank.minScore) / (nextRank.minScore - currentRank.minScore)))
+        : 1;
+
+    const streakValue = s.currentStreakPresent > 0 ? s.currentStreakPresent : s.currentStreakAbsent;
+    const streakIsPositive = s.currentStreakPresent > 0;
+    const streakLabel = streakIsPositive ? 'present' : s.currentStreakAbsent > 0 ? 'missed' : 'no streak';
+    const streakColor = streakIsPositive ? '#ff6b35' : s.currentStreakAbsent > 0 ? 'var(--color-danger)' : 'var(--color-text-tertiary)';
 
     return createPortal(
         <AnimatePresence>
@@ -420,110 +467,101 @@ function PlayerDetailModal({ open, player, rank, onClose }: {
                         overflow: 'hidden',
                     }}
             >
-                {/* Header with iOS-style back button */}
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: 'calc(var(--safe-top) + 8px) 16px 12px',
-                        borderBottom: '0.5px solid var(--color-border-subtle)',
-                        background: 'var(--color-surface)',
-                    }}
-                >
-                    <motion.button
-                        whileTap={{ scale: 0.96 }}
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            onClose();
-                        }}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 2,
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--color-accent)',
-                            fontSize: '1.05rem',
-                            fontWeight: 400,
-                            cursor: 'pointer',
-                            padding: '4px 8px 4px 0',
-                            marginLeft: -4,
-                        }}
-                    >
-                        <ChevronLeft size={28} strokeWidth={1.5} />
-                        Back
+                {/* Header */}
+                <div style={{
+                    display: 'flex', alignItems: 'center',
+                    padding: 'calc(var(--safe-top) + 8px) 16px 12px',
+                    borderBottom: '0.5px solid var(--color-border-subtle)',
+                    background: 'var(--color-surface)',
+                }}>
+                    <motion.button whileTap={{ scale: 0.96 }} onClick={() => { hapticPatterns.tap(); onClose(); }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'transparent', border: 'none', color: 'var(--color-accent)', fontSize: '1.05rem', fontWeight: 400, cursor: 'pointer', padding: '4px 8px 4px 0', marginLeft: -4 }}>
+                        <ChevronLeft size={28} strokeWidth={1.5} />Back
                     </motion.button>
-                    <div
-                        style={{
-                            position: 'absolute',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            fontSize: '1.05rem',
-                            fontWeight: 600,
-                            color: 'var(--color-text-primary)',
-                            maxWidth: '60%',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            textAlign: 'center',
-                        }}
-                    >
+                    <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '1.05rem', fontWeight: 600, color: 'var(--color-text-primary)', maxWidth: '60%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
                         {player.name}
                     </div>
                 </div>
 
                 {/* Scrollable Content */}
-                <div
-                    style={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
-                >
-                    {/* Hero Section */}
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ padding: '24px 20px 20px' }}>
+                        {/* Rank badge */}
                         <div style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4 }}>
                             #{rank} · <player.stats.rank.icon size={12} style={{ color: player.stats.rank.color }} /> {player.stats.rank.name}
                         </div>
 
-                        {/* Score */}
-                        <div style={{
-                            padding: 18,
-                            background: 'var(--color-bg-elevated)',
-                            borderRadius: 16,
-                            textAlign: 'center',
-                            border: '0.5px solid var(--color-border)',
-                        }}>
-                            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: player.stats.rank.color }}>
-                                {player.stats.score}
-                            </div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>
-                                Shotten Points
-                            </div>
+                        {/* Score Card */}
+                        <div style={{ padding: 18, background: 'var(--color-bg-elevated)', borderRadius: 16, textAlign: 'center', border: '0.5px solid var(--color-border)' }}>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: s.rank.color }}>{s.score}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>Shotten Points</div>
 
-                            {/* Score History Sparkline */}
-                            {player.stats.scoreHistory && player.stats.scoreHistory.length > 1 && (
+                            {/* Next rank text */}
+                            {nextRank && (
+                                <div style={{ marginTop: 14, fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>
+                                    {nextRank.minScore - s.score} pts to <span style={{ color: nextRank.color, fontWeight: 600 }}>{nextRank.name}</span>
+                                </div>
+                            )}
+
+                            {/* Sparkline */}
+                            {s.scoreHistory && s.scoreHistory.length > 1 && (
                                 <div style={{ marginTop: 16 }}>
-                                    <ScoreSparkline history={player.stats.scoreHistory} />
-                                    <div style={{
-                                        fontSize: '0.65rem',
-                                        color: 'var(--color-text-tertiary)',
-                                        marginTop: 8,
-                                    }}>
-                                        Season trend
-                                    </div>
+                                    <ScoreSparkline history={s.scoreHistory} />
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', marginTop: 8 }}>Season trend</div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Stats */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 16 }}>
-                            <StatMini label="Present" value={player.stats.presentCount} color="var(--color-success)" />
-                            <StatMini label="Maybe" value={player.stats.maybeCount} color="var(--color-warning)" />
-                            <StatMini label="Absent" value={player.stats.absentCount} color="var(--color-danger)" />
-                            <StatMini label="Ghost" value={player.stats.ghostCount} color="var(--color-text-tertiary)" />
+                        {/* Attendance + Streaks row */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 16 }}>
+                            {/* Attendance */}
+                            <div style={{ padding: '14px 8px', background: 'var(--color-bg-elevated)', borderRadius: 14, border: '0.5px solid var(--color-border)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-success)' }}>{s.attendancePct}%</div>
+                                <div style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>Presence</div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>{s.presentCount}/{s.totalMatches}</div>
+                            </div>
+                            {/* Current Streak */}
+                            <div style={{ padding: '14px 8px', background: streakIsPositive ? 'rgba(255,107,53,0.08)' : 'var(--color-bg-elevated)', borderRadius: 14, border: `0.5px solid ${streakIsPositive ? 'rgba(255,107,53,0.3)' : 'var(--color-border)'}`, textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: streakColor }}>
+                                    {streakIsPositive && s.currentStreakPresent >= 3 ? '🔥 ' : ''}{streakValue}
+                                </div>
+                                <div style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>Streak</div>
+                                <div style={{ fontSize: '0.7rem', color: streakColor, marginTop: 2 }}>{streakLabel}</div>
+                            </div>
+                            {/* Best Streak */}
+                            <div style={{ padding: '14px 8px', background: 'rgba(247,203,97,0.06)', borderRadius: 14, border: '0.5px solid rgba(247,203,97,0.2)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f7cb61' }}>{s.bestStreak}</div>
+                                <div style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>Best</div>
+                                <div style={{ fontSize: '0.7rem', color: '#f7cb61', marginTop: 2 }}>record</div>
+                            </div>
                         </div>
+
+                        {/* Status breakdown */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 12 }}>
+                            <StatMini label="Present" value={s.presentCount} color="var(--color-success)" />
+                            <StatMini label="Maybe" value={s.maybeCount} color="var(--color-warning)" />
+                            <StatMini label="Absent" value={s.absentCount} color="var(--color-danger)" />
+                            <StatMini label="Ghost" value={s.ghostCount} color="var(--color-text-tertiary)" />
+                        </div>
+
+                        {/* Recent Form */}
+                        {s.recentForm.length > 0 && (
+                            <div style={{ marginTop: 16 }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', marginBottom: 8 }}>Recent Form</div>
+                                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-start' }}>
+                                    {s.recentForm.map((status, j) => (
+                                        <div key={j} style={{
+                                            width: 44, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '0.85rem', fontWeight: 700, flexShrink: 0,
+                                            background: status === 'present' ? 'rgb(var(--color-success-rgb) / 0.2)' : status === 'maybe' ? 'rgb(var(--color-warning-rgb) / 0.2)' : status === 'notPresent' ? 'rgb(var(--color-danger-rgb) / 0.2)' : 'var(--color-surface-hover)',
+                                            color: status === 'present' ? 'var(--color-success)' : status === 'maybe' ? 'var(--color-warning)' : status === 'notPresent' ? 'var(--color-danger)' : 'var(--color-text-tertiary)',
+                                        }}>
+                                            {status === 'present' ? '✓' : status === 'maybe' ? '?' : status === 'notPresent' ? '✕' : '👻'}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Match History */}
@@ -532,38 +570,23 @@ function PlayerDetailModal({ open, player, rank, onClose }: {
                             Match History
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            {player.stats.matchResults.map((result) => (
-                                <div
-                                    key={result.matchId}
-                                    style={{
-                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                        padding: '10px 12px',
-                                        background: 'var(--color-bg-elevated)',
-                                        borderRadius: 10,
-                                        border: '0.5px solid var(--color-border-subtle)',
-                                    }}
-                                >
+                            {s.matchResults.map((result) => (
+                                <div key={result.matchId} style={{
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    padding: '10px 12px', background: 'var(--color-bg-elevated)', borderRadius: 10,
+                                    border: '0.5px solid var(--color-border-subtle)',
+                                }}>
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{
-                                            fontSize: '0.85rem', color: 'var(--color-text-primary)', fontWeight: 500,
-                                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                                        }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--color-text-primary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                             {result.matchName.replace(/-/g, ' – ')}
                                         </div>
-                                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>
-                                            {result.date.toLocaleDateString()}
-                                        </div>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>{result.date.toLocaleDateString()}</div>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                                         <span style={{ fontSize: '0.9rem' }}>
-                                            {result.status === 'present' ? '✅' :
-                                                result.status === 'maybe' ? '⚠️' :
-                                                    result.status === 'notPresent' ? '❌' : '👻'}
+                                            {result.status === 'present' ? '✅' : result.status === 'maybe' ? '⚠️' : result.status === 'notPresent' ? '❌' : '👻'}
                                         </span>
-                                        <span style={{
-                                            fontWeight: 700, fontSize: '0.9rem',
-                                            color: result.points > 0 ? 'var(--color-success)' : 'var(--color-danger)',
-                                        }}>
+                                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: result.points > 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
                                             {result.points > 0 ? '+' : ''}{result.points}
                                         </span>
                                     </div>

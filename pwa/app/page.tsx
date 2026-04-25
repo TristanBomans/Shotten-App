@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
+import { useEffect, useState, useCallback, Suspense, useRef, useTransition } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import PlayerSelect from '@/components/PlayerSelect';
@@ -67,6 +67,7 @@ function HomeContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
+    const [, startTransition] = useTransition();
 
     const [currentView, setCurrentView] = useState<View>(() => {
         if (typeof window !== 'undefined') {
@@ -89,12 +90,17 @@ function HomeContent() {
 
     const pushCountRef = useRef(0);
 
+    // Load selected player from localStorage (once on mount)
     useEffect(() => {
         const stored = localStorage.getItem('selectedPlayerId');
         if (stored) {
             setSelectedPlayerId(parseInt(stored, 10));
         }
+        setLoading(false);
+    }, []);
 
+    // Sync view/modal state from URL search params
+    useEffect(() => {
         const resolvedView = getViewFromParams(searchParams);
         const resolvedModal = getModalFromParams(searchParams);
         const resolvedModalId = getModalIdFromParams(searchParams);
@@ -105,8 +111,6 @@ function HomeContent() {
         if (!resolvedModal) {
             pushCountRef.current = 0;
         }
-
-        setLoading(false);
     }, [searchParams]);
 
     const buildAppUrl = useCallback(
@@ -160,11 +164,13 @@ function HomeContent() {
             setCurrentModalId(null);
             pushCountRef.current = 0;
 
-            router.replace(buildAppUrl(view, null), { scroll: false });
+            startTransition(() => {
+                router.replace(buildAppUrl(view, null), { scroll: false });
+            });
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
-        [buildAppUrl, router]
+        [buildAppUrl, router, startTransition]
     );
 
     const openModal = useCallback(
@@ -176,9 +182,11 @@ function HomeContent() {
             setCurrentModal(modal);
             setCurrentModalId(modalId);
             pushCountRef.current += 1;
-            router.push(buildAppUrl(targetView, modal, modalId), { scroll: false });
+            startTransition(() => {
+                router.push(buildAppUrl(targetView, modal, modalId), { scroll: false });
+            });
         },
-        [buildAppUrl, currentModal, currentModalId, router]
+        [buildAppUrl, currentModal, currentModalId, router, startTransition]
     );
 
     const closeModal = useCallback(() => {
@@ -188,12 +196,16 @@ function HomeContent() {
         setCurrentModalId(null);
         if (pushCountRef.current > 0) {
             pushCountRef.current -= 1;
-            router.back();
+            startTransition(() => {
+                router.back();
+            });
             return;
         }
 
-        router.replace(buildAppUrl(currentView, null), { scroll: false });
-    }, [buildAppUrl, currentModal, currentView, router]);
+        startTransition(() => {
+            router.replace(buildAppUrl(currentView, null), { scroll: false });
+        });
+    }, [buildAppUrl, currentModal, currentView, router, startTransition]);
 
     const handleOpenVersion = useCallback(() => {
         openModal('version');

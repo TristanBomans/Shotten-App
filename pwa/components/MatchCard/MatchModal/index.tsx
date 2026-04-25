@@ -164,18 +164,17 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                         </motion.button>
                         <div
                             style={{
-                                position: 'absolute',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
+                                flex: 1,
                                 fontSize: '1.05rem',
                                 fontWeight: 600,
                                 color: 'var(--color-text-primary)',
-                                maxWidth: '55%',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
                                 textAlign: 'center',
-                                pointerEvents: 'none',
+                                lineHeight: 1.3,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                paddingRight: 8,
                             }}
                         >
                             {match.name.replace(/-/g, ' vs ')}
@@ -187,14 +186,16 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                         gap: 6,
                         marginTop: 0,
                         paddingLeft: 4,
+                        width: '100%',
+                        minWidth: 0,
                     }}>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
                             {dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} · {dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                         {match.location && (
                             <>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>·</span>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', flexShrink: 0 }}>·</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>
                                     {match.location}
                                 </span>
                             </>
