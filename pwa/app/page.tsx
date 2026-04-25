@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense, useRef, useTransition } from 'react';
+import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import PlayerSelect from '@/components/PlayerSelect';
 import Dashboard from '@/components/Dashboard';
 import FloatingNav from '@/components/FloatingNav';
@@ -64,10 +63,6 @@ function HomeContent() {
     const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const pathname = usePathname();
-    const [, startTransition] = useTransition();
 
     const [currentView, setCurrentView] = useState<View>(() => {
         if (typeof window !== 'undefined') {
@@ -90,6 +85,20 @@ function HomeContent() {
 
     const pushCountRef = useRef(0);
 
+    const syncStateFromLocation = useCallback(() => {
+        const params = new URLSearchParams(window.location.search);
+        const resolvedView = getViewFromParams(params);
+        const resolvedModal = getModalFromParams(params);
+        const resolvedModalId = getModalIdFromParams(params);
+
+        setCurrentView((prev) => (prev === resolvedView ? prev : resolvedView));
+        setCurrentModal((prev) => (prev === resolvedModal ? prev : resolvedModal));
+        setCurrentModalId((prev) => (prev === resolvedModalId ? prev : resolvedModalId));
+        if (!resolvedModal) {
+            pushCountRef.current = 0;
+        }
+    }, []);
+
     // Load selected player from localStorage (once on mount)
     useEffect(() => {
         const stored = localStorage.getItem('selectedPlayerId');
@@ -99,23 +108,16 @@ function HomeContent() {
         setLoading(false);
     }, []);
 
-    // Sync view/modal state from URL search params
+    // Sync view/modal state from browser history without triggering a Next.js navigation.
     useEffect(() => {
-        const resolvedView = getViewFromParams(searchParams);
-        const resolvedModal = getModalFromParams(searchParams);
-        const resolvedModalId = getModalIdFromParams(searchParams);
-
-        setCurrentView((prev) => (prev === resolvedView ? prev : resolvedView));
-        setCurrentModal((prev) => (prev === resolvedModal ? prev : resolvedModal));
-        setCurrentModalId((prev) => (prev === resolvedModalId ? prev : resolvedModalId));
-        if (!resolvedModal) {
-            pushCountRef.current = 0;
-        }
-    }, [searchParams]);
+        window.addEventListener('popstate', syncStateFromLocation);
+        return () => window.removeEventListener('popstate', syncStateFromLocation);
+    }, [syncStateFromLocation]);
 
     const buildAppUrl = useCallback(
         (view: View, modal: Modal, modalId: string | null = null) => {
-            const params = new URLSearchParams(searchParams.toString());
+            const params = new URLSearchParams(window.location.search);
+            const pathname = window.location.pathname;
 
             if (view === 'home') {
                 params.delete('view');
@@ -138,7 +140,7 @@ function HomeContent() {
             const query = params.toString();
             return query ? `${pathname}?${query}` : pathname;
         },
-        [pathname, searchParams]
+        []
     );
 
     const handlePlayerSelect = (id: number) => {
@@ -154,7 +156,7 @@ function HomeContent() {
         setCurrentModalId(null);
         pushCountRef.current = 0;
 
-        router.replace(pathname, { scroll: false });
+        window.history.replaceState(null, '', window.location.pathname);
     };
 
     const handleNavChange = useCallback(
@@ -164,13 +166,10 @@ function HomeContent() {
             setCurrentModalId(null);
             pushCountRef.current = 0;
 
-            startTransition(() => {
-                router.replace(buildAppUrl(view, null), { scroll: false });
-            });
-
+            window.history.replaceState(null, '', buildAppUrl(view, null));
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
-        [buildAppUrl, router, startTransition]
+        [buildAppUrl]
     );
 
     const openModal = useCallback(
@@ -182,11 +181,9 @@ function HomeContent() {
             setCurrentModal(modal);
             setCurrentModalId(modalId);
             pushCountRef.current += 1;
-            startTransition(() => {
-                router.push(buildAppUrl(targetView, modal, modalId), { scroll: false });
-            });
+            window.history.pushState(null, '', buildAppUrl(targetView, modal, modalId));
         },
-        [buildAppUrl, currentModal, currentModalId, router, startTransition]
+        [buildAppUrl, currentModal, currentModalId]
     );
 
     const closeModal = useCallback(() => {
@@ -196,16 +193,12 @@ function HomeContent() {
         setCurrentModalId(null);
         if (pushCountRef.current > 0) {
             pushCountRef.current -= 1;
-            startTransition(() => {
-                router.back();
-            });
+            window.history.back();
             return;
         }
 
-        startTransition(() => {
-            router.replace(buildAppUrl(currentView, null), { scroll: false });
-        });
-    }, [buildAppUrl, currentModal, currentView, router, startTransition]);
+        window.history.replaceState(null, '', buildAppUrl(currentView, null));
+    }, [buildAppUrl, currentModal, currentView]);
 
     const handleOpenVersion = useCallback(() => {
         openModal('version');

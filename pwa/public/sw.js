@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shotten-v1';
+const CACHE_NAME = 'shotten-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
@@ -38,19 +38,63 @@ self.addEventListener('fetch', (event) => {
     // Skip non-GET requests
     if (event.request.method !== 'GET') return;
 
+    const url = new URL(event.request.url);
+
+    // Only handle same-origin app requests.
+    if (url.origin !== self.location.origin) return;
+
     // Skip API requests - they should always go to network
-    if (event.request.url.includes('/api/')) {
+    if (url.pathname.startsWith('/api/')) {
+        return;
+    }
+
+    // Next.js app-router data/RSC requests must not be cached as page responses.
+    if (
+        event.request.headers.get('RSC') === '1' ||
+        event.request.headers.get('Next-Router-Prefetch') === '1' ||
+        url.searchParams.has('_rsc')
+    ) {
+        return;
+    }
+
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    if (response.ok) {
+                        const responseClone = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put('/', responseClone);
+                        });
+                    }
+                    return response;
+                })
+                .catch(async () => {
+                    const cachedShell = await caches.match('/');
+                    if (cachedShell) {
+                        return cachedShell;
+                    }
+
+                    const offlinePage = await caches.match(OFFLINE_URL);
+                    if (offlinePage) {
+                        return offlinePage;
+                    }
+
+                    return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+                })
+        );
         return;
     }
 
     event.respondWith(
         fetch(event.request)
             .then((response) => {
-                // Clone the response before caching
-                const responseClone = response.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, responseClone);
-                });
+                if (response.ok) {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseClone);
+                    });
+                }
                 return response;
             })
             .catch(async () => {
@@ -58,14 +102,6 @@ self.addEventListener('fetch', (event) => {
                 const cachedResponse = await caches.match(event.request);
                 if (cachedResponse) {
                     return cachedResponse;
-                }
-
-                // For navigation requests, show offline page
-                if (event.request.mode === 'navigate') {
-                    const offlinePage = await caches.match(OFFLINE_URL);
-                    if (offlinePage) {
-                        return offlinePage;
-                    }
                 }
 
                 // Return a simple error for other requests
