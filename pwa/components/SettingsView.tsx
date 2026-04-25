@@ -24,6 +24,9 @@ interface SettingsViewProps {
     isRespondAsPlayerOpen?: boolean;
     onOpenRespondAsPlayer?: () => void;
     onCloseRespondAsPlayer?: () => void;
+    isHiddenAdminOpen?: boolean;
+    onOpenHiddenAdmin?: () => void;
+    onCloseHiddenAdmin?: () => void;
 }
 
 export default function SettingsView({
@@ -39,6 +42,9 @@ export default function SettingsView({
     isRespondAsPlayerOpen = false,
     onOpenRespondAsPlayer,
     onCloseRespondAsPlayer,
+    isHiddenAdminOpen = false,
+    onOpenHiddenAdmin,
+    onCloseHiddenAdmin,
 }: SettingsViewProps) {
     const [useMock, setUseMock] = useState(true);
     const [isLocalhost, setIsLocalhost] = useState(false);
@@ -50,7 +56,6 @@ export default function SettingsView({
     const [showLeagueSelector, setShowLeagueSelector] = useState(false);
     const [theme, setTheme] = useState<string>('original');
     const [showThemeSelector, setShowThemeSelector] = useState(false);
-    const [isSecretFeatureOpen, setIsSecretFeatureOpen] = useState(false);
     const { hasUpdate, updateApp, isChecking } = useVersionChecker();
 
     useEffect(() => {
@@ -281,7 +286,7 @@ export default function SettingsView({
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                             hapticPatterns.tap();
-                            setIsSecretFeatureOpen(true);
+                            onOpenHiddenAdmin?.();
                         }}
                         style={{
                             background: 'var(--color-surface)',
@@ -971,7 +976,7 @@ export default function SettingsView({
                 onClose={() => onClosePlayerManagement?.()}
             />
             <VersionHistoryModal open={isVersionOpen} onClose={onCloseVersion} />
-            <HiddenAdminDialog open={isSecretFeatureOpen} onClose={() => setIsSecretFeatureOpen(false)} />
+            <HiddenAdminDialog open={isHiddenAdminOpen} onClose={() => onCloseHiddenAdmin?.()} />
             <RespondAsPlayerSheet
                 isOpen={isRespondAsPlayerOpen}
                 onClose={() => onCloseRespondAsPlayer?.()}
