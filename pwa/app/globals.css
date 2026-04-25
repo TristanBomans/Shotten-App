@@ -74,6 +74,7 @@
   --space-lg: 1.5rem;
   --space-xl: 2rem;
   --space-2xl: 3rem;
+  --content-x-padding: calc(var(--space-lg) / 2);
 
   /* Radii - Squircle aesthetic */
   --radius-sm: 0.75rem;
@@ -597,7 +598,7 @@ textarea {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--space-lg);
+  padding: var(--space-lg) var(--content-x-padding);
   padding-top: calc(var(--space-lg) + var(--safe-top));
   padding-bottom: calc(100px + var(--safe-bottom));
 }

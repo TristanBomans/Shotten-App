@@ -126,6 +126,10 @@ export default function OpponentView({
 }: OpponentViewProps) {
     if (!opponentTeam) return null;
 
+    const winRate = opponentData?.matchesPlayed && opponentData.matchesPlayed > 0
+        ? Math.round(((opponentData.wins || 0) / opponentData.matchesPlayed) * 100)
+        : 0;
+
     if (loading && !opponentData) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -581,6 +585,83 @@ export default function OpponentView({
                                 {result}
                             </motion.div>
                         ))}
+                    </div>
+                </SectionCard>
+            )}
+
+            {/* Win Rate Card */}
+            {opponentData && (
+                <SectionCard>
+                    <SectionHeader
+                        icon={TrendingUp}
+                        title="Win Rate"
+                        color="var(--color-success)"
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{
+                            width: 96,
+                            height: 96,
+                            borderRadius: 24,
+                            background: 'linear-gradient(135deg, rgb(var(--color-success-rgb) / 0.16), var(--color-surface-hover))',
+                            border: '1px solid rgb(var(--color-success-rgb) / 0.2)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                        }}>
+                            <div style={{
+                                fontSize: '2rem',
+                                fontWeight: 900,
+                                color: 'var(--color-success)',
+                                lineHeight: 1,
+                            }}>
+                                {winRate}%
+                            </div>
+                            <div style={{
+                                fontSize: '0.62rem',
+                                color: 'var(--color-text-tertiary)',
+                                marginTop: 5,
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                            }}>
+                                Wins
+                            </div>
+                        </div>
+                        <div style={{
+                            flex: 1,
+                            minWidth: 0,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 10,
+                        }}>
+                            <div>
+                                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                                    {opponentData.wins || 0}/{opponentData.matchesPlayed || 0} matches won
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 3 }}>
+                                    {opponentData.draws || 0} draws · {opponentData.losses || 0} losses
+                                </div>
+                            </div>
+                            <div style={{
+                                height: 7,
+                                borderRadius: 999,
+                                background: 'var(--color-surface-hover)',
+                                overflow: 'hidden',
+                            }}>
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${winRate}%` }}
+                                    transition={{ duration: 0.55, ease: 'easeOut' }}
+                                    style={{
+                                        height: '100%',
+                                        borderRadius: 999,
+                                        background: 'var(--color-success)',
+                                    }}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </SectionCard>
             )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, type ElementType, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp, X } from 'lucide-react';
@@ -9,6 +9,9 @@ import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
+
+const teamDetailTabs = ['overview', 'matches', 'squad'] as const;
+type TeamDetailTab = typeof teamDetailTabs[number];
 
 interface ScraperMatch {
     _id: string;
@@ -30,9 +33,50 @@ interface TeamDetailModalProps {
     onClose: () => void;
 }
 
+const SectionCard = ({ children, style }: { children: ReactNode; style?: CSSProperties }) => (
+    <div style={{
+        background: 'var(--color-bg-elevated)',
+        backdropFilter: 'blur(40px)',
+        WebkitBackdropFilter: 'blur(40px)',
+        borderRadius: 16,
+        border: '0.5px solid var(--color-border)',
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        ...style,
+    }}>
+        {children}
+    </div>
+);
+
+const SectionHeader = ({ icon: Icon, title, color = 'var(--color-text-tertiary)' }: {
+    icon: ElementType;
+    title: string;
+    color?: string;
+}) => (
+    <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 12,
+    }}>
+        <Icon size={14} style={{ color }} />
+        <span style={{
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            color: 'var(--color-text-secondary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+        }}>
+            {title}
+        </span>
+    </div>
+);
+
 export default function TeamDetailModal({ team, players, open, onClose }: TeamDetailModalProps) {
     const [showImage, setShowImage] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'squad'>('overview');
+    const [activeTab, setActiveTab] = useState<TeamDetailTab>('overview');
     const [matches, setMatches] = useState<ScraperMatch[]>([]);
     const [loadingMatches, setLoadingMatches] = useState(false);
 
@@ -61,30 +105,25 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
         fetchMatches();
     }, [open, team.externalId]);
 
-    // Intersection Observer for tab sync
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const visible = entries.find(e => e.isIntersecting);
-                if (visible) {
-                    const view = visible.target.getAttribute('data-view') as 'overview' | 'matches' | 'squad';
-                    if (view && view !== activeTab) {
-                        hapticPatterns.tap();
-                        setActiveTab(view);
-                    }
-                }
-            },
-            { root: scrollRef.current, threshold: 0.6 }
-        );
+    const getTabFromScroll = useCallback((): TeamDetailTab => {
+        if (!scrollRef.current) return 'overview';
 
-        if (overviewRef.current) observer.observe(overviewRef.current);
-        if (matchesRef.current) observer.observe(matchesRef.current);
-        if (squadRef.current) observer.observe(squadRef.current);
+        const scrollLeft = scrollRef.current.scrollLeft;
+        const viewWidth = scrollRef.current.clientWidth || 1;
+        const tabIndex = Math.round(scrollLeft / viewWidth);
 
-        return () => observer.disconnect();
-    }, [activeTab]);
+        return teamDetailTabs[tabIndex] || 'overview';
+    }, []);
 
-    const scrollToView = (view: 'overview' | 'matches' | 'squad') => {
+    const handleScroll = useCallback(() => {
+        const nextTab = getTabFromScroll();
+        if (nextTab !== activeTab) {
+            hapticPatterns.swipe();
+            setActiveTab(nextTab);
+        }
+    }, [activeTab, getTabFromScroll]);
+
+    const scrollToView = (view: TeamDetailTab) => {
         if (scrollRef.current) {
             const viewIndex = view === 'overview' ? 0 : view === 'matches' ? 1 : 2;
             const left = viewIndex * scrollRef.current.clientWidth;
@@ -125,6 +164,9 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
     const pastMatches = matches
         .filter(m => parseDateToTimestamp(m.date) <= now && m.status === 'Played')
         .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date));
+    const winRate = team.matchesPlayed && team.matchesPlayed > 0
+        ? Math.round(((team.wins || 0) / team.matchesPlayed) * 100)
+        : 0;
 
     // Sort players by goals
     // Extract per-team stats for THIS team specifically
@@ -233,6 +275,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                 key={tab.id}
                                 onClick={() => {
                                     hapticPatterns.tap();
+                                    setActiveTab(tab.id);
                                     scrollToView(tab.id);
                                 }}
                                 whileTap={{ scale: 0.95 }}
@@ -262,6 +305,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                     {/* Scrollable Tab Content */}
                     <div
                         ref={scrollRef}
+                        onScroll={handleScroll}
                         className="scrollbar-hide"
                         style={{
                             display: 'flex',
@@ -285,178 +329,262 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                 overflowY: 'auto',
                             }}
                         >
-                            {/* Team Hero */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                                {team?.imageBase64 ? (
-                                    <img
-                                        src={team.imageBase64}
-                                        alt={team?.name || ''}
-                                        onClick={() => {
-                                            hapticPatterns.tap();
-                                            setShowImage(true);
-                                        }}
-                                        style={{
-                                            width: 64, height: 64,
-                                            borderRadius: 16,
-                                            objectFit: 'cover',
-                                            border: '1px solid var(--color-border)',
-                                            cursor: 'zoom-in',
-                                            flexShrink: 0,
-                                        }}
-                                    />
-                                ) : (
-                                    <div style={{
-                                        width: 64, height: 64,
-                                        borderRadius: 16,
-                                        background: 'var(--color-surface-hover)',
-                                        border: '1px solid var(--color-border)',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent)',
-                                        flexShrink: 0,
-                                    }}>
-                                        {team?.name?.charAt(0) || ''}
-                                    </div>
-                                )}
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{
-                                        fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-text-primary)',
-                                        marginBottom: 2,
-                                    }}>
-                                        {team?.name || ''}
-                                    </div>
-                                    {team?.leagueName && (
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                            {team.leagueName}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Recent Form */}
-                            {recentForm.length > 0 && (
-                                <div style={{ marginBottom: 16 }}>
-                                    <div style={{
-                                        fontSize: '0.7rem', fontWeight: 600,
-                                        color: 'var(--color-text-tertiary)',
-                                        textTransform: 'uppercase',
-                                        marginBottom: 8,
-                                    }}>
-                                        Recent Form
-                                    </div>
-                                    <div style={{ display: 'flex', gap: 6 }}>
-                                        {recentForm.map((result, i) => (
-                                            <div
-                                                key={i}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                <SectionCard style={{ padding: 20 }}>
+                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                        {team?.imageBase64 ? (
+                                            <img
+                                                src={team.imageBase64}
+                                                alt={team?.name || ''}
+                                                onClick={() => {
+                                                    hapticPatterns.tap();
+                                                    setShowImage(true);
+                                                }}
                                                 style={{
-                                                    width: 32, height: 32,
-                                                    borderRadius: 8,
-                                                    background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.25)' :
-                                                        result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.25)' :
-                                                            'rgb(var(--color-warning-rgb) / 0.25)',
-                                                    color: result === 'W' ? 'var(--color-success)' :
-                                                        result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
+                                                    width: 72, height: 72,
+                                                    borderRadius: 14,
+                                                    objectFit: 'cover',
+                                                    border: '1px solid var(--color-border)',
+                                                    cursor: 'zoom-in',
+                                                    flexShrink: 0,
+                                                }}
+                                            />
+                                        ) : (
+                                            <div style={{
+                                                width: 72, height: 72,
+                                                borderRadius: 14,
+                                                background: 'var(--color-surface-hover)',
+                                                border: '1px solid var(--color-border)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-accent)',
+                                                flexShrink: 0,
+                                            }}>
+                                                {team?.name?.charAt(0) || ''}
+                                            </div>
+                                        )}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{
+                                                fontSize: '1.25rem',
+                                                fontWeight: 700,
+                                                color: 'var(--color-text-primary)',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                            }}>
+                                                {team?.name || ''}
+                                            </div>
+                                            {team?.leagueName && (
+                                                <div style={{
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontSize: '0.85rem',
-                                                    fontWeight: 700,
-                                                }}
-                                            >
-                                                {result}
-                                            </div>
-                                        ))}
+                                                    gap: 6,
+                                                    marginTop: 4,
+                                                }}>
+                                                    <Trophy size={12} style={{ color: 'var(--color-text-tertiary)' }} />
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                                        {team.leagueName}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                </SectionCard>
 
-                            {/* Stats Grid */}
-                            {team.rank !== undefined && (
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(4, 1fr)',
-                                    gap: 8,
-                                    marginBottom: 16,
-                                }}>
-                                    <StatBox label="RANK" value={`#${team.rank}`} />
-                                    <StatBox label="PTS" value={team.points || 0} />
-                                    <StatBox
-                                        label="W/D/L"
-                                        value={
-                                            <span>
-                                                <span style={{ color: 'var(--color-success)' }}>{team.wins || 0}</span>
-                                                <span style={{ color: 'var(--color-text-tertiary)' }}>/</span>
-                                                <span style={{ color: 'var(--color-warning)' }}>{team.draws || 0}</span>
-                                                <span style={{ color: 'var(--color-text-tertiary)' }}>/</span>
-                                                <span style={{ color: 'var(--color-danger)' }}>{team.losses || 0}</span>
-                                            </span>
-                                        }
+                                {team.rank !== undefined && (
+                                    <SectionCard>
+                                        <SectionHeader
+                                            icon={TrendingUp}
+                                            title="Season Stats"
+                                            color="var(--color-accent)"
+                                        />
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: '8px 0',
+                                        }}>
+                                            <StatItem label="Rank" value={`#${team.rank}`} color={team.rank === 1 ? 'var(--color-warning)' : 'var(--color-text-primary)'} />
+                                            <StatItem label="Points" value={team.points || 0} />
+                                            <StatItem label="Record" value={`${team.wins || 0}-${team.draws || 0}-${team.losses || 0}`} />
+                                            <StatItem
+                                                label="Goal Diff"
+                                                value={`${(team.goalDifference || 0) >= 0 ? '+' : ''}${team.goalDifference || 0}`}
+                                                color={(team.goalDifference || 0) >= 0 ? 'var(--color-success)' : 'var(--color-danger)'}
+                                            />
+                                        </div>
+                                    </SectionCard>
+                                )}
+
+                                {recentForm.length > 0 && (
+                                    <SectionCard>
+                                        <SectionHeader
+                                            icon={TrendingUp}
+                                            title="Recent Form"
+                                            color="var(--color-success)"
+                                        />
+                                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                            {recentForm.map((result, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    initial={{ scale: 0, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    transition={{ delay: i * 0.05 }}
+                                                    style={{
+                                                        width: 36, height: 36,
+                                                        borderRadius: 10,
+                                                        background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.2)' :
+                                                            result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.2)' :
+                                                                'rgb(var(--color-warning-rgb) / 0.2)',
+                                                        border: `1px solid ${result === 'W' ? 'rgb(var(--color-success-rgb) / 0.3)' :
+                                                            result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.3)' :
+                                                                'rgb(var(--color-warning-rgb) / 0.3)'}`,
+                                                        color: result === 'W' ? 'var(--color-success)' :
+                                                            result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '0.9rem',
+                                                        fontWeight: 800,
+                                                    }}
+                                                >
+                                                    {result}
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </SectionCard>
+                                )}
+
+                                <SectionCard>
+                                    <SectionHeader
+                                        icon={Trophy}
+                                        title="Goal Profile"
+                                        color="var(--color-warning)"
                                     />
-                                    <StatBox
-                                        label="GD"
-                                        value={`${(team.goalDifference || 0) >= 0 ? '+' : ''}${team.goalDifference || 0}`}
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                                        gap: 12,
+                                    }}>
+                                        <CompactStat label="Played" value={team.matchesPlayed || 0} />
+                                        <CompactStat label="For" value={team.goalsFor || 0} color="var(--color-success)" />
+                                        <CompactStat label="Against" value={team.goalsAgainst || 0} color="var(--color-danger)" />
+                                    </div>
+                                </SectionCard>
+
+                                <SectionCard>
+                                    <SectionHeader
+                                        icon={TrendingUp}
+                                        title="Win Rate"
+                                        color="var(--color-success)"
                                     />
-                                </div>
-                            )}
-
-                            {/* Additional Stats */}
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(3, 1fr)',
-                                gap: 8,
-                                marginBottom: 16,
-                            }}>
-                                <MiniStat label="Played" value={team.matchesPlayed || 0} />
-                                <MiniStat label="Goals For" value={team.goalsFor || 0} />
-                                <MiniStat label="Goals Agst" value={team.goalsAgainst || 0} />
-                            </div>
-
-                            {/* Team Info */}
-                            {(team.colors || team.manager || team.description) && (
-                                <div style={{
-                                    padding: '12px 16px',
-                                    borderTop: '0.5px solid var(--color-border-subtle)',
-                                    borderBottom: '0.5px solid var(--color-border-subtle)',
-                                    marginBottom: 16,
-                                    background: 'var(--color-surface-hover)',
-                                    borderRadius: 12,
-                                }}>
-                                    {team.colors && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                                         <div style={{
-                                            display: 'flex', alignItems: 'center', gap: 8,
-                                            marginBottom: (team.manager || team.description) ? 10 : 0,
+                                            width: 96,
+                                            height: 96,
+                                            borderRadius: 24,
+                                            background: 'linear-gradient(135deg, rgb(var(--color-success-rgb) / 0.16), var(--color-surface-hover))',
+                                            border: '1px solid rgb(var(--color-success-rgb) / 0.2)',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexShrink: 0,
                                         }}>
-                                            <span style={{ fontSize: '0.9rem' }}>🎨</span>
-                                            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                                {team.colors}
-                                            </span>
+                                            <div style={{
+                                                fontSize: '2rem',
+                                                fontWeight: 900,
+                                                color: 'var(--color-success)',
+                                                lineHeight: 1,
+                                            }}>
+                                                {winRate}%
+                                            </div>
+                                            <div style={{
+                                                fontSize: '0.62rem',
+                                                color: 'var(--color-text-tertiary)',
+                                                marginTop: 5,
+                                                fontWeight: 700,
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.05em',
+                                            }}>
+                                                Wins
+                                            </div>
                                         </div>
-                                    )}
-                                    {team.manager && (
                                         <div style={{
-                                            display: 'flex', alignItems: 'center', gap: 8,
-                                            marginBottom: team.description ? 10 : 0,
+                                            flex: 1,
+                                            minWidth: 0,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 10,
                                         }}>
-                                            <UserCircle size={16} style={{ color: 'var(--color-text-tertiary)' }} />
-                                            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                                {team.manager}
-                                            </span>
+                                            <div>
+                                                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                                                    {team.wins || 0}/{team.matchesPlayed || 0} matches won
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 3 }}>
+                                                    {team.draws || 0} draws · {team.losses || 0} losses
+                                                </div>
+                                            </div>
+                                            <div style={{
+                                                height: 7,
+                                                borderRadius: 999,
+                                                background: 'var(--color-surface-hover)',
+                                                overflow: 'hidden',
+                                            }}>
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${winRate}%` }}
+                                                    transition={{ duration: 0.55, ease: 'easeOut' }}
+                                                    style={{
+                                                        height: '100%',
+                                                        borderRadius: 999,
+                                                        background: 'var(--color-success)',
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
-                                    )}
-                                    {team.description && (
-                                        <div style={{
-                                            fontSize: '0.85rem',
-                                            color: 'var(--color-text-secondary)',
-                                            fontStyle: 'italic',
-                                            lineHeight: 1.5,
-                                        }}>
-                                            "{team.description}"
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                    </div>
+                                </SectionCard>
 
-                            {/* LZV Link */}
-                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                {(team.colors || team.manager || team.description) && (
+                                    <SectionCard>
+                                        <SectionHeader
+                                            icon={UserCircle}
+                                            title="Team Info"
+                                            color="var(--color-accent)"
+                                        />
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {team.colors && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <span style={{ fontSize: '1rem' }}>🎨</span>
+                                                    <span style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
+                                                        {team.colors}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {team.manager && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <UserCircle size={16} style={{ color: 'var(--color-text-tertiary)' }} />
+                                                    <span style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
+                                                        {team.manager}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {team.description && (
+                                                <div style={{
+                                                    fontSize: '0.85rem',
+                                                    color: 'var(--color-text-secondary)',
+                                                    fontStyle: 'italic',
+                                                    lineHeight: 1.5,
+                                                    paddingTop: team.manager || team.colors ? 8 : 0,
+                                                    borderTop: team.manager || team.colors ? '1px solid var(--color-border-subtle)' : 'none',
+                                                }}>
+                                                    "{team.description}"
+                                                </div>
+                                            )}
+                                        </div>
+                                    </SectionCard>
+                                )}
+
                                 <a
                                     href={`https://www.lzvcup.be/teams/detail/${team?.externalId || ''}`}
                                     target="_blank"
@@ -465,8 +593,9 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                         display: 'inline-flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        padding: '10px 14px',
+                                        alignSelf: 'center',
                                         gap: 6,
+                                        padding: '10px 14px',
                                         background: 'var(--color-surface-hover)',
                                         borderRadius: 10,
                                         border: '0.5px solid var(--color-border)',
@@ -674,50 +803,66 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
 }
 
 // Sub-components
-const statCardStyle = {
-    padding: '10px 8px',
-    minHeight: 68,
-    background: 'var(--color-bg-elevated)',
-    borderRadius: 12,
-    border: '0.5px solid var(--color-border)',
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-} as const;
-
-const statLabelStyle = {
-    fontSize: '0.65rem',
-    color: 'var(--color-text-tertiary)',
-    marginTop: 2,
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-} as const;
-
-function StatBox({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
+function StatItem({ label, value, color = 'var(--color-text-primary)' }: {
+    label: string;
+    value: ReactNode;
+    color?: string;
+}) {
     return (
-        <div style={statCardStyle}>
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+        }}>
             <div style={{
-                fontSize: '1.1rem', fontWeight: 700,
-                color: color || 'var(--color-text-primary)',
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                color,
             }}>
                 {value}
             </div>
-            <div style={statLabelStyle}>
+            <div style={{
+                fontSize: '0.65rem',
+                color: 'var(--color-text-tertiary)',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+            }}>
                 {label}
             </div>
         </div>
     );
 }
 
-function MiniStat({ label, value, color }: { label: string; value: number; color?: string }) {
+function CompactStat({ label, value, color = 'var(--color-text-primary)' }: {
+    label: string;
+    value: ReactNode;
+    color?: string;
+}) {
     return (
-        <div style={statCardStyle}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: color || 'var(--color-text-primary)' }}>
+        <div style={{
+            padding: '12px 8px',
+            minHeight: 72,
+            background: 'var(--color-surface-hover)',
+            borderRadius: 12,
+            border: '0.5px solid var(--color-border-subtle)',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+        }}>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color }}>
                 {value}
             </div>
-            <div style={statLabelStyle}>
+            <div style={{
+                fontSize: '0.65rem',
+                color: 'var(--color-text-tertiary)',
+                marginTop: 4,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+            }}>
                 {label}
             </div>
         </div>

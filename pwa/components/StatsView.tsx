@@ -241,14 +241,6 @@ export default function StatsView({
         ? playerStats.find(p => p.id === selectedPlayerId) || null
         : null;
 
-    const topScorer = playerStats[0];
-    const mostGhosts = playerStats.length > 0 ? playerStats.reduce((a, b) =>
-        a.stats.ghostCount > b.stats.ghostCount ? a : b
-    ) : null;
-    const mostMaybe = playerStats.length > 0 ? playerStats.reduce((a, b) =>
-        a.stats.maybeCount > b.stats.maybeCount ? a : b
-    ) : null;
-
     return (
         <div className="container content-under-top-overlay">
             <motion.div
@@ -256,18 +248,6 @@ export default function StatsView({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
             >
-                {/* Highlights */}
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: 8,
-                    marginBottom: 16,
-                }}>
-                    <HighlightCard icon="🏆" title="THE LEGEND" player={topScorer?.name} />
-                    <HighlightCard icon="👻" title="CASPER" player={mostGhosts?.name} />
-                    <HighlightCard icon="🤔" title="MISS MAYBE" player={mostMaybe?.name} />
-                </div>
-
                 {/* Leaderboard - Clean simple layout */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -390,40 +370,6 @@ export default function StatsView({
                 rank={selectedPlayer ? playerStats.findIndex(p => p.id === selectedPlayer.id) + 1 : 0}
                 onClose={() => onSelectPlayer?.(null)}
             />
-        </div>
-    );
-}
-
-function HighlightCard({ icon, title, player }: { icon: string; title: string; player?: string }) {
-    return (
-        <div style={{
-            background: 'var(--color-surface)',
-            borderRadius: 14,
-            border: '0.5px solid var(--color-border)',
-            padding: '12px 10px',
-            textAlign: 'center',
-        }}>
-            <div style={{ fontSize: '1.25rem', marginBottom: 4 }}>{icon}</div>
-            <div style={{
-                fontSize: '0.55rem',
-                fontWeight: 700,
-                color: 'var(--color-text-tertiary)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.03em',
-                marginBottom: 4,
-            }}>
-                {title}
-            </div>
-            <div style={{
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                color: 'var(--color-text-primary)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-            }}>
-                {player}
-            </div>
         </div>
     );
 }

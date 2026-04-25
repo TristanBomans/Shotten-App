@@ -92,8 +92,8 @@ export default function TopOverlayHeader({
                 zIndex: 9998,
                 pointerEvents: 'none',
                 paddingTop: 'calc(var(--safe-top) + 16px)',
-                paddingLeft: 'calc(var(--space-lg) + var(--safe-left))',
-                paddingRight: 'calc(var(--space-lg) + var(--safe-right))',
+                paddingLeft: 'calc(var(--content-x-padding) + var(--safe-left))',
+                paddingRight: 'calc(var(--content-x-padding) + var(--safe-right))',
             }}
         >
             <div
