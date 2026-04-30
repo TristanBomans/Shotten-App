@@ -131,6 +131,16 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
         }
     };
 
+    // Reset tab state when modal opens so indicator and content stay aligned
+    useEffect(() => {
+        if (open) {
+            setActiveTab('overview');
+            if (scrollRef.current) {
+                scrollRef.current.scrollLeft = 0;
+            }
+        }
+    }, [open]);
+
     if (typeof document === 'undefined') return null;
 
     const hasTeam = !!team?.externalId;
