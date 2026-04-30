@@ -102,17 +102,6 @@ export default function VersionHistoryContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
         >
-            <div style={{ marginBottom: 32 }}>
-                <h1 style={{
-                    fontSize: '1.75rem',
-                    fontWeight: 700,
-                    color: 'var(--color-text-primary)',
-                    margin: 0,
-                }}>
-                    Version History
-                </h1>
-            </div>
-
             {loading ? (
                 <div style={{ color: 'var(--color-text-tertiary)', textAlign: 'center', padding: 40 }}>
                     Loading...

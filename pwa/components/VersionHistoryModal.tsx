@@ -90,7 +90,7 @@ export default function VersionHistoryModal({ open, onClose }: VersionHistoryMod
                                 color: 'var(--color-text-primary)',
                             }}
                         >
-                            What&apos;s New
+                            Version History
                         </div>
                     </div>
 
