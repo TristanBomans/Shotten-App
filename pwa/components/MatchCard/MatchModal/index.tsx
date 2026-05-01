@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, MapPin, Calendar } from 'lucide-react';
@@ -56,6 +56,17 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
             setActiveTab(nextTab);
         }
     }, [getTabFromScroll]);
+
+    // Reset tab state when modal opens so indicator and content stay aligned
+    useEffect(() => {
+        if (open) {
+            setActiveTab('squad');
+            lastTabRef.current = 'squad';
+            if (scrollRef.current) {
+                scrollRef.current.scrollLeft = 0;
+            }
+        }
+    }, [open]);
 
     if (typeof document === 'undefined') return null;
 
