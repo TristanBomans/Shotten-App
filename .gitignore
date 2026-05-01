@@ -1,6 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
+/node_modules
 /pwa/node_modules
 
 # testing
@@ -32,6 +33,7 @@ npm-debug.log*
 /pwa/public/version.json
 
 # package manager
+/bun.lock
 /pwa/package-lock.json
 
 # mobile (expo)
