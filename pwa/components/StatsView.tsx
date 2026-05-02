@@ -413,30 +413,98 @@ function PlayerDetailModal({ open, player, rank, onClose }: {
                         overflow: 'hidden',
                     }}
             >
-                {/* Header */}
-                <div style={{
-                    display: 'flex', alignItems: 'center',
-                    padding: 'calc(var(--safe-top) + 8px) 16px 12px',
-                    borderBottom: '0.5px solid var(--color-border-subtle)',
-                    background: 'var(--color-surface)',
-                }}>
-                    <motion.button whileTap={{ scale: 0.96 }} onClick={() => { hapticPatterns.tap(); onClose(); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'transparent', border: 'none', color: 'var(--color-accent)', fontSize: '1.05rem', fontWeight: 400, cursor: 'pointer', padding: '4px 8px 4px 0', marginLeft: -4 }}>
-                        <ChevronLeft size={28} strokeWidth={1.5} />Back
-                    </motion.button>
-                    <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '1.05rem', fontWeight: 600, color: 'var(--color-text-primary)', maxWidth: '60%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
+                {/* Top fade gradient */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 'calc(var(--safe-top) + 84px)',
+                        background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
+                        pointerEvents: 'none',
+                        zIndex: 4,
+                    }}
+                />
+
+                {/* Back button */}
+                <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => { hapticPatterns.tap(); onClose(); }}
+                    aria-label="Back"
+                    style={{
+                        position: 'absolute',
+                        top: 'calc(var(--safe-top) + 8px)',
+                        left: 12,
+                        zIndex: 5,
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        background: 'var(--color-glass-heavy)',
+                        backdropFilter: 'blur(40px)',
+                        WebkitBackdropFilter: 'blur(40px)',
+                        border: '0.5px solid var(--color-border)',
+                        color: 'var(--color-text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: 'var(--shadow-lg)',
+                    }}
+                >
+                    <ChevronLeft size={22} strokeWidth={2} />
+                </motion.button>
+
+                {/* Centered bold title with subtitle */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 'calc(var(--safe-top) + 8px)',
+                        left: 64,
+                        right: 64,
+                        height: 44,
+                        zIndex: 5,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 1,
+                        pointerEvents: 'none',
+                    }}
+                >
+                    <span
+                        style={{
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            color: 'var(--color-text-primary)',
+                            letterSpacing: '-0.01em',
+                            lineHeight: 1.15,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '100%',
+                        }}
+                    >
                         {player.name}
-                    </div>
+                    </span>
+                    <span
+                        style={{
+                            fontSize: '0.72rem',
+                            color: 'var(--color-text-secondary)',
+                            lineHeight: 1.2,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '100%',
+                        }}
+                    >
+                        #{rank} · {s.rank.name} · {s.score} pts
+                    </span>
                 </div>
 
                 {/* Scrollable Content */}
-                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingTop: 'calc(var(--safe-top) + 72px)' }}>
                     <div style={{ padding: '24px 20px 20px' }}>
-                        {/* Rank badge */}
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            #{rank} · <player.stats.rank.icon size={12} style={{ color: player.stats.rank.color }} /> {player.stats.rank.name}
-                        </div>
-
                         {/* Score Card */}
                         <div style={{ padding: 18, background: 'var(--color-bg-elevated)', borderRadius: 16, textAlign: 'center', border: '0.5px solid var(--color-border)' }}>
                             <div style={{ fontSize: '2.5rem', fontWeight: 800, color: s.rank.color }}>{s.score}</div>
@@ -511,7 +579,7 @@ function PlayerDetailModal({ open, player, rank, onClose }: {
                     </div>
 
                     {/* Match History */}
-                    <div style={{ padding: '0 20px 24px', flex: 1 }}>
+                    <div style={{ padding: '0 20px calc(var(--safe-bottom, 0px) + 24px)', flex: 1 }}>
                         <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', marginBottom: 10 }}>
                             Match History
                         </h3>
@@ -578,51 +646,80 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         overflow: 'hidden',
                     }}
                 >
-                {/* Header with iOS-style back button */}
+                {/* Top fade gradient */}
                 <div
                     style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 'calc(var(--safe-top) + 80px)',
+                        background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
+                        pointerEvents: 'none',
+                        zIndex: 4,
+                    }}
+                />
+
+                {/* Back button */}
+                <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                        hapticPatterns.tap();
+                        onClose();
+                    }}
+                    aria-label="Back"
+                    style={{
+                        position: 'absolute',
+                        top: 'calc(var(--safe-top) + 8px)',
+                        left: 12,
+                        zIndex: 5,
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        background: 'var(--color-glass-heavy)',
+                        backdropFilter: 'blur(40px)',
+                        WebkitBackdropFilter: 'blur(40px)',
+                        border: '0.5px solid var(--color-border)',
+                        color: 'var(--color-text-primary)',
                         display: 'flex',
                         alignItems: 'center',
-                        padding: 'calc(var(--safe-top) + 8px) 16px 12px',
-                        borderBottom: '0.5px solid var(--color-border-subtle)',
-                        background: 'var(--color-surface)',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: 'var(--shadow-lg)',
                     }}
                 >
-                    <motion.button
-                        whileTap={{ scale: 0.96 }}
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            onClose();
-                        }}
+                    <ChevronLeft size={22} strokeWidth={2} />
+                </motion.button>
+
+                {/* Centered bold title */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 'calc(var(--safe-top) + 8px)',
+                        left: 64,
+                        right: 64,
+                        height: 40,
+                        zIndex: 5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        pointerEvents: 'none',
+                    }}
+                >
+                    <span
                         style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 2,
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--color-accent)',
-                            fontSize: '1.05rem',
-                            fontWeight: 400,
-                            cursor: 'pointer',
-                            padding: '4px 8px 4px 0',
-                            marginLeft: -4,
-                        }}
-                    >
-                        <ChevronLeft size={28} strokeWidth={1.5} />
-                        Back
-                    </motion.button>
-                    <div
-                        style={{
-                            position: 'absolute',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            fontSize: '1.05rem',
-                            fontWeight: 600,
+                            fontSize: '1.0625rem',
+                            fontWeight: 700,
                             color: 'var(--color-text-primary)',
+                            letterSpacing: '-0.01em',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '100%',
                         }}
                     >
                         How it works
-                    </div>
+                    </span>
                 </div>
 
                 {/* Content */}
@@ -630,7 +727,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     style={{
                         flex: 1,
                         overflowY: 'auto',
-                        padding: '20px',
+                        padding: 'calc(var(--safe-top) + 72px) 20px calc(var(--safe-bottom, 0px) + 24px)',
                     }}
                 >
                     <div style={{ marginBottom: 20 }}>

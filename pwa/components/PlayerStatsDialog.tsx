@@ -97,24 +97,97 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                         zIndex: 10020, display: 'flex', flexDirection: 'column', overflow: 'hidden',
                     }}
                 >
-                    {/* Header */}
-                    <div style={{
-                        display: 'flex', alignItems: 'center',
-                        padding: 'calc(var(--safe-top) + 8px) 16px 12px',
-                        borderBottom: '0.5px solid var(--color-border-subtle)',
-                        background: 'var(--color-surface)',
-                    }}>
-                        <motion.button whileTap={{ scale: 0.96 }} onClick={() => { hapticPatterns.tap(); onClose(); }}
-                            style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'transparent', border: 'none', color: 'var(--color-accent)', fontSize: '1.05rem', fontWeight: 400, cursor: 'pointer', padding: '4px 8px 4px 0', marginLeft: -4 }}>
-                            <ChevronLeft size={28} strokeWidth={1.5} />Back
-                        </motion.button>
-                        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '1.05rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                    {/* Top fade gradient */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: 'calc(var(--safe-top) + 84px)',
+                            background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
+                            pointerEvents: 'none',
+                            zIndex: 4,
+                        }}
+                    />
+
+                    {/* Back button */}
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => { hapticPatterns.tap(); onClose(); }}
+                        aria-label="Back"
+                        style={{
+                            position: 'absolute',
+                            top: 'calc(var(--safe-top) + 8px)',
+                            left: 12,
+                            zIndex: 5,
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
+                            border: '0.5px solid var(--color-border)',
+                            color: 'var(--color-text-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: 'var(--shadow-lg)',
+                        }}
+                    >
+                        <ChevronLeft size={22} strokeWidth={2} />
+                    </motion.button>
+
+                    {/* Centered bold title with subtitle */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 'calc(var(--safe-top) + 8px)',
+                            left: 64,
+                            right: 64,
+                            height: 44,
+                            zIndex: 5,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 1,
+                            pointerEvents: 'none',
+                        }}
+                    >
+                        <span
+                            style={{
+                                fontSize: '1rem',
+                                fontWeight: 700,
+                                color: 'var(--color-text-primary)',
+                                letterSpacing: '-0.01em',
+                                lineHeight: 1.15,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '100%',
+                            }}
+                        >
                             {player.name}
-                        </div>
+                        </span>
+                        <span
+                            style={{
+                                fontSize: '0.72rem',
+                                color: 'var(--color-text-secondary)',
+                                lineHeight: 1.2,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '100%',
+                            }}
+                        >
+                            {goals} goals · {assists} assists · {gp} games
+                        </span>
                     </div>
 
                     {/* Content */}
-                    <div className="scrollbar-hide" style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <div className="scrollbar-hide" style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', flex: 1, paddingTop: 'calc(var(--safe-top) + 72px)' }}>
 
                         {/* Hero: Goals & Assists split */}
                         <div style={{ padding: '20px 20px 0' }}>
@@ -259,7 +332,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                         )}
 
                         {/* Bottom padding */}
-                        <div style={{ height: 32 }} />
+                        <div style={{ height: 'calc(var(--safe-bottom, 0px) + 32px)' }} />
                     </div>
                 </motion.div>
             )}

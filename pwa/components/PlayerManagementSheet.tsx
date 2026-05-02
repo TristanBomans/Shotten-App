@@ -115,51 +115,80 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                         overflow: 'hidden',
                     }}
                 >
-                    {/* Header with iOS-style back button */}
+                    {/* Top fade gradient */}
                     <div
                         style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: 'calc(var(--safe-top) + 80px)',
+                            background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
+                            pointerEvents: 'none',
+                            zIndex: 4,
+                        }}
+                    />
+
+                    {/* Back button */}
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            handleClose();
+                        }}
+                        aria-label="Back"
+                        style={{
+                            position: 'absolute',
+                            top: 'calc(var(--safe-top) + 8px)',
+                            left: 12,
+                            zIndex: 5,
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
+                            border: '0.5px solid var(--color-border)',
+                            color: 'var(--color-text-primary)',
                             display: 'flex',
                             alignItems: 'center',
-                            padding: 'calc(var(--safe-top) + 8px) 16px 12px',
-                            borderBottom: '0.5px solid var(--color-border-subtle)',
-                            background: 'var(--color-surface)',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: 'var(--shadow-lg)',
                         }}
                     >
-                        <motion.button
-                            whileTap={{ scale: 0.96 }}
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                handleClose();
-                            }}
+                        <ChevronLeft size={22} strokeWidth={2} />
+                    </motion.button>
+
+                    {/* Centered bold title */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 'calc(var(--safe-top) + 8px)',
+                            left: 64,
+                            right: 64,
+                            height: 40,
+                            zIndex: 5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            pointerEvents: 'none',
+                        }}
+                    >
+                        <span
                             style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 2,
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--color-accent)',
-                                fontSize: '1.05rem',
-                                fontWeight: 400,
-                                cursor: 'pointer',
-                                padding: '4px 8px 4px 0',
-                                marginLeft: -4,
-                            }}
-                        >
-                            <ChevronLeft size={28} strokeWidth={1.5} />
-                            Back
-                        </motion.button>
-                        <div
-                            style={{
-                                position: 'absolute',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                fontSize: '1.05rem',
-                                fontWeight: 600,
+                                fontSize: '1.0625rem',
+                                fontWeight: 700,
                                 color: 'var(--color-text-primary)',
+                                letterSpacing: '-0.01em',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '100%',
                             }}
                         >
                             Manage Players
-                        </div>
+                        </span>
                     </div>
 
                     {/* Content */}
@@ -169,6 +198,8 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                             overflowY: 'auto',
                             display: 'flex',
                             flexDirection: 'column',
+                            paddingTop: 'calc(var(--safe-top) + 72px)',
+                            paddingBottom: 'calc(var(--safe-bottom, 0px) + 24px)',
                         }}
                     >
                         {/* Loading state */}
@@ -190,15 +221,12 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                     gridTemplateColumns: `1fr ${teams.map(() => '44px').join(' ')} 44px`,
                                     gap: 8,
                                     padding: '12px 20px',
-                                    background: 'var(--color-surface)',
                                     borderBottom: '0.5px solid var(--color-border)',
-                                    position: 'sticky',
-                                    top: 0,
                                 }}>
                                     <div style={{
                                         fontSize: '0.75rem',
                                         fontWeight: 600,
-                                        color: 'var(--color-text-tertiary)',
+                                        color: 'var(--color-text-primary)',
                                         textTransform: 'uppercase',
                                     }}>
                                         Name
@@ -209,7 +237,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                             style={{
                                                 fontSize: '0.65rem',
                                                 fontWeight: 600,
-                                                color: 'var(--color-text-tertiary)',
+                                                color: 'var(--color-text-primary)',
                                                 textTransform: 'uppercase',
                                                 textAlign: 'center',
                                                 overflow: 'hidden',
@@ -226,8 +254,6 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
 
                                 {/* Player List */}
                                 <div style={{
-                                    flex: 1,
-                                    overflowY: 'auto',
                                     padding: '0 20px',
                                 }}>
                                     {players.map(player => (
@@ -451,12 +477,6 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                         )}
                                     </div>
                                 </div>
-
-                                {/* Safe area padding for iOS */}
-                                <div style={{
-                                    height: 'env(safe-area-inset-bottom, 20px)',
-                                    background: 'var(--color-bg-elevated)',
-                                }} />
                             </>
                         )}
                     </div>
