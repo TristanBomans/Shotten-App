@@ -221,13 +221,12 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                     gridTemplateColumns: `1fr ${teams.map(() => '44px').join(' ')} 44px`,
                                     gap: 8,
                                     padding: '12px 20px',
-                                    background: 'var(--color-surface)',
                                     borderBottom: '0.5px solid var(--color-border)',
                                 }}>
                                     <div style={{
                                         fontSize: '0.75rem',
                                         fontWeight: 600,
-                                        color: 'var(--color-text-tertiary)',
+                                        color: 'var(--color-text-primary)',
                                         textTransform: 'uppercase',
                                     }}>
                                         Name
@@ -238,7 +237,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                             style={{
                                                 fontSize: '0.65rem',
                                                 fontWeight: 600,
-                                                color: 'var(--color-text-tertiary)',
+                                                color: 'var(--color-text-primary)',
                                                 textTransform: 'uppercase',
                                                 textAlign: 'center',
                                                 overflow: 'hidden',
