@@ -505,11 +505,6 @@ function PlayerDetailModal({ open, player, rank, onClose }: {
                 {/* Scrollable Content */}
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingTop: 'calc(var(--safe-top) + 72px)' }}>
                     <div style={{ padding: '24px 20px 20px' }}>
-                        {/* Rank badge */}
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            #{rank} · <player.stats.rank.icon size={12} style={{ color: player.stats.rank.color }} /> {player.stats.rank.name}
-                        </div>
-
                         {/* Score Card */}
                         <div style={{ padding: 18, background: 'var(--color-bg-elevated)', borderRadius: 16, textAlign: 'center', border: '0.5px solid var(--color-border)' }}>
                             <div style={{ fontSize: '2.5rem', fontWeight: 800, color: s.rank.color }}>{s.score}</div>
