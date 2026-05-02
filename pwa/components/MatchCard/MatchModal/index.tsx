@@ -138,15 +138,18 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                         overflow: 'hidden',
                     }}
                 >
-                {/* Header: round back · info pill · round more */}
+                {/* Header: floating glass pills (back · info · more) */}
                 <div
                     style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 5,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
                         padding: 'calc(var(--safe-top) + 8px) 12px 10px',
-                        borderBottom: '0.5px solid var(--color-border-subtle)',
-                        background: 'var(--color-surface)',
                     }}
                 >
                     <motion.button
@@ -161,13 +164,16 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             width: 40,
                             height: 40,
                             borderRadius: '50%',
-                            background: 'var(--color-surface-hover)',
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
                             border: '0.5px solid var(--color-border)',
                             color: 'var(--color-text-primary)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             cursor: 'pointer',
+                            boxShadow: 'var(--shadow-lg)',
                         }}
                     >
                         <ChevronLeft size={22} strokeWidth={2} />
@@ -179,13 +185,16 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             minWidth: 0,
                             padding: '8px 14px',
                             borderRadius: 999,
-                            background: 'var(--color-surface-hover)',
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
                             border: '0.5px solid var(--color-border)',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             gap: 2,
                             overflow: 'hidden',
+                            boxShadow: 'var(--shadow-lg)',
                         }}
                     >
                         <div
@@ -233,7 +242,9 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             width: 40,
                             height: 40,
                             borderRadius: '50%',
-                            background: showMenu ? 'var(--color-bg-elevated)' : 'var(--color-surface-hover)',
+                            background: showMenu ? 'var(--color-bg-elevated)' : 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
                             border: '0.5px solid var(--color-border)',
                             color: 'var(--color-text-primary)',
                             display: 'flex',
@@ -241,6 +252,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             justifyContent: 'center',
                             cursor: 'pointer',
                             transition: 'background 0.15s',
+                            boxShadow: 'var(--shadow-lg)',
                         }}
                     >
                         <MoreHorizontal size={20} strokeWidth={2} />
@@ -269,7 +281,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             minWidth: '100%',
                             scrollSnapAlign: 'center',
                             scrollSnapStop: 'always',
-                            padding: 16,
+                            padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 100px)',
                             overflowY: 'auto',
                         }}
                     >
@@ -283,7 +295,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             minWidth: '100%',
                             scrollSnapAlign: 'center',
                             scrollSnapStop: 'always',
-                            padding: 16,
+                            padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 100px)',
                             overflowY: 'auto',
                         }}
                     >
@@ -304,7 +316,14 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                 </div>
 
                 {/* Tabs (liquid glass pill) at bottom */}
-                <div style={{ padding: '10px 16px calc(var(--safe-bottom, 0px) + 12px)' }}>
+                <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 5,
+                    padding: '10px 16px calc(var(--safe-bottom, 0px) + 12px)',
+                }}>
                     <div style={{
                         display: 'flex',
                         gap: 4,
