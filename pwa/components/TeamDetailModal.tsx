@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, type ElementType, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp, X } from 'lucide-react';
+import { ChevronLeft, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp, X, MoreHorizontal, ExternalLink } from 'lucide-react';
 import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
@@ -79,6 +79,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
     const [activeTab, setActiveTab] = useState<TeamDetailTab>('overview');
     const [matches, setMatches] = useState<ScraperMatch[]>([]);
     const [loadingMatches, setLoadingMatches] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const overviewRef = useRef<HTMLDivElement>(null);
@@ -135,6 +136,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
     useEffect(() => {
         if (open) {
             setActiveTab('overview');
+            setMenuOpen(false);
             if (scrollRef.current) {
                 scrollRef.current.scrollLeft = 0;
             }
@@ -308,7 +310,104 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                 </div>
                             )}
                         </div>
+
+                        <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setMenuOpen(o => !o);
+                            }}
+                            aria-label="More options"
+                            style={{
+                                flexShrink: 0,
+                                width: 40,
+                                height: 40,
+                                borderRadius: '50%',
+                                background: 'var(--color-glass-heavy)',
+                                backdropFilter: 'blur(40px)',
+                                WebkitBackdropFilter: 'blur(40px)',
+                                border: '0.5px solid var(--color-border)',
+                                color: 'var(--color-text-primary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                boxShadow: 'var(--shadow-lg)',
+                            }}
+                        >
+                            <MoreHorizontal size={20} strokeWidth={2} />
+                        </motion.button>
                     </div>
+
+                    {/* Dropdown menu */}
+                    <AnimatePresence>
+                        {menuOpen && (
+                            <>
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    onClick={() => {
+                                        hapticPatterns.tap();
+                                        setMenuOpen(false);
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        zIndex: 6,
+                                    }}
+                                />
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.92, y: -8 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.92, y: -8 }}
+                                    transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 'calc(var(--safe-top) + 56px)',
+                                        right: 12,
+                                        zIndex: 7,
+                                        minWidth: 220,
+                                        padding: 6,
+                                        borderRadius: 14,
+                                        background: 'var(--color-glass-heavy)',
+                                        backdropFilter: 'blur(40px)',
+                                        WebkitBackdropFilter: 'blur(40px)',
+                                        border: '0.5px solid var(--color-border)',
+                                        boxShadow: 'var(--shadow-lg)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 2,
+                                    }}
+                                >
+                                    <a
+                                        href={`https://www.lzvcup.be/teams/detail/${team?.externalId || ''}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={() => {
+                                            hapticPatterns.tap();
+                                            setMenuOpen(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 10,
+                                            padding: '10px 12px',
+                                            borderRadius: 10,
+                                            color: 'var(--color-text-primary)',
+                                            fontSize: '0.9rem',
+                                            fontWeight: 500,
+                                            textDecoration: 'none',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        <ExternalLink size={16} style={{ color: 'var(--color-text-secondary)' }} />
+                                        View on LZV Cup
+                                    </a>
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
 
                     {/* Scrollable Tab Content */}
                     <div

@@ -97,92 +97,93 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                         zIndex: 10020, display: 'flex', flexDirection: 'column', overflow: 'hidden',
                     }}
                 >
-                    {/* Header: floating glass pills (back + title) */}
+                    {/* Top fade gradient */}
                     <div
                         style={{
                             position: 'absolute',
                             top: 0,
                             left: 0,
                             right: 0,
+                            height: 'calc(var(--safe-top) + 84px)',
+                            background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
+                            pointerEvents: 'none',
+                            zIndex: 4,
+                        }}
+                    />
+
+                    {/* Back button */}
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => { hapticPatterns.tap(); onClose(); }}
+                        aria-label="Back"
+                        style={{
+                            position: 'absolute',
+                            top: 'calc(var(--safe-top) + 8px)',
+                            left: 12,
                             zIndex: 5,
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
+                            border: '0.5px solid var(--color-border)',
+                            color: 'var(--color-text-primary)',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 8,
-                            padding: 'calc(var(--safe-top) + 8px) 12px 10px',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: 'var(--shadow-lg)',
                         }}
                     >
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => { hapticPatterns.tap(); onClose(); }}
-                            aria-label="Back"
-                            style={{
-                                flexShrink: 0,
-                                width: 40,
-                                height: 40,
-                                borderRadius: '50%',
-                                background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(40px)',
-                                WebkitBackdropFilter: 'blur(40px)',
-                                border: '0.5px solid var(--color-border)',
-                                color: 'var(--color-text-primary)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                boxShadow: 'var(--shadow-lg)',
-                            }}
-                        >
-                            <ChevronLeft size={22} strokeWidth={2} />
-                        </motion.button>
+                        <ChevronLeft size={22} strokeWidth={2} />
+                    </motion.button>
 
-                        <div
+                    {/* Centered bold title with subtitle */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 'calc(var(--safe-top) + 8px)',
+                            left: 64,
+                            right: 64,
+                            height: 44,
+                            zIndex: 5,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 1,
+                            pointerEvents: 'none',
+                        }}
+                    >
+                        <span
                             style={{
-                                flex: 1,
-                                minWidth: 0,
-                                padding: '8px 14px',
-                                borderRadius: 999,
-                                background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(40px)',
-                                WebkitBackdropFilter: 'blur(40px)',
-                                border: '0.5px solid var(--color-border)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: 2,
+                                fontSize: '1rem',
+                                fontWeight: 700,
+                                color: 'var(--color-text-primary)',
+                                letterSpacing: '-0.01em',
+                                lineHeight: 1.15,
+                                whiteSpace: 'nowrap',
                                 overflow: 'hidden',
-                                boxShadow: 'var(--shadow-lg)',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '100%',
                             }}
                         >
-                            <div
-                                style={{
-                                    fontSize: '0.9rem',
-                                    fontWeight: 700,
-                                    color: 'var(--color-text-primary)',
-                                    lineHeight: 1.2,
-                                    width: '100%',
-                                    textAlign: 'center',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                }}
-                            >
-                                {player.name}
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: '0.72rem',
-                                    color: 'var(--color-text-secondary)',
-                                    lineHeight: 1.2,
-                                    width: '100%',
-                                    textAlign: 'center',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                }}
-                            >
-                                {goals} goals · {assists} assists · {gp} games
-                            </div>
-                        </div>
+                            {player.name}
+                        </span>
+                        <span
+                            style={{
+                                fontSize: '0.72rem',
+                                color: 'var(--color-text-secondary)',
+                                lineHeight: 1.2,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '100%',
+                            }}
+                        >
+                            {goals} goals · {assists} assists · {gp} games
+                        </span>
                     </div>
 
                     {/* Content */}

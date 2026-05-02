@@ -115,81 +115,80 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                         overflow: 'hidden',
                     }}
                 >
-                    {/* Header: floating glass pills (back + title) */}
+                    {/* Top fade gradient */}
                     <div
                         style={{
                             position: 'absolute',
                             top: 0,
                             left: 0,
                             right: 0,
+                            height: 'calc(var(--safe-top) + 80px)',
+                            background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
+                            pointerEvents: 'none',
+                            zIndex: 4,
+                        }}
+                    />
+
+                    {/* Back button */}
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            handleClose();
+                        }}
+                        aria-label="Back"
+                        style={{
+                            position: 'absolute',
+                            top: 'calc(var(--safe-top) + 8px)',
+                            left: 12,
+                            zIndex: 5,
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
+                            border: '0.5px solid var(--color-border)',
+                            color: 'var(--color-text-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: 'var(--shadow-lg)',
+                        }}
+                    >
+                        <ChevronLeft size={22} strokeWidth={2} />
+                    </motion.button>
+
+                    {/* Centered bold title */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 'calc(var(--safe-top) + 8px)',
+                            left: 64,
+                            right: 64,
+                            height: 40,
                             zIndex: 5,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 8,
-                            padding: 'calc(var(--safe-top) + 8px) 12px 10px',
+                            justifyContent: 'center',
+                            pointerEvents: 'none',
                         }}
                     >
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                handleClose();
-                            }}
-                            aria-label="Back"
+                        <span
                             style={{
-                                flexShrink: 0,
-                                width: 40,
-                                height: 40,
-                                borderRadius: '50%',
-                                background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(40px)',
-                                WebkitBackdropFilter: 'blur(40px)',
-                                border: '0.5px solid var(--color-border)',
+                                fontSize: '1.0625rem',
+                                fontWeight: 700,
                                 color: 'var(--color-text-primary)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                boxShadow: 'var(--shadow-lg)',
-                            }}
-                        >
-                            <ChevronLeft size={22} strokeWidth={2} />
-                        </motion.button>
-
-                        <div
-                            style={{
-                                flex: 1,
-                                minWidth: 0,
-                                padding: '8px 14px',
-                                borderRadius: 999,
-                                background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(40px)',
-                                WebkitBackdropFilter: 'blur(40px)',
-                                border: '0.5px solid var(--color-border)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: 2,
+                                letterSpacing: '-0.01em',
+                                whiteSpace: 'nowrap',
                                 overflow: 'hidden',
-                                boxShadow: 'var(--shadow-lg)',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '100%',
                             }}
                         >
-                            <div
-                                style={{
-                                    fontSize: '0.9rem',
-                                    fontWeight: 700,
-                                    color: 'var(--color-text-primary)',
-                                    lineHeight: 1.2,
-                                    width: '100%',
-                                    textAlign: 'center',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                }}
-                            >
-                                Manage Players
-                            </div>
-                        </div>
+                            Manage Players
+                        </span>
                     </div>
 
                     {/* Content */}
