@@ -241,7 +241,21 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                                 transition: 'all 0.2s',
                             }}
                         >
-                            {tab === 'squad' ? `Squad (${present.length})` : 'Opponent'}
+                            {tab === 'squad' ? (
+                                <>
+                                    Squad ({present.length})
+                                    {maybe.length > 0 && (
+                                        <span style={{
+                                            marginLeft: 4,
+                                            fontSize: '0.7rem',
+                                            fontWeight: 500,
+                                            color: 'var(--color-warning)',
+                                        }}>
+                                            +{maybe.length}
+                                        </span>
+                                    )}
+                                </>
+                            ) : 'Opponent'}
                         </motion.button>
                     ))}
                 </div>
