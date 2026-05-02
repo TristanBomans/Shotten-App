@@ -241,7 +241,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                                 transition: 'all 0.2s',
                             }}
                         >
-                            {tab === 'squad' ? `Squad (${present.length + maybe.length})` : 'Opponent'}
+                            {tab === 'squad' ? `Squad (${present.length})` : 'Opponent'}
                         </motion.button>
                     ))}
                 </div>
