@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp, Save } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 
-interface HiddenAdminDialogProps {
+interface HiddenAdminPageProps {
     open: boolean;
     onClose: () => void;
 }
@@ -94,7 +94,7 @@ function formatHoursAgo(hours: number): string {
 
 const LOGS_LIMIT = 50;
 
-export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogProps) {
+export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps) {
     const [scrapeLoading, setScrapeLoading] = useState(false);
     const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
     const [backupLoading, setBackupLoading] = useState(false);
@@ -463,7 +463,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                             top: 0,
                             left: 0,
                             right: 0,
-                            height: 'calc(var(--safe-top) + 80px)',
+                            height: 'calc(var(--safe-top) + 92px)',
                             background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
                             pointerEvents: 'none',
                             zIndex: 4,
@@ -480,7 +480,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                         aria-label="Back"
                         style={{
                             position: 'absolute',
-                            top: 'calc(var(--safe-top) + 8px)',
+                            top: 'calc(var(--safe-top) + 20px)',
                             left: 12,
                             zIndex: 5,
                             width: 40,
@@ -505,7 +505,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                     <div
                         style={{
                             position: 'absolute',
-                            top: 'calc(var(--safe-top) + 8px)',
+                            top: 'calc(var(--safe-top) + 20px)',
                             left: 64,
                             right: 64,
                             height: 40,
@@ -536,7 +536,7 @@ export default function HiddenAdminDialog({ open, onClose }: HiddenAdminDialogPr
                     <div
                         style={{
                             overflowY: 'auto',
-                            padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 24px)',
+                            padding: 'calc(var(--safe-top) + 84px) 16px calc(var(--safe-bottom, 0px) + 24px)',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 16,

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { RosterPlayer, StatusGroup } from '../types';
+import type { RosterPlayer, StatusGroup } from '../../MatchCard/types';
 
 interface SquadViewProps {
     statusGroups: StatusGroup[];

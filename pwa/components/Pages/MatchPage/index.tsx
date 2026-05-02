@@ -7,12 +7,12 @@ import { ChevronLeft, MapPin, Calendar, MoreHorizontal, Users, Swords } from 'lu
 import { hapticPatterns } from '@/lib/haptic';
 import { isSameTeamName } from '@/lib/teamNameMatching';
 import type { Match } from '@/lib/mockData';
-import type { RosterPlayer, StatusGroup } from '../types';
-import { useOpponentTeamData } from '../hooks/useOpponentTeamData';
+import type { RosterPlayer, StatusGroup } from '../../MatchCard/types';
+import { useOpponentTeamData } from '../../MatchCard/hooks/useOpponentTeamData';
 import SquadView from './SquadView';
 import OpponentView from './OpponentView';
 
-interface MatchModalProps {
+interface MatchPageProps {
     match: Match;
     dateObj: Date;
     roster: RosterPlayer[];
@@ -24,7 +24,7 @@ interface MatchModalProps {
 const OWN_TEAMS = ['FC Degradé', 'Wille ma ni kunne'];
 const modalTabs = ['squad', 'opponent'] as const;
 
-export default function MatchModal({ match, dateObj, roster, currentPlayerId, open, onClose }: MatchModalProps) {
+export default function MatchPage({ match, dateObj, roster, currentPlayerId, open, onClose }: MatchPageProps) {
     const [activeTab, setActiveTab] = useState<'squad' | 'opponent'>('squad');
     const [showImage, setShowImage] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -149,7 +149,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
-                        padding: 'calc(var(--safe-top) + 8px) 12px 10px',
+                        padding: 'calc(var(--safe-top) + 20px) 12px 10px',
                     }}
                 >
                     <motion.button
@@ -281,7 +281,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             minWidth: '100%',
                             scrollSnapAlign: 'center',
                             scrollSnapStop: 'always',
-                            padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 100px)',
+                            padding: 'calc(var(--safe-top) + 84px) 16px calc(var(--safe-bottom, 0px) + 100px)',
                             overflowY: 'auto',
                         }}
                     >
@@ -295,7 +295,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             minWidth: '100%',
                             scrollSnapAlign: 'center',
                             scrollSnapStop: 'always',
-                            padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 100px)',
+                            padding: 'calc(var(--safe-top) + 84px) 16px calc(var(--safe-bottom, 0px) + 100px)',
                             overflowY: 'auto',
                         }}
                     >
@@ -418,7 +418,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                                 transition={{ duration: 0.15, ease: 'easeOut' }}
                                 style={{
                                     position: 'absolute',
-                                    top: 'calc(var(--safe-top) + 56px)',
+                                    top: 'calc(var(--safe-top) + 68px)',
                                     right: 12,
                                     minWidth: 220,
                                     background: 'var(--color-glass-heavy)',

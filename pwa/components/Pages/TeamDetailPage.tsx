@@ -26,7 +26,7 @@ interface ScraperMatch {
     status: 'Scheduled' | 'Played' | 'Postponed';
 }
 
-interface TeamDetailModalProps {
+interface TeamDetailPageProps {
     team: ScraperTeam;
     players: ScraperPlayer[];
     open: boolean;
@@ -74,7 +74,7 @@ const SectionHeader = ({ icon: Icon, title, color = 'var(--color-text-tertiary)'
     </div>
 );
 
-export default function TeamDetailModal({ team, players, open, onClose }: TeamDetailModalProps) {
+export default function TeamDetailPage({ team, players, open, onClose }: TeamDetailPageProps) {
     const [showImage, setShowImage] = useState(false);
     const [activeTab, setActiveTab] = useState<TeamDetailTab>('overview');
     const [matches, setMatches] = useState<ScraperMatch[]>([]);
@@ -230,7 +230,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                             display: 'flex',
                             alignItems: 'center',
                             gap: 8,
-                            padding: 'calc(var(--safe-top) + 8px) 12px 10px',
+                            padding: 'calc(var(--safe-top) + 20px) 12px 10px',
                         }}
                     >
                         <motion.button
@@ -364,7 +364,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                     transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                                     style={{
                                         position: 'absolute',
-                                        top: 'calc(var(--safe-top) + 56px)',
+                                        top: 'calc(var(--safe-top) + 68px)',
                                         right: 12,
                                         zIndex: 7,
                                         minWidth: 220,
@@ -432,7 +432,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
                                 scrollSnapStop: 'always',
-                                padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 100px)',
+                                padding: 'calc(var(--safe-top) + 84px) 16px calc(var(--safe-bottom, 0px) + 100px)',
                                 overflowY: 'auto',
                             }}
                         >
@@ -702,7 +702,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
                                 scrollSnapStop: 'always',
-                                padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 100px)',
+                                padding: 'calc(var(--safe-top) + 84px) 16px calc(var(--safe-bottom, 0px) + 100px)',
                                 overflowY: 'auto',
                             }}
                         >
@@ -771,7 +771,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
                                 scrollSnapStop: 'always',
-                                padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 100px)',
+                                padding: 'calc(var(--safe-top) + 84px) 16px calc(var(--safe-bottom, 0px) + 100px)',
                                 overflowY: 'auto',
                             }}
                         >

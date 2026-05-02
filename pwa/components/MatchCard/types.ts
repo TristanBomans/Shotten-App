@@ -57,7 +57,7 @@ export const RESPONSE_CONFIG = {
     },
 } as const;
 
-export interface MatchModalProps {
+export interface MatchPageProps {
     matchName: string;
     roster: RosterPlayer[];
     currentPlayerId: number;

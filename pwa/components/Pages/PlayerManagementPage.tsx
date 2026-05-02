@@ -7,12 +7,12 @@ import { usePlayerManagement } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import type { Player } from '@/lib/mockData';
 
-interface PlayerManagementSheetProps {
+interface PlayerManagementPageProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagementSheetProps) {
+export default function PlayerManagementPage({ isOpen, onClose }: PlayerManagementPageProps) {
     const {
         players,
         teams,
@@ -122,7 +122,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                             top: 0,
                             left: 0,
                             right: 0,
-                            height: 'calc(var(--safe-top) + 80px)',
+                            height: 'calc(var(--safe-top) + 92px)',
                             background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
                             pointerEvents: 'none',
                             zIndex: 4,
@@ -139,7 +139,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                         aria-label="Back"
                         style={{
                             position: 'absolute',
-                            top: 'calc(var(--safe-top) + 8px)',
+                            top: 'calc(var(--safe-top) + 20px)',
                             left: 12,
                             zIndex: 5,
                             width: 40,
@@ -164,7 +164,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                     <div
                         style={{
                             position: 'absolute',
-                            top: 'calc(var(--safe-top) + 8px)',
+                            top: 'calc(var(--safe-top) + 20px)',
                             left: 64,
                             right: 64,
                             height: 40,
@@ -198,7 +198,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                             overflowY: 'auto',
                             display: 'flex',
                             flexDirection: 'column',
-                            paddingTop: 'calc(var(--safe-top) + 72px)',
+                            paddingTop: 'calc(var(--safe-top) + 84px)',
                             paddingBottom: 'calc(var(--safe-bottom, 0px) + 24px)',
                         }}
                     >

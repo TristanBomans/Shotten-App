@@ -283,7 +283,7 @@ export default function Dashboard({
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [currentView, getViewIndexFromScroll, scrollToView]);
 
-    // Listen for attendance updates from RespondAsPlayerSheet
+    // Listen for attendance updates from RespondAsPlayerPage
     useEffect(() => {
         const handleAttendanceUpdate = () => {
             // Refresh match attendance in the background so the current UI stays intact.

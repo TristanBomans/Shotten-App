@@ -6,10 +6,10 @@ import { LogOut, Database, Wifi, WifiOff, Bell, Smartphone, Info, ChevronRight, 
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
-import PlayerManagementSheet from './PlayerManagementSheet';
-import VersionHistoryModal from './VersionHistoryModal';
-import HiddenAdminDialog from './HiddenAdminDialog';
-import RespondAsPlayerSheet from './RespondAsPlayerSheet';
+import PlayerManagementPage from './Pages/PlayerManagementPage';
+import VersionHistoryPage from './Pages/VersionHistoryPage';
+import HiddenAdminPage from './Pages/HiddenAdminPage';
+import RespondAsPlayerPage from './Pages/RespondAsPlayerPage';
 
 interface SettingsViewProps {
     onLogout: () => void;
@@ -970,14 +970,14 @@ export default function SettingsView({
                 )}
             </AnimatePresence>
 
-            {/* Player Management Sheet */}
-            <PlayerManagementSheet
+            {/* Player Management Page */}
+            <PlayerManagementPage
                 isOpen={isPlayerManagementOpen}
                 onClose={() => onClosePlayerManagement?.()}
             />
-            <VersionHistoryModal open={isVersionOpen} onClose={onCloseVersion} />
-            <HiddenAdminDialog open={isHiddenAdminOpen} onClose={() => onCloseHiddenAdmin?.()} />
-            <RespondAsPlayerSheet
+            <VersionHistoryPage open={isVersionOpen} onClose={onCloseVersion} />
+            <HiddenAdminPage open={isHiddenAdminOpen} onClose={() => onCloseHiddenAdmin?.()} />
+            <RespondAsPlayerPage
                 isOpen={isRespondAsPlayerOpen}
                 onClose={() => onCloseRespondAsPlayer?.()}
             />

@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Target, Users, Zap, TrendingUp, Crosshair, P
 import { hapticPatterns } from '@/lib/haptic';
 import type { ScraperPlayer, ScraperTeam } from '@/lib/useData';
 
-interface PlayerStatsDialogProps {
+interface PlayerStatsPageProps {
     open: boolean;
     player: ScraperPlayer | null;
     teams: ScraperTeam[];
@@ -22,7 +22,7 @@ function getTeamImage(teams: ScraperTeam[], teamId: number): string | undefined 
     return teams.find((team) => team.externalId === teamId)?.imageBase64;
 }
 
-export default function PlayerStatsDialog({ open, player, teams, onClose }: PlayerStatsDialogProps) {
+export default function PlayerStatsPage({ open, player, teams, onClose }: PlayerStatsPageProps) {
     const [activeTeamIndex, setActiveTeamIndex] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
     const teamCardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -104,7 +104,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                             top: 0,
                             left: 0,
                             right: 0,
-                            height: 'calc(var(--safe-top) + 84px)',
+                            height: 'calc(var(--safe-top) + 92px)',
                             background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
                             pointerEvents: 'none',
                             zIndex: 4,
@@ -118,7 +118,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                         aria-label="Back"
                         style={{
                             position: 'absolute',
-                            top: 'calc(var(--safe-top) + 8px)',
+                            top: 'calc(var(--safe-top) + 20px)',
                             left: 12,
                             zIndex: 5,
                             width: 40,
@@ -143,7 +143,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                     <div
                         style={{
                             position: 'absolute',
-                            top: 'calc(var(--safe-top) + 8px)',
+                            top: 'calc(var(--safe-top) + 20px)',
                             left: 64,
                             right: 64,
                             height: 44,
@@ -187,7 +187,7 @@ export default function PlayerStatsDialog({ open, player, teams, onClose }: Play
                     </div>
 
                     {/* Content */}
-                    <div className="scrollbar-hide" style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', flex: 1, paddingTop: 'calc(var(--safe-top) + 72px)' }}>
+                    <div className="scrollbar-hide" style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', flex: 1, paddingTop: 'calc(var(--safe-top) + 84px)' }}>
 
                         {/* Hero: Goals & Assists split */}
                         <div style={{ padding: '20px 20px 0' }}>

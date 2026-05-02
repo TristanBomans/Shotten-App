@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAllScraperTeams, fetchAllScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
 import { Loader2, ChevronDown } from 'lucide-react';
-import TeamDetailModal from './TeamDetailModal';
-import PlayerStatsDialog from './PlayerStatsDialog';
+import TeamDetailPage from './Pages/TeamDetailPage';
+import PlayerStatsPage from './Pages/PlayerStatsPage';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface LeagueViewProps {
@@ -536,15 +536,15 @@ export default function LeagueView({
                     </AnimatePresence>
                 )}
             </div>
-            {/* Modal */}
-            <TeamDetailModal
+            {/* Page */}
+            <TeamDetailPage
                 team={selectedTeam?.team || ({} as ScraperTeam)}
                 players={selectedTeam?.players || []}
                 open={Boolean(selectedTeam)}
                 onClose={() => onSelectTeam?.(null)}
             />
 
-            <PlayerStatsDialog
+            <PlayerStatsPage
                 open={Boolean(selectedPlayer)}
                 player={selectedPlayer}
                 teams={teams}

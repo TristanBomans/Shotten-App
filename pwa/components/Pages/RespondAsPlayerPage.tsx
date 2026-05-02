@@ -6,18 +6,18 @@ import { ChevronLeft, ChevronRight, Loader2, Calendar, MapPin, X } from 'lucide-
 import { useAllPlayers, useUpdateAttendance, getUseMockData } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
-import HeaderResponseButton from './MatchCard/ResponseButtons/HeaderResponseButton';
+import HeaderResponseButton from '../MatchCard/ResponseButtons/HeaderResponseButton';
 import type { Player, Match } from '@/lib/mockData';
 import { parseDateToTimestamp } from '@/lib/dateUtils';
 
-interface RespondAsPlayerSheetProps {
+interface RespondAsPlayerPageProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
 type Step = 'player' | 'matches';
 
-export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlayerSheetProps) {
+export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayerPageProps) {
     const [step, setStep] = useState<Step>('player');
     const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
     const [localMatches, setLocalMatches] = useState<Match[]>([]);
@@ -152,7 +152,7 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
                             top: 0,
                             left: 0,
                             right: 0,
-                            height: 'calc(var(--safe-top) + 80px)',
+                            height: 'calc(var(--safe-top) + 92px)',
                             background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
                             pointerEvents: 'none',
                             zIndex: 4,
@@ -173,7 +173,7 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
                         aria-label={step === 'matches' ? 'Back' : 'Close'}
                         style={{
                             position: 'absolute',
-                            top: 'calc(var(--safe-top) + 8px)',
+                            top: 'calc(var(--safe-top) + 20px)',
                             left: 12,
                             zIndex: 5,
                             width: 40,
@@ -198,7 +198,7 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
                     <div
                         style={{
                             position: 'absolute',
-                            top: 'calc(var(--safe-top) + 8px)',
+                            top: 'calc(var(--safe-top) + 20px)',
                             left: 64,
                             right: 64,
                             height: 40,
@@ -235,7 +235,7 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
                             aria-label="Close"
                             style={{
                                 position: 'absolute',
-                                top: 'calc(var(--safe-top) + 8px)',
+                                top: 'calc(var(--safe-top) + 20px)',
                                 right: 12,
                                 zIndex: 5,
                                 width: 40,
@@ -262,7 +262,7 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
                         style={{
                             flex: 1,
                             overflowY: 'auto',
-                            padding: 'calc(var(--safe-top) + 72px) 20px calc(var(--safe-bottom, 0px) + 24px)',
+                            padding: 'calc(var(--safe-top) + 84px) 20px calc(var(--safe-bottom, 0px) + 24px)',
                         }}
                     >
                         <AnimatePresence mode="wait">

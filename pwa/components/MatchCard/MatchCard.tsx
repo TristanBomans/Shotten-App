@@ -10,7 +10,7 @@ import type { MatchCardProps, RosterPlayer, AttendanceStatus } from './types';
 import Confetti from './Confetti';
 import { HeaderResponseButton } from './ResponseButtons';
 import { PlayerAvatars, SquadNamesList } from './SquadDisplay';
-import MatchModal from './MatchModal';
+import MatchPage from '../Pages/MatchPage';
 
 export default function MatchCard({
     match,
@@ -286,7 +286,7 @@ export default function MatchCard({
                 </div>
 
                 {/* Modal */}
-                <MatchModal match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />
+                <MatchPage match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />
             </motion.div>
         );
     }
@@ -363,7 +363,7 @@ export default function MatchCard({
 
             {/* Modal */}
             {isModalOpen && (
-                <MatchModal match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />
+                <MatchPage match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />
             )}
         </motion.div>
     );
