@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, type ElementType, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, UserCircle, ChevronRight, Trophy, Calendar, Users, TrendingUp, X, MoreHorizontal, ExternalLink } from 'lucide-react';
+import { ChevronLeft, UserCircle, Trophy, Calendar, Users, TrendingUp, X, MoreHorizontal, ExternalLink } from 'lucide-react';
 import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
@@ -691,29 +691,6 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                         </div>
                                     </SectionCard>
                                 )}
-
-                                <a
-                                    href={`https://www.lzvcup.be/teams/detail/${team?.externalId || ''}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        alignSelf: 'center',
-                                        gap: 6,
-                                        padding: '10px 14px',
-                                        background: 'var(--color-surface-hover)',
-                                        borderRadius: 10,
-                                        border: '0.5px solid var(--color-border)',
-                                        color: 'var(--color-text-secondary)',
-                                        fontSize: '0.82rem',
-                                        fontWeight: 600,
-                                        textDecoration: 'none',
-                                    }}
-                                >
-                                    View on LZV Cup <ChevronRight size={14} />
-                                </a>
                             </div>
                         </div>
 
