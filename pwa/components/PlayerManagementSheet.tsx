@@ -199,6 +199,7 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                             display: 'flex',
                             flexDirection: 'column',
                             paddingTop: 'calc(var(--safe-top) + 72px)',
+                            paddingBottom: 'calc(var(--safe-bottom, 0px) + 24px)',
                         }}
                     >
                         {/* Loading state */}
@@ -222,9 +223,6 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                     padding: '12px 20px',
                                     background: 'var(--color-surface)',
                                     borderBottom: '0.5px solid var(--color-border)',
-                                    position: 'sticky',
-                                    top: 'calc(var(--safe-top) + 60px)',
-                                    zIndex: 2,
                                 }}>
                                     <div style={{
                                         fontSize: '0.75rem',
@@ -257,8 +255,6 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
 
                                 {/* Player List */}
                                 <div style={{
-                                    flex: 1,
-                                    overflowY: 'auto',
                                     padding: '0 20px',
                                 }}>
                                     {players.map(player => (
@@ -482,12 +478,6 @@ export default function PlayerManagementSheet({ isOpen, onClose }: PlayerManagem
                                         )}
                                     </div>
                                 </div>
-
-                                {/* Safe area padding for iOS */}
-                                <div style={{
-                                    height: 'env(safe-area-inset-bottom, 20px)',
-                                    background: 'var(--color-bg-elevated)',
-                                }} />
                             </>
                         )}
                     </div>
