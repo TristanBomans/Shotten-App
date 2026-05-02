@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Loader2, Calendar, MapPin, UserCheck, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Calendar, MapPin, X } from 'lucide-react';
 import { useAllPlayers, useUpdateAttendance, getUseMockData } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
@@ -337,7 +337,7 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
                                                         {player.name}
                                                     </div>
                                                 </div>
-                                                <UserCheck size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                                                <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
                                             </motion.button>
                                         ))
                                     )}
