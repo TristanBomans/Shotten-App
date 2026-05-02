@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, MapPin, Calendar, MoreHorizontal } from 'lucide-react';
+import { ChevronLeft, MapPin, Calendar, MoreHorizontal, Users, Swords } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { isSameTeamName } from '@/lib/teamNameMatching';
 import type { Match } from '@/lib/mockData';
@@ -247,52 +247,6 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                     </motion.button>
                 </div>
 
-                {/* Tabs */}
-                <div style={{
-                    display: 'flex', padding: '10px 16px', gap: 8,
-                    borderBottom: '0.5px solid var(--color-border)',
-                    background: 'var(--color-surface)',
-                }}
-                >
-                    {(['squad', 'opponent'] as const).map(tab => (
-                        <motion.button
-                            key={tab}
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                lastTabRef.current = tab;
-                                setActiveTab(tab);
-                                scrollToView(tab);
-                            }}
-                            whileTap={{ scale: 0.95 }}
-                            style={{
-                                flex: 1, padding: '10px 16px',
-                                background: activeTab === tab ? 'var(--color-surface-hover)' : 'transparent',
-                                border: 'none', borderRadius: 10,
-                                color: activeTab === tab ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                                fontSize: '0.85rem', fontWeight: 600,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                            }}
-                        >
-                            {tab === 'squad' ? (
-                                <>
-                                    Squad ({present.length})
-                                    {maybe.length > 0 && (
-                                        <span style={{
-                                            marginLeft: 4,
-                                            fontSize: '0.7rem',
-                                            fontWeight: 500,
-                                            color: 'var(--color-warning)',
-                                        }}>
-                                            +{maybe.length}
-                                        </span>
-                                    )}
-                                </>
-                            ) : 'Opponent'}
-                        </motion.button>
-                    ))}
-                </div>
-
                 {/* Scrollable Container */}
                 <div
                     ref={scrollRef}
@@ -315,7 +269,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             minWidth: '100%',
                             scrollSnapAlign: 'center',
                             scrollSnapStop: 'always',
-                            padding: '16px 16px calc(var(--safe-bottom, 0px) + 16px)',
+                            padding: 16,
                             overflowY: 'auto',
                         }}
                     >
@@ -329,7 +283,7 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             minWidth: '100%',
                             scrollSnapAlign: 'center',
                             scrollSnapStop: 'always',
-                            padding: '16px 16px calc(var(--safe-bottom, 0px) + 16px)',
+                            padding: 16,
                             overflowY: 'auto',
                         }}
                     >
@@ -346,6 +300,83 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             aiError={aiError}
                             onGenerateAI={fetchAIAnalysis}
                         />
+                    </div>
+                </div>
+
+                {/* Tabs (liquid glass pill) at bottom */}
+                <div style={{ padding: '10px 16px calc(var(--safe-bottom, 0px) + 12px)' }}>
+                    <div style={{
+                        display: 'flex',
+                        gap: 4,
+                        padding: 6,
+                        background: 'var(--color-glass-heavy)',
+                        backdropFilter: 'blur(60px)',
+                        WebkitBackdropFilter: 'blur(60px)',
+                        border: '0.5px solid var(--color-border)',
+                        borderRadius: 999,
+                        boxShadow: 'var(--shadow-lg)',
+                    }}>
+                        {(['squad', 'opponent'] as const).map(tab => {
+                            const isActive = activeTab === tab;
+                            const Icon = tab === 'squad' ? Users : Swords;
+                            const label = tab === 'squad' ? 'Squad' : 'Opponent';
+                            const badgeCount = tab === 'squad' ? present.length : null;
+                            return (
+                                <motion.button
+                                    key={tab}
+                                    onClick={() => {
+                                        hapticPatterns.tap();
+                                        lastTabRef.current = tab;
+                                        setActiveTab(tab);
+                                        scrollToView(tab);
+                                    }}
+                                    whileTap={{ scale: 0.95 }}
+                                    style={{
+                                        flex: 1,
+                                        padding: '8px 12px',
+                                        background: isActive ? 'var(--color-surface-hover)' : 'transparent',
+                                        border: 'none',
+                                        borderRadius: 999,
+                                        color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        transition: 'all 0.2s',
+                                    }}
+                                >
+                                    <div style={{ position: 'relative', lineHeight: 0 }}>
+                                        <Icon size={22} strokeWidth={1.75} />
+                                        {badgeCount !== null && badgeCount > 0 && (
+                                            <span style={{
+                                                position: 'absolute',
+                                                top: -6,
+                                                right: -10,
+                                                minWidth: 18,
+                                                height: 18,
+                                                padding: '0 5px',
+                                                background: 'var(--color-accent)',
+                                                color: '#fff',
+                                                fontSize: '0.65rem',
+                                                fontWeight: 700,
+                                                borderRadius: 999,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                lineHeight: 1,
+                                                boxSizing: 'border-box',
+                                            }}>
+                                                {badgeCount}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 600, lineHeight: 1 }}>
+                                        {label}
+                                    </span>
+                                </motion.button>
+                            );
+                        })}
                     </div>
                 </div>
 
