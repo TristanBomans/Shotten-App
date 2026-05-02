@@ -191,27 +191,6 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                             {match.name.replace(/-/g, ' vs ')}
                         </div>
                     </div>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        marginTop: 0,
-                        paddingLeft: 4,
-                        width: '100%',
-                        minWidth: 0,
-                    }}>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
-                            {dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} · {dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {match.location && (
-                            <>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', flexShrink: 0 }}>·</span>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>
-                                    {match.location}
-                                </span>
-                            </>
-                        )}
-                    </div>
                 </div>
 
                 {/* Tabs */}
@@ -319,16 +298,64 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                 {/* Bottom Action Bar */}
                 <div style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    flexDirection: 'column',
                     gap: 10,
                     padding: '12px 16px calc(var(--safe-bottom, 0px) + 12px)',
                     borderTop: '0.5px solid var(--color-border-subtle)',
                     background: 'var(--color-surface)',
                 }}>
-                    {match.location && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        width: '100%',
+                        minWidth: 0,
+                    }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
+                            {dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} · {dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {match.location && (
+                            <>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', flexShrink: 0 }}>·</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                                    {match.location}
+                                </span>
+                            </>
+                        )}
+                    </div>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 10,
+                    }}>
+                        {match.location && (
+                            <motion.button
+                                onClick={() => window.open(mapUrl!, '_blank')}
+                                whileTap={{ scale: 0.95 }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 7,
+                                    flex: 1,
+                                    padding: '11px 16px',
+                                    background: 'var(--color-surface-hover)',
+                                    border: '0.5px solid var(--color-border)',
+                                    borderRadius: 12,
+                                    color: 'var(--color-text-secondary)',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <MapPin size={16} />
+                                Directions
+                            </motion.button>
+                        )}
                         <motion.button
-                            onClick={() => window.open(mapUrl!, '_blank')}
+                            onClick={() => window.open(calendarUrl, '_blank')}
                             whileTap={{ scale: 0.95 }}
                             style={{
                                 display: 'flex',
@@ -346,32 +373,10 @@ export default function MatchModal({ match, dateObj, roster, currentPlayerId, op
                                 cursor: 'pointer',
                             }}
                         >
-                            <MapPin size={16} />
-                            Directions
+                            <Calendar size={16} />
+                            Add to Calendar
                         </motion.button>
-                    )}
-                    <motion.button
-                        onClick={() => window.open(calendarUrl, '_blank')}
-                        whileTap={{ scale: 0.95 }}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 7,
-                            flex: 1,
-                            padding: '11px 16px',
-                            background: 'var(--color-surface-hover)',
-                            border: '0.5px solid var(--color-border)',
-                            borderRadius: 12,
-                            color: 'var(--color-text-secondary)',
-                            fontSize: '0.85rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <Calendar size={16} />
-                        Add to Calendar
-                    </motion.button>
+                    </div>
                 </div>
 
                 {/* Full Screen Image Overlay */}
