@@ -413,24 +413,96 @@ function PlayerDetailModal({ open, player, rank, onClose }: {
                         overflow: 'hidden',
                     }}
             >
-                {/* Header */}
-                <div style={{
-                    display: 'flex', alignItems: 'center',
-                    padding: 'calc(var(--safe-top) + 8px) 16px 12px',
-                    borderBottom: '0.5px solid var(--color-border-subtle)',
-                    background: 'var(--color-surface)',
-                }}>
-                    <motion.button whileTap={{ scale: 0.96 }} onClick={() => { hapticPatterns.tap(); onClose(); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'transparent', border: 'none', color: 'var(--color-accent)', fontSize: '1.05rem', fontWeight: 400, cursor: 'pointer', padding: '4px 8px 4px 0', marginLeft: -4 }}>
-                        <ChevronLeft size={28} strokeWidth={1.5} />Back
+                {/* Header: floating glass pills (back + title) */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: 'calc(var(--safe-top) + 8px) 12px 10px',
+                    }}
+                >
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => { hapticPatterns.tap(); onClose(); }}
+                        aria-label="Back"
+                        style={{
+                            flexShrink: 0,
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
+                            border: '0.5px solid var(--color-border)',
+                            color: 'var(--color-text-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: 'var(--shadow-lg)',
+                        }}
+                    >
+                        <ChevronLeft size={22} strokeWidth={2} />
                     </motion.button>
-                    <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '1.05rem', fontWeight: 600, color: 'var(--color-text-primary)', maxWidth: '60%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                        {player.name}
+
+                    <div
+                        style={{
+                            flex: 1,
+                            minWidth: 0,
+                            padding: '8px 14px',
+                            borderRadius: 999,
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
+                            border: '0.5px solid var(--color-border)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 2,
+                            overflow: 'hidden',
+                            boxShadow: 'var(--shadow-lg)',
+                        }}
+                    >
+                        <div
+                            style={{
+                                fontSize: '0.9rem',
+                                fontWeight: 700,
+                                color: 'var(--color-text-primary)',
+                                lineHeight: 1.2,
+                                width: '100%',
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            }}
+                        >
+                            {player.name}
+                        </div>
+                        <div
+                            style={{
+                                fontSize: '0.72rem',
+                                color: 'var(--color-text-secondary)',
+                                lineHeight: 1.2,
+                                width: '100%',
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            }}
+                        >
+                            #{rank} · {s.rank.name} · {s.score} pts
+                        </div>
                     </div>
                 </div>
 
                 {/* Scrollable Content */}
-                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingTop: 'calc(var(--safe-top) + 72px)' }}>
                     <div style={{ padding: '24px 20px 20px' }}>
                         {/* Rank badge */}
                         <div style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -511,7 +583,7 @@ function PlayerDetailModal({ open, player, rank, onClose }: {
                     </div>
 
                     {/* Match History */}
-                    <div style={{ padding: '0 20px 24px', flex: 1 }}>
+                    <div style={{ padding: '0 20px calc(var(--safe-bottom, 0px) + 24px)', flex: 1 }}>
                         <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', marginBottom: 10 }}>
                             Match History
                         </h3>
@@ -578,50 +650,80 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         overflow: 'hidden',
                     }}
                 >
-                {/* Header with iOS-style back button */}
+                {/* Header: floating glass pills (back + title) */}
                 <div
                     style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 5,
                         display: 'flex',
                         alignItems: 'center',
-                        padding: 'calc(var(--safe-top) + 8px) 16px 12px',
-                        borderBottom: '0.5px solid var(--color-border-subtle)',
-                        background: 'var(--color-surface)',
+                        gap: 8,
+                        padding: 'calc(var(--safe-top) + 8px) 12px 10px',
                     }}
                 >
                     <motion.button
-                        whileTap={{ scale: 0.96 }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => {
                             hapticPatterns.tap();
                             onClose();
                         }}
+                        aria-label="Back"
                         style={{
+                            flexShrink: 0,
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
+                            border: '0.5px solid var(--color-border)',
+                            color: 'var(--color-text-primary)',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 2,
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--color-accent)',
-                            fontSize: '1.05rem',
-                            fontWeight: 400,
+                            justifyContent: 'center',
                             cursor: 'pointer',
-                            padding: '4px 8px 4px 0',
-                            marginLeft: -4,
+                            boxShadow: 'var(--shadow-lg)',
                         }}
                     >
-                        <ChevronLeft size={28} strokeWidth={1.5} />
-                        Back
+                        <ChevronLeft size={22} strokeWidth={2} />
                     </motion.button>
+
                     <div
                         style={{
-                            position: 'absolute',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            fontSize: '1.05rem',
-                            fontWeight: 600,
-                            color: 'var(--color-text-primary)',
+                            flex: 1,
+                            minWidth: 0,
+                            padding: '8px 14px',
+                            borderRadius: 999,
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
+                            border: '0.5px solid var(--color-border)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 2,
+                            overflow: 'hidden',
+                            boxShadow: 'var(--shadow-lg)',
                         }}
                     >
-                        How it works
+                        <div
+                            style={{
+                                fontSize: '0.9rem',
+                                fontWeight: 700,
+                                color: 'var(--color-text-primary)',
+                                lineHeight: 1.2,
+                                width: '100%',
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            }}
+                        >
+                            How it works
+                        </div>
                     </div>
                 </div>
 
@@ -630,7 +732,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     style={{
                         flex: 1,
                         overflowY: 'auto',
-                        padding: '20px',
+                        padding: 'calc(var(--safe-top) + 72px) 20px calc(var(--safe-bottom, 0px) + 24px)',
                     }}
                 >
                     <div style={{ marginBottom: 20 }}>

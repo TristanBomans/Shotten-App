@@ -145,19 +145,22 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
                         overflow: 'hidden',
                     }}
                 >
-                    {/* Header with iOS-style back button */}
+                    {/* Header: floating glass pills (back + title + optional close) */}
                     <div
                         style={{
-                            position: 'relative',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            zIndex: 5,
                             display: 'flex',
                             alignItems: 'center',
-                            padding: 'calc(var(--safe-top) + 8px) 16px 12px',
-                            borderBottom: '0.5px solid var(--color-border-subtle)',
-                            background: 'var(--color-surface)',
+                            gap: 8,
+                            padding: 'calc(var(--safe-top) + 8px) 12px 10px',
                         }}
                     >
                         <motion.button
-                            whileTap={{ scale: 0.96 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => {
                                 hapticPatterns.tap();
                                 if (step === 'matches') {
@@ -166,63 +169,88 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
                                     onClose();
                                 }
                             }}
+                            aria-label={step === 'matches' ? 'Back' : 'Close'}
                             style={{
+                                flexShrink: 0,
+                                width: 40,
+                                height: 40,
+                                borderRadius: '50%',
+                                background: 'var(--color-glass-heavy)',
+                                backdropFilter: 'blur(40px)',
+                                WebkitBackdropFilter: 'blur(40px)',
+                                border: '0.5px solid var(--color-border)',
+                                color: 'var(--color-text-primary)',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 2,
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--color-accent)',
-                                fontSize: '1.05rem',
-                                fontWeight: 400,
+                                justifyContent: 'center',
                                 cursor: 'pointer',
-                                padding: '4px 8px 4px 0',
-                                marginLeft: -4,
+                                boxShadow: 'var(--shadow-lg)',
                             }}
                         >
-                            <ChevronLeft size={28} strokeWidth={1.5} />
-                            {step === 'matches' ? 'Back' : 'Close'}
+                            <ChevronLeft size={22} strokeWidth={2} />
                         </motion.button>
+
                         <div
                             style={{
-                                position: 'absolute',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                fontSize: '1.05rem',
-                                fontWeight: 600,
-                                color: 'var(--color-text-primary)',
-                                maxWidth: '55%',
-                                whiteSpace: 'nowrap',
+                                flex: 1,
+                                minWidth: 0,
+                                padding: '8px 14px',
+                                borderRadius: 999,
+                                background: 'var(--color-glass-heavy)',
+                                backdropFilter: 'blur(40px)',
+                                WebkitBackdropFilter: 'blur(40px)',
+                                border: '0.5px solid var(--color-border)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 2,
                                 overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                textAlign: 'center',
-                                pointerEvents: 'none',
+                                boxShadow: 'var(--shadow-lg)',
                             }}
                         >
-                            {step === 'player' ? 'Select Player' : selectedPlayer?.name}
+                            <div
+                                style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: 700,
+                                    color: 'var(--color-text-primary)',
+                                    lineHeight: 1.2,
+                                    width: '100%',
+                                    textAlign: 'center',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                }}
+                            >
+                                {step === 'player' ? 'Select Player' : selectedPlayer?.name}
+                            </div>
                         </div>
+
                         {step === 'matches' && (
                             <motion.button
-                                whileTap={{ scale: 0.96 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => {
                                     hapticPatterns.tap();
                                     onClose();
                                 }}
+                                aria-label="Close"
                                 style={{
-                                    position: 'absolute',
-                                    right: 16,
+                                    flexShrink: 0,
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: '50%',
+                                    background: 'var(--color-glass-heavy)',
+                                    backdropFilter: 'blur(40px)',
+                                    WebkitBackdropFilter: 'blur(40px)',
+                                    border: '0.5px solid var(--color-border)',
+                                    color: 'var(--color-text-primary)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    color: 'var(--color-text-tertiary)',
                                     cursor: 'pointer',
-                                    padding: 4,
-                                    top: 'calc(var(--safe-top) + 12px)',
+                                    boxShadow: 'var(--shadow-lg)',
                                 }}
                             >
-                                <X size={22} strokeWidth={1.5} />
+                                <X size={20} strokeWidth={2} />
                             </motion.button>
                         )}
                     </div>
@@ -232,7 +260,7 @@ export default function RespondAsPlayerSheet({ isOpen, onClose }: RespondAsPlaye
                         style={{
                             flex: 1,
                             overflowY: 'auto',
-                            padding: '16px 20px',
+                            padding: 'calc(var(--safe-top) + 72px) 20px calc(var(--safe-bottom, 0px) + 24px)',
                         }}
                     >
                         <AnimatePresence mode="wait">

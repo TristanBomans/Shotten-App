@@ -217,99 +217,97 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                         overflow: 'hidden',
                     }}
                 >
-                    {/* Header with iOS-style back button */}
+                    {/* Header: floating glass pills (back + title) */}
                     <div
                         style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            zIndex: 5,
                             display: 'flex',
                             alignItems: 'center',
-                            padding: 'calc(var(--safe-top) + 8px) 16px 12px',
-                            borderBottom: '0.5px solid var(--color-border-subtle)',
-                            background: 'var(--color-surface)',
+                            gap: 8,
+                            padding: 'calc(var(--safe-top) + 8px) 12px 10px',
                         }}
                     >
                         <motion.button
-                            whileTap={{ scale: 0.96 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => {
                                 hapticPatterns.tap();
                                 onClose();
                             }}
+                            aria-label="Back"
                             style={{
+                                flexShrink: 0,
+                                width: 40,
+                                height: 40,
+                                borderRadius: '50%',
+                                background: 'var(--color-glass-heavy)',
+                                backdropFilter: 'blur(40px)',
+                                WebkitBackdropFilter: 'blur(40px)',
+                                border: '0.5px solid var(--color-border)',
+                                color: 'var(--color-text-primary)',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 2,
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--color-accent)',
-                                fontSize: '1.05rem',
-                                fontWeight: 400,
+                                justifyContent: 'center',
                                 cursor: 'pointer',
-                                padding: '4px 8px 4px 0',
-                                marginLeft: -4,
+                                boxShadow: 'var(--shadow-lg)',
                             }}
                         >
-                            <ChevronLeft size={28} strokeWidth={1.5} />
-                            Back
+                            <ChevronLeft size={22} strokeWidth={2} />
                         </motion.button>
+
                         <div
                             style={{
-                                position: 'absolute',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                fontSize: '1.05rem',
-                                fontWeight: 600,
-                                color: 'var(--color-text-primary)',
-                                maxWidth: '60%',
-                                whiteSpace: 'nowrap',
+                                flex: 1,
+                                minWidth: 0,
+                                padding: '8px 14px',
+                                borderRadius: 999,
+                                background: 'var(--color-glass-heavy)',
+                                backdropFilter: 'blur(40px)',
+                                WebkitBackdropFilter: 'blur(40px)',
+                                border: '0.5px solid var(--color-border)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 2,
                                 overflow: 'hidden',
-                                textOverflow: 'ellipsis',
+                                boxShadow: 'var(--shadow-lg)',
                             }}
                         >
-                            {team?.name || ''}
-                        </div>
-                    </div>
-
-                    {/* Tabs */}
-                    <div style={{
-                        display: 'flex',
-                        padding: '10px 16px',
-                        gap: 6,
-                        borderBottom: '0.5px solid var(--color-border-subtle)',
-                        background: 'var(--color-surface)',
-                    }}>
-                        {([
-                            { id: 'overview', icon: TrendingUp, label: 'Overview' },
-                            { id: 'matches', icon: Calendar, label: 'Matches' },
-                            { id: 'squad', icon: Users, label: 'Squad' },
-                        ] as const).map(tab => (
-                            <motion.button
-                                key={tab.id}
-                                onClick={() => {
-                                    hapticPatterns.tap();
-                                    setActiveTab(tab.id);
-                                    scrollToView(tab.id);
-                                }}
-                                whileTap={{ scale: 0.95 }}
+                            <div
                                 style={{
-                                    flex: 1,
-                                    padding: '8px 12px',
-                                    background: activeTab === tab.id ? 'var(--color-surface-hover)' : 'transparent',
-                                    border: 'none',
-                                    borderRadius: 10,
-                                    color: activeTab === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 6,
-                                    transition: 'all 0.2s',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 700,
+                                    color: 'var(--color-text-primary)',
+                                    lineHeight: 1.2,
+                                    width: '100%',
+                                    textAlign: 'center',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
                                 }}
                             >
-                                <tab.icon size={14} />
-                                {tab.label}
-                            </motion.button>
-                        ))}
+                                {team?.name || ''}
+                            </div>
+                            {team?.leagueName && (
+                                <div
+                                    style={{
+                                        fontSize: '0.72rem',
+                                        color: 'var(--color-text-secondary)',
+                                        lineHeight: 1.2,
+                                        width: '100%',
+                                        textAlign: 'center',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                    }}
+                                >
+                                    {team.leagueName}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Scrollable Tab Content */}
@@ -335,7 +333,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
                                 scrollSnapStop: 'always',
-                                padding: 16,
+                                padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 100px)',
                                 overflowY: 'auto',
                             }}
                         >
@@ -628,7 +626,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
                                 scrollSnapStop: 'always',
-                                padding: 16,
+                                padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 100px)',
                                 overflowY: 'auto',
                             }}
                         >
@@ -697,7 +695,7 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                 minWidth: '100%',
                                 scrollSnapAlign: 'center',
                                 scrollSnapStop: 'always',
-                                padding: 16,
+                                padding: 'calc(var(--safe-top) + 72px) 16px calc(var(--safe-bottom, 0px) + 100px)',
                                 overflowY: 'auto',
                             }}
                         >
@@ -746,6 +744,66 @@ export default function TeamDetailModal({ team, players, open, onClose }: TeamDe
                                     No player stats available
                                 </div>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Tabs (liquid glass pill) at bottom */}
+                    <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 5,
+                        padding: '10px 16px calc(var(--safe-bottom, 0px) + 12px)',
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            gap: 4,
+                            padding: 6,
+                            background: 'var(--color-glass-heavy)',
+                            backdropFilter: 'blur(60px)',
+                            WebkitBackdropFilter: 'blur(60px)',
+                            border: '0.5px solid var(--color-border)',
+                            borderRadius: 999,
+                            boxShadow: 'var(--shadow-lg)',
+                        }}>
+                            {([
+                                { id: 'overview', icon: TrendingUp, label: 'Overview' },
+                                { id: 'matches', icon: Calendar, label: 'Matches' },
+                                { id: 'squad', icon: Users, label: 'Squad' },
+                            ] as const).map(tab => {
+                                const isActive = activeTab === tab.id;
+                                return (
+                                    <motion.button
+                                        key={tab.id}
+                                        onClick={() => {
+                                            hapticPatterns.tap();
+                                            setActiveTab(tab.id);
+                                            scrollToView(tab.id);
+                                        }}
+                                        whileTap={{ scale: 0.95 }}
+                                        style={{
+                                            flex: 1,
+                                            padding: '8px 12px',
+                                            background: isActive ? 'var(--color-surface-hover)' : 'transparent',
+                                            border: 'none',
+                                            borderRadius: 999,
+                                            color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: 4,
+                                            transition: 'all 0.2s',
+                                        }}
+                                    >
+                                        <tab.icon size={22} strokeWidth={1.75} />
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 600, lineHeight: 1 }}>
+                                            {tab.label}
+                                        </span>
+                                    </motion.button>
+                                );
+                            })}
                         </div>
                     </div>
 
