@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, UserCircle, ChevronRight, Sparkles, AlertCircle, TrendingUp, Trophy, Users, Zap } from 'lucide-react';
+import { Loader2, UserCircle, Sparkles, AlertCircle, TrendingUp, Trophy, Users, Zap } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 
@@ -938,31 +938,7 @@ export default function OpponentView({
                 </SectionCard>
             )}
 
-            {/* Link to LZV */}
-            {opponentData && (
-                <a
-                    href={`https://www.lzvcup.be/teams/detail/${opponentData.externalId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        alignSelf: 'center',
-                        gap: 6,
-                        padding: '10px 14px',
-                        background: 'var(--color-surface-hover)',
-                        borderRadius: 10,
-                        border: '0.5px solid var(--color-border)',
-                        color: 'var(--color-text-secondary)',
-                        fontSize: '0.82rem',
-                        fontWeight: 600,
-                        textDecoration: 'none',
-                    }}
-                >
-                    View on LZV Cup <ChevronRight size={14} />
-                </a>
-            )}
+
         </div>
     );
 }

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, MapPin, Calendar, MoreHorizontal, Users, Swords } from 'lucide-react';
+import { ChevronLeft, MapPin, Calendar, MoreHorizontal, Users, Swords, ExternalLink } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { isSameTeamName } from '@/lib/teamNameMatching';
 import type { Match } from '@/lib/mockData';
@@ -401,7 +401,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                     </div>
                 </div>
 
-                {/* More menu (Directions / Add to Calendar) */}
+                {/* More menu (Directions / Add to Calendar / View opponent on LZV Cup) */}
                 <AnimatePresence>
                     {showMenu && (
                         <>
@@ -475,6 +475,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                                         padding: '14px 16px',
                                         background: 'transparent',
                                         border: 'none',
+                                        borderBottom: opponentData?.externalId ? '0.5px solid var(--color-border-subtle)' : 'none',
                                         color: 'var(--color-text-primary)',
                                         fontSize: '0.95rem',
                                         fontWeight: 500,
@@ -485,6 +486,32 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                                     <Calendar size={18} color="var(--color-text-secondary)" />
                                     Add to Calendar
                                 </button>
+                                {opponentData?.externalId && (
+                                    <button
+                                        onClick={() => {
+                                            hapticPatterns.tap();
+                                            window.open(`https://www.lzvcup.be/teams/detail/${opponentData.externalId}`, '_blank');
+                                            setShowMenu(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 12,
+                                            width: '100%',
+                                            padding: '14px 16px',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: 'var(--color-text-primary)',
+                                            fontSize: '0.95rem',
+                                            fontWeight: 500,
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                        }}
+                                    >
+                                        <ExternalLink size={18} color="var(--color-text-secondary)" />
+                                        View opponent on LZV Cup
+                                    </button>
+                                )}
                             </motion.div>
                         </>
                     )}
