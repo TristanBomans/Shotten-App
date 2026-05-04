@@ -614,9 +614,9 @@ export default function OpponentView({
                     />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                         <div style={{
-                            width: 96,
-                            height: 96,
-                            borderRadius: 24,
+                            width: 52,
+                            height: 52,
+                            borderRadius: 14,
                             background: 'linear-gradient(135deg, rgb(var(--color-success-rgb) / 0.16), var(--color-surface-hover))',
                             border: '1px solid rgb(var(--color-success-rgb) / 0.2)',
                             display: 'flex',
@@ -626,7 +626,7 @@ export default function OpponentView({
                             flexShrink: 0,
                         }}>
                             <div style={{
-                                fontSize: '2rem',
+                                fontSize: '1.1rem',
                                 fontWeight: 900,
                                 color: 'var(--color-success)',
                                 lineHeight: 1,
@@ -634,9 +634,9 @@ export default function OpponentView({
                                 {winRate}%
                             </div>
                             <div style={{
-                                fontSize: '0.62rem',
+                                fontSize: '0.55rem',
                                 color: 'var(--color-text-tertiary)',
-                                marginTop: 5,
+                                marginTop: 2,
                                 fontWeight: 700,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.05em',
