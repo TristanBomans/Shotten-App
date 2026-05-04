@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, type ElementType, type ReactNode, type CSSProperties } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type ElementType, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, UserCircle, Trophy, Calendar, Users, TrendingUp, X, MoreHorizontal, ExternalLink } from 'lucide-react';
@@ -147,9 +147,9 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
 
     const hasTeam = !!team?.externalId;
 
-    // Calculate recent form from matches
-    const getRecentForm = () => {
-        if (!hasTeam || !team?.name) return [];
+    // Calculate recent form from matches - memoized to prevent unnecessary re-renders
+    const recentForm = useMemo(() => {
+        if (!hasTeam || !team?.name || matches.length === 0) return [];
         const playedMatches = matches
             .filter(m => m.status === 'Played')
             .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date))
@@ -164,9 +164,7 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
             if (teamScore < opponentScore) return 'L';
             return 'D';
         });
-    };
-
-    const recentForm = getRecentForm();
+    }, [hasTeam, team?.name, matches]);
 
     // Split matches into upcoming and past
     const now = Date.now();
@@ -522,7 +520,7 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                                     </SectionCard>
                                 )}
 
-                                {recentForm.length > 0 && (
+                                {(loadingMatches || recentForm.length > 0) && (
                                     <SectionCard>
                                         <SectionHeader
                                             icon={TrendingUp}
@@ -530,33 +528,48 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                                             color="var(--color-success)"
                                         />
                                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                            {recentForm.map((result, i) => (
-                                                <motion.div
-                                                    key={i}
-                                                    initial={{ scale: 0, opacity: 0 }}
-                                                    animate={{ scale: 1, opacity: 1 }}
-                                                    transition={{ delay: i * 0.05 }}
-                                                    style={{
-                                                        width: 36, height: 36,
-                                                        borderRadius: 10,
-                                                        background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.2)' :
-                                                            result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.2)' :
-                                                                'rgb(var(--color-warning-rgb) / 0.2)',
-                                                        border: `1px solid ${result === 'W' ? 'rgb(var(--color-success-rgb) / 0.3)' :
-                                                            result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.3)' :
-                                                                'rgb(var(--color-warning-rgb) / 0.3)'}`,
-                                                        color: result === 'W' ? 'var(--color-success)' :
-                                                            result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '0.9rem',
-                                                        fontWeight: 800,
-                                                    }}
-                                                >
-                                                    {result}
-                                                </motion.div>
-                                            ))}
+                                            {loadingMatches ? (
+                                                // Skeleton loading state
+                                                Array.from({ length: 5 }).map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            width: 36, height: 36,
+                                                            borderRadius: 10,
+                                                            background: 'var(--color-surface-hover)',
+                                                            animation: 'pulse 1.5s ease-in-out infinite',
+                                                        }}
+                                                    />
+                                                ))
+                                            ) : (
+                                                recentForm.map((result, i) => (
+                                                    <motion.div
+                                                        key={i}
+                                                        initial={{ scale: 0, opacity: 0 }}
+                                                        animate={{ scale: 1, opacity: 1 }}
+                                                        transition={{ delay: i * 0.05 }}
+                                                        style={{
+                                                            width: 36, height: 36,
+                                                            borderRadius: 10,
+                                                            background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.2)' :
+                                                                result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.2)' :
+                                                                    'rgb(var(--color-warning-rgb) / 0.2)',
+                                                            border: `1px solid ${result === 'W' ? 'rgb(var(--color-success-rgb) / 0.3)' :
+                                                                result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.3)' :
+                                                                    'rgb(var(--color-warning-rgb) / 0.3)'}`,
+                                                            color: result === 'W' ? 'var(--color-success)' :
+                                                                result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '0.9rem',
+                                                            fontWeight: 800,
+                                                        }}
+                                                    >
+                                                        {result}
+                                                    </motion.div>
+                                                ))
+                                            )}
                                         </div>
                                     </SectionCard>
                                 )}
@@ -721,45 +734,13 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                                     No matches available
                                 </div>
                             ) : (
-                                <>
-                                    {/* Upcoming Matches */}
-                                    {upcomingMatches.length > 0 && (
-                                        <div style={{ marginBottom: 20 }}>
-                                            <div style={{
-                                                fontSize: '0.7rem', fontWeight: 600,
-                                                color: 'var(--color-text-tertiary)',
-                                                textTransform: 'uppercase',
-                                                marginBottom: 10,
-                                            }}>
-                                                Upcoming ({upcomingMatches.length})
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                {upcomingMatches.slice(0, 5).map(match => (
-                                                    <MatchRow key={match.externalId} match={match} teamName={team?.name || ''} />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Past Matches */}
-                                    {pastMatches.length > 0 && (
-                                        <div>
-                                            <div style={{
-                                                fontSize: '0.7rem', fontWeight: 600,
-                                                color: 'var(--color-text-tertiary)',
-                                                textTransform: 'uppercase',
-                                                marginBottom: 10,
-                                            }}>
-                                                Recent Results ({pastMatches.length})
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                {pastMatches.slice(0, 10).map(match => (
-                                                    <MatchRow key={match.externalId} match={match} teamName={team?.name || ''} isPlayed />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {matches
+                                        .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date))
+                                        .map(match => (
+                                            <MatchRow key={match.externalId} match={match} teamName={team?.name || ''} />
+                                        ))}
+                                </div>
                             )}
                         </div>
 
@@ -1015,7 +996,7 @@ function CompactStat({ label, value, color = 'var(--color-text-primary)' }: {
     );
 }
 
-function MatchRow({ match, teamName, isPlayed }: { match: ScraperMatch; teamName: string; isPlayed?: boolean }) {
+function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }) {
     if (!teamName || !match) {
         return (
             <div style={{
@@ -1023,15 +1004,17 @@ function MatchRow({ match, teamName, isPlayed }: { match: ScraperMatch; teamName
                 alignItems: 'center',
                 gap: 10,
                 padding: '10px 12px',
-                background: isPlayed ? 'var(--color-surface-hover)' : 'var(--color-surface)',
+                background: 'var(--color-surface)',
                 borderRadius: 12,
-                border: `1px solid ${isPlayed ? 'var(--color-border)' : 'var(--color-border-subtle)'}`,
+                border: '1px solid var(--color-border-subtle)',
                 opacity: 0.5,
             }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Loading match...</span>
             </div>
         );
     }
+
+    const isPlayed = match.status === 'Played';
     const isHome = isHomeTeamForMatch(teamName, match.homeTeam, match.awayTeam);
     const opponent = isHome ? match.awayTeam : match.homeTeam;
     const teamScore = isHome ? match.homeScore : match.awayScore;

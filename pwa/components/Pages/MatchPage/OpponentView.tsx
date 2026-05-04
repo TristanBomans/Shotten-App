@@ -550,7 +550,7 @@ export default function OpponentView({
             )}
 
             {/* Recent Form Card */}
-            {recentForm.length > 0 && (
+            {(loading || recentForm.length > 0) && (
                 <SectionCard>
                     <SectionHeader
                         icon={TrendingUp}
@@ -558,33 +558,48 @@ export default function OpponentView({
                         color="var(--color-success)"
                     />
                     <div style={{ display: 'flex', gap: 8 }}>
-                        {recentForm.map((result, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: i * 0.05 }}
-                                style={{
-                                    width: 36, height: 36,
-                                    borderRadius: 10,
-                                    background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.2)' :
-                                        result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.2)' :
-                                            'rgb(var(--color-warning-rgb) / 0.2)',
-                                    border: `1px solid ${result === 'W' ? 'rgb(var(--color-success-rgb) / 0.3)' :
-                                        result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.3)' :
-                                            'rgb(var(--color-warning-rgb) / 0.3)'}`,
-                                    color: result === 'W' ? 'var(--color-success)' :
-                                        result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 800,
-                                }}
-                            >
-                                {result}
-                            </motion.div>
-                        ))}
+                        {loading ? (
+                            // Skeleton loading state
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    style={{
+                                        width: 36, height: 36,
+                                        borderRadius: 10,
+                                        background: 'var(--color-surface-hover)',
+                                        animation: 'pulse 1.5s ease-in-out infinite',
+                                    }}
+                                />
+                            ))
+                        ) : (
+                            recentForm.map((result, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: i * 0.05 }}
+                                    style={{
+                                        width: 36, height: 36,
+                                        borderRadius: 10,
+                                        background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.2)' :
+                                            result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.2)' :
+                                                'rgb(var(--color-warning-rgb) / 0.2)',
+                                        border: `1px solid ${result === 'W' ? 'rgb(var(--color-success-rgb) / 0.3)' :
+                                            result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.3)' :
+                                                'rgb(var(--color-warning-rgb) / 0.3)'}`,
+                                        color: result === 'W' ? 'var(--color-success)' :
+                                            result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 800,
+                                    }}
+                                >
+                                    {result}
+                                </motion.div>
+                            ))
+                        )}
                     </div>
                 </SectionCard>
             )}
