@@ -649,9 +649,9 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                                     />
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                                         <div style={{
-                                            width: 96,
-                                            height: 96,
-                                            borderRadius: 24,
+                                            width: 64,
+                                            height: 64,
+                                            borderRadius: 16,
                                             background: 'linear-gradient(135deg, rgb(var(--color-success-rgb) / 0.16), var(--color-surface-hover))',
                                             border: '1px solid rgb(var(--color-success-rgb) / 0.2)',
                                             display: 'flex',
@@ -661,7 +661,7 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                                             flexShrink: 0,
                                         }}>
                                             <div style={{
-                                                fontSize: '2rem',
+                                                fontSize: '1.4rem',
                                                 fontWeight: 900,
                                                 color: 'var(--color-success)',
                                                 lineHeight: 1,
@@ -669,9 +669,9 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                                                 {winRate}%
                                             </div>
                                             <div style={{
-                                                fontSize: '0.62rem',
+                                                fontSize: '0.6rem',
                                                 color: 'var(--color-text-tertiary)',
-                                                marginTop: 5,
+                                                marginTop: 3,
                                                 fontWeight: 700,
                                                 textTransform: 'uppercase',
                                                 letterSpacing: '0.05em',
@@ -691,7 +691,7 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                                                     {team.wins || 0}/{team.matchesPlayed || 0} matches won
                                                 </div>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 3 }}>
-                                                    {team.draws || 0} draws · {team.losses || 0} losses
+                                                    {team.wins || 0} wins · {team.draws || 0} draws · {team.losses || 0} losses
                                                 </div>
                                             </div>
                                             <div style={{
