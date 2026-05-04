@@ -419,20 +419,20 @@ export default function RecentMatchesSheet({
                                                         }}
                                                     >
                                                         {isForfait ? 'F' : result.label}
-                                                        {isRecent && !isForfait && (
-                                                            <span
-                                                                style={{
-                                                                    position: 'absolute',
-                                                                    top: -2,
-                                                                    right: -2,
-                                                                    width: 8,
-                                                                    height: 8,
-                                                                    borderRadius: '50%',
-                                                                    background: 'var(--color-accent)',
-                                                                    border: '2px solid var(--color-surface)',
-                                                                }}
-                                                            />
-                                                        )}
+                                                            {isRecent && (
+                                                                <span
+                                                                    style={{
+                                                                        position: 'absolute',
+                                                                        top: -2,
+                                                                        right: -2,
+                                                                        width: 8,
+                                                                        height: 8,
+                                                                        borderRadius: '50%',
+                                                                        background: isForfait ? 'var(--color-danger)' : 'var(--color-accent)',
+                                                                        border: '2px solid var(--color-surface)',
+                                                                    }}
+                                                                />
+                                                            )}
                                                     </div>
 
                                                     {/* Match info */}
@@ -456,22 +456,6 @@ export default function RecentMatchesSheet({
                                                                 vs
                                                             </span>
                                                             {match.opponent}
-                                                            {isRecent && !isForfait && (
-                                                                <span
-                                                                    style={{
-                                                                        fontSize: '0.55rem',
-                                                                        fontWeight: 700,
-                                                                        color: 'var(--color-accent)',
-                                                                        background: 'rgb(var(--color-accent-rgb) / 0.12)',
-                                                                        padding: '1px 5px',
-                                                                        borderRadius: 4,
-                                                                        textTransform: 'uppercase',
-                                                                        letterSpacing: '0.03em',
-                                                                    }}
-                                                                >
-                                                                    New
-                                                                </span>
-                                                            )}
                                                             {isForfait && (
                                                                 <span
                                                                     style={{
