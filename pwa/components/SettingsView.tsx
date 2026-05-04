@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Database, Wifi, WifiOff, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck } from 'lucide-react';
+import { LogOut, Database, Wifi, WifiOff, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck, Flag } from 'lucide-react';
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
@@ -10,6 +10,7 @@ import PlayerManagementPage from './Pages/PlayerManagementPage';
 import VersionHistoryPage from './Pages/VersionHistoryPage';
 import HiddenAdminPage from './Pages/HiddenAdminPage';
 import RespondAsPlayerPage from './Pages/RespondAsPlayerPage';
+import ForfaitMatchesPage from './Pages/ForfaitMatchesPage';
 
 interface SettingsViewProps {
     onLogout: () => void;
@@ -27,6 +28,9 @@ interface SettingsViewProps {
     isHiddenAdminOpen?: boolean;
     onOpenHiddenAdmin?: () => void;
     onCloseHiddenAdmin?: () => void;
+    isForfaitOpen?: boolean;
+    onOpenForfait?: () => void;
+    onCloseForfait?: () => void;
 }
 
 export default function SettingsView({
@@ -45,6 +49,9 @@ export default function SettingsView({
     isHiddenAdminOpen = false,
     onOpenHiddenAdmin,
     onCloseHiddenAdmin,
+    isForfaitOpen = false,
+    onOpenForfait,
+    onCloseForfait,
 }: SettingsViewProps) {
     const [useMock, setUseMock] = useState(true);
     const [isLocalhost, setIsLocalhost] = useState(false);
@@ -176,6 +183,11 @@ export default function SettingsView({
         white: 'White'
     };
 
+    const openForfait = () => {
+        hapticPatterns.tap();
+        onOpenForfait?.();
+    };
+
     return (
         <div className="container content-under-top-overlay">
             <motion.div
@@ -183,7 +195,7 @@ export default function SettingsView({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
             >
-                {/* Notifications & Feedback */}
+                {/* Preferences */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -198,6 +210,17 @@ export default function SettingsView({
                         marginBottom: 16,
                     }}
                 >
+                    <div style={{
+                        padding: '12px 16px 8px',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        color: 'var(--color-text-tertiary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                    }}>
+                        Preferences
+                    </div>
+
                     {/* Notifications Toggle - Disabled until future update */}
                     <div style={{ opacity: 0.5, pointerEvents: 'none' }}>
                         <SettingRow
@@ -252,6 +275,7 @@ export default function SettingsView({
                             alignItems: 'center',
                             gap: 12,
                             cursor: 'pointer',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
                         }}
                     >
                         <div style={{
@@ -271,6 +295,83 @@ export default function SettingsView({
                             <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>Appearance</div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                                 {themeLabels[theme]}
+                            </div>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                    </motion.div>
+
+                    {/* Default League */}
+                    <motion.div
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            setShowLeagueSelector(true);
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            cursor: 'pointer',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
+                        }}
+                    >
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'rgb(var(--color-warning-rgb) / 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-warning)',
+                            flexShrink: 0,
+                        }}>
+                            <Trophy size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>Default League</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                {defaultLeague || 'Auto-select (Mechelen preferred)'}
+                            </div>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                    </motion.div>
+
+                    {/* Version History */}
+                    <motion.div
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            onOpenVersion();
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'rgb(var(--color-accent-rgb) / 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-accent)',
+                            flexShrink: 0,
+                        }}>
+                            <RefreshCw size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>
+                                Version History
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                View changelog and updates
                             </div>
                         </div>
                         <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
@@ -328,11 +429,11 @@ export default function SettingsView({
                     </motion.button>
                 )}
 
-                {/* Respond as Player */}
+                {/* Management */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.08 }}
+                    transition={{ delay: 0.12 }}
                     style={{
                         background: 'var(--color-surface)',
                         backdropFilter: 'blur(40px)',
@@ -343,6 +444,18 @@ export default function SettingsView({
                         marginBottom: 16,
                     }}
                 >
+                    <div style={{
+                        padding: '12px 16px 8px',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        color: 'var(--color-text-tertiary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                    }}>
+                        Management
+                    </div>
+
+                    {/* Respond as Player */}
                     <motion.div
                         onClick={() => {
                             hapticPatterns.tap();
@@ -355,6 +468,7 @@ export default function SettingsView({
                             alignItems: 'center',
                             gap: 12,
                             cursor: 'pointer',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
                         }}
                     >
                         <div style={{
@@ -380,75 +494,8 @@ export default function SettingsView({
                         </div>
                         <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
                     </motion.div>
-                </motion.div>
 
-                {/* Default League */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.11 }}
-                    style={{
-                        background: 'var(--color-surface)',
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
-                        borderRadius: 20,
-                        border: '0.5px solid var(--color-border)',
-                        overflow: 'hidden',
-                        marginBottom: 16,
-                    }}
-                >
-                    <motion.div
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            setShowLeagueSelector(true);
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                        style={{
-                            padding: 16,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <div style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 10,
-                            background: 'rgb(var(--color-warning-rgb) / 0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'var(--color-warning)',
-                            flexShrink: 0,
-                        }}>
-                            <Trophy size={20} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>Default League</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                                {defaultLeague || 'Auto-select (Mechelen preferred)'}
-                            </div>
-                        </div>
-                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
-                    </motion.div>
-                </motion.div>
-
-                {/* Player Management */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.12 }}
-                    style={{
-                        background: 'var(--color-surface)',
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
-                        borderRadius: 20,
-                        border: '0.5px solid var(--color-border)',
-                        overflow: 'hidden',
-                        marginBottom: 16,
-                    }}
-                >
+                    {/* Player Management */}
                     <motion.div
                         onClick={() => {
                             hapticPatterns.tap();
@@ -461,6 +508,7 @@ export default function SettingsView({
                             alignItems: 'center',
                             gap: 12,
                             cursor: 'pointer',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
                         }}
                     >
                         <div style={{
@@ -480,6 +528,40 @@ export default function SettingsView({
                             <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>Manage Players</div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                                 Add, edit or remove players
+                            </div>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                    </motion.div>
+
+                    {/* Forfait Management */}
+                    <motion.div
+                        onClick={openForfait}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'rgb(var(--color-danger-rgb) / 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-danger)',
+                            flexShrink: 0,
+                        }}>
+                            <Flag size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>Forfait Matches</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                Mark matches as forfait
                             </div>
                         </div>
                         <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
@@ -537,60 +619,6 @@ export default function SettingsView({
                         />
                     </motion.div>
                 )}
-
-                {/* Version History */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    style={{
-                        background: 'var(--color-surface)',
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
-                        borderRadius: 20,
-                        border: '0.5px solid var(--color-border)',
-                        overflow: 'hidden',
-                        marginBottom: 16,
-                    }}
-                >
-                    <motion.div
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            onOpenVersion();
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                        style={{
-                            padding: 16,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <div style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 10,
-                            background: 'rgb(var(--color-accent-rgb) / 0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'var(--color-accent)',
-                            flexShrink: 0,
-                        }}>
-                            <RefreshCw size={20} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>
-                                Version History
-                            </div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                                View changelog and updates
-                            </div>
-                        </div>
-                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
-                    </motion.div>
-                </motion.div>
 
                 {/* Account Section */}
                 <motion.div
@@ -969,6 +997,12 @@ export default function SettingsView({
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Forfait Matches Page */}
+            <ForfaitMatchesPage
+                isOpen={isForfaitOpen}
+                onClose={() => onCloseForfait?.()}
+            />
 
             {/* Player Management Page */}
             <PlayerManagementPage
