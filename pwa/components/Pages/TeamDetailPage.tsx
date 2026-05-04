@@ -109,29 +109,41 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                     coreMatches = await coreRes.json();
                 }
                 
+                // Fix LZV dates: stored as UTC but represent Belgian local time
+                // Strip timezone to treat them as local dates
+                const fixLzvDate = (dateStr: string): string => {
+                    // Remove timezone offset (e.g., +00:00 or Z) to treat as local time
+                    return dateStr.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
+                };
+                
                 // Merge CoreMatch forfait data into LZV matches
                 // Match on calendar day (same logic as RecentMatchesSheet)
                 const mergedMatches = lzvMatches.map((lzvMatch: ScraperMatch) => {
-                    const lzvDate = new Date(lzvMatch.date);
+                    const fixedDate = fixLzvDate(lzvMatch.date);
+                    const lzvDate = new Date(fixedDate);
                     
                     const coreMatch = coreMatches.find((core: any) => {
                         const coreDate = new Date(core.date);
                         // Match on calendar day
                         const sameCalendarDay = 
-                            lzvDate.getUTCFullYear() === coreDate.getUTCFullYear() &&
-                            lzvDate.getUTCMonth() === coreDate.getUTCMonth() &&
-                            lzvDate.getUTCDate() === coreDate.getUTCDate();
+                            lzvDate.getFullYear() === coreDate.getFullYear() &&
+                            lzvDate.getMonth() === coreDate.getMonth() &&
+                            lzvDate.getDate() === coreDate.getDate();
                         return sameCalendarDay;
                     });
                     
                     if (coreMatch) {
                         return {
                             ...lzvMatch,
+                            date: fixedDate,
                             forfait: coreMatch.forfait
                         };
                     }
                     
-                    return lzvMatch;
+                    return {
+                        ...lzvMatch,
+                        date: fixedDate
+                    };
                 });
                 
                 setMatches(mergedMatches);
