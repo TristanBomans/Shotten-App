@@ -278,7 +278,7 @@ export async function getCoreTeams(): Promise<CoreTeam[]> {
     return data || [];
 }
 
-export async function getCoreMatches(playerId?: number): Promise<CoreMatch[]> {
+export async function getCoreMatches(playerId?: number, teamId?: number, teamName?: string): Promise<CoreMatch[]> {
     let query = getSupabaseClient()
         .from('core_matches')
         .select('*')
@@ -291,6 +291,14 @@ export async function getCoreMatches(playerId?: number): Promise<CoreMatch[]> {
             return [];
         }
         query = query.in('team_id', player.team_ids);
+    }
+    
+    if (teamId) {
+        query = query.eq('team_id', teamId);
+    }
+    
+    if (teamName) {
+        query = query.eq('team_name', teamName);
     }
     
     const { data, error } = await query;

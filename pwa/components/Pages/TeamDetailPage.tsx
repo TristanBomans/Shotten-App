@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type ElementType, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, UserCircle, Trophy, Calendar, Users, TrendingUp, X, MoreHorizontal, ExternalLink } from 'lucide-react';
+import { ChevronLeft, UserCircle, Trophy, Calendar, Users, TrendingUp, X, MoreHorizontal, ExternalLink, Home, Navigation } from 'lucide-react';
 import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
@@ -24,6 +24,7 @@ interface ScraperMatch {
     location?: string;
     teamId: number;
     status: 'Scheduled' | 'Played' | 'Postponed';
+    forfait?: boolean;
 }
 
 interface TeamDetailPageProps {
@@ -86,17 +87,54 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
     const matchesRef = useRef<HTMLDivElement>(null);
     const squadRef = useRef<HTMLDivElement>(null);
 
-    // Fetch matches for this team
+    // Fetch matches for this team (LZV + CoreMatches merged)
     useEffect(() => {
         if (!open || !team.externalId) return;
         const fetchMatches = async () => {
             setLoadingMatches(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setMatches(data);
+                const [lzvRes, coreRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`),
+                    fetch(`${API_BASE_URL}/api/Matches?teamName=${encodeURIComponent(team.name)}`)
+                ]);
+                
+                let lzvMatches: ScraperMatch[] = [];
+                let coreMatches: any[] = [];
+                
+                if (lzvRes.ok) {
+                    lzvMatches = await lzvRes.json();
                 }
+                
+                if (coreRes.ok) {
+                    coreMatches = await coreRes.json();
+                }
+                
+                // Merge CoreMatch forfait data into LZV matches
+                // Match on calendar day (same logic as RecentMatchesSheet)
+                const mergedMatches = lzvMatches.map((lzvMatch: ScraperMatch) => {
+                    const lzvDate = new Date(lzvMatch.date);
+                    
+                    const coreMatch = coreMatches.find((core: any) => {
+                        const coreDate = new Date(core.date);
+                        // Match on calendar day
+                        const sameCalendarDay = 
+                            lzvDate.getUTCFullYear() === coreDate.getUTCFullYear() &&
+                            lzvDate.getUTCMonth() === coreDate.getUTCMonth() &&
+                            lzvDate.getUTCDate() === coreDate.getUTCDate();
+                        return sameCalendarDay;
+                    });
+                    
+                    if (coreMatch) {
+                        return {
+                            ...lzvMatch,
+                            forfait: coreMatch.forfait
+                        };
+                    }
+                    
+                    return lzvMatch;
+                });
+                
+                setMatches(mergedMatches);
             } catch (error) {
                 console.warn('Failed to fetch team matches:', error);
             } finally {
@@ -104,7 +142,7 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
             }
         };
         fetchMatches();
-    }, [open, team.externalId]);
+    }, [open, team.externalId, team.name]);
 
     const getTabFromScroll = useCallback((): TeamDetailTab => {
         if (!scrollRef.current) return 'overview';
@@ -1019,9 +1057,11 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
     const opponent = isHome ? match.awayTeam : match.homeTeam;
     const teamScore = isHome ? match.homeScore : match.awayScore;
     const opponentScore = isHome ? match.awayScore : match.homeScore;
+    const isForfait = match.forfait === true;
 
     const result = teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D';
     const resultColor = result === 'W' ? 'var(--color-success)' : result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)';
+    const forfaitColor = 'var(--color-text-tertiary)';
 
     const dateStr = formatDateSafe(match.date, { day: 'numeric', month: 'short' }, 'TBD');
     const timeStr = formatTimeSafe(match.date, { hour: '2-digit', minute: '2-digit' }, 'TBD');
@@ -1032,17 +1072,18 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
             alignItems: 'center',
             gap: 10,
             padding: '10px 12px',
-            background: isPlayed ? 'var(--color-surface-hover)' : 'var(--color-surface)',
+            background: isPlayed && !isForfait ? 'var(--color-surface-hover)' : 'var(--color-surface)',
             borderRadius: 12,
-            border: `1px solid ${isPlayed ? 'var(--color-border)' : 'var(--color-border-subtle)'}`
+            border: `1px solid ${isPlayed && !isForfait ? 'var(--color-border)' : 'var(--color-border-subtle)'}`,
+            opacity: isForfait ? 0.6 : 1,
         }}>
             {/* Result indicator for played matches */}
             {isPlayed && (
                 <div style={{
                     width: 28, height: 28,
                     borderRadius: 8,
-                    background: `${resultColor}20`,
-                    color: resultColor,
+                    background: isForfait ? `${forfaitColor}15` : `${resultColor}20`,
+                    color: isForfait ? forfaitColor : resultColor,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1050,7 +1091,7 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
                     fontWeight: 700,
                     flexShrink: 0,
                 }}>
-                    {result}
+                    {isForfait ? 'F' : result}
                 </div>
             )}
 
@@ -1059,11 +1100,32 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
                     fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
-                    {isHome ? 'vs' : '@'} {opponent}
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {opponent}
+                    </span>
+                    {isForfait && (
+                        <span style={{
+                            fontSize: '0.6rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            padding: '1px 4px',
+                            borderRadius: 4,
+                            background: 'rgb(var(--color-danger-rgb) / 0.15)',
+                            color: 'var(--color-danger)',
+                            flexShrink: 0,
+                            marginLeft: 6,
+                        }}>
+                            Forfait
+                        </span>
+                    )}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>
-                    {dateStr} • {timeStr}
-                    {match.location && ` • ${match.location}`}
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.5 }}>
+                        {isHome ? <Home size={10} strokeWidth={2} /> : <Navigation size={10} strokeWidth={2} />}
+                    </span>
+                    <span>{dateStr} • {timeStr}</span>
+                    {match.location && <span>• {match.location}</span>}
                 </div>
             </div>
 
@@ -1072,9 +1134,9 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
                 <div style={{
                     fontSize: '0.95rem',
                     fontWeight: 700,
-                    color: resultColor,
+                    color: isForfait ? forfaitColor : resultColor,
                 }}>
-                    {teamScore} - {opponentScore}
+                    {isForfait ? 'Forfait' : `${teamScore} - ${opponentScore}`}
                 </div>
             )}
         </div>
