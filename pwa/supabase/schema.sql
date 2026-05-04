@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS core_matches (
     name TEXT,
     team_name TEXT,
     team_id INTEGER REFERENCES core_teams(id),
+    forfait BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
