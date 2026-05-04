@@ -18,7 +18,7 @@ import RecentMatchesSheet from './RecentMatchesSheet';
 import UnlockDialog from './UnlockDialog';
 import { buildMatchReminders } from '@/lib/notifications';
 
-type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'playerStats' | 'team' | 'rules' | 'playerDetail' | null;
+type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'playerStats' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
 
 interface DashboardProps {
     playerId: number;
@@ -899,6 +899,9 @@ export default function Dashboard({
                         isHiddenAdminOpen={currentModal === 'admin'}
                         onOpenHiddenAdmin={() => onOpenModal('admin')}
                         onCloseHiddenAdmin={onCloseModal}
+                        isForfaitOpen={currentModal === 'forfait'}
+                        onOpenForfait={() => onOpenModal('forfait')}
+                        onCloseForfait={onCloseModal}
                     />
                 </div>
             </div>

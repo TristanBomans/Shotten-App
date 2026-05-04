@@ -26,6 +26,7 @@ export interface CoreMatch {
     name: string | null;
     team_name: string | null;
     team_id: number | null;
+    forfait: boolean;
     created_at?: string;
     updated_at?: string;
 }
@@ -125,6 +126,7 @@ export interface MatchResponse {
     name: string | null;
     teamName: string | null;
     teamId: number | null;
+    forfait: boolean;
     attendances: AttendanceResponse[];
 }
 
@@ -564,6 +566,7 @@ export async function toMatchResponse(match: CoreMatch): Promise<MatchResponse> 
         name: match.name,
         teamName: match.team_name,
         teamId: match.team_id,
+        forfait: match.forfait,
         attendances: attendances.map(a => {
             const player = playerMap.get(a.player_id);
             return {
@@ -600,6 +603,7 @@ export async function toMatchesResponse(matches: CoreMatch[]): Promise<MatchResp
         name: match.name,
         teamName: match.team_name,
         teamId: match.team_id,
+        forfait: match.forfait,
         attendances: (attendancesByMatch.get(match.id) || []).map(a => {
             const player = playerMap.get(a.player_id);
             return {

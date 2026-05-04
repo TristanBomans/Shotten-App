@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
             location,
             name,
             team_name: teamName,
-            team_id: teamId
+            team_id: teamId,
+            forfait: false
         });
         
         const response = await toMatchResponse(match);
