@@ -38,7 +38,8 @@ export async function PUT(
             location: body.location,
             name: body.name,
             team_name: body.teamName,
-            team_id: body.teamId
+            team_id: body.teamId,
+            forfait: body.forfait
         };
         
         // Remove undefined values

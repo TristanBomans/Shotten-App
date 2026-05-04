@@ -62,7 +62,8 @@ function calculateScoreHistory(player: Player, allMatches: Match[]): ScoreHistor
         const isPast = parseDateToTimestamp(m.date) < now;
         const isPlayerTeam = player.teamIds.includes(m.teamId);
         const hasAttendees = m.attendances?.some(a => a.status === 'Present');
-        return isPast && isPlayerTeam && hasAttendees;
+        const isForfait = m.forfait === true;
+        return isPast && isPlayerTeam && hasAttendees && !isForfait;
     });
 
     // Sort ASCENDING (oldest first) for chronological history
@@ -111,7 +112,8 @@ function calculatePlayerScore(player: Player, allMatches: Match[]) {
         const isPast = parseDateToTimestamp(m.date) < now;
         const isPlayerTeam = player.teamIds.includes(m.teamId);
         const hasAttendees = m.attendances?.some(a => a.status === 'Present');
-        return isPast && isPlayerTeam && hasAttendees;
+        const isForfait = m.forfait === true;
+        return isPast && isPlayerTeam && hasAttendees && !isForfait;
     });
 
     const sortedMatches = [...relevantMatches].sort((a, b) =>

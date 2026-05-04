@@ -26,6 +26,7 @@ export interface CoreMatch {
     name: string | null;
     team_name: string | null;
     team_id: number | null;
+    forfait: boolean;
     created_at?: string;
     updated_at?: string;
 }
@@ -125,6 +126,7 @@ export interface MatchResponse {
     name: string | null;
     teamName: string | null;
     teamId: number | null;
+    forfait: boolean;
     attendances: AttendanceResponse[];
 }
 
@@ -276,7 +278,7 @@ export async function getCoreTeams(): Promise<CoreTeam[]> {
     return data || [];
 }
 
-export async function getCoreMatches(playerId?: number): Promise<CoreMatch[]> {
+export async function getCoreMatches(playerId?: number, teamId?: number, teamName?: string): Promise<CoreMatch[]> {
     let query = getSupabaseClient()
         .from('core_matches')
         .select('*')
@@ -289,6 +291,14 @@ export async function getCoreMatches(playerId?: number): Promise<CoreMatch[]> {
             return [];
         }
         query = query.in('team_id', player.team_ids);
+    }
+    
+    if (teamId) {
+        query = query.eq('team_id', teamId);
+    }
+    
+    if (teamName) {
+        query = query.eq('team_name', teamName);
     }
     
     const { data, error } = await query;
@@ -564,6 +574,7 @@ export async function toMatchResponse(match: CoreMatch): Promise<MatchResponse> 
         name: match.name,
         teamName: match.team_name,
         teamId: match.team_id,
+        forfait: match.forfait,
         attendances: attendances.map(a => {
             const player = playerMap.get(a.player_id);
             return {
@@ -600,6 +611,7 @@ export async function toMatchesResponse(matches: CoreMatch[]): Promise<MatchResp
         name: match.name,
         teamName: match.team_name,
         teamId: match.team_id,
+        forfait: match.forfait,
         attendances: (attendancesByMatch.get(match.id) || []).map(a => {
             const player = playerMap.get(a.player_id);
             return {

@@ -7,7 +7,7 @@ import Dashboard from '@/components/Dashboard';
 import FloatingNav from '@/components/FloatingNav';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
-type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'playerStats' | 'team' | 'rules' | 'playerDetail' | null;
+type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'playerStats' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
 
 const views: View[] = ['home', 'stats', 'league', 'settings'];
 
@@ -25,6 +25,7 @@ const modalToView = (modal: Modal): View => {
         case 'players':
         case 'respond':
         case 'admin':
+        case 'forfait':
         default:
             return 'settings';
     }

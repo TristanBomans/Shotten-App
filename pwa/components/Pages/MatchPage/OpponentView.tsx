@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, UserCircle, ChevronRight, Sparkles, AlertCircle, TrendingUp, Trophy, Users, Zap } from 'lucide-react';
+import { Loader2, UserCircle, Sparkles, AlertCircle, TrendingUp, Trophy, Users, Zap } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 
@@ -550,7 +550,7 @@ export default function OpponentView({
             )}
 
             {/* Recent Form Card */}
-            {recentForm.length > 0 && (
+            {(loading || recentForm.length > 0) && (
                 <SectionCard>
                     <SectionHeader
                         icon={TrendingUp}
@@ -558,33 +558,48 @@ export default function OpponentView({
                         color="var(--color-success)"
                     />
                     <div style={{ display: 'flex', gap: 8 }}>
-                        {recentForm.map((result, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: i * 0.05 }}
-                                style={{
-                                    width: 36, height: 36,
-                                    borderRadius: 10,
-                                    background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.2)' :
-                                        result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.2)' :
-                                            'rgb(var(--color-warning-rgb) / 0.2)',
-                                    border: `1px solid ${result === 'W' ? 'rgb(var(--color-success-rgb) / 0.3)' :
-                                        result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.3)' :
-                                            'rgb(var(--color-warning-rgb) / 0.3)'}`,
-                                    color: result === 'W' ? 'var(--color-success)' :
-                                        result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 800,
-                                }}
-                            >
-                                {result}
-                            </motion.div>
-                        ))}
+                        {loading ? (
+                            // Skeleton loading state
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    style={{
+                                        width: 36, height: 36,
+                                        borderRadius: 10,
+                                        background: 'var(--color-surface-hover)',
+                                        animation: 'pulse 1.5s ease-in-out infinite',
+                                    }}
+                                />
+                            ))
+                        ) : (
+                            recentForm.map((result, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: i * 0.05 }}
+                                    style={{
+                                        width: 36, height: 36,
+                                        borderRadius: 10,
+                                        background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.2)' :
+                                            result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.2)' :
+                                                'rgb(var(--color-warning-rgb) / 0.2)',
+                                        border: `1px solid ${result === 'W' ? 'rgb(var(--color-success-rgb) / 0.3)' :
+                                            result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.3)' :
+                                                'rgb(var(--color-warning-rgb) / 0.3)'}`,
+                                        color: result === 'W' ? 'var(--color-success)' :
+                                            result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 800,
+                                    }}
+                                >
+                                    {result}
+                                </motion.div>
+                            ))
+                        )}
                     </div>
                 </SectionCard>
             )}
@@ -599,9 +614,9 @@ export default function OpponentView({
                     />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                         <div style={{
-                            width: 96,
-                            height: 96,
-                            borderRadius: 24,
+                            width: 64,
+                            height: 64,
+                            borderRadius: 16,
                             background: 'linear-gradient(135deg, rgb(var(--color-success-rgb) / 0.16), var(--color-surface-hover))',
                             border: '1px solid rgb(var(--color-success-rgb) / 0.2)',
                             display: 'flex',
@@ -611,7 +626,7 @@ export default function OpponentView({
                             flexShrink: 0,
                         }}>
                             <div style={{
-                                fontSize: '2rem',
+                                fontSize: '1.4rem',
                                 fontWeight: 900,
                                 color: 'var(--color-success)',
                                 lineHeight: 1,
@@ -619,9 +634,9 @@ export default function OpponentView({
                                 {winRate}%
                             </div>
                             <div style={{
-                                fontSize: '0.62rem',
+                                fontSize: '0.6rem',
                                 color: 'var(--color-text-tertiary)',
-                                marginTop: 5,
+                                marginTop: 3,
                                 fontWeight: 700,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.05em',
@@ -641,7 +656,7 @@ export default function OpponentView({
                                     {opponentData.wins || 0}/{opponentData.matchesPlayed || 0} matches won
                                 </div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 3 }}>
-                                    {opponentData.draws || 0} draws · {opponentData.losses || 0} losses
+                                    {opponentData.wins || 0} wins · {opponentData.draws || 0} draws · {opponentData.losses || 0} losses
                                 </div>
                             </div>
                             <div style={{
@@ -923,31 +938,7 @@ export default function OpponentView({
                 </SectionCard>
             )}
 
-            {/* Link to LZV */}
-            {opponentData && (
-                <a
-                    href={`https://www.lzvcup.be/teams/detail/${opponentData.externalId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        alignSelf: 'center',
-                        gap: 6,
-                        padding: '10px 14px',
-                        background: 'var(--color-surface-hover)',
-                        borderRadius: 10,
-                        border: '0.5px solid var(--color-border)',
-                        color: 'var(--color-text-secondary)',
-                        fontSize: '0.82rem',
-                        fontWeight: 600,
-                        textDecoration: 'none',
-                    }}
-                >
-                    View on LZV Cup <ChevronRight size={14} />
-                </a>
-            )}
+
         </div>
     );
 }

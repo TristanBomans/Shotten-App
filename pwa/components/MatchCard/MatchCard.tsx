@@ -146,6 +146,20 @@ export default function MatchCard({
                             <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
                                 {timeStr}
                             </span>
+                            {match.forfait && (
+                                <span style={{
+                                    fontSize: '0.6rem',
+                                    fontWeight: 700,
+                                    color: 'var(--color-danger)',
+                                    background: 'rgb(var(--color-danger-rgb) / 0.15)',
+                                    padding: '2px 6px',
+                                    borderRadius: 6,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.04em',
+                                }}>
+                                    Forfait
+                                </span>
+                            )}
                         </div>
 
                         {/* Response Buttons - Top right like compact variant */}
@@ -326,12 +340,29 @@ export default function MatchCard({
             </div>
 
             {/* Title - Compact */}
-            <h3 style={{
-                fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-primary)', margin: 0, marginBottom: 6,
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-                {match.name.replace(/-/g, ' – ')}
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <h3 style={{
+                    fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-primary)', margin: 0,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
+                }}>
+                    {match.name.replace(/-/g, ' – ')}
+                </h3>
+                {match.forfait && (
+                    <span style={{
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        color: 'var(--color-danger)',
+                        background: 'rgb(var(--color-danger-rgb) / 0.15)',
+                        padding: '2px 6px',
+                        borderRadius: 6,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        flexShrink: 0,
+                    }}>
+                        Forfait
+                    </span>
+                )}
+            </div>
 
             {/* Squad count - Compact (with showFullNames support) */}
             {showFullNames ? (

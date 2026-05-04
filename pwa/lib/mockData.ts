@@ -19,6 +19,7 @@ export interface Match {
     date: string;
     location?: string;
     teamId: number;
+    forfait?: boolean;
     attendances: Attendance[];
 }
 

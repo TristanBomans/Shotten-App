@@ -105,7 +105,7 @@ export default function NotificationSheet({ open, reminders, totalCount, onRemin
                                         }}
                                     >
                                         <BellRing size={14} />
-                                        Social Credit Dispatch
+                                        Match Reminders
                                     </div>
                                     <h3
                                         style={{
@@ -115,7 +115,7 @@ export default function NotificationSheet({ open, reminders, totalCount, onRemin
                                             color: 'var(--color-text-primary)',
                                         }}
                                     >
-                                        {totalCount > 0 ? `${totalCount} open reminders` : 'All good here'}
+                                        {totalCount > 0 ? `${totalCount} pending response${totalCount === 1 ? '' : 's'}` : 'All caught up'}
                                     </h3>
                                 </div>
 
@@ -182,10 +182,10 @@ export default function NotificationSheet({ open, reminders, totalCount, onRemin
                                         </div>
                                         <div>
                                             <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                                                No chaos today
+                                                All up to date
                                             </div>
                                             <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                                You're temporarily safe from the social credit roast.
+                                                No pending match responses right now.
                                             </div>
                                         </div>
                                     </div>

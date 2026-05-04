@@ -158,6 +158,28 @@ function attendanceLabel(status: ReturnType<typeof getAttendanceStatus>): string
     return '';
 }
 
+function isForfaitMatch(match: RecentMatchItem, internalMatches: InternalMatchLike[]): boolean {
+    const recentMatchDate = parseDate(match.date);
+    if (!recentMatchDate) return false;
+
+    const sameTeamMatches = internalMatches
+        .map(internalMatch => ({
+            internalMatch,
+            internalDate: parseDate(internalMatch.date),
+        }))
+        .filter(({ internalDate, internalMatch }) =>
+            internalDate !== null &&
+            matchesRecentTeam(match, internalMatch) &&
+            isSameCalendarDay(recentMatchDate, internalDate)
+        )
+        .sort((left, right) =>
+            Math.abs(left.internalDate!.getTime() - recentMatchDate.getTime()) -
+            Math.abs(right.internalDate!.getTime() - recentMatchDate.getTime())
+        );
+
+    return sameTeamMatches[0]?.internalMatch.forfait === true;
+}
+
 export default function RecentMatchesSheet({
     open,
     loading,
@@ -335,6 +357,7 @@ export default function RecentMatchesSheet({
                                             const attColor = attendanceDotColor(attStatus);
                                             const attLabel = attendanceLabel(attStatus);
                                             const isRecent = isRecentMatch(match.date);
+                                            const isForfait = isForfaitMatch(match, internalMatches);
 
                                             return (
                                                 <motion.div
@@ -350,18 +373,30 @@ export default function RecentMatchesSheet({
                                                         borderRadius: 14,
                                                         cursor: 'default',
                                                         transition: 'background 0.15s ease',
-                                                        border: isRecent ? '1px solid rgb(var(--color-accent-rgb) / 0.2)' : '1px solid transparent',
-                                                        background: isRecent ? 'rgb(var(--color-accent-rgb) / 0.04)' : 'transparent',
+                                                        border: isForfait 
+                                                            ? '1px solid rgb(var(--color-danger-rgb) / 0.2)' 
+                                                            : isRecent 
+                                                                ? '1px solid rgb(var(--color-accent-rgb) / 0.2)' 
+                                                                : '1px solid transparent',
+                                                        background: isForfait 
+                                                            ? 'rgb(var(--color-danger-rgb) / 0.04)' 
+                                                            : isRecent 
+                                                                ? 'rgb(var(--color-accent-rgb) / 0.04)' 
+                                                                : 'transparent',
                                                     }}
                                                     onMouseEnter={(e) => {
-                                                        e.currentTarget.style.background = isRecent
-                                                            ? 'rgb(var(--color-accent-rgb) / 0.08)'
-                                                            : 'var(--color-surface-hover)';
+                                                        e.currentTarget.style.background = isForfait
+                                                            ? 'rgb(var(--color-danger-rgb) / 0.08)'
+                                                            : isRecent
+                                                                ? 'rgb(var(--color-accent-rgb) / 0.08)'
+                                                                : 'var(--color-surface-hover)';
                                                     }}
                                                     onMouseLeave={(e) => {
-                                                        e.currentTarget.style.background = isRecent
-                                                            ? 'rgb(var(--color-accent-rgb) / 0.04)'
-                                                            : 'transparent';
+                                                        e.currentTarget.style.background = isForfait
+                                                            ? 'rgb(var(--color-danger-rgb) / 0.04)'
+                                                            : isRecent
+                                                                ? 'rgb(var(--color-accent-rgb) / 0.04)'
+                                                                : 'transparent';
                                                     }}
                                                 >
                                                     {/* Result indicator */}
@@ -370,34 +405,34 @@ export default function RecentMatchesSheet({
                                                             width: 28,
                                                             height: 28,
                                                             borderRadius: 8,
-                                                            background: result.background,
-                                                            border: `1px solid ${result.border}`,
+                                                            background: isForfait ? 'rgb(var(--color-danger-rgb) / 0.10)' : result.background,
+                                                            border: `1px solid ${isForfait ? 'rgb(var(--color-danger-rgb) / 0.18)' : result.border}`,
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
                                                             fontSize: '0.7rem',
                                                             fontWeight: 800,
-                                                            color: result.color,
+                                                            color: isForfait ? 'var(--color-danger)' : result.color,
                                                             letterSpacing: '0.02em',
                                                             flexShrink: 0,
                                                             position: 'relative',
                                                         }}
                                                     >
-                                                        {result.label}
-                                                        {isRecent && (
-                                                            <span
-                                                                style={{
-                                                                    position: 'absolute',
-                                                                    top: -2,
-                                                                    right: -2,
-                                                                    width: 8,
-                                                                    height: 8,
-                                                                    borderRadius: '50%',
-                                                                    background: 'var(--color-accent)',
-                                                                    border: '2px solid var(--color-surface)',
-                                                                }}
-                                                            />
-                                                        )}
+                                                        {isForfait ? 'F' : result.label}
+                                                            {isRecent && (
+                                                                <span
+                                                                    style={{
+                                                                        position: 'absolute',
+                                                                        top: -2,
+                                                                        right: -2,
+                                                                        width: 8,
+                                                                        height: 8,
+                                                                        borderRadius: '50%',
+                                                                        background: isForfait ? 'var(--color-danger)' : 'var(--color-accent)',
+                                                                        border: '2px solid var(--color-surface)',
+                                                                    }}
+                                                                />
+                                                            )}
                                                     </div>
 
                                                     {/* Match info */}
@@ -421,20 +456,20 @@ export default function RecentMatchesSheet({
                                                                 vs
                                                             </span>
                                                             {match.opponent}
-                                                            {isRecent && (
+                                                            {isForfait && (
                                                                 <span
                                                                     style={{
                                                                         fontSize: '0.55rem',
                                                                         fontWeight: 700,
-                                                                        color: 'var(--color-accent)',
-                                                                        background: 'rgb(var(--color-accent-rgb) / 0.12)',
+                                                                        color: 'var(--color-danger)',
+                                                                        background: 'rgb(var(--color-danger-rgb) / 0.12)',
                                                                         padding: '1px 5px',
                                                                         borderRadius: 4,
                                                                         textTransform: 'uppercase',
                                                                         letterSpacing: '0.03em',
                                                                     }}
                                                                 >
-                                                                    New
+                                                                    Forfait
                                                                 </span>
                                                             )}
                                                         </div>
@@ -451,7 +486,7 @@ export default function RecentMatchesSheet({
                                                             <span style={{ fontSize: '0.72rem', color: 'var(--color-accent)', fontWeight: 500, flexShrink: 0 }}>
                                                                 {formatRelativeTime(match.date)}
                                                             </span>
-                                                            {attLabel && (
+                                                            {attLabel && !isForfait && (
                                                                 <>
                                                                     <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', flexShrink: 0 }}>·</span>
                                                                     <span
@@ -498,15 +533,16 @@ export default function RecentMatchesSheet({
                                                     {/* Score */}
                                                     <div
                                                         style={{
-                                                            fontSize: '1rem',
-                                                            fontWeight: 800,
-                                                            color: 'var(--color-text-primary)',
+                                                            fontSize: isForfait ? '0.75rem' : '1rem',
+                                                            fontWeight: isForfait ? 700 : 800,
+                                                            color: isForfait ? 'var(--color-danger)' : 'var(--color-text-primary)',
                                                             letterSpacing: '-0.02em',
                                                             fontVariantNumeric: 'tabular-nums',
                                                             flexShrink: 0,
+                                                            textTransform: isForfait ? 'uppercase' : 'none',
                                                         }}
                                                     >
-                                                        {match.scoreline}
+                                                        {isForfait ? 'Forfait' : match.scoreline}
                                                     </div>
                                                 </motion.div>
                                             );
