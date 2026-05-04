@@ -830,18 +830,20 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                         left: 0,
                         right: 0,
                         zIndex: 5,
-                        padding: '10px 16px calc(var(--safe-bottom, 0px) + 12px)',
+                        padding: '8px 20px calc(var(--safe-bottom, 0px) + 8px)',
                     }}>
                         <div style={{
                             display: 'flex',
-                            gap: 4,
-                            padding: 6,
+                            gap: 2,
+                            padding: 4,
                             background: 'var(--color-glass-heavy)',
                             backdropFilter: 'blur(60px)',
                             WebkitBackdropFilter: 'blur(60px)',
                             border: '0.5px solid var(--color-border)',
                             borderRadius: 999,
                             boxShadow: 'var(--shadow-lg)',
+                            maxWidth: 320,
+                            margin: '0 auto',
                         }}>
                             {([
                                 { id: 'overview', icon: TrendingUp, label: 'Overview' },
@@ -860,7 +862,7 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                                         whileTap={{ scale: 0.95 }}
                                         style={{
                                             flex: 1,
-                                            padding: '8px 12px',
+                                            padding: '6px 8px',
                                             background: isActive ? 'var(--color-surface-hover)' : 'transparent',
                                             border: 'none',
                                             borderRadius: 999,
@@ -869,12 +871,12 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                                             display: 'flex',
                                             flexDirection: 'column',
                                             alignItems: 'center',
-                                            gap: 4,
+                                            gap: 2,
                                             transition: 'all 0.2s',
                                         }}
                                     >
-                                        <tab.icon size={22} strokeWidth={1.75} />
-                                        <span style={{ fontSize: '0.7rem', fontWeight: 600, lineHeight: 1 }}>
+                                        <tab.icon size={18} strokeWidth={1.75} />
+                                        <span style={{ fontSize: '0.6rem', fontWeight: 600, lineHeight: 1 }}>
                                             {tab.label}
                                         </span>
                                     </motion.button>

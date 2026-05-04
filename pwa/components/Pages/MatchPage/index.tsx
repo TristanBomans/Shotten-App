@@ -322,18 +322,20 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                     left: 0,
                     right: 0,
                     zIndex: 5,
-                    padding: '10px 16px calc(var(--safe-bottom, 0px) + 12px)',
+                    padding: '8px 20px calc(var(--safe-bottom, 0px) + 8px)',
                 }}>
                     <div style={{
                         display: 'flex',
-                        gap: 4,
-                        padding: 6,
+                        gap: 2,
+                        padding: 4,
                         background: 'var(--color-glass-heavy)',
                         backdropFilter: 'blur(60px)',
                         WebkitBackdropFilter: 'blur(60px)',
                         border: '0.5px solid var(--color-border)',
                         borderRadius: 999,
                         boxShadow: 'var(--shadow-lg)',
+                        maxWidth: 280,
+                        margin: '0 auto',
                     }}>
                         {(['squad', 'opponent'] as const).map(tab => {
                             const isActive = activeTab === tab;
@@ -352,7 +354,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                                     whileTap={{ scale: 0.95 }}
                                     style={{
                                         flex: 1,
-                                        padding: '8px 12px',
+                                        padding: '6px 8px',
                                         background: isActive ? 'var(--color-surface-hover)' : 'transparent',
                                         border: 'none',
                                         borderRadius: 999,
@@ -361,23 +363,23 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                                         display: 'flex',
                                         flexDirection: 'column',
                                         alignItems: 'center',
-                                        gap: 4,
+                                        gap: 2,
                                         transition: 'all 0.2s',
                                     }}
                                 >
                                     <div style={{ position: 'relative', lineHeight: 0 }}>
-                                        <Icon size={22} strokeWidth={1.75} />
+                                        <Icon size={18} strokeWidth={1.75} />
                                         {badgeCount !== null && badgeCount > 0 && (
                                             <span style={{
                                                 position: 'absolute',
-                                                top: -6,
-                                                right: -10,
-                                                minWidth: 18,
-                                                height: 18,
-                                                padding: '0 5px',
+                                                top: -5,
+                                                right: -8,
+                                                minWidth: 14,
+                                                height: 14,
+                                                padding: '0 3px',
                                                 background: 'var(--color-accent)',
                                                 color: '#fff',
-                                                fontSize: '0.65rem',
+                                                fontSize: '0.55rem',
                                                 fontWeight: 700,
                                                 borderRadius: 999,
                                                 display: 'flex',
@@ -390,7 +392,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                                             </span>
                                         )}
                                     </div>
-                                    <span style={{ fontSize: '0.7rem', fontWeight: 600, lineHeight: 1 }}>
+                                    <span style={{ fontSize: '0.6rem', fontWeight: 600, lineHeight: 1 }}>
                                         {label}
                                     </span>
                                 </motion.button>
