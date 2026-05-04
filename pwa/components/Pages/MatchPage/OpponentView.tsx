@@ -614,9 +614,9 @@ export default function OpponentView({
                     />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                         <div style={{
-                            width: 52,
-                            height: 52,
-                            borderRadius: 14,
+                            width: 64,
+                            height: 64,
+                            borderRadius: 16,
                             background: 'linear-gradient(135deg, rgb(var(--color-success-rgb) / 0.16), var(--color-surface-hover))',
                             border: '1px solid rgb(var(--color-success-rgb) / 0.2)',
                             display: 'flex',
@@ -626,7 +626,7 @@ export default function OpponentView({
                             flexShrink: 0,
                         }}>
                             <div style={{
-                                fontSize: '1.1rem',
+                                fontSize: '1.4rem',
                                 fontWeight: 900,
                                 color: 'var(--color-success)',
                                 lineHeight: 1,
@@ -634,9 +634,9 @@ export default function OpponentView({
                                 {winRate}%
                             </div>
                             <div style={{
-                                fontSize: '0.55rem',
+                                fontSize: '0.6rem',
                                 color: 'var(--color-text-tertiary)',
-                                marginTop: 2,
+                                marginTop: 3,
                                 fontWeight: 700,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.05em',
@@ -656,7 +656,7 @@ export default function OpponentView({
                                     {opponentData.wins || 0}/{opponentData.matchesPlayed || 0} matches won
                                 </div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 3 }}>
-                                    {opponentData.draws || 0} draws · {opponentData.losses || 0} losses
+                                    {opponentData.wins || 0} wins · {opponentData.draws || 0} draws · {opponentData.losses || 0} losses
                                 </div>
                             </div>
                             <div style={{
