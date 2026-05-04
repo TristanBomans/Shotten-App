@@ -30,15 +30,15 @@ function getUrgency(daysLeft: number): ReminderUrgency {
 }
 
 function getRankLabel(urgency: ReminderUrgency, reason: ReminderReason): string {
-    if (urgency === 'high') return reason === 'maybe' ? 'Captain Doubt Alarm' : 'Bench Warmer Alert';
-    if (urgency === 'medium') return reason === 'maybe' ? 'Chaos Strategist Ping' : 'Ghost Protocol Ping';
-    return reason === 'maybe' ? 'Coin Flip Committee' : 'Social Credit Watch';
+    if (urgency === 'high') return reason === 'maybe' ? 'Still Deciding?' : 'Response Needed';
+    if (urgency === 'medium') return reason === 'maybe' ? 'Pick a Side' : 'Reminder';
+    return reason === 'maybe' ? 'Make a Call' : 'Heads Up';
 }
 
 function getDaysText(daysLeft: number): string {
     if (daysLeft <= 0) return 'today';
     if (daysLeft === 1) return 'tomorrow';
-    return `within ${daysLeft} days`;
+    return `in ${daysLeft} days`;
 }
 
 function buildMessage(matchId: number, reason: ReminderReason, urgency: ReminderUrgency, daysLeft: number): string {
@@ -46,37 +46,37 @@ function buildMessage(matchId: number, reason: ReminderReason, urgency: Reminder
 
     const missingTemplates: Record<ReminderUrgency, string[]> = {
         high: [
-            `Your social credit is in the red: respond ${daysText}.`,
-            `The bench is whispering your name. Answer ${daysText}.`,
-            `Emergency alert: no response means full-time bench warmer status.`,
+            `Match is ${daysText} — let us know if you're in.`,
+            `Coach needs your answer ${daysText}.`,
+            `Help the team plan — respond ${daysText}.`,
         ],
         medium: [
-            `Reminder with love and gentle pressure: respond ${daysText}.`,
-            `Team awaits your verdict. Don't ghost ${daysText}.`,
-            `Status check: this is your friendly kick in the butt.`,
+            `Don't forget to fill in your attendance ${daysText}.`,
+            `Team is counting on you — answer ${daysText}.`,
+            `A quick response helps everyone plan ${daysText}.`,
         ],
         low: [
-            `Friendly heads-up: plan for this match ${daysText}.`,
-            `Future-you will thank you if you respond now.`,
-            `Mini ping: fill in once and done.`,
+            `Match coming up ${daysText}. Mark your calendar.`,
+            `Plan ahead — let us know ${daysText}.`,
+            `Friendly reminder to respond ${daysText}.`,
         ],
     };
 
     const maybeTemplates: Record<ReminderUrgency, string[]> = {
         high: [
-            `'Maybe' is not a lineup. Pick ${daysText}: in or out.`,
-            `Coach doesn't read tea leaves. Set your status ${daysText}.`,
-            `Final call: doubt mode off, decision due ${daysText}.`,
+            `"Maybe" won't cut it — pick in or out ${daysText}.`,
+            `We need a definite answer ${daysText}.`,
+            `Final call: confirm your status ${daysText}.`,
         ],
         medium: [
-            `You're on 'Maybe'. Time for a real choice ${daysText}.`,
-            `Miss Maybe-level detected. Decide ${daysText}.`,
-            `Small roast, big truth: pick your status ${daysText}.`,
+            `Still on "Maybe"? Time to decide ${daysText}.`,
+            `Help us plan — make a choice ${daysText}.`,
+            `Your team needs clarity ${daysText}.`,
         ],
         low: [
-            `No stress, but would love a definite answer ${daysText}.`,
-            `Doubt is fine, but not forever. Choose at your leisure ${daysText}.`,
-            `Gentle ping: turn 'Maybe' into a real choice.`,
+            `No rush, but a definite answer helps ${daysText}.`,
+            `When you're ready, lock in your status.`,
+            `Turn that "Maybe" into a "Yes" or "No".`,
         ],
     };
 
