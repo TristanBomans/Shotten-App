@@ -1073,7 +1073,9 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
 
     const result = teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D';
     const resultColor = result === 'W' ? 'var(--color-success)' : result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)';
+    const resultBgRgb = result === 'W' ? 'var(--color-success-rgb)' : result === 'L' ? 'var(--color-danger-rgb)' : 'var(--color-warning-rgb)';
     const forfaitColor = 'var(--color-text-tertiary)';
+    const forfaitRgb = 'var(--color-text-tertiary-rgb)';
 
     const dateStr = formatDateSafe(match.date, { day: 'numeric', month: 'short' }, 'TBD');
     const timeStr = formatTimeSafe(match.date, { hour: '2-digit', minute: '2-digit' }, 'TBD');
@@ -1084,28 +1086,47 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
             alignItems: 'center',
             gap: 10,
             padding: '10px 12px',
-            background: isPlayed && !isForfait ? 'var(--color-surface-hover)' : 'var(--color-surface)',
+            background: !isPlayed 
+                ? 'rgb(var(--color-accent-rgb) / 0.03)' 
+                : isPlayed && !isForfait 
+                    ? 'var(--color-surface-hover)' 
+                    : 'var(--color-surface)',
             borderRadius: 12,
-            border: `1px solid ${isPlayed && !isForfait ? 'var(--color-border)' : 'var(--color-border-subtle)'}`,
+            border: `1px solid ${!isPlayed 
+                ? 'rgb(var(--color-accent-rgb) / 0.12)' 
+                : isPlayed && !isForfait 
+                    ? 'var(--color-border)' 
+                    : 'var(--color-border-subtle)'}`,
             opacity: isForfait ? 0.6 : 1,
         }}>
-            {/* Result indicator for played matches */}
-            {isPlayed && (
-                <div style={{
-                    width: 28, height: 28,
-                    borderRadius: 8,
-                    background: isForfait ? `${forfaitColor}15` : `${resultColor}20`,
-                    color: isForfait ? forfaitColor : resultColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    flexShrink: 0,
-                }}>
-                    {isForfait ? 'F' : result}
-                </div>
-            )}
+            {/* Result indicator */}
+            <div style={{
+                width: 28, height: 28,
+                borderRadius: 8,
+                background: !isPlayed 
+                    ? 'rgb(var(--color-accent-rgb) / 0.10)' 
+                    : isForfait 
+                        ? `rgb(${forfaitRgb} / 0.10)` 
+                        : `rgb(${resultBgRgb} / 0.10)`,
+                border: `1px solid ${!isPlayed 
+                    ? 'rgb(var(--color-accent-rgb) / 0.18)' 
+                    : isForfait 
+                        ? `rgb(${forfaitRgb} / 0.18)` 
+                        : `rgb(${resultBgRgb} / 0.18)`}`,
+                color: !isPlayed 
+                    ? 'var(--color-accent)' 
+                    : isForfait 
+                        ? forfaitColor 
+                        : resultColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                flexShrink: 0,
+            }}>
+                {!isPlayed ? <Calendar size={14} /> : isForfait ? 'F' : result}
+            </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
@@ -1115,22 +1136,6 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {opponent}
                     </span>
-                    {isForfait && (
-                        <span style={{
-                            fontSize: '0.6rem',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            padding: '1px 4px',
-                            borderRadius: 4,
-                            background: 'rgb(var(--color-danger-rgb) / 0.15)',
-                            color: 'var(--color-danger)',
-                            flexShrink: 0,
-                            marginLeft: 6,
-                        }}>
-                            Forfait
-                        </span>
-                    )}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.5 }}>
@@ -1144,9 +1149,11 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
             {/* Score for played matches */}
             {isPlayed && (
                 <div style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
+                    fontSize: isForfait ? '0.75rem' : '0.95rem',
+                    fontWeight: isForfait ? 700 : 700,
                     color: isForfait ? forfaitColor : resultColor,
+                    textTransform: isForfait ? 'uppercase' : 'none',
+                    letterSpacing: isForfait ? '0.02em' : 'normal',
                 }}>
                     {isForfait ? 'Forfait' : `${teamScore} - ${opponentScore}`}
                 </div>

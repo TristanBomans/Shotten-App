@@ -1,38 +1,29 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { fetchAllScraperTeams, fetchAllScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { fetchAllScraperTeams, type ScraperTeam } from '@/lib/useData';
+import { Loader2 } from 'lucide-react';
 import TeamDetailPage from './Pages/TeamDetailPage';
-import PlayerStatsPage from './Pages/PlayerStatsPage';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface LeagueViewProps {
-    activeTab: 'standings' | 'players';
     selectedLeague: string;
     onSelectedLeagueChange: (league: string) => void;
     onLeagueDataChange?: (data: { leagues: string[]; teams: ScraperTeam[] }) => void;
     selectedTeamId?: number | null;
     onSelectTeam?: (id: number | null) => void;
-    selectedPlayerId?: number | null;
-    onSelectPlayer?: (id: number | null) => void;
 }
 
 export default function LeagueView({
-    activeTab,
     selectedLeague,
     onSelectedLeagueChange,
     onLeagueDataChange,
     selectedTeamId,
     onSelectTeam,
-    selectedPlayerId,
-    onSelectPlayer,
 }: LeagueViewProps) {
     const [teams, setTeams] = useState<ScraperTeam[]>([]);
-    const [allPlayers, setAllPlayers] = useState<ScraperPlayer[]>([]);
     const [loading, setLoading] = useState(true);
-    const [visiblePlayers, setVisiblePlayers] = useState(50);
     const dataLoadedRef = useRef(false);
 
     // Extract unique leagues
@@ -75,11 +66,6 @@ export default function LeagueView({
         onLeagueDataChange?.({ leagues, teams });
     }, [leagues, teams, onLeagueDataChange]);
 
-    // Reset visible players limit when changing tabs or leagues
-    useEffect(() => {
-        setVisiblePlayers(50);
-    }, [activeTab, selectedLeague]);
-
     useEffect(() => {
         if (dataLoadedRef.current) {
             setLoading(false);
@@ -87,12 +73,8 @@ export default function LeagueView({
         }
         const loadData = async () => {
             try {
-                const [teamsData, playersData] = await Promise.all([
-                    fetchAllScraperTeams(),
-                    fetchAllScraperPlayers()
-                ]);
+                const teamsData = await fetchAllScraperTeams();
                 setTeams(teamsData);
-                setAllPlayers(playersData);
                 dataLoadedRef.current = true;
             } catch (err) {
                 console.error('Failed to load league data:', err);
@@ -109,29 +91,6 @@ export default function LeagueView({
         onSelectTeam?.(team.externalId);
     };
 
-    const handlePlayerClick = (player: ScraperPlayer) => {
-        hapticPatterns.tap();
-        onSelectPlayer?.(player.externalId);
-    };
-
-    const selectedTeam = selectedTeamId != null
-        ? (() => {
-            const team = teams.find(t => t.externalId === selectedTeamId);
-            if (!team) return null;
-            const teamPlayers = allPlayers.filter(p => {
-                if (p.teamIds && p.teamIds.length > 0) {
-                    return p.teamIds.includes(team.externalId);
-                }
-                return p.teamId === team.externalId;
-            });
-            return { team, players: teamPlayers };
-        })()
-        : null;
-
-    const selectedPlayer = selectedPlayerId != null
-        ? allPlayers.find(p => p.externalId === selectedPlayerId) || null
-        : null;
-
     const isOwnTeam = (name: string) => {
         const lower = name.toLowerCase();
         return lower.includes('degrad') || lower.includes('wille ma ni');
@@ -145,27 +104,13 @@ export default function LeagueView({
             .sort((a, b) => (a.rank || 99) - (b.rank || 99));
     }, [teams, selectedLeague]);
 
-    // Filter players by selected league (teams in that league)
-    // Use teamIds array if available (for multi-team players), fallback to teamId
-    const filteredPlayers = useMemo(() => {
-        if (!selectedLeague) return [];
-        const validTeamIds = new Set(filteredTeams.map(t => t.externalId));
-        return allPlayers
-            .filter(p => {
-                // Check teamIds array first (multi-team support)
-                if (p.teamIds && p.teamIds.length > 0) {
-                    return p.teamIds.some(tid => validTeamIds.has(tid));
-                }
-                // Fallback to single teamId
-                return validTeamIds.has(p.teamId);
-            })
-            .sort((a, b) => b.goals - a.goals);
-    }, [allPlayers, filteredTeams, selectedLeague]);
-
-    const handleShowMore = () => {
-        hapticPatterns.tap();
-        setVisiblePlayers(prev => prev + 50);
-    };
+    const selectedTeam = selectedTeamId != null
+        ? (() => {
+            const team = teams.find(t => t.externalId === selectedTeamId);
+            if (!team) return null;
+            return { team, players: [] as never[] };
+        })()
+        : null;
 
     return (
         <div
@@ -184,356 +129,171 @@ export default function LeagueView({
                         <Loader2 className="animate-spin" size={24} color="var(--color-text-secondary)" />
                     </div>
                 ) : (
-                    <AnimatePresence mode="wait">
-                        {activeTab === 'standings' ? (
-                            <motion.div
-                                key="standings"
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 10 }}
-                                transition={{ duration: 0.15 }}
-                                style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
-                            >
-                                <div style={{
-                                    background: 'var(--color-surface)',
-                                    backdropFilter: 'blur(40px)',
-                                    WebkitBackdropFilter: 'blur(40px)',
-                                    borderRadius: 20,
-                                    border: '0.5px solid var(--color-border)',
-                                    overflow: 'hidden',
-                                }}>
-                                    {/* Table Header */}
-                                    <div style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: '28px 1fr 32px 32px 38px 38px',
-                                        gap: 6,
-                                        padding: '10px 12px',
-                                        borderBottom: '0.5px solid var(--color-border-subtle)',
-                                        fontSize: '0.65rem',
-                                        fontWeight: 700,
-                                        color: 'var(--color-text-tertiary)',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.03em',
-                                    }}>
-                                        <div style={{ textAlign: 'center' }}>#</div>
-                                        <div>Team</div>
-                                        <div style={{ textAlign: 'center' }}>MP</div>
-                                        <div style={{ textAlign: 'center' }}>GD</div>
-                                        <div style={{ textAlign: 'center' }}>Pts</div>
-                                        <div style={{ textAlign: 'center' }}>Avg</div>
-                                    </div>
+                    <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.15 }}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                    >
+                        <div style={{
+                            background: 'var(--color-surface)',
+                            backdropFilter: 'blur(40px)',
+                            WebkitBackdropFilter: 'blur(40px)',
+                            borderRadius: 20,
+                            border: '0.5px solid var(--color-border)',
+                            overflow: 'hidden',
+                        }}>
+                            {/* Table Header */}
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: '28px 1fr 32px 32px 38px 38px',
+                                gap: 6,
+                                padding: '10px 12px',
+                                borderBottom: '0.5px solid var(--color-border-subtle)',
+                                fontSize: '0.65rem',
+                                fontWeight: 700,
+                                color: 'var(--color-text-tertiary)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.03em',
+                            }}>
+                                <div style={{ textAlign: 'center' }}>#</div>
+                                <div>Team</div>
+                                <div style={{ textAlign: 'center' }}>MP</div>
+                                <div style={{ textAlign: 'center' }}>GD</div>
+                                <div style={{ textAlign: 'center' }}>Pts</div>
+                                <div style={{ textAlign: 'center' }}>Avg</div>
+                            </div>
 
-                                    {/* Table Rows */}
-                                    {filteredTeams.length > 0 ? filteredTeams.map((team, index) => {
-                                        const isHighlighted = isOwnTeam(team.name);
-                                        const isFirst = team.rank === 1;
-                                        const isLast = team.rank === filteredTeams.length;
-                                        
-                                        return (
-                                            <motion.div
-                                                key={team.externalId}
-                                                onClick={() => handleTeamClick(team)}
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: index * 0.02, duration: 0.2 }}
-                                                whileTap={{ scale: 0.99, backgroundColor: 'var(--color-surface-hover)' }}
-                                                style={{
-                                                    display: 'grid',
-                                                    gridTemplateColumns: '28px 1fr 32px 32px 38px 38px',
-                                                    gap: 6,
-                                                    padding: '12px',
-                                                    borderBottom: '0.5px solid var(--color-border-subtle)',
-                                                    fontSize: '0.85rem',
-                                                    color: 'var(--color-text-primary)',
-                                                    alignItems: 'center',
-                                                    cursor: 'pointer',
-                                                    backgroundColor: isHighlighted ? 'rgb(var(--color-accent-rgb) / 0.12)' : 'transparent',
-                                                    position: 'relative',
-                                                }}
-                                            >
-                                                {/* Highlight bar */}
-                                                {isHighlighted && (
-                                                    <div style={{
-                                                        position: 'absolute',
-                                                        left: 0, top: 0, bottom: 0,
-                                                        width: 3,
-                                                        background: 'var(--color-accent)',
-                                                        borderRadius: '0 2px 2px 0',
-                                                    }} />
-                                                )}
-                                                
-                                                {/* Rank */}
-                                                <div style={{
-                                                    textAlign: 'center',
-                                                    fontWeight: 700,
-                                                    fontSize: '0.8rem',
-                                                    color: isFirst ? 'var(--color-warning)' : isLast ? 'var(--color-danger)' : 'var(--color-text-tertiary)',
-                                                }}>
-                                                    {team.rank}
-                                                </div>
-                                                
-                                                {/* Team */}
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-                                                    {team.imageBase64 ? (
-                                                        <img
-                                                            src={team.imageBase64}
-                                                            alt=""
-                                                            style={{
-                                                                width: 26, height: 26,
-                                                                borderRadius: 6,
-                                                                objectFit: 'cover',
-                                                                flexShrink: 0,
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <div style={{
-                                                            width: 26, height: 26,
-                                                            borderRadius: 6,
-                                                            background: isFirst ? 'linear-gradient(135deg, var(--color-warning), var(--color-warning-secondary))' : 'var(--color-surface-hover)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            fontSize: '0.6rem',
-                                                            fontWeight: 700,
-                                                            color: isFirst ? 'var(--color-bg)' : 'var(--color-text-primary)',
-                                                            flexShrink: 0,
-                                                        }}>
-                                                            {team.name.charAt(0)}
-                                                        </div>
-                                                    )}
-                                                    <div style={{
-                                                        whiteSpace: 'nowrap',
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        fontWeight: isHighlighted ? 700 : 500,
-                                                    }}>
-                                                        {team.name}
-                                                    </div>
-                                                </div>
-                                                
-                                                {/* MP */}
-                                                <div style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: '0.8rem' }}>
-                                                    {team.matchesPlayed}
-                                                </div>
-                                                
-                                                {/* GD */}
-                                                <div style={{
-                                                    textAlign: 'center',
-                                                    color: (team.goalDifference || 0) > 0 ? 'var(--color-success)' : (team.goalDifference || 0) < 0 ? 'var(--color-danger)' : 'var(--color-text-tertiary)',
-                                                    fontSize: '0.8rem',
-                                                    fontWeight: 600,
-                                                }}>
-                                                    {(team.goalDifference || 0) > 0 ? '+' : ''}{team.goalDifference || 0}
-                                                </div>
-                                                
-                                                {/* Points */}
-                                                <div style={{
-                                                    textAlign: 'center',
-                                                    fontWeight: 800,
-                                                    fontSize: '0.9rem',
-                                                }}>
-                                                    {team.points}
-                                                </div>
-                                                
-                                                {/* PPM */}
-                                                <div style={{
-                                                    textAlign: 'center',
-                                                    color: 'var(--color-accent)',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 600,
-                                                }}>
-                                                    {team.pointsPerMatch?.toFixed(1)}
-                                                </div>
-                                            </motion.div>
-                                        );
-                                    }) : (
-                                        <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-tertiary)' }}>
-                                            No teams found for this league
+                            {/* Table Rows */}
+                            {filteredTeams.length > 0 ? filteredTeams.map((team, index) => {
+                                const isHighlighted = isOwnTeam(team.name);
+                                const isFirst = team.rank === 1;
+                                const isLast = team.rank === filteredTeams.length;
+
+                                return (
+                                    <motion.div
+                                        key={team.externalId}
+                                        onClick={() => handleTeamClick(team)}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.02, duration: 0.2 }}
+                                        whileTap={{ scale: 0.99, backgroundColor: 'var(--color-surface-hover)' }}
+                                        style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: '28px 1fr 32px 32px 38px 38px',
+                                            gap: 6,
+                                            padding: '12px',
+                                            borderBottom: '0.5px solid var(--color-border-subtle)',
+                                            fontSize: '0.85rem',
+                                            color: 'var(--color-text-primary)',
+                                            alignItems: 'center',
+                                            cursor: 'pointer',
+                                            backgroundColor: isHighlighted ? 'rgb(var(--color-accent-rgb) / 0.12)' : 'transparent',
+                                            position: 'relative',
+                                        }}
+                                    >
+                                        {/* Highlight bar */}
+                                        {isHighlighted && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                left: 0, top: 0, bottom: 0,
+                                                width: 3,
+                                                background: 'var(--color-accent)',
+                                                borderRadius: '0 2px 2px 0',
+                                            }} />
+                                        )}
+
+                                        {/* Rank */}
+                                        <div style={{
+                                            textAlign: 'center',
+                                            fontWeight: 700,
+                                            fontSize: '0.8rem',
+                                            color: isFirst ? 'var(--color-warning)' : isLast ? 'var(--color-danger)' : 'var(--color-text-tertiary)',
+                                        }}>
+                                            {team.rank}
                                         </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="players"
-                                initial={{ opacity: 0, x: 10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                transition={{ duration: 0.15 }}
-                                style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
-                            >
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    {filteredPlayers.length === 0 ? (
-                                        <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-tertiary)' }}>
-                                            No player data available for this league
-                                        </div>
-                                    ) : (
-                                        <>
-                                            {filteredPlayers.slice(0, visiblePlayers).map((player, index) => {
-                                                // Find all teams this player belongs to in the current league
-                                                const playerTeamIds = player.teamIds || [player.teamId];
-                                                const playerTeams = teams.filter(t => playerTeamIds.includes(t.externalId));
-                                                const primaryTeam = playerTeams[0];
-                                                
-                                                // Check if player is in any of our teams
-                                                const isHighlighted = playerTeams.some(t => isOwnTeam(t.name));
-                                                const isMultiTeam = playerTeams.length > 1;
-                                                const isTop3 = index < 3;
 
-                                                return (
-                                                    <motion.div
-                                                        key={player.externalId}
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        transition={{ delay: Math.min(index * 0.015, 0.3), duration: 0.2 }}
-                                                        onClick={() => handlePlayerClick(player)}
-                                                        style={{
-                                                            background: isHighlighted ? 'var(--color-multi-team-bg)' :
-                                                                       isTop3 ? 'var(--color-top3-bg)' : 'var(--color-surface)',
-                                                            backdropFilter: 'blur(40px)',
-                                                            WebkitBackdropFilter: 'blur(40px)',
-                                                            borderRadius: 14,
-                                                            padding: '12px 14px',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'space-between',
-                                                            border: isTop3 ? '1px solid var(--color-top3-border)' : '1px solid var(--color-border)',
-                                                            position: 'relative',
-                                                            overflow: 'hidden',
-                                                            cursor: playerTeams.length > 0 ? 'pointer' : 'default',
-                                                        }}
-                                                    >
-                                                        {isHighlighted && (
-                                                            <div style={{
-                                                                position: 'absolute', left: 0, top: 0, bottom: 0,
-                                                                width: 3, background: 'var(--color-accent)',
-                                                            }} />
-                                                        )}
-                                                        
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                            {/* Rank Badge */}
-                                                            <div style={{
-                                                                width: 28,
-                                                                textAlign: 'center',
-                                                                fontSize: '0.85rem',
-                                                                fontWeight: 700,
-                                                                color: isTop3 ? 'var(--color-warning)' : 'var(--color-text-tertiary)',
-                                                            }}>
-                                                                {index + 1}
-                                                            </div>
-                                                            
-                                                            <div style={{ minWidth: 0, flex: 1 }}>
-                                                                <div style={{
-                                                                    fontWeight: 600,
-                                                                    color: 'var(--color-text-primary)',
-                                                                    fontSize: '0.9rem',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: 6,
-                                                                }}>
-                                                                    <span style={{
-                                                                        overflow: 'hidden',
-                                                                        textOverflow: 'ellipsis',
-                                                                        whiteSpace: 'nowrap',
-                                                                    }}>
-                                                                        {player.name}
-                                                                    </span>
-                                                                    {isMultiTeam && (
-                                                                        <span style={{
-                                                                            fontSize: '0.6rem',
-                                                                            padding: '2px 5px',
-                                                                            background: 'rgb(var(--color-accent-rgb) / 0.3)',
-                                                                            color: 'var(--color-accent-secondary)',
-                                                                            borderRadius: 4,
-                                                                            fontWeight: 600,
-                                                                            whiteSpace: 'nowrap',
-                                                                            flexShrink: 0,
-                                                                        }}>
-                                                                            {playerTeams.length} teams
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <div style={{
-                                                                    fontSize: '0.75rem',
-                                                                    color: 'var(--color-text-tertiary)',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: 6,
-                                                                    flexWrap: 'nowrap',
-                                                                }}>
-                                                                    <span style={{
-                                                                        overflow: 'hidden',
-                                                                        textOverflow: 'ellipsis',
-                                                                        whiteSpace: 'nowrap',
-                                                                        maxWidth: isMultiTeam ? 140 : 180,
-                                                                    }}>
-                                                                        {isMultiTeam
-                                                                            ? playerTeams.map(t => t.name).join(' & ')
-                                                                            : primaryTeam?.name || 'Unknown Team'
-                                                                        }
-                                                                    </span>
-                                                                    <span style={{ opacity: 0.5, flexShrink: 0 }}>•</span>
-                                                                    <span style={{ flexShrink: 0 }}>{player.gamesPlayed}g</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-success)' }}>
-                                                                    {player.goals}
-                                                                </div>
-                                                                <div style={{ fontSize: '0.55rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>
-                                                                    Goals
-                                                                </div>
-                                                            </div>
-                                                            <div style={{ width: 1, height: 24, background: 'var(--color-border)' }} />
-                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-accent)' }}>
-                                                                    {player.assists}
-                                                                </div>
-                                                                <div style={{ fontSize: '0.55rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>
-                                                                    Asts
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </motion.div>
-                                                );
-                                            })}
-
-                                            {/* Show More Button */}
-                                            {visiblePlayers < filteredPlayers.length && (
-                                                <motion.button
-                                                    onClick={handleShowMore}
-                                                    whileTap={{ scale: 0.98 }}
+                                        {/* Team */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
+                                            {team.imageBase64 ? (
+                                                <img
+                                                    src={team.imageBase64}
+                                                    alt=""
                                                     style={{
-                                                        padding: '14px',
-                                                        background: 'var(--color-surface)',
-                                                        backdropFilter: 'blur(40px)',
-                                                        WebkitBackdropFilter: 'blur(40px)',
-                                                        border: '0.5px solid var(--color-border)',
-                                                        borderRadius: 12,
-                                                        color: 'var(--color-text-primary)',
-                                                        fontSize: '0.9rem',
-                                                        fontWeight: 600,
-                                                        cursor: 'pointer',
-                                                        marginTop: 8,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        gap: 8,
+                                                        width: 26, height: 26,
+                                                        borderRadius: 6,
+                                                        objectFit: 'cover',
+                                                        flexShrink: 0,
                                                     }}
-                                                >
-                                                    Show More ({filteredPlayers.length - visiblePlayers} remaining)
-                                                    <ChevronDown size={16} />
-                                                </motion.button>
+                                                />
+                                            ) : (
+                                                <div style={{
+                                                    width: 26, height: 26,
+                                                    borderRadius: 6,
+                                                    background: isFirst ? 'linear-gradient(135deg, var(--color-warning), var(--color-warning-secondary))' : 'var(--color-surface-hover)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: '0.6rem',
+                                                    fontWeight: 700,
+                                                    color: isFirst ? 'var(--color-bg)' : 'var(--color-text-primary)',
+                                                    flexShrink: 0,
+                                                }}>
+                                                    {team.name.charAt(0)}
+                                                </div>
                                             )}
-                                        </>
-                                    )}
+                                            <div style={{
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                fontWeight: isHighlighted ? 700 : 500,
+                                            }}>
+                                                {team.name}
+                                            </div>
+                                        </div>
+
+                                        {/* MP */}
+                                        <div style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: '0.8rem' }}>
+                                            {team.matchesPlayed}
+                                        </div>
+
+                                        {/* GD */}
+                                        <div style={{
+                                            textAlign: 'center',
+                                            color: (team.goalDifference || 0) > 0 ? 'var(--color-success)' : (team.goalDifference || 0) < 0 ? 'var(--color-danger)' : 'var(--color-text-tertiary)',
+                                            fontSize: '0.8rem',
+                                            fontWeight: 600,
+                                        }}>
+                                            {(team.goalDifference || 0) > 0 ? '+' : ''}{team.goalDifference || 0}
+                                        </div>
+
+                                        {/* Points */}
+                                        <div style={{
+                                            textAlign: 'center',
+                                            fontWeight: 800,
+                                            fontSize: '0.9rem',
+                                        }}>
+                                            {team.points}
+                                        </div>
+
+                                        {/* PPM */}
+                                        <div style={{
+                                            textAlign: 'center',
+                                            color: 'var(--color-accent)',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                        }}>
+                                            {team.pointsPerMatch?.toFixed(1)}
+                                        </div>
+                                    </motion.div>
+                                );
+                            }) : (
+                                <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-tertiary)' }}>
+                                    No teams found for this league
                                 </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                            )}
+                        </div>
+                    </motion.div>
                 )}
             </div>
             {/* Page */}
@@ -542,13 +302,6 @@ export default function LeagueView({
                 players={selectedTeam?.players || []}
                 open={Boolean(selectedTeam)}
                 onClose={() => onSelectTeam?.(null)}
-            />
-
-            <PlayerStatsPage
-                open={Boolean(selectedPlayer)}
-                player={selectedPlayer}
-                teams={teams}
-                onClose={() => onSelectPlayer?.(null)}
             />
         </div>
     );

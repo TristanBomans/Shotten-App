@@ -125,7 +125,7 @@ export default function RulesPage({ open, onClose }: RulesPageProps) {
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                             <PointRow emoji="✅" label="Present" points="+50" color="var(--color-success)" />
-                            <PointRow emoji="⚠️" label="Maybe" points="-20" color="var(--color-warning)" />
+                            <PointRow emoji="⚠️" label="Maybe" points="-50" color="var(--color-warning)" />
                             <PointRow emoji="❌" label="Absent" points="-50" color="var(--color-danger)" />
                             <PointRow emoji="👻" label="Ghost" points="-100" color="var(--color-text-tertiary)" />
                         </div>
@@ -136,7 +136,7 @@ export default function RulesPage({ open, onClose }: RulesPageProps) {
                             Ranks
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            {RANKS.map(rank => (
+                            {RANKS.map((rank, index) => (
                                 <div key={rank.name} style={{
                                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                                     padding: '8px 10px', background: rank.bg, borderRadius: 8,
@@ -145,7 +145,9 @@ export default function RulesPage({ open, onClose }: RulesPageProps) {
                                         <rank.icon size={16} style={{ color: rank.color }} />
                                         <span style={{ color: rank.color, fontWeight: 500, fontSize: '0.85rem' }}>{rank.name}</span>
                                     </div>
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{rank.minScore}+</span>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                                        {index === RANKS.length - 1 ? '< 500' : `${rank.minScore}+`}
+                                    </span>
                                 </div>
                             ))}
                         </div>

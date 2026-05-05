@@ -18,7 +18,7 @@ import RecentMatchesSheet from './RecentMatchesSheet';
 import UnlockDialog from './UnlockDialog';
 import { buildMatchReminders } from '@/lib/notifications';
 
-type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'playerStats' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
+type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
 
 interface DashboardProps {
     playerId: number;
@@ -77,7 +77,6 @@ export default function Dashboard({
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isNotificationSheetOpen, setIsNotificationSheetOpen] = useState(false);
     const [isRecentMatchesSheetOpen, setIsRecentMatchesSheetOpen] = useState(false);
-    const [leagueTab, setLeagueTab] = useState<'standings' | 'players'>('standings');
     const [selectedLeague, setSelectedLeague] = useState('');
     const [leagueOptions, setLeagueOptions] = useState<string[]>([]);
     const [leagueTeams, setLeagueTeams] = useState<ScraperTeam[]>([]);
@@ -459,12 +458,10 @@ export default function Dashboard({
 
     const topLeagueControls = currentView === 'league'
         ? {
-            activeTab: leagueTab,
             selectedLeague: selectedLeagueAlias,
             hasLeagues: leagueOptions.length > 0,
             onCycleLeague: handleCycleLeague,
             onOpenLeagueSelector: openLeagueSelector,
-            onSelectTab: setLeagueTab,
         }
         : undefined;
     const topStatsControls = currentView === 'stats'
@@ -711,39 +708,7 @@ export default function Dashboard({
                 </section>
             )}
 
-            {/* Past Matches */}
-            {pastMatches.length > 0 && (
-                <section>
-                    <h2 className="text-label" style={{ marginBottom: 'var(--space-md)' }}>
-                        Past Matches
-                    </h2>
-                    <div className="grid-cards" style={{ opacity: 0.6 }}>
-                        {pastMatches.slice(0, 4).map((match) => (
-                            <motion.div
-                                key={match.id}
-                                ref={(node) => setMatchCardRef(match.id, node)}
-                                className={highlightedMatchId === match.id ? 'match-focus-pulse' : undefined}
-                                style={{ height: '100%', width: '100%', borderRadius: 'var(--radius-lg)' }}
-                                animate={highlightedMatchId === match.id ? { scale: [1, 1.01, 1] } : { scale: 1 }}
-                                transition={highlightedMatchId === match.id
-                                    ? { duration: 0.8, times: [0, 0.35, 1], ease: 'easeOut' }
-                                    : { duration: 0.2 }}
-                            >
-                                <MatchCard
-                                    match={match}
-                                    currentPlayerId={playerId}
-                                    allPlayers={players}
-                                    onUpdate={handleUpdate}
-                                    variant="compact"
-                                    isModalOpen={currentModal === 'match' && currentModalId === match.id.toString()}
-                                    onOpenModal={() => onOpenModal('match', match.id.toString())}
-                                    onCloseModal={onCloseModal}
-                                />
-                            </motion.div>
-                        ))}
-                    </div>
-                </section>
-            )}
+
         </div>
     );
 
@@ -860,14 +825,11 @@ export default function Dashboard({
                     }}
                 >
                     <LeagueView
-                        activeTab={leagueTab}
                         selectedLeague={selectedLeague}
                         onSelectedLeagueChange={setSelectedLeague}
                         onLeagueDataChange={handleLeagueDataChange}
                         selectedTeamId={currentModal === 'team' ? (currentModalId ? parseInt(currentModalId, 10) : null) : null}
                         onSelectTeam={(id) => id !== null ? onOpenModal('team', id.toString()) : onCloseModal()}
-                        selectedPlayerId={currentModal === 'playerStats' ? (currentModalId ? parseInt(currentModalId, 10) : null) : null}
-                        onSelectPlayer={(id) => id !== null ? onOpenModal('playerStats', id.toString()) : onCloseModal()}
                     />
                 </div>
 

@@ -338,96 +338,7 @@ export default function SettingsView({
                         <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
                     </motion.div>
 
-                    {/* Version History */}
-                    <motion.div
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            onOpenVersion();
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                        style={{
-                            padding: 16,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <div style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 10,
-                            background: 'rgb(var(--color-accent-rgb) / 0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'var(--color-accent)',
-                            flexShrink: 0,
-                        }}>
-                            <RefreshCw size={20} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>
-                                Version History
-                            </div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                                View changelog and updates
-                            </div>
-                        </div>
-                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
-                    </motion.div>
                 </motion.div>
-
-                {/* Hidden Admin Block */}
-                {isHiddenAdminUnlocked && (
-                    <motion.button
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.05 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            onOpenHiddenAdmin?.();
-                        }}
-                        style={{
-                            background: 'var(--color-surface)',
-                            backdropFilter: 'blur(40px)',
-                            WebkitBackdropFilter: 'blur(40px)',
-                            borderRadius: 20,
-                            border: '0.5px solid var(--color-border)',
-                            overflow: 'hidden',
-                            marginBottom: 16,
-                            width: '100%',
-                            padding: 0,
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 10,
-                                background: 'rgb(var(--color-accent-rgb) / 0.15)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: 'var(--color-accent)',
-                                flexShrink: 0,
-                            }}>
-                                <Bell size={20} />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>
-                                    Hidden Admin
-                                </div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                                    Worker dashboard for private network
-                                </div>
-                            </div>
-                        </div>
-                    </motion.button>
-                )}
 
                 {/* Management */}
                 <motion.div
@@ -543,6 +454,7 @@ export default function SettingsView({
                             alignItems: 'center',
                             gap: 12,
                             cursor: 'pointer',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
                         }}
                     >
                         <div style={{
@@ -566,6 +478,87 @@ export default function SettingsView({
                         </div>
                         <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
                     </motion.div>
+
+                    {/* Version History */}
+                    <motion.div
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            onOpenVersion();
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            cursor: 'pointer',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
+                        }}
+                    >
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'rgb(var(--color-accent-rgb) / 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-accent)',
+                            flexShrink: 0,
+                        }}>
+                            <RefreshCw size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>
+                                Version History
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                View changelog and updates
+                            </div>
+                        </div>
+                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                    </motion.div>
+
+                    {/* Hidden Admin */}
+                    {isHiddenAdminUnlocked && (
+                        <motion.div
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                onOpenHiddenAdmin?.();
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                            style={{
+                                padding: 16,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <div style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 10,
+                                background: 'rgb(var(--color-accent-rgb) / 0.15)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--color-accent)',
+                                flexShrink: 0,
+                            }}>
+                                <Bell size={20} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>
+                                    Hidden Admin
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                    Worker dashboard for private network
+                                </div>
+                            </div>
+                            <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                        </motion.div>
+                    )}
                 </motion.div>
 
                 {/* Developer Settings - Only on localhost */}
