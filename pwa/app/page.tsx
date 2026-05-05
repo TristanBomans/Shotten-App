@@ -7,7 +7,7 @@ import Dashboard from '@/components/Dashboard';
 import FloatingNav from '@/components/FloatingNav';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
-type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'playerStats' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
+type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
 
 const views: View[] = ['home', 'stats', 'league', 'settings'];
 
@@ -19,7 +19,6 @@ const modalToView = (modal: Modal): View => {
         case 'playerDetail':
             return 'stats';
         case 'team':
-        case 'playerStats':
             return 'league';
         case 'version':
         case 'players':
@@ -53,7 +52,7 @@ const getViewFromParams = (params: SearchParamsLike | null): View => {
 const getModalFromParams = (params: SearchParamsLike | null): Modal => {
     const modalParam = params?.get('modal') as Modal;
     if (!modalParam) return null;
-    const knownModals: Modal[] = ['version', 'match', 'players', 'respond', 'admin', 'playerStats', 'team', 'rules', 'playerDetail'];
+    const knownModals: Modal[] = ['version', 'match', 'players', 'respond', 'admin', 'team', 'rules', 'playerDetail'];
     return knownModals.includes(modalParam) ? modalParam : null;
 };
 

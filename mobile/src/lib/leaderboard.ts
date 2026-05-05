@@ -2,7 +2,7 @@ import type { Match, Player } from "./types";
 
 export const POINTS = {
   present: 50,
-  maybe: -20,
+  maybe: -50,
   notPresent: -50,
   ghost: -100,
   base: 1000,

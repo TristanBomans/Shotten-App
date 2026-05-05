@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Trophy, X } from 'lucide-react';
+import { Trophy, X, Calendar } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { parseDate } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
@@ -89,6 +89,14 @@ function isSameCalendarDay(left: Date, right: Date): boolean {
         left.getUTCMonth() === right.getUTCMonth() &&
         left.getUTCDate() === right.getUTCDate()
     );
+}
+
+function isUpcomingMatch(dateStr: string): boolean {
+    const date = parseDate(dateStr);
+    if (!date) return false;
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    return diffMs > 0;
 }
 
 function isRecentMatch(dateStr: string): boolean {
@@ -358,6 +366,7 @@ export default function RecentMatchesSheet({
                                             const attLabel = attendanceLabel(attStatus);
                                             const isRecent = isRecentMatch(match.date);
                                             const isForfait = isForfaitMatch(match, internalMatches);
+                                            const isUpcoming = isUpcomingMatch(match.date);
 
                                             return (
                                                 <motion.div
@@ -377,26 +386,34 @@ export default function RecentMatchesSheet({
                                                             ? '1px solid rgb(var(--color-danger-rgb) / 0.2)' 
                                                             : isRecent 
                                                                 ? '1px solid rgb(var(--color-accent-rgb) / 0.2)' 
-                                                                : '1px solid transparent',
+                                                                : isUpcoming
+                                                                    ? '1px solid rgb(var(--color-accent-rgb) / 0.15)'
+                                                                    : '1px solid transparent',
                                                         background: isForfait 
                                                             ? 'rgb(var(--color-danger-rgb) / 0.04)' 
                                                             : isRecent 
                                                                 ? 'rgb(var(--color-accent-rgb) / 0.04)' 
-                                                                : 'transparent',
+                                                                : isUpcoming
+                                                                    ? 'rgb(var(--color-accent-rgb) / 0.02)'
+                                                                    : 'transparent',
                                                     }}
                                                     onMouseEnter={(e) => {
                                                         e.currentTarget.style.background = isForfait
                                                             ? 'rgb(var(--color-danger-rgb) / 0.08)'
                                                             : isRecent
                                                                 ? 'rgb(var(--color-accent-rgb) / 0.08)'
-                                                                : 'var(--color-surface-hover)';
+                                                                : isUpcoming
+                                                                    ? 'rgb(var(--color-accent-rgb) / 0.06)'
+                                                                    : 'var(--color-surface-hover)';
                                                     }}
                                                     onMouseLeave={(e) => {
                                                         e.currentTarget.style.background = isForfait
                                                             ? 'rgb(var(--color-danger-rgb) / 0.04)'
                                                             : isRecent
                                                                 ? 'rgb(var(--color-accent-rgb) / 0.04)'
-                                                                : 'transparent';
+                                                                : isUpcoming
+                                                                    ? 'rgb(var(--color-accent-rgb) / 0.02)'
+                                                                    : 'transparent';
                                                     }}
                                                 >
                                                     {/* Result indicator */}
@@ -405,34 +422,52 @@ export default function RecentMatchesSheet({
                                                             width: 28,
                                                             height: 28,
                                                             borderRadius: 8,
-                                                            background: isForfait ? 'rgb(var(--color-danger-rgb) / 0.10)' : result.background,
-                                                            border: `1px solid ${isForfait ? 'rgb(var(--color-danger-rgb) / 0.18)' : result.border}`,
+                                                            background: isUpcoming 
+                                                                ? 'rgb(var(--color-accent-rgb) / 0.10)' 
+                                                                : isForfait 
+                                                                    ? 'rgb(var(--color-danger-rgb) / 0.10)' 
+                                                                    : result.background,
+                                                            border: `1px solid ${isUpcoming 
+                                                                ? 'rgb(var(--color-accent-rgb) / 0.18)' 
+                                                                : isForfait 
+                                                                    ? 'rgb(var(--color-danger-rgb) / 0.18)' 
+                                                                    : result.border}`,
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
                                                             fontSize: '0.7rem',
                                                             fontWeight: 800,
-                                                            color: isForfait ? 'var(--color-danger)' : result.color,
+                                                            color: isUpcoming 
+                                                                ? 'var(--color-accent)' 
+                                                                : isForfait 
+                                                                    ? 'var(--color-danger)' 
+                                                                    : result.color,
                                                             letterSpacing: '0.02em',
                                                             flexShrink: 0,
                                                             position: 'relative',
                                                         }}
                                                     >
-                                                        {isForfait ? 'F' : result.label}
-                                                            {isRecent && (
-                                                                <span
-                                                                    style={{
-                                                                        position: 'absolute',
-                                                                        top: -2,
-                                                                        right: -2,
-                                                                        width: 8,
-                                                                        height: 8,
-                                                                        borderRadius: '50%',
-                                                                        background: isForfait ? 'var(--color-danger)' : 'var(--color-accent)',
-                                                                        border: '2px solid var(--color-surface)',
-                                                                    }}
-                                                                />
-                                                            )}
+                                                        {isUpcoming ? (
+                                                            <Calendar size={14} />
+                                                        ) : isForfait ? (
+                                                            'F'
+                                                        ) : (
+                                                            result.label
+                                                        )}
+                                                        {isRecent && !isUpcoming && (
+                                                            <span
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    top: -2,
+                                                                    right: -2,
+                                                                    width: 8,
+                                                                    height: 8,
+                                                                    borderRadius: '50%',
+                                                                    background: isForfait ? 'var(--color-danger)' : 'var(--color-accent)',
+                                                                    border: '2px solid var(--color-surface)',
+                                                                }}
+                                                            />
+                                                        )}
                                                     </div>
 
                                                     {/* Match info */}
@@ -456,22 +491,6 @@ export default function RecentMatchesSheet({
                                                                 vs
                                                             </span>
                                                             {match.opponent}
-                                                            {isForfait && (
-                                                                <span
-                                                                    style={{
-                                                                        fontSize: '0.55rem',
-                                                                        fontWeight: 700,
-                                                                        color: 'var(--color-danger)',
-                                                                        background: 'rgb(var(--color-danger-rgb) / 0.12)',
-                                                                        padding: '1px 5px',
-                                                                        borderRadius: 4,
-                                                                        textTransform: 'uppercase',
-                                                                        letterSpacing: '0.03em',
-                                                                    }}
-                                                                >
-                                                                    Forfait
-                                                                </span>
-                                                            )}
                                                         </div>
                                                         <div
                                                             style={{
@@ -531,19 +550,21 @@ export default function RecentMatchesSheet({
                                                     </div>
 
                                                     {/* Score */}
-                                                    <div
-                                                        style={{
-                                                            fontSize: isForfait ? '0.75rem' : '1rem',
-                                                            fontWeight: isForfait ? 700 : 800,
-                                                            color: isForfait ? 'var(--color-danger)' : 'var(--color-text-primary)',
-                                                            letterSpacing: '-0.02em',
-                                                            fontVariantNumeric: 'tabular-nums',
-                                                            flexShrink: 0,
-                                                            textTransform: isForfait ? 'uppercase' : 'none',
-                                                        }}
-                                                    >
-                                                        {isForfait ? 'Forfait' : match.scoreline}
-                                                    </div>
+                                                    {!isUpcoming && (
+                                                        <div
+                                                            style={{
+                                                                fontSize: isForfait ? '0.75rem' : '1rem',
+                                                                fontWeight: isForfait ? 700 : 800,
+                                                                color: isForfait ? 'var(--color-danger)' : 'var(--color-text-primary)',
+                                                                letterSpacing: '-0.02em',
+                                                                fontVariantNumeric: 'tabular-nums',
+                                                                flexShrink: 0,
+                                                                textTransform: isForfait ? 'uppercase' : 'none',
+                                                            }}
+                                                        >
+                                                            {isForfait ? 'Forfait' : match.scoreline}
+                                                        </div>
+                                                    )}
                                                 </motion.div>
                                             );
                                         })}

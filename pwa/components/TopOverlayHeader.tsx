@@ -2,17 +2,13 @@
 
 import { type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, BellRing, Clock3, HelpCircle, Trophy, TrendingUp, Users } from 'lucide-react';
-
-type LeagueTab = 'standings' | 'players';
+import { Bell, BellRing, Clock3, HelpCircle, Trophy } from 'lucide-react';
 
 interface LeagueHeaderControls {
-    activeTab: LeagueTab;
     selectedLeague: string;
     hasLeagues: boolean;
     onCycleLeague: () => void;
     onOpenLeagueSelector: () => void;
-    onSelectTab: (tab: LeagueTab) => void;
 }
 
 interface StatsHeaderControls {
@@ -153,72 +149,36 @@ export default function TopOverlayHeader({
                                     paddingRight: 8,
                                 }}
                             >
-                                {leagueHeaderControls?.activeTab === 'standings' && (
-                                    <button
-                                        onClick={leagueHeaderControls?.onCycleLeague}
-                                        onContextMenu={(event) => {
-                                            event.preventDefault();
-                                            leagueHeaderControls?.onOpenLeagueSelector();
-                                        }}
-                                        disabled={!leagueHeaderControls?.hasLeagues}
-                                        aria-label={`Selected league ${leagueHeaderControls?.selectedLeague || 'none'}. Tap to cycle leagues.`}
+                                <button
+                                    onClick={leagueHeaderControls?.onCycleLeague}
+                                    onContextMenu={(event) => {
+                                        event.preventDefault();
+                                        leagueHeaderControls?.onOpenLeagueSelector();
+                                    }}
+                                    disabled={!leagueHeaderControls?.hasLeagues}
+                                    aria-label={`Selected league ${leagueHeaderControls?.selectedLeague || 'none'}. Tap to cycle leagues.`}
+                                    style={{
+                                        ...compactControlStyle,
+                                        minWidth: 'clamp(64px, 20vw, 84px)',
+                                        maxWidth: 'min(112px, 28vw)',
+                                        padding: '0 8px',
+                                        justifyContent: 'flex-start',
+                                        opacity: leagueHeaderControls?.hasLeagues ? 1 : 0.5,
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    <Trophy size={13} />
+                                    <span
                                         style={{
-                                            ...compactControlStyle,
-                                            minWidth: 'clamp(64px, 20vw, 84px)',
-                                            maxWidth: 'min(112px, 28vw)',
-                                            padding: '0 8px',
-                                            justifyContent: 'flex-start',
-                                            opacity: leagueHeaderControls?.hasLeagues ? 1 : 0.5,
-                                            flexShrink: 0,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            fontSize: '0.78rem',
+                                            fontWeight: 600,
                                         }}
                                     >
-                                        <Trophy size={13} />
-                                        <span
-                                            style={{
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                fontSize: '0.78rem',
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            {leagueHeaderControls?.selectedLeague || 'Select'}
-                                        </span>
-                                    </button>
-                                )}
-
-                                <button
-                                    onClick={() => leagueHeaderControls?.onSelectTab('standings')}
-                                    aria-label="League standings view"
-                                    aria-pressed={leagueHeaderControls?.activeTab === 'standings'}
-                                    style={{
-                                        ...compactControlStyle,
-                                        width: 'clamp(26px, 7.2vw, 32px)',
-                                        minWidth: 'clamp(26px, 7.2vw, 32px)',
-                                        padding: 0,
-                                        background: leagueHeaderControls?.activeTab === 'standings'
-                                            ? 'var(--color-nav-active)'
-                                            : 'rgb(255 255 255 / 0.04)',
-                                    }}
-                                >
-                                    <TrendingUp size={14} />
-                                </button>
-
-                                <button
-                                    onClick={() => leagueHeaderControls?.onSelectTab('players')}
-                                    aria-label="Top scorers view"
-                                    aria-pressed={leagueHeaderControls?.activeTab === 'players'}
-                                    style={{
-                                        ...compactControlStyle,
-                                        width: 'clamp(26px, 7.2vw, 32px)',
-                                        minWidth: 'clamp(26px, 7.2vw, 32px)',
-                                        padding: 0,
-                                        background: leagueHeaderControls?.activeTab === 'players'
-                                            ? 'var(--color-nav-active)'
-                                            : 'rgb(255 255 255 / 0.04)',
-                                    }}
-                                >
-                                    <Users size={14} />
+                                        {leagueHeaderControls?.selectedLeague || 'Select'}
+                                    </span>
                                 </button>
                             </div>
                         </>
