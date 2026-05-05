@@ -7,6 +7,7 @@ import { ChevronLeft, UserCircle, Trophy, Calendar, Users, TrendingUp, X, MoreHo
 import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
+import { fetchScraperPlayers } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
 
@@ -29,7 +30,6 @@ interface ScraperMatch {
 
 interface TeamDetailPageProps {
     team: ScraperTeam;
-    players: ScraperPlayer[];
     open: boolean;
     onClose: () => void;
 }
@@ -75,11 +75,13 @@ const SectionHeader = ({ icon: Icon, title, color = 'var(--color-text-tertiary)'
     </div>
 );
 
-export default function TeamDetailPage({ team, players, open, onClose }: TeamDetailPageProps) {
+export default function TeamDetailPage({ team, open, onClose }: TeamDetailPageProps) {
     const [showImage, setShowImage] = useState(false);
     const [activeTab, setActiveTab] = useState<TeamDetailTab>('overview');
     const [matches, setMatches] = useState<ScraperMatch[]>([]);
+    const [players, setPlayers] = useState<ScraperPlayer[]>([]);
     const [loadingMatches, setLoadingMatches] = useState(false);
+    const [loadingPlayers, setLoadingPlayers] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
 
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -155,6 +157,23 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
         };
         fetchMatches();
     }, [open, team.externalId, team.name]);
+
+    // Fetch players for this team
+    useEffect(() => {
+        if (!open || !team.externalId) return;
+        const loadPlayers = async () => {
+            setLoadingPlayers(true);
+            try {
+                const data = await fetchScraperPlayers(team.externalId);
+                setPlayers(data);
+            } catch (error) {
+                console.warn('Failed to fetch team players:', error);
+            } finally {
+                setLoadingPlayers(false);
+            }
+        };
+        loadPlayers();
+    }, [open, team.externalId]);
 
     const getTabFromScroll = useCallback((): TeamDetailTab => {
         if (!scrollRef.current) return 'overview';
@@ -806,7 +825,14 @@ export default function TeamDetailPage({ team, players, open, onClose }: TeamDet
                                 overflowY: 'auto',
                             }}
                         >
-                            {sortedPlayers.length > 0 ? (
+                            {loadingPlayers ? (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    padding: 40, color: 'var(--color-text-secondary)',
+                                }}>
+                                    <div className="spinner" style={{ width: 24, height: 24 }} />
+                                </div>
+                            ) : sortedPlayers.length > 0 ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                     {sortedPlayers.map((player, i) => (
                                         <div key={player.externalId} style={{

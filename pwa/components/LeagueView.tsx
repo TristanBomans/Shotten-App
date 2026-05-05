@@ -105,11 +105,7 @@ export default function LeagueView({
     }, [teams, selectedLeague]);
 
     const selectedTeam = selectedTeamId != null
-        ? (() => {
-            const team = teams.find(t => t.externalId === selectedTeamId);
-            if (!team) return null;
-            return { team, players: [] as never[] };
-        })()
+        ? teams.find(t => t.externalId === selectedTeamId) || null
         : null;
 
     return (
@@ -298,8 +294,7 @@ export default function LeagueView({
             </div>
             {/* Page */}
             <TeamDetailPage
-                team={selectedTeam?.team || ({} as ScraperTeam)}
-                players={selectedTeam?.players || []}
+                team={selectedTeam || ({} as ScraperTeam)}
                 open={Boolean(selectedTeam)}
                 onClose={() => onSelectTeam?.(null)}
             />
