@@ -367,6 +367,28 @@ export default function RecentMatchesSheet({
                                             const isRecent = isRecentMatch(match.date);
                                             const isForfait = isForfaitMatch(match, internalMatches);
                                             const isUpcoming = isUpcomingMatch(match.date);
+                                            const shouldHighlightForfait = isForfait && isRecent;
+                                            const cardBorder = shouldHighlightForfait
+                                                ? '1px solid rgb(var(--color-danger-rgb) / 0.2)'
+                                                : isRecent
+                                                    ? '1px solid rgb(var(--color-accent-rgb) / 0.2)'
+                                                    : isUpcoming
+                                                        ? '1px solid rgb(var(--color-accent-rgb) / 0.15)'
+                                                        : '1px solid transparent';
+                                            const cardBackground = shouldHighlightForfait
+                                                ? 'rgb(var(--color-danger-rgb) / 0.04)'
+                                                : isRecent
+                                                    ? 'rgb(var(--color-accent-rgb) / 0.04)'
+                                                    : isUpcoming
+                                                        ? 'rgb(var(--color-accent-rgb) / 0.02)'
+                                                        : 'transparent';
+                                            const cardHoverBackground = shouldHighlightForfait
+                                                ? 'rgb(var(--color-danger-rgb) / 0.08)'
+                                                : isRecent
+                                                    ? 'rgb(var(--color-accent-rgb) / 0.08)'
+                                                    : isUpcoming
+                                                        ? 'rgb(var(--color-accent-rgb) / 0.06)'
+                                                        : 'var(--color-surface-hover)';
 
                                             return (
                                                 <motion.div
@@ -382,38 +404,14 @@ export default function RecentMatchesSheet({
                                                         borderRadius: 14,
                                                         cursor: 'default',
                                                         transition: 'background 0.15s ease',
-                                                        border: isForfait 
-                                                            ? '1px solid rgb(var(--color-danger-rgb) / 0.2)' 
-                                                            : isRecent 
-                                                                ? '1px solid rgb(var(--color-accent-rgb) / 0.2)' 
-                                                                : isUpcoming
-                                                                    ? '1px solid rgb(var(--color-accent-rgb) / 0.15)'
-                                                                    : '1px solid transparent',
-                                                        background: isForfait 
-                                                            ? 'rgb(var(--color-danger-rgb) / 0.04)' 
-                                                            : isRecent 
-                                                                ? 'rgb(var(--color-accent-rgb) / 0.04)' 
-                                                                : isUpcoming
-                                                                    ? 'rgb(var(--color-accent-rgb) / 0.02)'
-                                                                    : 'transparent',
+                                                        border: cardBorder,
+                                                        background: cardBackground,
                                                     }}
                                                     onMouseEnter={(e) => {
-                                                        e.currentTarget.style.background = isForfait
-                                                            ? 'rgb(var(--color-danger-rgb) / 0.08)'
-                                                            : isRecent
-                                                                ? 'rgb(var(--color-accent-rgb) / 0.08)'
-                                                                : isUpcoming
-                                                                    ? 'rgb(var(--color-accent-rgb) / 0.06)'
-                                                                    : 'var(--color-surface-hover)';
+                                                        e.currentTarget.style.background = cardHoverBackground;
                                                     }}
                                                     onMouseLeave={(e) => {
-                                                        e.currentTarget.style.background = isForfait
-                                                            ? 'rgb(var(--color-danger-rgb) / 0.04)'
-                                                            : isRecent
-                                                                ? 'rgb(var(--color-accent-rgb) / 0.04)'
-                                                                : isUpcoming
-                                                                    ? 'rgb(var(--color-accent-rgb) / 0.02)'
-                                                                    : 'transparent';
+                                                        e.currentTarget.style.background = cardBackground;
                                                     }}
                                                 >
                                                     {/* Result indicator */}
