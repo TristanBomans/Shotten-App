@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost, Flame, Award } from 'lucide-react';
+import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';

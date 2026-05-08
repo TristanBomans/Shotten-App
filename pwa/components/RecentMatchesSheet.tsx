@@ -192,8 +192,6 @@ export default function RecentMatchesSheet({
     open,
     loading,
     matches,
-    recentCount,
-    hasRecentWithin3Days,
     playerId,
     internalMatches = [],
     onClose,

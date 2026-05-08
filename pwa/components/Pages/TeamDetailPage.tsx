@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type ElementType, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { ChevronLeft, UserCircle, Trophy, Calendar, Users, TrendingUp, X, MoreHorizontal, ExternalLink, Home, Navigation } from 'lucide-react';
-import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
+import { parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 import { fetchScraperPlayers } from '@/lib/useData';
@@ -32,6 +33,11 @@ interface TeamDetailPageProps {
     team: ScraperTeam;
     open: boolean;
     onClose: () => void;
+}
+
+interface CoreMatchData {
+    date: string;
+    forfait?: boolean;
 }
 
 const SectionCard = ({ children, style }: { children: ReactNode; style?: CSSProperties }) => (
@@ -101,14 +107,14 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                 ]);
                 
                 let lzvMatches: ScraperMatch[] = [];
-                let coreMatches: any[] = [];
+                let coreMatches: CoreMatchData[] = [];
                 
                 if (lzvRes.ok) {
                     lzvMatches = await lzvRes.json();
                 }
                 
                 if (coreRes.ok) {
-                    coreMatches = await coreRes.json();
+                    coreMatches = (await coreRes.json()) as CoreMatchData[];
                 }
                 
                 // Fix LZV dates: stored as UTC but represent Belgian local time
@@ -124,7 +130,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                     const fixedDate = fixLzvDate(lzvMatch.date);
                     const lzvDate = new Date(fixedDate);
                     
-                    const coreMatch = coreMatches.find((core: any) => {
+                    const coreMatch = coreMatches.find((core) => {
                         const coreDate = new Date(core.date);
                         // Match on calendar day
                         const sameCalendarDay = 
@@ -212,8 +218,6 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
         }
     }, [open]);
 
-    if (typeof document === 'undefined') return null;
-
     const hasTeam = !!team?.externalId;
 
     // Calculate recent form from matches - memoized to prevent unnecessary re-renders
@@ -235,14 +239,6 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
         });
     }, [hasTeam, team?.name, matches]);
 
-    // Split matches into upcoming and past
-    const now = Date.now();
-    const upcomingMatches = matches
-        .filter(m => parseDateToTimestamp(m.date) > now || m.status === 'Scheduled')
-        .sort((a, b) => parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date));
-    const pastMatches = matches
-        .filter(m => parseDateToTimestamp(m.date) <= now && m.status === 'Played')
-        .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date));
     const winRate = team.matchesPlayed && team.matchesPlayed > 0
         ? Math.round(((team.wins || 0) / team.matchesPlayed) * 100)
         : 0;
@@ -267,6 +263,8 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
             })
             .sort((a, b) => b.goals - a.goals)
         : [];
+
+    if (typeof document === 'undefined') return null;
 
     return createPortal(
         <AnimatePresence>
@@ -507,15 +505,17 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                 <SectionCard style={{ padding: 20 }}>
                                     <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                                         {team?.imageBase64 ? (
-                                            <img
+                                            <Image
                                                 src={team.imageBase64}
                                                 alt={team?.name || ''}
+                                                width={72}
+                                                height={72}
+                                                unoptimized
                                                 onClick={() => {
                                                     hapticPatterns.tap();
                                                     setShowImage(true);
                                                 }}
                                                 style={{
-                                                    width: 72, height: 72,
                                                     borderRadius: 14,
                                                     objectFit: 'cover',
                                                     border: '1px solid var(--color-border)',
@@ -767,7 +767,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                                     paddingTop: team.manager || team.colors ? 8 : 0,
                                                     borderTop: team.manager || team.colors ? '1px solid var(--color-border-subtle)' : 'none',
                                                 }}>
-                                                    "{team.description}"
+                                                    &quot;{team.description}&quot;
                                                 </div>
                                             )}
                                         </div>

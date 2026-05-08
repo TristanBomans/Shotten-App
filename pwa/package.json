@@ -25,9 +25,9 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.25",
     "lucide-react": "^0.556.0",
-    "next": "^14.2.23",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "next": "^16.2.6",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
     "react-tooltip": "^5.30.0",
     "recharts": "^3.6.0",
@@ -37,17 +37,17 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250109.0",
     "@mistralai/mistralai": "^1.11.0",
-    "@opennextjs/cloudflare": "^1.14.4",
+    "@opennextjs/cloudflare": "^1.19.8",
     "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "autoprefixer": "^10.4.22",
     "esbuild": "^0.25.0",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.21",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "^16.2.6",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.17",
     "typescript": "^5",
-    "wrangler": "^4.53.0"
+    "wrangler": "^4.90.0"
   }
 }

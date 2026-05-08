@@ -20,12 +20,8 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
     if (!player?.stats) return null;
 
     const s = player.stats;
-    const currentRank = s.rank;
-    const currentRankIndex = RANKS.findIndex(r => r.name === currentRank.name);
+    const currentRankIndex = RANKS.findIndex(r => r.name === s.rank.name);
     const nextRank = currentRankIndex > 0 ? RANKS[currentRankIndex - 1] : null;
-    const progressToNext = nextRank
-        ? Math.max(0.05, Math.min(1, (s.score - currentRank.minScore) / (nextRank.minScore - currentRank.minScore)))
-        : 1;
 
     const streakValue = s.currentStreakPresent > 0 ? s.currentStreakPresent : s.currentStreakAbsent;
     const streakIsPositive = s.currentStreakPresent > 0;

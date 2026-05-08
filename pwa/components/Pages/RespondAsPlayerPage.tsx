@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Loader2, Calendar, MapPin, X } from 'lucide-react';
-import { useAllPlayers, useUpdateAttendance, getUseMockData } from '@/lib/useData';
+import { useAllPlayers, useUpdateAttendance } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
 import HeaderResponseButton from '../MatchCard/ResponseButtons/HeaderResponseButton';

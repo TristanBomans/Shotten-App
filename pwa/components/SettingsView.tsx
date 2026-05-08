@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Database, Wifi, WifiOff, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck, Flag } from 'lucide-react';
+import { LogOut, Database, Wifi, WifiOff, Bell, Smartphone, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck, Flag } from 'lucide-react';
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
-import { useVersionChecker } from './VersionChecker';
 import PlayerManagementPage from './Pages/PlayerManagementPage';
 import VersionHistoryPage from './Pages/VersionHistoryPage';
 import HiddenAdminPage from './Pages/HiddenAdminPage';
@@ -55,7 +54,6 @@ export default function SettingsView({
 }: SettingsViewProps) {
     const [useMock, setUseMock] = useState(true);
     const [isLocalhost, setIsLocalhost] = useState(false);
-    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [hapticFeedback, setHapticFeedback] = useState(true);
     const [showFullNames, setShowFullNames] = useState(true);
     const [defaultLeague, setDefaultLeague] = useState<string>('');
@@ -63,7 +61,6 @@ export default function SettingsView({
     const [showLeagueSelector, setShowLeagueSelector] = useState(false);
     const [theme, setTheme] = useState<string>('original');
     const [showThemeSelector, setShowThemeSelector] = useState(false);
-    const { hasUpdate, updateApp, isChecking } = useVersionChecker();
 
     useEffect(() => {
         setUseMock(getUseMockData());
@@ -71,8 +68,6 @@ export default function SettingsView({
             typeof window !== 'undefined' &&
             (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         );
-        const notifPref = localStorage.getItem('notificationsEnabled');
-        setNotificationsEnabled(notifPref === 'true');
         const hapticPref = localStorage.getItem('hapticFeedback');
         setHapticFeedback(hapticPref !== 'false');
         const fullNamesPref = localStorage.getItem('showFullNames');
@@ -104,20 +99,6 @@ export default function SettingsView({
         const newValue = !useMock;
         setUseMock(newValue);
         setUseMockData(newValue);
-    };
-
-    const handleToggleNotifications = async () => {
-        hapticPatterns.toggle();
-        if (!notificationsEnabled && 'Notification' in window) {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                setNotificationsEnabled(true);
-                localStorage.setItem('notificationsEnabled', 'true');
-            }
-        } else {
-            setNotificationsEnabled(!notificationsEnabled);
-            localStorage.setItem('notificationsEnabled', (!notificationsEnabled).toString());
-        }
     };
 
     const handleToggleHaptic = () => {
@@ -1084,115 +1065,6 @@ function SettingRow({
             )}
 
             {chevron && (
-                <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
-            )}
-        </motion.div>
-    );
-}
-
-function VersionRow({
-    icon, iconBg, iconColor, title, hasUpdate, onUpdate, isChecking
-}: {
-    icon: React.ReactNode;
-    iconBg: string;
-    iconColor: string;
-    title: string;
-    hasUpdate: boolean;
-    onUpdate: () => void;
-    isChecking: boolean;
-}) {
-    return (
-        <div style={{
-            padding: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-        }}>
-            <div style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: iconBg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: iconColor,
-                flexShrink: 0,
-            }}>
-                {icon}
-            </div>
-            <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>{title}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                    {hasUpdate ? 'New version available' : 'Up to date'}
-                </div>
-            </div>
-            {hasUpdate && (
-                <motion.button
-                    onClick={() => {
-                        hapticPatterns.tap();
-                        onUpdate();
-                    }}
-                    disabled={isChecking}
-                    whileTap={{ scale: 0.95 }}
-                    style={{
-                        padding: '8px 16px',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        color: 'var(--color-bg)',
-                        background: 'var(--color-success)',
-                        border: 'none',
-                        borderRadius: 8,
-                        cursor: isChecking ? 'wait' : 'pointer',
-                        opacity: isChecking ? 0.7 : 1,
-                    }}
-                >
-                    {isChecking ? 'Updating...' : 'Update'}
-                </motion.button>
-            )}
-        </div>
-    );
-}
-
-function VersionInfoRow({
-    icon, iconBg, iconColor, label, value, hasChevron
-}: {
-    icon: React.ReactNode;
-    iconBg: string;
-    iconColor: string;
-    label: string;
-    value: string;
-    hasChevron?: boolean;
-}) {
-    return (
-        <motion.div
-            style={{
-                padding: '12px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                borderTop: '0.5px solid var(--color-border-subtle)',
-                cursor: 'pointer',
-            }}
-        >
-            <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: iconBg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: iconColor,
-                flexShrink: 0,
-            }}>
-                {icon}
-            </div>
-            <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>{label}</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{value}</div>
-            </div>
-            {hasChevron && (
                 <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
             )}
         </motion.div>

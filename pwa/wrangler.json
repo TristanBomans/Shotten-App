@@ -1,6 +1,6 @@
 {
   "name": "shotten-app",
-  "compatibility_date": "2024-12-09",
+  "compatibility_date": "2026-05-08",
   "compatibility_flags": ["nodejs_compat"],
   "pages_build_output_dir": ".open-next/assets",
   "vars": {

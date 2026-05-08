@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, UserCircle, Sparkles, AlertCircle, TrendingUp, Trophy, Users, Zap } from 'lucide-react';
+import Image from 'next/image';
+import { Loader2, UserCircle, Sparkles, AlertCircle, TrendingUp, Trophy, Users } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 
@@ -459,15 +460,17 @@ export default function OpponentView({
             <SectionCard style={{ padding: 20 }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                     {opponentData.imageBase64 ? (
-                        <img
+                        <Image
                             src={opponentData.imageBase64}
                             alt={opponentData.name}
+                            width={72}
+                            height={72}
+                            unoptimized
                             onClick={() => {
                                 hapticPatterns.tap();
                                 onImageClick();
                             }}
                             style={{
-                                width: 72, height: 72,
                                 borderRadius: 14,
                                 objectFit: 'cover',
                                 border: '1px solid var(--color-border)',
@@ -719,7 +722,7 @@ export default function OpponentView({
                                 paddingTop: opponentData.manager || opponentData.colors ? 8 : 0,
                                 borderTop: opponentData.manager || opponentData.colors ? '1px solid var(--color-border-subtle)' : 'none',
                             }}>
-                                "{opponentData.description}"
+                                &quot;{opponentData.description}&quot;
                             </div>
                         )}
                     </div>

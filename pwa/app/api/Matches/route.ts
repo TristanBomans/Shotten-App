@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
         const teamId = teamIdParam ? parseInt(teamIdParam) : undefined;
         const teamName = searchParams.get('teamName') || undefined;
         
-        let matches = await getCoreMatches(playerId, teamId, teamName);
+        const matches = await getCoreMatches(playerId, teamId, teamName);
         const response = await toMatchesResponse(matches);
         
         return NextResponse.json(response);

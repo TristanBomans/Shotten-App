@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { fetchAllScraperTeams, type ScraperTeam } from '@/lib/useData';
 import { Loader2 } from 'lucide-react';
 import TeamDetailPage from './Pages/TeamDetailPage';
@@ -212,11 +213,13 @@ export default function LeagueView({
                                         {/* Team */}
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
                                             {team.imageBase64 ? (
-                                                <img
+                                                <Image
                                                     src={team.imageBase64}
                                                     alt=""
+                                                    width={26}
+                                                    height={26}
+                                                    unoptimized
                                                     style={{
-                                                        width: 26, height: 26,
                                                         borderRadius: 6,
                                                         objectFit: 'cover',
                                                         flexShrink: 0,

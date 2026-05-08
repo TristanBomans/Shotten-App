@@ -70,8 +70,6 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
         }
     }, [open]);
 
-    if (typeof document === 'undefined') return null;
-
     // Squad data
     const present = roster.filter(p => p.status === 'Present');
     const maybe = roster.filter(p => p.status === 'Maybe');
@@ -118,6 +116,8 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
     // Details data
     const mapUrl = match.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}` : null;
     const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${dateObj.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${new Date(dateObj.getTime() + 2 * 60 * 60 * 1000).toISOString().replace(/[-:]/g, '').split('.')[0]}Z&location=${encodeURIComponent(match.location || '')}`;
+
+    if (typeof document === 'undefined') return null;
 
     return createPortal(
         <AnimatePresence>

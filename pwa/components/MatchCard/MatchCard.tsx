@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, ChevronRight, Users } from 'lucide-react';
 import { useUpdateAttendance } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
-import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
+import { parseDate } from '@/lib/dateUtils';
 import type { MatchCardProps, RosterPlayer, AttendanceStatus } from './types';
 import Confetti from './Confetti';
 import { HeaderResponseButton } from './ResponseButtons';

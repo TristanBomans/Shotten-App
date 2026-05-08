@@ -315,7 +315,7 @@ export default function Dashboard({
         try {
             await Promise.all([fetchMatches(), fetchAllPlayers(), fetchRecentMatches()]);
             hapticPatterns.success();
-        } catch (err) {
+        } catch {
             hapticPatterns.error();
         } finally {
             setIsRefreshing(false);
@@ -353,9 +353,6 @@ export default function Dashboard({
     const heroMatch = matches.find(m => parseDateToTimestamp(m.date) > threshold);
     const remainingMatches = matches.filter(m => m.id !== heroMatch?.id);
     const upcomingMatches = remainingMatches.filter(m => parseDateToTimestamp(m.date) > threshold);
-    const pastMatches = remainingMatches
-        .filter(m => parseDateToTimestamp(m.date) <= threshold)
-        .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date));
     const notificationSummary = useMemo(
         () => buildMatchReminders(matches, playerId),
         [matches, playerId]

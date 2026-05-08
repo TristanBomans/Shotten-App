@@ -38,14 +38,6 @@ interface RenderedLogEntry extends LogEntry {
     entryId: string;
 }
 
-interface LogsResponse {
-    success: boolean;
-    logs: LogEntry[];
-    hasMore?: boolean;
-    total?: number;
-    totalCount?: number;
-}
-
 function formatBackupName(filename: string): string {
     // Parse "supabase_backup_2026-03-31T02-00-00-054Z.dump" into readable date
     const match = filename.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})/);
