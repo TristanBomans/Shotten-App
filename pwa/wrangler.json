@@ -1,7 +1,7 @@
 {
   "name": "shotten-app",
   "compatibility_date": "2026-05-08",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "pages_build_output_dir": ".open-next/assets",
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://bvwjoptvnxpttwkstiue.supabase.co",

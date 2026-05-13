@@ -15,7 +15,7 @@
     "mobile:android": "bun run --cwd ../mobile android",
     "mobile:ios": "bun run --cwd ../mobile ios",
     "lint": "eslint",
-    "build:cf": "bun install && bun scripts/generate-version.js && bunx next build && bash scripts/build-opennext.sh && bash scripts/prepare-pages.sh",
+    "build:cf": "bun install --frozen-lockfile && bun scripts/generate-version.js && rm -rf .next .open-next && bash scripts/build-opennext.sh && bash scripts/prepare-pages.sh",
     "preview": "bun run build:cf && wrangler dev",
     "deploy": "bun run build:cf && wrangler deploy"
   },
