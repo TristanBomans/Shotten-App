@@ -11,10 +11,19 @@ interface UseOpponentTeamDataProps {
     enabled: boolean;
 }
 
+interface MatchResult {
+    status: string;
+    date: string;
+    homeTeam: string;
+    awayTeam: string;
+    homeScore: number;
+    awayScore: number;
+}
+
 interface UseOpponentTeamDataResult {
     opponentData: ScraperTeam | null;
     opponentPlayers: ScraperPlayer[];
-    opponentMatches: any[];
+    opponentMatches: MatchResult[];
     ownTeamData: ScraperTeam | null;
     loading: boolean;
     recentForm: ('W' | 'L' | 'D')[];
@@ -31,7 +40,7 @@ export function useOpponentTeamData({
 }: UseOpponentTeamDataProps): UseOpponentTeamDataResult {
     const [opponentData, setOpponentData] = useState<ScraperTeam | null>(null);
     const [opponentPlayers, setOpponentPlayers] = useState<ScraperPlayer[]>([]);
-    const [opponentMatches, setOpponentMatches] = useState<any[]>([]);
+    const [opponentMatches, setOpponentMatches] = useState<MatchResult[]>([]);
     const [ownTeamData, setOwnTeamData] = useState<ScraperTeam | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -92,11 +101,11 @@ export function useOpponentTeamData({
         if (!opponentData || opponentMatches.length === 0) return [];
 
         const playedMatches = opponentMatches
-            .filter((m: any) => m.status === 'Played')
-            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .filter((m) => m.status === 'Played')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             .slice(0, 5);
 
-        return playedMatches.map((m: any) => {
+        return playedMatches.map((m) => {
             const isHome = isHomeTeamForMatch(opponentData.name, m.homeTeam, m.awayTeam);
             const teamScore = isHome ? m.homeScore : m.awayScore;
             const opponentScore = isHome ? m.awayScore : m.homeScore;

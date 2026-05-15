@@ -719,7 +719,7 @@ export default function OpponentView({
                                 paddingTop: opponentData.manager || opponentData.colors ? 8 : 0,
                                 borderTop: opponentData.manager || opponentData.colors ? '1px solid var(--color-border-subtle)' : 'none',
                             }}>
-                                "{opponentData.description}"
+                                &quot;{opponentData.description}&quot;
                             </div>
                         )}
                     </div>

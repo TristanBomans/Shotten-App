@@ -8,6 +8,7 @@ import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from 
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 import { fetchScraperPlayers } from '@/lib/useData';
+import type { CoreMatch } from '@/lib/supabase';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
 
@@ -101,7 +102,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                 ]);
                 
                 let lzvMatches: ScraperMatch[] = [];
-                let coreMatches: any[] = [];
+                let coreMatches: CoreMatch[] = [];
                 
                 if (lzvRes.ok) {
                     lzvMatches = await lzvRes.json();
@@ -124,7 +125,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                     const fixedDate = fixLzvDate(lzvMatch.date);
                     const lzvDate = new Date(fixedDate);
                     
-                    const coreMatch = coreMatches.find((core: any) => {
+                    const coreMatch = coreMatches.find((core) => {
                         const coreDate = new Date(core.date);
                         // Match on calendar day
                         const sameCalendarDay = 
@@ -212,8 +213,6 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
         }
     }, [open]);
 
-    if (typeof document === 'undefined') return null;
-
     const hasTeam = !!team?.externalId;
 
     // Calculate recent form from matches - memoized to prevent unnecessary re-renders
@@ -267,6 +266,8 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
             })
             .sort((a, b) => b.goals - a.goals)
         : [];
+
+    if (typeof document === 'undefined') return null;
 
     return createPortal(
         <AnimatePresence>
@@ -767,7 +768,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                                     paddingTop: team.manager || team.colors ? 8 : 0,
                                                     borderTop: team.manager || team.colors ? '1px solid var(--color-border-subtle)' : 'none',
                                                 }}>
-                                                    "{team.description}"
+                                                    &quot;{team.description}&quot;
                                                 </div>
                                             )}
                                         </div>
