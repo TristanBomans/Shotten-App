@@ -37,7 +37,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250109.0",
     "@mistralai/mistralai": "^1.11.0",
-    "@opennextjs/cloudflare": "^1.14.4",
+    "@opennextjs/cloudflare": "^1.17.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -45,9 +45,19 @@
     "esbuild": "^0.25.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.21",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.10",
     "tailwindcss": "^4.1.17",
     "typescript": "^5",
-    "wrangler": "^4.53.0"
+    "wrangler": "^4.59.1"
+  },
+  "overrides": {
+    "postcss": "^8.5.14",
+    "qs": "^6.14.2",
+    "yaml": "^2.8.3",
+    "flatted": "^3.4.0",
+    "ajv": "^6.14.0",
+    "path-to-regexp": "^8.4.0",
+    "picomatch": "^4.0.4",
+    "@isaacs/brace-expansion": "^5.0.1"
   }
 }
