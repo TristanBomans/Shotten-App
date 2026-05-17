@@ -163,56 +163,161 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                             )}
                         </div>
 
-                        {/* Attendance + Streaks row */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 16 }}>
-                            {/* Attendance */}
-                            <div style={{ padding: '14px 8px', background: 'var(--color-bg-elevated)', borderRadius: 14, border: '0.5px solid var(--color-border)', textAlign: 'center' }}>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-success)' }}>{s.attendancePct}%</div>
-                                <div style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>Presence</div>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>{s.presentCount}/{s.totalMatches}</div>
-                            </div>
-                            {/* Current Streak */}
-                            <div style={{ padding: '14px 8px', background: streakIsPositive ? 'rgba(255,107,53,0.08)' : 'var(--color-bg-elevated)', borderRadius: 14, border: `0.5px solid ${streakIsPositive ? 'rgba(255,107,53,0.3)' : 'var(--color-border)'}`, textAlign: 'center' }}>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: streakColor }}>
-                                    {streakIsPositive && s.currentStreakPresent >= 3 ? '🔥 ' : ''}{streakValue}
+                        {/* Activity Overview Card */}
+                        <div style={{
+                            marginTop: 16,
+                            padding: 18,
+                            background: 'var(--color-bg-elevated)',
+                            borderRadius: 16,
+                            border: '0.5px solid var(--color-border)',
+                        }}>
+                            {/* Header with mini attendance pill */}
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                marginBottom: 16,
+                            }}>
+                                <span style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: 600,
+                                    color: 'var(--color-text-tertiary)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.04em',
+                                }}>
+                                    Activity
+                                </span>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    padding: '3px 10px',
+                                    background: 'var(--color-bg)',
+                                    borderRadius: 20,
+                                    border: '0.5px solid var(--color-border-subtle)',
+                                }}>
+                                    <div style={{
+                                        width: 48,
+                                        height: 4,
+                                        borderRadius: 2,
+                                        background: 'var(--color-border-subtle)',
+                                        overflow: 'hidden',
+                                    }}>
+                                        <div style={{
+                                            width: `${s.attendancePct}%`,
+                                            height: '100%',
+                                            background: 'var(--color-success)',
+                                            borderRadius: 2,
+                                        }} />
+                                    </div>
+                                    <span style={{
+                                        fontSize: '0.65rem',
+                                        fontWeight: 700,
+                                        color: 'var(--color-success)',
+                                    }}>
+                                        {s.attendancePct}%
+                                    </span>
                                 </div>
-                                <div style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>Streak</div>
-                                <div style={{ fontSize: '0.7rem', color: streakColor, marginTop: 2 }}>{streakLabel}</div>
                             </div>
-                            {/* Best Streak */}
-                            <div style={{ padding: '14px 8px', background: 'rgba(247,203,97,0.06)', borderRadius: 14, border: '0.5px solid rgba(247,203,97,0.2)', textAlign: 'center' }}>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f7cb61' }}>{s.bestStreak}</div>
-                                <div style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>Best</div>
-                                <div style={{ fontSize: '0.7rem', color: '#f7cb61', marginTop: 2 }}>record</div>
+
+                            {/* Stats Grid - single row of 4 */}
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(4, 1fr)',
+                                gap: 8,
+                            }}>
+                                <StatMini icon="✓" label="Present" value={s.presentCount} color="var(--color-success)" />
+                                <StatMini icon="?" label="Maybe" value={s.maybeCount} color="var(--color-warning)" />
+                                <StatMini icon="✕" label="Absent" value={s.absentCount} color="var(--color-danger)" />
+                                <StatMini icon="·" label="Ghost" value={s.ghostCount} color="var(--color-text-tertiary)" />
                             </div>
-                        </div>
 
-                        {/* Status breakdown */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 12 }}>
-                            <StatMini label="Present" value={s.presentCount} color="var(--color-success)" />
-                            <StatMini label="Maybe" value={s.maybeCount} color="var(--color-warning)" />
-                            <StatMini label="Absent" value={s.absentCount} color="var(--color-danger)" />
-                            <StatMini label="Ghost" value={s.ghostCount} color="var(--color-text-tertiary)" />
-                        </div>
-
-                        {/* Recent Form */}
-                        {s.recentForm.length > 0 && (
-                            <div style={{ marginTop: 16 }}>
-                                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', marginBottom: 8 }}>Recent Form</div>
-                                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-start' }}>
-                                    {s.recentForm.map((status, j) => (
-                                        <div key={j} style={{
-                                            width: 44, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontSize: '0.85rem', fontWeight: 700, flexShrink: 0,
-                                            background: status === 'present' ? 'rgb(var(--color-success-rgb) / 0.2)' : status === 'maybe' ? 'rgb(var(--color-warning-rgb) / 0.2)' : status === 'notPresent' ? 'rgb(var(--color-danger-rgb) / 0.2)' : 'var(--color-surface-hover)',
-                                            color: status === 'present' ? 'var(--color-success)' : status === 'maybe' ? 'var(--color-warning)' : status === 'notPresent' ? 'var(--color-danger)' : 'var(--color-text-tertiary)',
-                                        }}>
-                                            {status === 'present' ? '✓' : status === 'maybe' ? '?' : status === 'notPresent' ? '✕' : '👻'}
-                                        </div>
-                                    ))}
+                            {/* Streak & Best - only show if there's an actual streak */}
+                            {(s.currentStreakPresent >= 3 || s.currentStreakAbsent >= 2) && (
+                                <div style={{
+                                    display: 'flex',
+                                    gap: 6,
+                                    marginTop: 12,
+                                }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 5,
+                                        padding: '5px 10px',
+                                        borderRadius: 20,
+                                        background: streakIsPositive ? 'rgba(255,107,53,0.08)' : 'var(--color-bg)',
+                                        border: `0.5px solid ${streakIsPositive ? 'rgba(255,107,53,0.2)' : 'var(--color-border-subtle)'}`,
+                                    }}>
+                                        <span>{streakIsPositive ? '🔥' : '❄️'}</span>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: streakColor }}>{streakValue}</span>
+                                        <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)' }}>{streakLabel}</span>
+                                    </div>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 5,
+                                        padding: '5px 10px',
+                                        borderRadius: 20,
+                                        background: 'rgba(247,203,97,0.04)',
+                                        border: '0.5px solid rgba(247,203,97,0.15)',
+                                    }}>
+                                        <span>🏆</span>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f7cb61' }}>{s.bestStreak}</span>
+                                        <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)' }}>best</span>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+
+                            {/* Recent Form - compact cells with icons */}
+                            {s.recentForm.length > 0 && (
+                                <div style={{ marginTop: 16 }}>
+                                    <div style={{
+                                        fontSize: '0.65rem',
+                                        fontWeight: 600,
+                                        color: 'var(--color-text-tertiary)',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.04em',
+                                        marginBottom: 8,
+                                    }}>
+                                        Last {s.recentForm.length} matches
+                                    </div>
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: 4,
+                                    }}>
+                                        {s.recentForm.map((status, j) => {
+                                            const config = {
+                                                present: { icon: '✓', color: 'var(--color-success)', bg: 'rgb(var(--color-success-rgb) / 0.15)' },
+                                                maybe: { icon: '?', color: 'var(--color-warning)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
+                                                notPresent: { icon: '✕', color: 'var(--color-danger)', bg: 'rgb(var(--color-danger-rgb) / 0.15)' },
+                                                ghost: { icon: '·', color: 'var(--color-text-tertiary)', bg: 'var(--color-surface-hover)' },
+                                            };
+                                            const c = config[status as keyof typeof config] || config.ghost;
+                                            return (
+                                                <div
+                                                    key={j}
+                                                    style={{
+                                                        flex: 1,
+                                                        height: 28,
+                                                        borderRadius: 6,
+                                                        background: c.bg,
+                                                        color: c.color,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 700,
+                                                        minWidth: 0,
+                                                    }}
+                                                >
+                                                    {c.icon}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Match History */}
@@ -253,11 +358,38 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
     );
 }
 
-function StatMini({ label, value, color }: { label: string; value: number; color: string }) {
+function StatMini({ icon, label, value, color }: { icon: string; label: string; value: number; color: string }) {
+    const isZero = value === 0;
     return (
-        <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color }}>{value}</div>
-            <div style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>{label}</div>
+        <div style={{
+            textAlign: 'center',
+            padding: '8px 2px',
+        }}>
+            <div style={{
+                fontSize: '0.8rem',
+                color: isZero ? 'var(--color-text-tertiary)' : color,
+                opacity: isZero ? 0.4 : 1,
+                marginBottom: 2,
+            }}>
+                {icon}
+            </div>
+            <div style={{
+                fontSize: '1rem',
+                fontWeight: 800,
+                color: isZero ? 'var(--color-text-tertiary)' : color,
+                lineHeight: 1.2,
+            }}>
+                {value}
+            </div>
+            <div style={{
+                fontSize: '0.55rem',
+                fontWeight: 600,
+                color: 'var(--color-text-tertiary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.02em',
+            }}>
+                {label}
+            </div>
         </div>
     );
 }
