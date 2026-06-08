@@ -146,7 +146,7 @@ export default function RulesPage({ open, onClose }: RulesPageProps) {
                                         <span style={{ color: rank.color, fontWeight: 500, fontSize: '0.85rem' }}>{rank.name}</span>
                                     </div>
                                     <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                                        {index === RANKS.length - 1 ? '< 500' : `${rank.minScore}+`}
+                                        {index === RANKS.length - 1 ? '< 25%' : `${rank.minPct}%+`}
                                     </span>
                                 </div>
                             ))}
