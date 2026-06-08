@@ -36,7 +36,11 @@ export function triggerHaptic(intensity: HapticIntensity = 'medium'): void {
   if (!isHapticEnabled() || !supportsHaptic()) return;
   
   const duration = HAPTIC_DURATIONS[intensity];
-  navigator.vibrate(duration);
+  try {
+    navigator.vibrate(duration);
+  } catch {
+    // Haptics are optional; a browser quirk should never break the UI action.
+  }
 }
 
 /**
@@ -45,7 +49,11 @@ export function triggerHaptic(intensity: HapticIntensity = 'medium'): void {
  */
 export function triggerHapticPattern(pattern: number[]): void {
   if (!isHapticEnabled() || !supportsHaptic()) return;
-  navigator.vibrate(pattern);
+  try {
+    navigator.vibrate(pattern);
+  } catch {
+    // Haptics are optional; a browser quirk should never break the UI action.
+  }
 }
 
 /**

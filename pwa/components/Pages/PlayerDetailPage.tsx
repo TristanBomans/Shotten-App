@@ -403,12 +403,23 @@ function AttendanceSparkline({ history }: { history: AttendanceHistoryPoint[] })
 
         const update = () => {
             const { width, height } = el.getBoundingClientRect();
-            if (width > 0 && height > 0) {
-                setDimensions({ width, height });
+            const fallbackWidth = typeof window !== 'undefined'
+                ? Math.max(280, Math.min(window.innerWidth - 56, 520))
+                : 320;
+            const nextWidth = Math.round(width || fallbackWidth);
+            const nextHeight = Math.round(height || 220);
+
+            if (nextWidth > 0 && nextHeight > 0) {
+                setDimensions({ width: nextWidth, height: nextHeight });
             }
         };
 
         update();
+
+        if (typeof ResizeObserver === 'undefined') {
+            window.addEventListener('resize', update);
+            return () => window.removeEventListener('resize', update);
+        }
 
         const observer = new ResizeObserver(() => update());
         observer.observe(el);
@@ -460,5 +471,4 @@ function AttendanceSparkline({ history }: { history: AttendanceHistoryPoint[] })
         </div>
     );
 }
-
 
