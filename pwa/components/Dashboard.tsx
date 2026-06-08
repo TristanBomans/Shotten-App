@@ -666,18 +666,25 @@ export default function Dashboard({
                 </section>
             ) : (
                 <div
-                    className="glass-panel-heavy flex-center"
                     style={{
-                        minHeight: 300,
+                        display: 'flex',
                         flexDirection: 'column',
-                        textAlign: 'center',
-                        padding: 'var(--space-2xl)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: '48px 24px',
                         marginBottom: 'var(--space-2xl)',
+                        textAlign: 'center',
+                        color: 'var(--color-text-tertiary)',
                     }}
                 >
-                    <div style={{ fontSize: '3rem', marginBottom: 'var(--space-md)' }}>⚽</div>
-                    <h2 className="text-title">No Upcoming Matches</h2>
-                    <p className="text-body">Time to schedule the next game!</p>
+                    <div style={{ fontSize: '2rem', opacity: 0.3, marginBottom: 4 }}>⚽</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+                        No upcoming matches
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>
+                        Check back later or contact the admin
+                    </div>
                 </div>
             )}
 
