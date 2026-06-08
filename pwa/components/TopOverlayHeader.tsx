@@ -149,37 +149,63 @@ export default function TopOverlayHeader({
                                     paddingRight: 8,
                                 }}
                             >
-                                <button
-                                    onClick={leagueHeaderControls?.onCycleLeague}
-                                    onContextMenu={(event) => {
-                                        event.preventDefault();
-                                        leagueHeaderControls?.onOpenLeagueSelector();
-                                    }}
-                                    disabled={!leagueHeaderControls?.hasLeagues}
-                                    aria-label={`Selected league ${leagueHeaderControls?.selectedLeague || 'none'}. Tap to cycle leagues.`}
-                                    style={{
-                                        ...compactControlStyle,
-                                        minWidth: 'clamp(64px, 20vw, 84px)',
-                                        maxWidth: 'min(112px, 28vw)',
-                                        padding: '0 8px',
-                                        justifyContent: 'flex-start',
-                                        opacity: leagueHeaderControls?.hasLeagues ? 1 : 0.5,
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    <Trophy size={13} />
-                                    <span
+                                {leagueHeaderControls?.hasLeagues ? (
+                                    <button
+                                        onClick={leagueHeaderControls?.onCycleLeague}
+                                        onContextMenu={(event) => {
+                                            event.preventDefault();
+                                            leagueHeaderControls?.onOpenLeagueSelector();
+                                        }}
+                                        aria-label={`Selected league ${leagueHeaderControls?.selectedLeague || 'none'}. Tap to cycle leagues.`}
                                         style={{
-                                            whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            fontSize: '0.78rem',
-                                            fontWeight: 600,
+                                            ...compactControlStyle,
+                                            minWidth: 'clamp(64px, 20vw, 84px)',
+                                            maxWidth: 'min(112px, 28vw)',
+                                            padding: '0 8px',
+                                            justifyContent: 'flex-start',
+                                            flexShrink: 0,
                                         }}
                                     >
-                                        {leagueHeaderControls?.selectedLeague || 'Select'}
+                                        <Trophy size={13} />
+                                        <span
+                                            style={{
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                fontSize: '0.78rem',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            {leagueHeaderControls?.selectedLeague || 'Select'}
+                                        </span>
+                                    </button>
+                                ) : (
+                                    <span
+                                        style={{
+                                            ...compactControlStyle,
+                                            minWidth: 'clamp(64px, 20vw, 84px)',
+                                            maxWidth: 'min(112px, 28vw)',
+                                            padding: '0 8px',
+                                            justifyContent: 'flex-start',
+                                            opacity: 0.7,
+                                            cursor: 'default',
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <Trophy size={13} />
+                                        <span
+                                            style={{
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                fontSize: '0.78rem',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            {leagueHeaderControls?.selectedLeague || 'Select'}
+                                        </span>
                                     </span>
-                                </button>
+                                )}
                             </div>
                         </>
                     ) : showStatsControls ? (

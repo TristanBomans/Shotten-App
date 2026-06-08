@@ -93,7 +93,7 @@ export default function LeagueView({
 
     const isOwnTeam = (name: string) => {
         const lower = name.toLowerCase();
-        return lower.includes('degrad') || lower.includes('wille ma ni');
+        return lower.includes('wille ma ni');
     };
 
     // Filter teams by selected league

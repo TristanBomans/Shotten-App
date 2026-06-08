@@ -1,10 +1,9 @@
 import { parseDateToTimestamp } from './dateUtils';
 import { isSameTeamName } from './teamNameMatching';
 
-export const OWN_RECENT_TEAM_IDS = [1319, 2002] as const;
+export const OWN_RECENT_TEAM_IDS = [1319] as const;
 export const OWN_RECENT_TEAMS: Record<number, string> = {
     1319: 'Wille ma ni kunne',
-    2002: 'FC Degradé',
 };
 export const RECENT_MATCH_WINDOW_MS = 72 * 60 * 60 * 1000;
 export const RECENT_MATCH_LIMIT = 5;

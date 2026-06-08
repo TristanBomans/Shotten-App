@@ -459,7 +459,7 @@ export default function Dashboard({
     const topLeagueControls = currentView === 'league'
         ? {
             selectedLeague: selectedLeagueAlias,
-            hasLeagues: leagueOptions.length > 0,
+            hasLeagues: leagueOptions.length > 1,
             onCycleLeague: handleCycleLeague,
             onOpenLeagueSelector: openLeagueSelector,
         }
@@ -744,7 +744,7 @@ export default function Dashboard({
                 onConfirm={handleConfirmUnlock}
                 onCancel={handleCancelUnlock}
             />
-            {currentView === 'league' && leagueOptions.length > 0 && (
+            {currentView === 'league' && leagueOptions.length > 1 && (
                 <LeagueSelector
                     leagues={leagueOptions}
                     selectedLeague={selectedLeague}

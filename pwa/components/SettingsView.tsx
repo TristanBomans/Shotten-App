@@ -300,43 +300,45 @@ export default function SettingsView({
                         <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
                     </motion.div>
 
-                    {/* Default League */}
-                    <motion.div
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            setShowLeagueSelector(true);
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                        style={{
-                            padding: 16,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            cursor: 'pointer',
-                            borderBottom: '0.5px solid var(--color-border-subtle)',
-                        }}
-                    >
-                        <div style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 10,
-                            background: 'rgb(var(--color-warning-rgb) / 0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'var(--color-warning)',
-                            flexShrink: 0,
-                        }}>
-                            <Trophy size={20} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>Default League</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                                {defaultLeague || 'Auto-select (Mechelen preferred)'}
+                    {/* Default League — only show when there are multiple leagues */}
+                    {leagues.length > 1 && (
+                        <motion.div
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setShowLeagueSelector(true);
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                            style={{
+                                padding: 16,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                cursor: 'pointer',
+                                borderBottom: '0.5px solid var(--color-border-subtle)',
+                            }}
+                        >
+                            <div style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 10,
+                                background: 'rgb(var(--color-warning-rgb) / 0.15)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--color-warning)',
+                                flexShrink: 0,
+                            }}>
+                                <Trophy size={20} />
                             </div>
-                        </div>
-                        <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
-                    </motion.div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--color-text-primary)' }}>Default League</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                                    {defaultLeague || 'Auto-select (Mechelen preferred)'}
+                                </div>
+                            </div>
+                            <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
+                        </motion.div>
+                    )}
 
                 </motion.div>
 

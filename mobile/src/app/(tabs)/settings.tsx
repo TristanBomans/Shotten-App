@@ -314,24 +314,28 @@ export default function SettingsScreen() {
           
         </View>
 
-        {/* League */}
-        <Text style={styles.sectionTitle}>League</Text>
-        <View style={styles.section}>
-          <Pressable
-            android_ripple={{ color: t.colors.ripple, borderless: false }}
-            onPress={() => setLeaguePickerOpen(true)}
-            style={({ pressed }) => [styles.settingRow, pressed && styles.settingRowPressed]}
-          >
-            <SettingIcon name="trophy" color={t.colors.warningAccent} />
-            <View style={styles.settingContent}>
-              <Text style={styles.settingLabel}>Default League</Text>
-              <Text style={styles.settingDescription} numberOfLines={1}>
-                {preferences.defaultLeague || "Auto-select (Mechelen preferred)"}
-              </Text>
+        {/* League — only show selector when there are multiple leagues */}
+        {leagues.length > 1 && (
+          <>
+            <Text style={styles.sectionTitle}>League</Text>
+            <View style={styles.section}>
+              <Pressable
+                android_ripple={{ color: t.colors.ripple, borderless: false }}
+                onPress={() => setLeaguePickerOpen(true)}
+                style={({ pressed }) => [styles.settingRow, pressed && styles.settingRowPressed]}
+              >
+                <SettingIcon name="trophy" color={t.colors.warningAccent} />
+                <View style={styles.settingContent}>
+                  <Text style={styles.settingLabel}>Default League</Text>
+                  <Text style={styles.settingDescription} numberOfLines={1}>
+                    {preferences.defaultLeague || "Auto-select (Mechelen preferred)"}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={20} color={t.colors.onSurfaceDim} />
+              </Pressable>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color={t.colors.onSurfaceDim} />
-          </Pressable>
-        </View>
+          </>
+        )}
 
         {/* Actions */}
         <Text style={styles.sectionTitle}>Actions</Text>
