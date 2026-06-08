@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp, Save, RefreshCw } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface HiddenAdminPageProps {
@@ -918,24 +918,45 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                         >
                                             Application Logs
                                         </div>
-                                        <motion.button
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={() => {
-                                                hapticPatterns.tap();
-                                                setLogsExpanded(!logsExpanded);
-                                            }}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 4,
-                                                background: 'transparent',
-                                                border: 'none',
-                                                color: 'var(--color-accent)',
-                                                fontSize: '0.75rem',
-                                                cursor: 'pointer',
-                                                padding: '4px 8px',
-                                            }}
-                                        >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <motion.button
+                                                whileTap={{ scale: 0.9, rotate: 180 }}
+                                                onClick={() => {
+                                                    hapticPatterns.tap();
+                                                    fetchLogs();
+                                                }}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: 'var(--color-text-tertiary)',
+                                                    cursor: 'pointer',
+                                                    padding: 4,
+                                                }}
+                                                title="Refresh logs"
+                                            >
+                                                <RefreshCw size={14} />
+                                            </motion.button>
+                                            <motion.button
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => {
+                                                    hapticPatterns.tap();
+                                                    setLogsExpanded(!logsExpanded);
+                                                }}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 4,
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: 'var(--color-accent)',
+                                                    fontSize: '0.75rem',
+                                                    cursor: 'pointer',
+                                                    padding: '4px 8px',
+                                                }}
+                                            >
                                             {logsExpanded ? (
                                                 <>
                                                     Hide <ChevronUp size={14} />
@@ -945,7 +966,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                     Show <ChevronDown size={14} />
                                                 </>
                                             )}
-                                        </motion.button>
+                                         </motion.button>
+                                        </div>
                                     </div>
 
                                     <AnimatePresence>
