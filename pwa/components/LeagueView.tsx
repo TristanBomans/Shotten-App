@@ -26,41 +26,24 @@ export default function LeagueView({
     const [loading, setLoading] = useState(true);
     const dataLoadedRef = useRef(false);
 
-    // Extract unique leagues
-    const leagues = useMemo(() => {
+    const allLeagues = useMemo(() => {
         const unique = Array.from(new Set(teams.map(t => t.leagueName).filter(Boolean))) as string[];
         return unique.sort();
     }, [teams]);
 
-    // Set default league on load (check saved preference first, then prefer Mechelen)
+    const leagues = useMemo(() => {
+        const ourTeams = teams.filter(t => t.name.toLowerCase().includes('wille ma ni'));
+        const ourLeagues = Array.from(new Set(ourTeams.map(t => t.leagueName).filter(Boolean))) as string[];
+        return ourLeagues.length > 0 ? ourLeagues.sort() : allLeagues;
+    }, [allLeagues, teams]);
+
+    // Keep the selected league aligned with the filtered single-team league list.
     useEffect(() => {
-        if (leagues.length > 0 && !selectedLeague) {
-            const savedLeague = localStorage.getItem('defaultLeague');
-            if (savedLeague && leagues.includes(savedLeague)) {
-                onSelectedLeagueChange(savedLeague);
-            } else {
-                const mechelenLeague = leagues.find(l => l.toLowerCase().includes('mechelen'));
-                onSelectedLeagueChange(mechelenLeague || leagues[0]);
-            }
+        if (leagues.length === 0) return;
+        if (!selectedLeague || !leagues.includes(selectedLeague)) {
+            onSelectedLeagueChange(leagues[0]);
         }
     }, [leagues, selectedLeague, onSelectedLeagueChange]);
-
-    // Listen for default league changes from settings
-    useEffect(() => {
-        const handleDefaultLeagueChanged = (event: Event) => {
-            const customEvent = event as CustomEvent<string | null>;
-            if (customEvent.detail && leagues.includes(customEvent.detail)) {
-                onSelectedLeagueChange(customEvent.detail);
-            } else if (customEvent.detail === null) {
-                // Reset to auto-select
-                const mechelenLeague = leagues.find(l => l.toLowerCase().includes('mechelen'));
-                onSelectedLeagueChange(mechelenLeague || leagues[0]);
-            }
-        };
-
-        window.addEventListener('defaultLeagueChanged', handleDefaultLeagueChanged);
-        return () => window.removeEventListener('defaultLeagueChanged', handleDefaultLeagueChanged);
-    }, [leagues, onSelectedLeagueChange]);
 
     useEffect(() => {
         onLeagueDataChange?.({ leagues, teams });
