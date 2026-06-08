@@ -349,13 +349,31 @@ export default function StatsView({
                                 </div>
                             </div>
 
-                            {/* Score */}
+                            {/* Score + Attendance % */}
                             <div style={{
-                                fontSize: '1.25rem',
-                                fontWeight: 700,
-                                color: 'var(--color-text-primary)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'flex-end',
+                                gap: 2,
                             }}>
-                                {player.stats.score}
+                                <div style={{
+                                    fontSize: '1.25rem',
+                                    fontWeight: 700,
+                                    color: 'var(--color-text-primary)',
+                                }}>
+                                    {player.stats.score}
+                                </div>
+                                <div style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    color: player.stats.attendancePct >= 80
+                                        ? 'var(--color-success)'
+                                        : player.stats.attendancePct >= 50
+                                            ? 'var(--color-warning)'
+                                            : 'var(--color-danger)',
+                                }}>
+                                    {player.stats.attendancePct}% present
+                                </div>
                             </div>
                         </motion.div>
                     ))}
