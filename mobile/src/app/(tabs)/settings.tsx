@@ -132,8 +132,10 @@ export default function SettingsScreen() {
     const loadLeagues = async () => {
       try {
         const teams = await fetchScraperTeams();
-        const unique = Array.from(new Set(teams.map((tm) => tm.leagueName).filter(Boolean))).sort() as string[];
-        setLeagues(unique);
+        const ourTeams = teams.filter((tm) => tm.name.toLowerCase().includes("wille ma ni"));
+        const ourLeagues = Array.from(new Set(ourTeams.map((tm) => tm.leagueName).filter(Boolean))).sort() as string[];
+        const targetLeagues = ourLeagues.length > 0 ? ourLeagues : [];
+        setLeagues(targetLeagues);
       } catch {
         // silently fail
       }

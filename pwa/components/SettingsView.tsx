@@ -82,12 +82,14 @@ export default function SettingsView({
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) setTheme(savedTheme);
 
-        // Fetch leagues for the selector
+        // Fetch leagues for the selector (only leagues where our team plays)
         const loadLeagues = async () => {
             try {
                 const teams = await fetchAllScraperTeams();
-                const unique = Array.from(new Set(teams.map(t => t.leagueName).filter(Boolean))) as string[];
-                setLeagues(unique.sort());
+                const ourTeams = teams.filter(t => t.name.toLowerCase().includes('wille ma ni'));
+                const ourLeagues = Array.from(new Set(ourTeams.map(t => t.leagueName).filter(Boolean))) as string[];
+                const targetLeagues = ourLeagues.length > 0 ? ourLeagues.sort() : [];
+                setLeagues(targetLeagues);
             } catch {
                 console.warn('Failed to load leagues for settings');
             }

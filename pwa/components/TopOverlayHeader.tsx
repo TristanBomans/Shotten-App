@@ -45,7 +45,7 @@ export default function TopOverlayHeader({
     const leagueHeaderControls = title.toLowerCase() === 'league' ? leagueControls : undefined;
     const statsHeaderControls = title.toLowerCase() === 'leaderboard' ? statsControls : undefined;
     const homeHeaderControls = title.toLowerCase() === 'matches' ? homeControls : undefined;
-    const showLeagueControls = Boolean(leagueHeaderControls);
+    const showLeagueControls = Boolean(leagueHeaderControls) && (leagueHeaderControls?.hasLeagues ?? false);
     const showStatsControls = Boolean(statsHeaderControls);
     const showHomeControls = Boolean(homeHeaderControls);
     const showInlineControls = showLeagueControls || showStatsControls || showHomeControls;
@@ -149,63 +149,35 @@ export default function TopOverlayHeader({
                                     paddingRight: 8,
                                 }}
                             >
-                                {leagueHeaderControls?.hasLeagues ? (
-                                    <button
-                                        onClick={leagueHeaderControls?.onCycleLeague}
-                                        onContextMenu={(event) => {
-                                            event.preventDefault();
-                                            leagueHeaderControls?.onOpenLeagueSelector();
-                                        }}
-                                        aria-label={`Selected league ${leagueHeaderControls?.selectedLeague || 'none'}. Tap to cycle leagues.`}
-                                        style={{
-                                            ...compactControlStyle,
-                                            minWidth: 'clamp(64px, 20vw, 84px)',
-                                            maxWidth: 'min(112px, 28vw)',
-                                            padding: '0 8px',
-                                            justifyContent: 'flex-start',
-                                            flexShrink: 0,
-                                        }}
-                                    >
-                                        <Trophy size={13} />
-                                        <span
-                                            style={{
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                fontSize: '0.78rem',
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            {leagueHeaderControls?.selectedLeague || 'Select'}
-                                        </span>
-                                    </button>
-                                ) : (
+                                <button
+                                    onClick={leagueHeaderControls?.onCycleLeague}
+                                    onContextMenu={(event) => {
+                                        event.preventDefault();
+                                        leagueHeaderControls?.onOpenLeagueSelector();
+                                    }}
+                                    aria-label={`Selected league ${leagueHeaderControls?.selectedLeague || 'none'}. Tap to cycle leagues.`}
+                                    style={{
+                                        ...compactControlStyle,
+                                        minWidth: 'clamp(64px, 20vw, 84px)',
+                                        maxWidth: 'min(112px, 28vw)',
+                                        padding: '0 8px',
+                                        justifyContent: 'flex-start',
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    <Trophy size={13} />
                                     <span
                                         style={{
-                                            ...compactControlStyle,
-                                            minWidth: 'clamp(64px, 20vw, 84px)',
-                                            maxWidth: 'min(112px, 28vw)',
-                                            padding: '0 8px',
-                                            justifyContent: 'flex-start',
-                                            opacity: 0.7,
-                                            cursor: 'default',
-                                            flexShrink: 0,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            fontSize: '0.78rem',
+                                            fontWeight: 600,
                                         }}
                                     >
-                                        <Trophy size={13} />
-                                        <span
-                                            style={{
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                fontSize: '0.78rem',
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            {leagueHeaderControls?.selectedLeague || 'Select'}
-                                        </span>
+                                        {leagueHeaderControls?.selectedLeague || 'Select'}
                                     </span>
-                                )}
+                                </button>
                             </div>
                         </>
                     ) : showStatsControls ? (

@@ -422,10 +422,17 @@ export default function Dashboard({
     };
 
     const handleLeagueDataChange = useCallback((data: { leagues: string[]; teams: ScraperTeam[] }) => {
+        // Filter leagues to only those where our team plays
+        const ourTeams = data.teams.filter(t =>
+            t.name.toLowerCase().includes('wille ma ni')
+        );
+        const ourLeagues = Array.from(new Set(ourTeams.map(t => t.leagueName).filter(Boolean))) as string[];
+        const targetLeagues = ourLeagues.length > 0 ? ourLeagues.sort() : data.leagues;
+
         setLeagueOptions(prev => (
-            prev.length === data.leagues.length &&
-            prev.every((league, index) => league === data.leagues[index])
-        ) ? prev : data.leagues);
+            prev.length === targetLeagues.length &&
+            prev.every((league, index) => league === targetLeagues[index])
+        ) ? prev : targetLeagues);
 
         setLeagueTeams(prev => (prev === data.teams ? prev : data.teams));
     }, []);
