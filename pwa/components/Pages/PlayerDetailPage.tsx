@@ -1,10 +1,12 @@
 'use client';
 
+import { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LineChart, Line, ReferenceLine, YAxis } from 'recharts';
 import { ChevronLeft } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
-import { RANKS, type PlayerWithStats } from '../StatsView';
+import { RANKS, type PlayerWithStats, type AttendanceHistoryPoint } from '../StatsView';
 
 interface PlayerDetailPageProps {
     open: boolean;
@@ -24,6 +26,10 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
     const progressToNext = nextRank
         ? Math.max(0.05, Math.min(1, (s.attendancePct - currentRank.minPct) / (nextRank.minPct - currentRank.minPct)))
         : 1;
+
+    const neededPresent = nextRank
+        ? Math.max(0, Math.ceil((nextRank.minPct / 100) * s.totalMatches) - s.presentCount)
+        : 0;
 
     const streakValue = s.currentStreakPresent > 0 ? s.currentStreakPresent : s.currentStreakAbsent;
     const streakIsPositive = s.currentStreakPresent > 0;
@@ -141,14 +147,22 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingTop: 'calc(var(--safe-top) + 84px)' }}>
                     <div style={{ padding: '24px 20px 20px' }}>
                         {/* Attendance Card */}
-                        <div style={{ padding: 18, background: 'var(--color-bg-elevated)', borderRadius: 16, textAlign: 'center', border: '0.5px solid var(--color-border)' }}>
-                            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: s.rank.color }}>{s.attendancePct}%</div>
+                        <div style={{ padding: '18px 8px', background: 'var(--color-bg-elevated)', borderRadius: 16, textAlign: 'center', border: '0.5px solid var(--color-border)' }}>
+                            <div style={{ fontSize: '1.875rem', fontWeight: 800, color: s.rank.color }}>{s.attendancePct}%</div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>Attendance Rate</div>
 
+                            {/* Attendance Sparkline */}
+                            {s.attendanceHistory && s.attendanceHistory.length > 1 && (
+                                <div style={{ marginTop: 12, marginLeft: -8, marginRight: -8 }}>
+                                    <AttendanceSparkline history={s.attendanceHistory} />
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>Season trend</div>
+                                </div>
+                            )}
+
                             {/* Next rank text */}
-                            {nextRank && (
+                            {nextRank && neededPresent > 0 && (
                                 <div style={{ marginTop: 14, fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>
-                                    {nextRank.minPct - s.attendancePct}% to <span style={{ color: nextRank.color, fontWeight: 600 }}>{nextRank.name}</span>
+                                    {neededPresent} more present {neededPresent === 1 ? 'match' : 'matches'} to reach <span style={{ color: nextRank.color, fontWeight: 600 }}>{nextRank.name} ({nextRank.minPct}%)</span>
                                 </div>
                             )}
                         </div>
@@ -375,6 +389,74 @@ function StatMini({ icon, label, value, color }: { icon: string; label: string; 
             }}>
                 {label}
             </div>
+        </div>
+    );
+}
+
+function AttendanceSparkline({ history }: { history: AttendanceHistoryPoint[] }) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+
+        const update = () => {
+            const { width, height } = el.getBoundingClientRect();
+            if (width > 0 && height > 0) {
+                setDimensions({ width, height });
+            }
+        };
+
+        update();
+
+        const observer = new ResizeObserver(() => update());
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
+    if (history.length < 2) return null;
+
+    const endPct = history[history.length - 1].attendancePct;
+    const trendColor = endPct >= 50 ? 'var(--color-success)' : 'var(--color-danger)';
+    const pcts = history.map((point) => point.attendancePct);
+    const visualMin = Math.min(...pcts, 0);
+    const visualMax = Math.max(...pcts, 100);
+    const pctRange = Math.max(visualMax - visualMin, 10);
+    const yPadding = Math.max(10, Math.round(pctRange * 0.45));
+    const chartMin = Math.max(0, visualMin - yPadding);
+    const chartMax = Math.min(100, visualMax + yPadding);
+
+    return (
+        <div ref={containerRef} style={{ position: 'relative', width: '100%', height: 220 }}>
+            {dimensions && (
+            <LineChart
+                width={dimensions.width}
+                height={dimensions.height}
+                data={history}
+                margin={{ top: 10, right: 8, bottom: 10, left: 24 }}
+            >
+                <YAxis
+                    domain={[chartMin, chartMax]}
+                    tick={{ fontSize: 10, fill: 'var(--color-text-tertiary)' }}
+                    tickFormatter={(v: number) => `${v}%`}
+                    width={24}
+                    axisLine={false}
+                    tickLine={false}
+                />
+                <ReferenceLine y={25} stroke="var(--color-border-subtle)" strokeDasharray="3 3" strokeOpacity={0.5} />
+                <ReferenceLine y={50} stroke="var(--color-border-subtle)" strokeDasharray="3 3" strokeOpacity={0.8} />
+                <ReferenceLine y={75} stroke="var(--color-border-subtle)" strokeDasharray="3 3" strokeOpacity={0.5} />
+                <Line
+                    type="monotone"
+                    dataKey="attendancePct"
+                    stroke={trendColor}
+                    strokeWidth={3}
+                    dot={false}
+                    isAnimationActive={false}
+                />
+            </LineChart>
+            )}
         </div>
     );
 }

@@ -40,6 +40,12 @@ interface MatchResult {
     status: 'present' | 'maybe' | 'notPresent' | 'ghost';
 }
 
+export interface AttendanceHistoryPoint {
+    matchIndex: number;
+    attendancePct: number;
+    matchName: string;
+}
+
 function calculatePlayerStats(player: Player, allMatches: Match[]) {
     // Filter: player's team's matches, past, and at least 1 person Present
     const now = Date.now();
@@ -121,6 +127,23 @@ function calculatePlayerStats(player: Player, allMatches: Match[]) {
 
     const attendancePct = relevantMatches.length > 0 ? Math.round((presentCount / relevantMatches.length) * 100) : 0;
 
+    // Build chronological attendance history (oldest first)
+    const chronologicalMatches = [...relevantMatches].sort((a, b) =>
+        parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date)
+    );
+    let runningPresent = 0;
+    const attendanceHistory: AttendanceHistoryPoint[] = chronologicalMatches.map((match, index) => {
+        const attendance = match.attendances?.find(a => a.playerId === player.id);
+        if (attendance?.status === 'Present') {
+            runningPresent++;
+        }
+        return {
+            matchIndex: index + 1,
+            attendancePct: Math.round((runningPresent / (index + 1)) * 100),
+            matchName: match.name,
+        };
+    });
+
     return {
         presentCount,
         maybeCount,
@@ -134,6 +157,7 @@ function calculatePlayerStats(player: Player, allMatches: Match[]) {
         currentStreakAbsent: currentAbsent,
         bestStreak: bestPresent,
         attendancePct,
+        attendanceHistory,
     };
 }
 
