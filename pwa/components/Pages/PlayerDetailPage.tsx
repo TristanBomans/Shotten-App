@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, Line, ReferenceLine, YAxis } from 'recharts';
 import { ChevronLeft } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
-import { POINTS, RANKS, type PlayerWithStats, type ScoreHistoryPoint } from '../StatsView';
+import { RANKS, type PlayerWithStats, type AttendanceHistoryPoint } from '../StatsView';
 
 interface PlayerDetailPageProps {
     open: boolean;
@@ -24,8 +24,12 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
     const currentRankIndex = RANKS.findIndex(r => r.name === currentRank.name);
     const nextRank = currentRankIndex > 0 ? RANKS[currentRankIndex - 1] : null;
     const progressToNext = nextRank
-        ? Math.max(0.05, Math.min(1, (s.score - currentRank.minScore) / (nextRank.minScore - currentRank.minScore)))
+        ? Math.max(0.05, Math.min(1, (s.attendancePct - currentRank.minPct) / (nextRank.minPct - currentRank.minPct)))
         : 1;
+
+    const neededPresent = nextRank
+        ? Math.max(0, Math.ceil(((nextRank.minPct / 100) * s.totalMatches - s.presentCount) / (1 - nextRank.minPct / 100)))
+        : 0;
 
     const streakValue = s.currentStreakPresent > 0 ? s.currentStreakPresent : s.currentStreakAbsent;
     const streakIsPositive = s.currentStreakPresent > 0;
@@ -135,30 +139,30 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                             maxWidth: '100%',
                         }}
                     >
-                        #{rank} · {s.rank.name} · {s.score} pts
+                        #{rank} · {s.rank.name} · {s.attendancePct}% present
                     </span>
                 </div>
 
                 {/* Scrollable Content */}
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingTop: 'calc(var(--safe-top) + 84px)' }}>
                     <div style={{ padding: '24px 20px 20px' }}>
-                        {/* Score Card */}
-                        <div style={{ padding: 18, background: 'var(--color-bg-elevated)', borderRadius: 16, textAlign: 'center', border: '0.5px solid var(--color-border)' }}>
-                            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: s.rank.color }}>{s.score}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>Shotten Points</div>
+                        {/* Attendance Card */}
+                        <div style={{ padding: '18px 8px', background: 'var(--color-bg-elevated)', borderRadius: 16, textAlign: 'center', border: '0.5px solid var(--color-border)' }}>
+                            <div style={{ fontSize: '1.875rem', fontWeight: 800, color: s.rank.color }}>{s.attendancePct}%</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>Attendance Rate</div>
 
-                            {/* Next rank text */}
-                            {nextRank && (
-                                <div style={{ marginTop: 14, fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>
-                                    {nextRank.minScore - s.score} pts to <span style={{ color: nextRank.color, fontWeight: 600 }}>{nextRank.name}</span>
+                            {/* Attendance Sparkline */}
+                            {s.attendanceHistory && s.attendanceHistory.length > 1 && (
+                                <div style={{ marginTop: 12, marginLeft: -8, marginRight: -8 }}>
+                                    <AttendanceSparkline history={s.attendanceHistory} />
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>Season trend</div>
                                 </div>
                             )}
 
-                            {/* Sparkline */}
-                            {s.scoreHistory && s.scoreHistory.length > 1 && (
-                                <div style={{ marginTop: 16 }}>
-                                    <ScoreSparkline history={s.scoreHistory} />
-                                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', marginTop: 8 }}>Season trend</div>
+                            {/* Next rank text */}
+                            {nextRank && neededPresent > 0 && (
+                                <div style={{ marginTop: 14, fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>
+                                    {neededPresent} more present {neededPresent === 1 ? 'match' : 'matches'} to reach <span style={{ color: nextRank.color, fontWeight: 600 }}>{nextRank.name} ({nextRank.minPct}%)</span>
                                 </div>
                             )}
                         </div>
@@ -338,14 +342,9 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                                         </div>
                                         <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>{result.date.toLocaleDateString()}</div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                                        <span style={{ fontSize: '0.9rem' }}>
-                                            {result.status === 'present' ? '✅' : result.status === 'maybe' ? '⚠️' : result.status === 'notPresent' ? '❌' : '👻'}
-                                        </span>
-                                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: result.points > 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                                            {result.points > 0 ? '+' : ''}{result.points}
-                                        </span>
-                                    </div>
+                                    <span style={{ fontSize: '0.9rem' }}>
+                                        {result.status === 'present' ? '✅' : result.status === 'maybe' ? '⚠️' : result.status === 'notPresent' ? '❌' : '👻'}
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -394,7 +393,7 @@ function StatMini({ icon, label, value, color }: { icon: string; label: string; 
     );
 }
 
-function ScoreSparkline({ history }: { history: ScoreHistoryPoint[] }) {
+function AttendanceSparkline({ history }: { history: AttendanceHistoryPoint[] }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
 
@@ -418,32 +417,39 @@ function ScoreSparkline({ history }: { history: ScoreHistoryPoint[] }) {
 
     if (history.length < 2) return null;
 
-    const startScore = history[0].score;
-    const endScore = history[history.length - 1].score;
-    const trendColor = endScore >= startScore ? 'var(--color-success)' : 'var(--color-danger)';
-    const trendArrow = endScore > startScore ? '↗' : endScore < startScore ? '↘' : '→';
-    const scores = history.map((point) => point.score);
-    const visualMin = Math.min(...scores, POINTS.base);
-    const visualMax = Math.max(...scores, POINTS.base);
-    const scoreRange = Math.max(visualMax - visualMin, 40);
-    const yPadding = Math.max(28, Math.round(scoreRange * 0.45));
-    const chartMin = visualMin - yPadding;
-    const chartMax = visualMax + yPadding;
+    const endPct = history[history.length - 1].attendancePct;
+    const trendColor = endPct >= 50 ? 'var(--color-success)' : 'var(--color-danger)';
+    const pcts = history.map((point) => point.attendancePct);
+    const visualMin = Math.min(...pcts, 0);
+    const visualMax = Math.max(...pcts, 100);
+    const pctRange = Math.max(visualMax - visualMin, 10);
+    const yPadding = Math.max(10, Math.round(pctRange * 0.45));
+    const chartMin = Math.max(0, visualMin - yPadding);
+    const chartMax = Math.min(100, visualMax + yPadding);
 
     return (
-        <div ref={containerRef} style={{ position: 'relative', width: '100%', height: 84 }}>
+        <div ref={containerRef} style={{ position: 'relative', width: '100%', height: 220 }}>
             {dimensions && (
             <LineChart
                 width={dimensions.width}
                 height={dimensions.height}
                 data={history}
-                margin={{ top: 10, right: 24, bottom: 10, left: 6 }}
+                margin={{ top: 10, right: 8, bottom: 10, left: 24 }}
             >
-                <YAxis hide domain={[chartMin, chartMax]} />
-                <ReferenceLine y={1000} stroke="var(--color-border-subtle)" strokeDasharray="3 3" />
+                <YAxis
+                    domain={[chartMin, chartMax]}
+                    tick={{ fontSize: 10, fill: 'var(--color-text-tertiary)' }}
+                    tickFormatter={(v: number) => `${v}%`}
+                    width={24}
+                    axisLine={false}
+                    tickLine={false}
+                />
+                <ReferenceLine y={25} stroke="var(--color-border-subtle)" strokeDasharray="3 3" strokeOpacity={0.5} />
+                <ReferenceLine y={50} stroke="var(--color-border-subtle)" strokeDasharray="3 3" strokeOpacity={0.8} />
+                <ReferenceLine y={75} stroke="var(--color-border-subtle)" strokeDasharray="3 3" strokeOpacity={0.5} />
                 <Line
                     type="monotone"
-                    dataKey="score"
+                    dataKey="attendancePct"
                     stroke={trendColor}
                     strokeWidth={3}
                     dot={false}
@@ -451,17 +457,8 @@ function ScoreSparkline({ history }: { history: ScoreHistoryPoint[] }) {
                 />
             </LineChart>
             )}
-            <div style={{
-                position: 'absolute',
-                right: 0,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: '0.85rem',
-                color: trendColor,
-                fontWeight: 600,
-            }}>
-                {trendArrow}
-            </div>
         </div>
     );
 }
+
+

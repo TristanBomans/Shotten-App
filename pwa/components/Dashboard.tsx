@@ -422,10 +422,17 @@ export default function Dashboard({
     };
 
     const handleLeagueDataChange = useCallback((data: { leagues: string[]; teams: ScraperTeam[] }) => {
+        // Filter leagues to only those where our team plays
+        const ourTeams = data.teams.filter(t =>
+            t.name.toLowerCase().includes('wille ma ni')
+        );
+        const ourLeagues = Array.from(new Set(ourTeams.map(t => t.leagueName).filter(Boolean))) as string[];
+        const targetLeagues = ourLeagues.length > 0 ? ourLeagues.sort() : data.leagues;
+
         setLeagueOptions(prev => (
-            prev.length === data.leagues.length &&
-            prev.every((league, index) => league === data.leagues[index])
-        ) ? prev : data.leagues);
+            prev.length === targetLeagues.length &&
+            prev.every((league, index) => league === targetLeagues[index])
+        ) ? prev : targetLeagues);
 
         setLeagueTeams(prev => (prev === data.teams ? prev : data.teams));
     }, []);
@@ -459,7 +466,7 @@ export default function Dashboard({
     const topLeagueControls = currentView === 'league'
         ? {
             selectedLeague: selectedLeagueAlias,
-            hasLeagues: leagueOptions.length > 0,
+            hasLeagues: leagueOptions.length > 1,
             onCycleLeague: handleCycleLeague,
             onOpenLeagueSelector: openLeagueSelector,
         }
@@ -659,18 +666,25 @@ export default function Dashboard({
                 </section>
             ) : (
                 <div
-                    className="glass-panel-heavy flex-center"
                     style={{
-                        minHeight: 300,
+                        display: 'flex',
                         flexDirection: 'column',
-                        textAlign: 'center',
-                        padding: 'var(--space-2xl)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: '48px 24px',
                         marginBottom: 'var(--space-2xl)',
+                        textAlign: 'center',
+                        color: 'var(--color-text-tertiary)',
                     }}
                 >
-                    <div style={{ fontSize: '3rem', marginBottom: 'var(--space-md)' }}>⚽</div>
-                    <h2 className="text-title">No Upcoming Matches</h2>
-                    <p className="text-body">Time to schedule the next game!</p>
+                    <div style={{ fontSize: '2rem', opacity: 0.3, marginBottom: 4 }}>⚽</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+                        No upcoming matches
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>
+                        Check back later or contact the admin
+                    </div>
                 </div>
             )}
 
@@ -744,7 +758,7 @@ export default function Dashboard({
                 onConfirm={handleConfirmUnlock}
                 onCancel={handleCancelUnlock}
             />
-            {currentView === 'league' && leagueOptions.length > 0 && (
+            {currentView === 'league' && leagueOptions.length > 1 && (
                 <LeagueSelector
                     leagues={leagueOptions}
                     selectedLeague={selectedLeague}

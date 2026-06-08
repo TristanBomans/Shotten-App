@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost, Flame, Award } from 'lucide-react';
+import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
@@ -19,26 +19,18 @@ interface StatsViewProps {
     onSelectPlayer?: (id: number | null) => void;
 }
 
-// Rank configuration
+// Rank configuration — percentage based
 export const RANKS = [
-    { name: 'Club Legend', icon: Trophy, minScore: 1300, color: 'var(--color-warning)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
-    { name: 'Ultra', icon: Megaphone, minScore: 1100, color: 'var(--color-warning-secondary)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
-    { name: 'Plastic Fan', icon: Sparkles, minScore: 1000, color: 'var(--color-accent)', bg: 'rgb(var(--color-accent-rgb) / 0.15)' },
-    { name: 'Bench Warmer', icon: Armchair, minScore: 800, color: 'var(--color-text-tertiary)', bg: 'rgb(var(--color-text-tertiary-rgb) / 0.15)' },
-    { name: 'Casual', icon: Beer, minScore: 500, color: 'var(--color-warning-secondary)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
-    { name: 'Professional Ghost', icon: Ghost, minScore: 0, color: 'var(--color-accent-secondary)', bg: 'rgb(var(--color-accent-rgb) / 0.15)' },
+    { name: 'Club Legend', icon: Trophy, minPct: 90, color: 'var(--color-warning)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
+    { name: 'Ultra', icon: Megaphone, minPct: 75, color: 'var(--color-warning-secondary)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
+    { name: 'Plastic Fan', icon: Sparkles, minPct: 60, color: 'var(--color-accent)', bg: 'rgb(var(--color-accent-rgb) / 0.15)' },
+    { name: 'Bench Warmer', icon: Armchair, minPct: 45, color: 'var(--color-text-tertiary)', bg: 'rgb(var(--color-text-tertiary-rgb) / 0.15)' },
+    { name: 'Casual', icon: Beer, minPct: 25, color: 'var(--color-warning-secondary)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
+    { name: 'Professional Ghost', icon: Ghost, minPct: 0, color: 'var(--color-accent-secondary)', bg: 'rgb(var(--color-accent-rgb) / 0.15)' },
 ];
 
-export const POINTS = {
-    present: 50,
-    maybe: -50,
-    notPresent: -50,
-    ghost: -100,
-    base: 1000,
-};
-
-function getRank(score: number) {
-    return RANKS.find(r => score >= r.minScore) || RANKS[RANKS.length - 1];
+function getRank(attendancePct: number) {
+    return RANKS.find(r => attendancePct >= r.minPct) || RANKS[RANKS.length - 1];
 }
 
 interface MatchResult {
@@ -46,66 +38,15 @@ interface MatchResult {
     matchName: string;
     date: Date;
     status: 'present' | 'maybe' | 'notPresent' | 'ghost';
-    points: number;
 }
 
-export interface ScoreHistoryPoint {
-    date: number;
-    score: number;
+export interface AttendanceHistoryPoint {
+    matchIndex: number;
+    attendancePct: number;
     matchName: string;
-    delta: number;
 }
 
-function calculateScoreHistory(player: Player, allMatches: Match[]): ScoreHistoryPoint[] {
-    const now = Date.now();
-    const relevantMatches = allMatches.filter(m => {
-        const isPast = parseDateToTimestamp(m.date) < now;
-        const isPlayerTeam = player.teamIds.includes(m.teamId);
-        const hasAttendees = m.attendances?.some(a => a.status === 'Present');
-        const isForfait = m.forfait === true;
-        return isPast && isPlayerTeam && hasAttendees && !isForfait;
-    });
-
-    // Sort ASCENDING (oldest first) for chronological history
-    const sortedMatches = [...relevantMatches].sort((a, b) =>
-        parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date)
-    );
-
-    let runningScore = POINTS.base;
-    const history: ScoreHistoryPoint[] = [{
-        date: 0,
-        score: POINTS.base,
-        matchName: 'Start',
-        delta: 0,
-    }];
-
-    sortedMatches.forEach((match, index) => {
-        const attendance = match.attendances?.find(a => a.playerId === player.id);
-        let delta: number;
-
-        if (!attendance) {
-            delta = POINTS.ghost;
-        } else if (attendance.status === 'Present') {
-            delta = POINTS.present;
-        } else if (attendance.status === 'Maybe') {
-            delta = POINTS.maybe;
-        } else {
-            delta = POINTS.notPresent;
-        }
-
-        runningScore += delta;
-        history.push({
-            date: index + 1,
-            score: runningScore,
-            matchName: match.name,
-            delta,
-        });
-    });
-
-    return history;
-}
-
-function calculatePlayerScore(player: Player, allMatches: Match[]) {
+function calculatePlayerStats(player: Player, allMatches: Match[]) {
     // Filter: player's team's matches, past, and at least 1 person Present
     const now = Date.now();
     const relevantMatches = allMatches.filter(m => {
@@ -120,7 +61,6 @@ function calculatePlayerScore(player: Player, allMatches: Match[]) {
         parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date)
     );
 
-    let score = POINTS.base;
     let presentCount = 0;
     let maybeCount = 0;
     let absentCount = 0;
@@ -132,38 +72,30 @@ function calculatePlayerScore(player: Player, allMatches: Match[]) {
         const attendance = match.attendances?.find(a => a.playerId === player.id);
 
         let status: MatchResult['status'];
-        let points: number;
 
         if (!attendance) {
             status = 'ghost';
-            points = POINTS.ghost;
             ghostCount++;
         } else if (attendance.status === 'Present') {
             status = 'present';
-            points = POINTS.present;
             presentCount++;
         } else if (attendance.status === 'Maybe') {
             status = 'maybe';
-            points = POINTS.maybe;
             maybeCount++;
         } else {
             status = 'notPresent';
-            points = POINTS.notPresent;
             absentCount++;
         }
 
-        score += points;
         matchResults.push({
             matchId: match.id,
             matchName: match.name,
             date: parseDate(match.date) || new Date(0),
             status,
-            points,
         });
     });
 
     const recentForm = matchResults.slice(0, 5).map(r => r.status);
-    const scoreHistory = calculateScoreHistory(player, allMatches);
 
     // Streak calculation (matches newest-first in matchResults)
     let currentPresent = 0;
@@ -195,25 +127,41 @@ function calculatePlayerScore(player: Player, allMatches: Match[]) {
 
     const attendancePct = relevantMatches.length > 0 ? Math.round((presentCount / relevantMatches.length) * 100) : 0;
 
+    // Build chronological attendance history (oldest first)
+    const chronologicalMatches = [...relevantMatches].sort((a, b) =>
+        parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date)
+    );
+    let runningPresent = 0;
+    const attendanceHistory: AttendanceHistoryPoint[] = chronologicalMatches.map((match, index) => {
+        const attendance = match.attendances?.find(a => a.playerId === player.id);
+        if (attendance?.status === 'Present') {
+            runningPresent++;
+        }
+        return {
+            matchIndex: index + 1,
+            attendancePct: Math.round((runningPresent / (index + 1)) * 100),
+            matchName: match.name,
+        };
+    });
+
     return {
-        score,
         presentCount,
         maybeCount,
         absentCount,
         ghostCount,
         totalMatches: relevantMatches.length,
-        rank: getRank(score),
+        rank: getRank(attendancePct),
         recentForm,
         matchResults,
-        scoreHistory,
         currentStreakPresent: currentPresent,
         currentStreakAbsent: currentAbsent,
         bestStreak: bestPresent,
         attendancePct,
+        attendanceHistory,
     };
 }
 
-export type PlayerWithStats = Player & { stats: ReturnType<typeof calculatePlayerScore> };
+export type PlayerWithStats = Player & { stats: ReturnType<typeof calculatePlayerStats> };
 
 export default function StatsView({
     matches,
@@ -236,8 +184,8 @@ export default function StatsView({
 
     const playerStats = players.map(player => ({
         ...player,
-        stats: calculatePlayerScore(player, matches),
-    })).sort((a, b) => b.stats.score - a.stats.score);
+        stats: calculatePlayerStats(player, matches),
+    })).sort((a, b) => b.stats.attendancePct - a.stats.attendancePct);
 
     const selectedPlayer = selectedPlayerId != null
         ? playerStats.find(p => p.id === selectedPlayerId) || null
@@ -349,13 +297,31 @@ export default function StatsView({
                                 </div>
                             </div>
 
-                            {/* Score */}
+                            {/* Attendance % */}
                             <div style={{
-                                fontSize: '1.25rem',
-                                fontWeight: 700,
-                                color: 'var(--color-text-primary)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'flex-end',
+                                gap: 2,
                             }}>
-                                {player.stats.score}
+                                <div style={{
+                                    fontSize: '1.25rem',
+                                    fontWeight: 700,
+                                    color: player.stats.attendancePct >= 80
+                                        ? 'var(--color-success)'
+                                        : player.stats.attendancePct >= 50
+                                            ? 'var(--color-warning)'
+                                            : 'var(--color-danger)',
+                                }}>
+                                    {player.stats.attendancePct}%
+                                </div>
+                                <div style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    color: 'var(--color-text-tertiary)',
+                                }}>
+                                    present
+                                </div>
                             </div>
                         </motion.div>
                     ))}

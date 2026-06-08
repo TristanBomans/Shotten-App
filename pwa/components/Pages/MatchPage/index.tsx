@@ -21,7 +21,7 @@ interface MatchPageProps {
     onClose: () => void;
 }
 
-const OWN_TEAMS = ['FC Degradé', 'Wille ma ni kunne'];
+const OWN_TEAMS = ['Wille ma ni kunne'];
 const modalTabs = ['squad', 'opponent'] as const;
 
 export default function MatchPage({ match, dateObj, roster, currentPlayerId, open, onClose }: MatchPageProps) {

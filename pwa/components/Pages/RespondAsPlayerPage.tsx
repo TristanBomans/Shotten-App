@@ -371,16 +371,21 @@ export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayer
                                     ) : localMatches.length === 0 ? (
                                         <div
                                             style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 8,
+                                                padding: '48px 24px',
                                                 textAlign: 'center',
-                                                padding: '40px 0',
-                                                color: 'var(--color-text-secondary)',
+                                                color: 'var(--color-text-tertiary)',
                                             }}
                                         >
-                                            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>⚽</div>
-                                            <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                                            <div style={{ fontSize: '2rem', opacity: 0.3, marginBottom: 4 }}>⚽</div>
+                                            <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
                                                 No upcoming matches
                                             </div>
-                                            <div style={{ fontSize: '0.9rem' }}>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>
                                                 This player has no matches to respond to
                                             </div>
                                         </div>

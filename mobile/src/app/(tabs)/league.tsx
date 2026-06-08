@@ -26,7 +26,7 @@ const t = androidDarkTheme;
 const { width: SCREEN_W } = Dimensions.get("window");
 
 // Teams that belong to "us" — highlighted across the app
-const OUR_TEAM_KEYWORDS = ["wille", "degradé"];
+const OUR_TEAM_KEYWORDS = ["wille"];
 function isOurTeam(name: string): boolean {
   const n = name.toLowerCase();
   return OUR_TEAM_KEYWORDS.some((k) => n.includes(k));
@@ -239,17 +239,19 @@ export default function LeagueScreen() {
               </Text>
             )}
           </View>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setLeaguePickerOpen(true)}
-            style={styles.leaguePickerBtn}
-          >
-            <MaterialCommunityIcons
-              name="swap-horizontal"
-              size={18}
-              color={t.colors.primary}
-            />
-          </TouchableOpacity>
+          {leagues.length > 1 && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setLeaguePickerOpen(true)}
+              style={styles.leaguePickerBtn}
+            >
+              <MaterialCommunityIcons
+                name="swap-horizontal"
+                size={18}
+                color={t.colors.primary}
+              />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ── Tab Bar ── */}

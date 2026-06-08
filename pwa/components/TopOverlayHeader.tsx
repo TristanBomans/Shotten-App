@@ -45,7 +45,7 @@ export default function TopOverlayHeader({
     const leagueHeaderControls = title.toLowerCase() === 'league' ? leagueControls : undefined;
     const statsHeaderControls = title.toLowerCase() === 'leaderboard' ? statsControls : undefined;
     const homeHeaderControls = title.toLowerCase() === 'matches' ? homeControls : undefined;
-    const showLeagueControls = Boolean(leagueHeaderControls);
+    const showLeagueControls = Boolean(leagueHeaderControls) && (leagueHeaderControls?.hasLeagues ?? false);
     const showStatsControls = Boolean(statsHeaderControls);
     const showHomeControls = Boolean(homeHeaderControls);
     const showInlineControls = showLeagueControls || showStatsControls || showHomeControls;
@@ -155,7 +155,6 @@ export default function TopOverlayHeader({
                                         event.preventDefault();
                                         leagueHeaderControls?.onOpenLeagueSelector();
                                     }}
-                                    disabled={!leagueHeaderControls?.hasLeagues}
                                     aria-label={`Selected league ${leagueHeaderControls?.selectedLeague || 'none'}. Tap to cycle leagues.`}
                                     style={{
                                         ...compactControlStyle,
@@ -163,7 +162,6 @@ export default function TopOverlayHeader({
                                         maxWidth: 'min(112px, 28vw)',
                                         padding: '0 8px',
                                         justifyContent: 'flex-start',
-                                        opacity: leagueHeaderControls?.hasLeagues ? 1 : 0.5,
                                         flexShrink: 0,
                                     }}
                                 >
