@@ -28,7 +28,7 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
         : 1;
 
     const neededPresent = nextRank
-        ? Math.max(0, Math.ceil((nextRank.minPct / 100) * s.totalMatches) - s.presentCount)
+        ? Math.max(0, Math.ceil(((nextRank.minPct / 100) * s.totalMatches - s.presentCount) / (1 - nextRank.minPct / 100)))
         : 0;
 
     const streakValue = s.currentStreakPresent > 0 ? s.currentStreakPresent : s.currentStreakAbsent;

@@ -118,16 +118,16 @@ export default function RulesPage({ open, onClose }: RulesPageProps) {
                 >
                     <div style={{ marginBottom: 20 }}>
                         <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', marginBottom: 10 }}>
-                            Points
+                            Attendance
                         </h3>
                         <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: 12 }}>
-                            Start with <strong style={{ color: 'var(--color-text-primary)' }}>1000</strong> points.
+                            Your rank is determined by your attendance rate — the percentage of matches you show up for.
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <PointRow emoji="✅" label="Present" points="+50" color="var(--color-success)" />
-                            <PointRow emoji="⚠️" label="Maybe" points="-50" color="var(--color-warning)" />
-                            <PointRow emoji="❌" label="Absent" points="-50" color="var(--color-danger)" />
-                            <PointRow emoji="👻" label="Ghost" points="-100" color="var(--color-text-tertiary)" />
+                            <PointRow emoji="✅" label="Present" points="Counts toward %" color="var(--color-success)" />
+                            <PointRow emoji="⚠️" label="Maybe" points="Lowers %" color="var(--color-warning)" />
+                            <PointRow emoji="❌" label="Absent" points="Lowers %" color="var(--color-danger)" />
+                            <PointRow emoji="👻" label="Ghost" points="Lowers %" color="var(--color-text-tertiary)" />
                         </div>
                     </div>
 
