@@ -25,6 +25,7 @@ npm-debug.log*
 
 # env files (can opt-in for committing if needed)
 /pwa/.env*
+/pwa/.wrangler/
 
 # typescript
 /pwa/*.tsbuildinfo
