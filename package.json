@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "bun@1.3.6",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "build": "bun run build:cf",
     "build:cf": "cd pwa && bun run build:cf && rm -rf ../.open-next && cp -R .open-next ../.open-next",
