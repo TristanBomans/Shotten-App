@@ -3,6 +3,7 @@
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "pages_build_output_dir": ".open-next/assets",
+  "no_bundle": true,
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://bvwjoptvnxpttwkstiue.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_YaWg2zCaLJqZrVYv0K-9sQ_vXXYEImm"
