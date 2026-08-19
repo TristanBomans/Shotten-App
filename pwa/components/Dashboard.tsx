@@ -830,7 +830,7 @@ export default function Dashboard({
                         flexShrink: 0,
                         scrollSnapAlign: 'start',
                         scrollSnapStop: 'always',
-                        overflowY: 'hidden', // LeagueView handles its own scrolling
+                        overflowY: 'auto',
                     }}
                 >
                     <LeagueView
