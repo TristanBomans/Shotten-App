@@ -393,9 +393,7 @@ export default function MatchCard({
             </div>
 
             {/* Modal */}
-            {isModalOpen && (
-                <MatchPage match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />
-            )}
+            <MatchPage match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />
         </motion.div>
     );
 }
