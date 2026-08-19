@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { fetchAllScraperTeams, type ScraperTeam } from '@/lib/useData';
 import { Loader2 } from 'lucide-react';
@@ -13,6 +13,70 @@ interface LeagueViewProps {
     onLeagueDataChange?: (data: { leagues: string[]; teams: ScraperTeam[] }) => void;
     selectedTeamId?: number | null;
     onSelectTeam?: (id: number | null) => void;
+}
+
+function isOwnTeam(name: string) {
+    return name.toLowerCase().includes('wille ma ni');
+}
+
+function rankColor(rank: number, total: number) {
+    if (rank === 1) return 'var(--color-warning)';
+    if (rank === total && total > 1) return 'var(--color-danger)';
+    return 'var(--color-text-tertiary)';
+}
+
+function gdColor(gd: number) {
+    if (gd > 0) return 'var(--color-success)';
+    if (gd < 0) return 'var(--color-danger)';
+    return 'var(--color-text-tertiary)';
+}
+
+const TABULAR: CSSProperties = { fontVariantNumeric: 'tabular-nums' };
+
+function TeamMeta({ team }: { team: ScraperTeam }) {
+    const played = team.matchesPlayed ?? 0;
+    if (played === 0) return null;
+
+    const w = team.wins ?? 0;
+    const d = team.draws ?? 0;
+    const l = team.losses ?? 0;
+    const gf = team.goalsFor ?? 0;
+    const ga = team.goalsAgainst ?? 0;
+
+    const letter: CSSProperties = { fontStyle: 'normal', fontWeight: 600 };
+    const num: CSSProperties = { fontWeight: 600, color: 'var(--color-text-secondary)', ...TABULAR };
+
+    return (
+        <div
+            style={{
+                marginTop: 3,
+                fontSize: '0.72rem',
+                letterSpacing: '0.01em',
+                color: 'var(--color-text-tertiary)',
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 5,
+                whiteSpace: 'nowrap',
+            }}
+        >
+            <span style={TABULAR}>{played} played</span>
+            <span style={{ opacity: 0.5 }}>·</span>
+            <span style={TABULAR}>
+                <span style={num}>{w}</span>
+                <i style={{ ...letter, color: 'var(--color-success)' }}>W</i>
+                {'\u00A0'}
+                <span style={num}>{d}</span>
+                <i style={{ ...letter, color: 'var(--color-text-tertiary)' }}>D</i>
+                {'\u00A0'}
+                <span style={num}>{l}</span>
+                <i style={{ ...letter, color: 'var(--color-danger)' }}>L</i>
+            </span>
+            <span style={{ opacity: 0.5 }}>·</span>
+            <span style={TABULAR}>
+                {gf}<span style={{ opacity: 0.6 }}>–</span>{ga}
+            </span>
+        </div>
+    );
 }
 
 export default function LeagueView({
@@ -32,12 +96,11 @@ export default function LeagueView({
     }, [teams]);
 
     const leagues = useMemo(() => {
-        const ourTeams = teams.filter(t => t.name.toLowerCase().includes('wille ma ni'));
+        const ourTeams = teams.filter(t => isOwnTeam(t.name));
         const ourLeagues = Array.from(new Set(ourTeams.map(t => t.leagueName).filter(Boolean))) as string[];
         return ourLeagues.length > 0 ? ourLeagues.sort() : allLeagues;
     }, [allLeagues, teams]);
 
-    // Keep the selected league aligned with the filtered single-team league list.
     useEffect(() => {
         if (leagues.length === 0) return;
         if (!selectedLeague || !leagues.includes(selectedLeague)) {
@@ -69,17 +132,6 @@ export default function LeagueView({
         loadData();
     }, []);
 
-    const handleTeamClick = (team: ScraperTeam) => {
-        hapticPatterns.tap();
-        onSelectTeam?.(team.externalId);
-    };
-
-    const isOwnTeam = (name: string) => {
-        const lower = name.toLowerCase();
-        return lower.includes('wille ma ni');
-    };
-
-    // Filter teams by selected league
     const filteredTeams = useMemo(() => {
         if (!selectedLeague) return [];
         return teams
@@ -91,196 +143,156 @@ export default function LeagueView({
         ? teams.find(t => t.externalId === selectedTeamId) || null
         : null;
 
+    const handleTeamClick = (team: ScraperTeam) => {
+        hapticPatterns.tap();
+        onSelectTeam?.(team.externalId);
+    };
+
+    if (loading) {
+        return (
+            <div className="container content-under-top-overlay flex-center" style={{ minHeight: '60dvh' }}>
+                <Loader2 className="animate-spin" size={24} color="var(--color-text-secondary)" />
+            </div>
+        );
+    }
+
     return (
-        <div
-            style={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-            }}
-        >
-            <div
-                className="container content-under-top-overlay scrollbar-hide"
-                style={{ flex: 1, overflowY: 'auto' }}
-            >
-                {loading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: 60 }}>
-                        <Loader2 className="animate-spin" size={24} color="var(--color-text-secondary)" />
-                    </div>
-                ) : (
-                    <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.15 }}
-                        style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+        <>
+            <div className="container content-under-top-overlay">
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25 }}
+                    style={{
+                        background: 'var(--color-surface)',
+                        backdropFilter: 'blur(40px)',
+                        WebkitBackdropFilter: 'blur(40px)',
+                        borderRadius: 16,
+                        border: '0.5px solid var(--color-border)',
+                        overflow: 'hidden',
+                    }}
+                >
+                    <div
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: '26px 1fr 38px 42px',
+                            gap: 12,
+                            padding: '12px 18px 11px',
+                            borderBottom: '0.5px solid var(--color-border-subtle)',
+                            fontSize: '0.62rem',
+                            fontWeight: 600,
+                            color: 'var(--color-text-tertiary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.09em',
+                        }}
                     >
-                        <div style={{
-                            background: 'var(--color-surface)',
-                            backdropFilter: 'blur(40px)',
-                            WebkitBackdropFilter: 'blur(40px)',
-                            borderRadius: 20,
-                            border: '0.5px solid var(--color-border)',
-                            overflow: 'hidden',
-                        }}>
-                            {/* Table Header */}
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: '28px 1fr 32px 32px 38px 38px',
-                                gap: 6,
-                                padding: '10px 12px',
-                                borderBottom: '0.5px solid var(--color-border-subtle)',
-                                fontSize: '0.65rem',
-                                fontWeight: 700,
-                                color: 'var(--color-text-tertiary)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.03em',
-                            }}>
-                                <div style={{ textAlign: 'center' }}>#</div>
-                                <div>Team</div>
-                                <div style={{ textAlign: 'center' }}>MP</div>
-                                <div style={{ textAlign: 'center' }}>GD</div>
-                                <div style={{ textAlign: 'center' }}>Pts</div>
-                                <div style={{ textAlign: 'center' }}>Avg</div>
-                            </div>
+                        <div>#</div>
+                        <div>Team</div>
+                        <div style={{ textAlign: 'right' }}>GD</div>
+                        <div style={{ textAlign: 'right' }}>Pts</div>
+                    </div>
 
-                            {/* Table Rows */}
-                            {filteredTeams.length > 0 ? filteredTeams.map((team, index) => {
-                                const isHighlighted = isOwnTeam(team.name);
-                                const isFirst = team.rank === 1;
-                                const isLast = team.rank === filteredTeams.length;
+                    {filteredTeams.length > 0 ? filteredTeams.map((team, index) => {
+                        const rank = team.rank ?? index + 1;
+                        const highlighted = isOwnTeam(team.name);
+                        const isLast = index === filteredTeams.length - 1;
+                        const gd = team.goalDifference ?? 0;
 
-                                return (
-                                    <motion.div
-                                        key={team.externalId}
-                                        onClick={() => handleTeamClick(team)}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.02, duration: 0.2 }}
-                                        whileTap={{ scale: 0.99, backgroundColor: 'var(--color-surface-hover)' }}
+                        return (
+                            <motion.button
+                                key={team.externalId}
+                                type="button"
+                                onClick={() => handleTeamClick(team)}
+                                whileTap={{ scale: 0.99 }}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.02, duration: 0.18 }}
+                                style={{
+                                    width: '100%',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'grid',
+                                    gridTemplateColumns: '26px 1fr 38px 42px',
+                                    gap: 12,
+                                    padding: '18px 18px',
+                                    alignItems: 'center',
+                                    textAlign: 'left',
+                                    background: highlighted
+                                        ? 'rgb(var(--color-accent-rgb) / 0.055)'
+                                        : 'transparent',
+                                    boxShadow: highlighted
+                                        ? 'inset 2px 0 0 var(--color-accent)'
+                                        : 'inset 2px 0 0 transparent',
+                                    borderBottom: isLast
+                                        ? 'none'
+                                        : '0.5px solid var(--color-border-subtle)',
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontWeight: 600,
+                                        fontSize: '0.82rem',
+                                        ...TABULAR,
+                                        color: rankColor(rank, filteredTeams.length),
+                                    }}
+                                >
+                                    {rank}
+                                </div>
+
+                                <div style={{ minWidth: 0 }}>
+                                    <div
                                         style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: '28px 1fr 32px 32px 38px 38px',
-                                            gap: 6,
-                                            padding: '12px',
-                                            borderBottom: '0.5px solid var(--color-border-subtle)',
-                                            fontSize: '0.85rem',
+                                            fontWeight: highlighted ? 700 : 600,
+                                            fontSize: '0.92rem',
                                             color: 'var(--color-text-primary)',
-                                            alignItems: 'center',
-                                            cursor: 'pointer',
-                                            backgroundColor: isHighlighted ? 'rgb(var(--color-accent-rgb) / 0.12)' : 'transparent',
-                                            position: 'relative',
+                                            lineHeight: 1.25,
+                                            letterSpacing: '-0.005em',
                                         }}
                                     >
-                                        {/* Highlight bar */}
-                                        {isHighlighted && (
-                                            <div style={{
-                                                position: 'absolute',
-                                                left: 0, top: 0, bottom: 0,
-                                                width: 3,
-                                                background: 'var(--color-accent)',
-                                                borderRadius: '0 2px 2px 0',
-                                            }} />
-                                        )}
-
-                                        {/* Rank */}
-                                        <div style={{
-                                            textAlign: 'center',
-                                            fontWeight: 700,
-                                            fontSize: '0.8rem',
-                                            color: isFirst ? 'var(--color-warning)' : isLast ? 'var(--color-danger)' : 'var(--color-text-tertiary)',
-                                        }}>
-                                            {team.rank}
-                                        </div>
-
-                                        {/* Team */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-                                            {team.imageBase64 ? (
-                                                <img
-                                                    src={team.imageBase64}
-                                                    alt=""
-                                                    style={{
-                                                        width: 26, height: 26,
-                                                        borderRadius: 6,
-                                                        objectFit: 'cover',
-                                                        flexShrink: 0,
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div style={{
-                                                    width: 26, height: 26,
-                                                    borderRadius: 6,
-                                                    background: isFirst ? 'linear-gradient(135deg, var(--color-warning), var(--color-warning-secondary))' : 'var(--color-surface-hover)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontSize: '0.6rem',
-                                                    fontWeight: 700,
-                                                    color: isFirst ? 'var(--color-bg)' : 'var(--color-text-primary)',
-                                                    flexShrink: 0,
-                                                }}>
-                                                    {team.name.charAt(0)}
-                                                </div>
-                                            )}
-                                            <div style={{
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                fontWeight: isHighlighted ? 700 : 500,
-                                            }}>
-                                                {team.name}
-                                            </div>
-                                        </div>
-
-                                        {/* MP */}
-                                        <div style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: '0.8rem' }}>
-                                            {team.matchesPlayed}
-                                        </div>
-
-                                        {/* GD */}
-                                        <div style={{
-                                            textAlign: 'center',
-                                            color: (team.goalDifference || 0) > 0 ? 'var(--color-success)' : (team.goalDifference || 0) < 0 ? 'var(--color-danger)' : 'var(--color-text-tertiary)',
-                                            fontSize: '0.8rem',
-                                            fontWeight: 600,
-                                        }}>
-                                            {(team.goalDifference || 0) > 0 ? '+' : ''}{team.goalDifference || 0}
-                                        </div>
-
-                                        {/* Points */}
-                                        <div style={{
-                                            textAlign: 'center',
-                                            fontWeight: 800,
-                                            fontSize: '0.9rem',
-                                        }}>
-                                            {team.points}
-                                        </div>
-
-                                        {/* PPM */}
-                                        <div style={{
-                                            textAlign: 'center',
-                                            color: 'var(--color-accent)',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                        }}>
-                                            {team.pointsPerMatch?.toFixed(1)}
-                                        </div>
-                                    </motion.div>
-                                );
-                            }) : (
-                                <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-tertiary)' }}>
-                                    No teams found for this league
+                                        {team.name}
+                                    </div>
+                                    <TeamMeta team={team} />
                                 </div>
-                            )}
+
+                                <div
+                                    style={{
+                                        textAlign: 'right',
+                                        fontWeight: 600,
+                                        fontSize: '0.8rem',
+                                        ...TABULAR,
+                                        color: gdColor(gd),
+                                    }}
+                                >
+                                    {gd > 0 ? `+${gd}` : gd}
+                                </div>
+
+                                <div
+                                    style={{
+                                        textAlign: 'right',
+                                        fontWeight: 700,
+                                        fontSize: '1.02rem',
+                                        ...TABULAR,
+                                        letterSpacing: '-0.01em',
+                                        color: 'var(--color-text-primary)',
+                                    }}
+                                >
+                                    {team.points ?? 0}
+                                </div>
+                            </motion.button>
+                        );
+                    }) : (
+                        <div style={{ padding: 28, textAlign: 'center', color: 'var(--color-text-tertiary)' }}>
+                            No teams found for this league
                         </div>
-                    </motion.div>
-                )}
+                    )}
+                </motion.div>
             </div>
-            {/* Page */}
+
             <TeamDetailPage
                 team={selectedTeam || ({} as ScraperTeam)}
                 open={Boolean(selectedTeam)}
                 onClose={() => onSelectTeam?.(null)}
             />
-        </div>
+        </>
     );
 }

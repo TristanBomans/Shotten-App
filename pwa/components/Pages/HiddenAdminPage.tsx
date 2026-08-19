@@ -47,12 +47,12 @@ interface LogsResponse {
 }
 
 function formatBackupName(filename: string): string {
-    // Parse "supabase_backup_2026-03-31T02-00-00-054Z.dump" into readable date
-    const match = filename.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})/);
+    // Filenames are UTC, e.g. "supabase_backup_2026-03-31T02-00-00-054Z.dump"
+    const match = filename.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})(?:-(\d{2}))?/);
     if (!match) return filename;
 
-    const [, year, month, day, hour, minute] = match;
-    const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:00`);
+    const [, year, month, day, hour, minute, second] = match;
+    const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second || '00'}Z`);
 
     return date.toLocaleDateString('en-GB', {
         day: 'numeric',

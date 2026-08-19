@@ -122,7 +122,7 @@ export default function MatchCard({
                     backdropFilter: 'blur(40px)',
                     WebkitBackdropFilter: 'blur(40px)',
                     borderRadius: 20,
-                    border: '0.5px solid var(--color-border)',
+                    border: '1px solid var(--color-border)',
                     overflow: 'hidden',
                     position: 'relative',
                     cursor: 'pointer',
@@ -393,9 +393,7 @@ export default function MatchCard({
             </div>
 
             {/* Modal */}
-            {isModalOpen && (
-                <MatchPage match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />
-            )}
+            <MatchPage match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />
         </motion.div>
     );
 }
