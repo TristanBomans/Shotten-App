@@ -804,8 +804,8 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    {matches
-                                        .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date))
+                                    {[...matches]
+                                        .sort((a, b) => parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date))
                                         .map(match => (
                                             <MatchRow key={match.externalId} match={match} teamName={team?.name || ''} />
                                         ))}
