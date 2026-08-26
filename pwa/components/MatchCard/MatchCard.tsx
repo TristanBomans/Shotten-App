@@ -119,8 +119,8 @@ export default function MatchCard({
                 whileTap={{ scale: 0.98 }}
                 style={{
                     background: 'var(--color-surface)',
-                    backdropFilter: 'blur(40px)',
-                    WebkitBackdropFilter: 'blur(40px)',
+                    backdropFilter: 'blur(40px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                     borderRadius: 20,
                     border: '1px solid var(--color-border)',
                     overflow: 'hidden',
@@ -314,8 +314,8 @@ export default function MatchCard({
             whileTap={{ scale: 0.98 }}
             style={{
                 background: 'var(--color-surface)',
-                backdropFilter: 'blur(40px)',
-                WebkitBackdropFilter: 'blur(40px)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                 borderRadius: 20,
                 border: '1px solid var(--color-border)',
                 padding: 12,

@@ -30,8 +30,8 @@ export default function UnlockDialog({ open, onConfirm, onCancel }: UnlockDialog
                             position: 'fixed',
                             inset: 0,
                             background: 'var(--color-overlay)',
-                            backdropFilter: 'blur(12px)',
-                            WebkitBackdropFilter: 'blur(12px)',
+                            backdropFilter: 'blur(12px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
                             zIndex: 10020,
                         }}
                     />
@@ -58,8 +58,8 @@ export default function UnlockDialog({ open, onConfirm, onCancel }: UnlockDialog
                                 width: '100%',
                                 maxWidth: 320,
                                 background: 'var(--color-surface)',
-                                backdropFilter: 'blur(40px)',
-                                WebkitBackdropFilter: 'blur(40px)',
+                                backdropFilter: 'blur(40px) saturate(180%)',
+                                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                                 borderRadius: 20,
                                 border: '0.5px solid var(--color-border)',
                                 padding: 20,

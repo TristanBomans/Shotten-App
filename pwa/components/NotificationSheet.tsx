@@ -41,8 +41,8 @@ export default function NotificationSheet({ open, reminders, totalCount, onRemin
                             position: 'fixed',
                             inset: 0,
                             background: 'var(--color-overlay)',
-                            backdropFilter: 'blur(12px)',
-                            WebkitBackdropFilter: 'blur(12px)',
+                            backdropFilter: 'blur(12px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
                             zIndex: 10010,
                         }}
                     />
@@ -74,8 +74,8 @@ export default function NotificationSheet({ open, reminders, totalCount, onRemin
                                 borderRadius: 24,
                                 border: '1px solid var(--color-border)',
                                 background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(40px)',
-                                WebkitBackdropFilter: 'blur(40px)',
+                                backdropFilter: 'blur(40px) saturate(180%)',
+                                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                                 boxShadow: 'var(--shadow-lg)',
                                 overflow: 'hidden',
                             }}

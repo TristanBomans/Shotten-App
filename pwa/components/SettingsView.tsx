@@ -204,8 +204,8 @@ export default function SettingsView({
                     transition={{ delay: 0.1 }}
                     style={{
                         background: 'var(--color-surface)',
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
+                        backdropFilter: 'blur(40px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                         borderRadius: 20,
                         border: '0.5px solid var(--color-border)',
                         overflow: 'hidden',
@@ -351,8 +351,8 @@ export default function SettingsView({
                     transition={{ delay: 0.12 }}
                     style={{
                         background: 'var(--color-surface)',
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
+                        backdropFilter: 'blur(40px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                         borderRadius: 20,
                         border: '0.5px solid var(--color-border)',
                         overflow: 'hidden',
@@ -573,8 +573,8 @@ export default function SettingsView({
                         transition={{ delay: 0.15 }}
                         style={{
                             background: 'var(--color-surface)',
-                            backdropFilter: 'blur(40px)',
-                            WebkitBackdropFilter: 'blur(40px)',
+                            backdropFilter: 'blur(40px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                             borderRadius: 20,
                             border: '0.5px solid var(--color-border)',
                             overflow: 'hidden',
@@ -624,8 +624,8 @@ export default function SettingsView({
                     transition={{ delay: 0.25 }}
                     style={{
                         background: 'var(--color-surface)',
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
+                        backdropFilter: 'blur(40px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                         borderRadius: 20,
                         border: '0.5px solid var(--color-border)',
                         overflow: 'hidden',
@@ -684,7 +684,7 @@ export default function SettingsView({
                                 position: 'fixed',
                                 inset: 0,
                                 background: 'var(--color-overlay)',
-                                backdropFilter: 'blur(10px)',
+                                backdropFilter: 'blur(10px) saturate(180%)',
                                 zIndex: 10000,
                             }}
                         />
@@ -707,8 +707,8 @@ export default function SettingsView({
                                     maxWidth: 320,
                                     maxHeight: '70vh',
                                     background: 'var(--color-surface)',
-                                    backdropFilter: 'blur(40px)',
-                                    WebkitBackdropFilter: 'blur(40px)',
+                                    backdropFilter: 'blur(40px) saturate(180%)',
+                                    WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                                     borderRadius: 20,
                                     padding: 20,
                                     border: '0.5px solid var(--color-border)',
@@ -816,7 +816,7 @@ export default function SettingsView({
                                 position: 'fixed',
                                 inset: 0,
                                 background: 'var(--color-overlay)',
-                                backdropFilter: 'blur(10px)',
+                                backdropFilter: 'blur(10px) saturate(180%)',
                                 zIndex: 10000,
                             }}
                         />
@@ -838,8 +838,8 @@ export default function SettingsView({
                                     width: '100%',
                                     maxWidth: 320,
                                     background: 'var(--color-surface)',
-                                    backdropFilter: 'blur(40px)',
-                                    WebkitBackdropFilter: 'blur(40px)',
+                                    backdropFilter: 'blur(40px) saturate(180%)',
+                                    WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                                     borderRadius: 20,
                                     padding: 20,
                                     border: '1px solid var(--color-border)',

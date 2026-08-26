@@ -205,8 +205,8 @@ export default function StatsView({
                     transition={{ delay: 0.1 }}
                     style={{
                         background: 'var(--color-surface)',
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
+                        backdropFilter: 'blur(40px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                         borderRadius: 20,
                         border: '0.5px solid var(--color-border)',
                         overflow: 'hidden',

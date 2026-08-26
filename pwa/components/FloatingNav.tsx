@@ -77,9 +77,12 @@ export default function FloatingNav({ currentView, onNavigate, isHidden = false 
                         gap: 6,
                         padding: 8,
                         background: 'var(--color-nav-bg)',
+                        backdropFilter: 'blur(50px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(50px) saturate(180%)',
                         borderRadius: 9999,
                         border: '1px solid var(--color-nav-border)',
-                        boxShadow: 'var(--shadow-lg)',
+                        boxShadow:
+                            'var(--shadow-lg), inset 0 1px 0 var(--glass-edge-highlight), inset 0 -1px 0 rgba(0, 0, 0, 0.15)',
                         transition: 'background var(--transition-base), border-color var(--transition-base)',
                     }}
                 >

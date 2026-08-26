@@ -120,8 +120,8 @@ export default function LeagueSelector({
                                 position: 'fixed',
                                 inset: 0,
                                 background: 'var(--color-overlay)',
-                                backdropFilter: 'blur(20px)',
-                                WebkitBackdropFilter: 'blur(20px)',
+                                backdropFilter: 'blur(20px) saturate(180%)',
+                                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                                 zIndex: 10000,
                             }}
                         />
@@ -151,8 +151,8 @@ export default function LeagueSelector({
                                     flexDirection: 'column',
                                     pointerEvents: 'auto',
                                     background: 'var(--color-glass-heavy)',
-                                    backdropFilter: 'blur(60px)',
-                                    WebkitBackdropFilter: 'blur(60px)',
+                                    backdropFilter: 'blur(60px) saturate(180%)',
+                                    WebkitBackdropFilter: 'blur(60px) saturate(180%)',
                                     borderRadius: 24,
                                     border: '0.5px solid var(--color-border)',
                                     boxShadow: 'var(--shadow-lg)',
