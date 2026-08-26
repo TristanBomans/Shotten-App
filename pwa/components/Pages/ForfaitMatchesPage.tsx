@@ -116,8 +116,8 @@ export default function ForfaitMatchesPage({ isOpen, onClose }: ForfaitMatchesPa
                             height: 40,
                             borderRadius: '50%',
                             background: 'var(--color-glass-heavy)',
-                            backdropFilter: 'blur(40px)',
-                            WebkitBackdropFilter: 'blur(40px)',
+                            backdropFilter: 'blur(40px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                             border: '0.5px solid var(--color-border)',
                             color: 'var(--color-text-primary)',
                             display: 'flex',
@@ -215,8 +215,8 @@ export default function ForfaitMatchesPage({ isOpen, onClose }: ForfaitMatchesPa
                                                 background: match.forfait
                                                     ? 'rgb(var(--color-danger-rgb) / 0.12)'
                                                     : 'var(--color-glass)',
-                                                backdropFilter: 'blur(20px)',
-                                                WebkitBackdropFilter: 'blur(20px)',
+                                                backdropFilter: 'blur(20px) saturate(180%)',
+                                                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                                                 border: `0.5px solid ${match.forfait ? 'rgb(var(--color-danger-rgb) / 0.25)' : 'var(--color-border)'}`,
                                                 borderRadius: 16,
                                                 cursor: 'pointer',

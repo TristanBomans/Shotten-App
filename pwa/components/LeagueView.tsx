@@ -165,8 +165,8 @@ export default function LeagueView({
                     transition={{ duration: 0.25 }}
                     style={{
                         background: 'var(--color-surface)',
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
+                        backdropFilter: 'blur(40px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                         borderRadius: 16,
                         border: '0.5px solid var(--color-border)',
                         overflow: 'hidden',

@@ -140,7 +140,7 @@ export default function PullToRefresh({
                         height: 40,
                         borderRadius: '50%',
                         backgroundColor: 'var(--color-surface)',
-                        backdropFilter: 'blur(20px)',
+                        backdropFilter: 'blur(20px) saturate(180%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',

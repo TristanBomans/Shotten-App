@@ -217,8 +217,8 @@ export default function RecentMatchesSheet({
                             position: 'fixed',
                             inset: 0,
                             background: 'var(--color-overlay)',
-                            backdropFilter: 'blur(16px)',
-                            WebkitBackdropFilter: 'blur(16px)',
+                            backdropFilter: 'blur(16px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(16px) saturate(180%)',
                             zIndex: 10012,
                         }}
                     />
@@ -250,8 +250,8 @@ export default function RecentMatchesSheet({
                                 borderRadius: 24,
                                 border: '1px solid var(--color-border)',
                                 background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(50px)',
-                                WebkitBackdropFilter: 'blur(50px)',
+                                backdropFilter: 'blur(50px) saturate(180%)',
+                                WebkitBackdropFilter: 'blur(50px) saturate(180%)',
                                 boxShadow: 'var(--shadow-lg)',
                                 overflow: 'hidden',
                             }}
