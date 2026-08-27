@@ -9,7 +9,7 @@ export interface PushTestState {
 const DELAY_MS = 60_000;
 const STORAGE_KEY = 'shotten-push-test-fire-at';
 const TEST_TITLE = 'Shotten test';
-const TEST_OPTIONS: NotificationOptions = {
+const TEST_OPTIONS = {
     body: 'If you can read this, notifications work on this device.',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-192x192.png',
