@@ -9,9 +9,7 @@
 		"enabled": true
 	},
 	"triggers": {
-		"crons": [
-			"*/1 * * * *"
-		]
+		"crons": []
 	},
 	"vars": {
 		"VAPID_SUBJECT": "mailto:bomanstristan@gmail.com",

@@ -41,6 +41,3 @@ jobs:
 
       - name: Deploy
         run: bunx wrangler deploy
-
-      - name: Attach cron trigger
-        run: bunx wrangler triggers deploy --schedule "*/1 * * * *"
