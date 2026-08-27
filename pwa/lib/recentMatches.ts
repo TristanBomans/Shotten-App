@@ -1,10 +1,6 @@
 import { parseDateToTimestamp } from './dateUtils';
 import { isSameTeamName } from './teamNameMatching';
 
-export const OWN_RECENT_TEAM_IDS = [1319] as const;
-export const OWN_RECENT_TEAMS: Record<number, string> = {
-    1319: 'Wille ma ni kunne',
-};
 export const RECENT_MATCH_WINDOW_MS = 72 * 60 * 60 * 1000;
 export const RECENT_MATCH_LIMIT = 5;
 
@@ -44,8 +40,12 @@ export interface RecentMatchesResponse {
     hasRecentWithin3Days: boolean;
 }
 
-export function buildRecentMatchItem(match: RecentMatchSource, nowTs = Date.now()): RecentMatchItem {
-    const teamName = OWN_RECENT_TEAMS[match.team_id] ?? match.home_team;
+export function buildRecentMatchItem(
+    match: RecentMatchSource,
+    nowTs = Date.now(),
+    teamNameByLzvId: Record<number, string> = {},
+): RecentMatchItem {
+    const teamName = teamNameByLzvId[match.team_id] ?? match.home_team;
     const isHome = isSameTeamName(match.home_team, teamName);
     const teamScore = isHome ? match.home_score : match.away_score;
     const opponentScore = isHome ? match.away_score : match.home_score;

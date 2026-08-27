@@ -21,7 +21,6 @@ interface MatchPageProps {
     onClose: () => void;
 }
 
-const OWN_TEAMS = ['Wille ma ni kunne'];
 const modalTabs = ['squad', 'opponent'] as const;
 
 export default function MatchPage({ match, dateObj, roster, currentPlayerId, open, onClose }: MatchPageProps) {
@@ -91,12 +90,8 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
 
     // Determine opponent team (the team that isn't ours)
     const teams = match.name.split('-').map(t => t.trim());
-    const opponentTeam = teams.find(t => !OWN_TEAMS.some(own =>
-        isSameTeamName(t, own)
-    )) || teams[1] || null;
-    const ownTeam = teams.find(t => OWN_TEAMS.some(own =>
-        isSameTeamName(t, own)
-    )) || teams[0] || null;
+    const ownTeam = match.teamName || teams[0] || null;
+    const opponentTeam = teams.find(t => ownTeam && !isSameTeamName(t, ownTeam)) || teams[1] || null;
 
     // Fetch opponent team data
     const {
@@ -115,6 +110,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
         ownTeam,
         open,
         enabled: activeTab === 'opponent',
+        knownOpponentId: match.opponentLzvId ?? null,
     });
 
     // Details data

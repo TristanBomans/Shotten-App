@@ -16,6 +16,7 @@ interface UseOpponentTeamDataProps {
     ownTeam: string | null;
     open: boolean;
     enabled: boolean;
+    knownOpponentId?: number | null;
 }
 
 interface UseOpponentTeamDataResult {
@@ -37,6 +38,7 @@ export function useOpponentTeamData({
     ownTeam,
     open,
     enabled,
+    knownOpponentId = null,
 }: UseOpponentTeamDataProps): UseOpponentTeamDataResult {
     const [opponentExternalId, setOpponentExternalId] = useState<number | null>(null);
     const [lookupDone, setLookupDone] = useState(false);
@@ -70,6 +72,13 @@ export function useOpponentTeamData({
 
     // Light lookup: only the LZV id, so the menu link works on the squad tab
     useEffect(() => {
+        if (knownOpponentId) {
+            setOpponentExternalId(knownOpponentId);
+            setLookupDone(true);
+            lookedUpTeamRef.current = opponentTeam;
+            return;
+        }
+
         if (!open || !opponentTeam) {
             if (!opponentTeam) setLookupDone(true);
             return;
@@ -103,7 +112,7 @@ export function useOpponentTeamData({
         return () => {
             cancelled = true;
         };
-    }, [open, opponentTeam]);
+    }, [open, opponentTeam, knownOpponentId]);
 
     // Heavy load: full team, players, matches, own team — only on the opponent tab
     useEffect(() => {
