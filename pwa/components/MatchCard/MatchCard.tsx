@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, ChevronRight, Users } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useUpdateAttendance } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
@@ -11,6 +11,74 @@ import Confetti from './Confetti';
 import { HeaderResponseButton } from './ResponseButtons';
 import { SquadMeter, SquadNamesList } from './SquadDisplay';
 import MatchPage from '../Pages/MatchPage';
+
+type Countdown = { days: number; hours: number; mins: number; secs: number };
+
+const metaSeparator: React.CSSProperties = {
+    color: 'var(--color-text-tertiary)',
+    opacity: 0.45,
+    userSelect: 'none',
+    flexShrink: 0,
+};
+
+/**
+ * Remaining time as a muted suffix of the date, never a headline of its own:
+ * compact units so the header stays a single row next to the response buttons.
+ */
+function TimeRemaining({ countdown }: { countdown: Countdown }) {
+    const { days, hours, mins, secs } = countdown;
+    const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+
+    const [text, label] =
+        days > 0
+            ? [`${days}d ${hours}h`, `${plural(days, 'day')} ${plural(hours, 'hour')}`]
+            : hours > 0
+                ? [`${hours}h ${mins}m`, `${plural(hours, 'hour')} ${plural(mins, 'minute')}`]
+                : [`${mins}m ${secs}s`, `${plural(mins, 'minute')} ${plural(secs, 'second')}`];
+
+    return (
+        <>
+            <span style={metaSeparator} aria-hidden>·</span>
+            <span
+                role="timer"
+                aria-label={`${label} until kick-off`}
+                aria-live="off"
+                style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 500,
+                    color: 'var(--color-text-tertiary)',
+                    fontVariantNumeric: 'tabular-nums',
+                    whiteSpace: 'nowrap',
+                    minWidth: 0,
+                    overflow: 'hidden',
+                }}
+            >
+                {text}
+            </span>
+        </>
+    );
+}
+
+function TapAffordance() {
+    return (
+        <ChevronRight
+            size={14}
+            strokeWidth={2}
+            aria-hidden
+            style={{ color: 'var(--color-text-tertiary)', opacity: 0.55, flexShrink: 0 }}
+        />
+    );
+}
+
+function TapForDetails() {
+    return (
+        <div style={{ marginTop: 4, textAlign: 'right' }}>
+            <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>
+                Tap for details
+            </span>
+        </div>
+    );
+}
 
 export default function MatchCard({
     match,
@@ -137,17 +205,38 @@ export default function MatchCard({
                 </AnimatePresence>
 
                 {/* Main Content */}
-                <div style={{ position: 'relative', zIndex: 1, padding: 12 }}>
-                    {/* Match Header - Same layout as compact: date left, buttons right */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                <div style={{ position: 'relative', zIndex: 1, padding: 14 }}>
+                    {/* Meta row: one line of date/time/remaining, buttons in a reserved column */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'minmax(0, 1fr) auto',
+                        alignItems: 'center',
+                        columnGap: 8,
+                        marginBottom: 12,
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0, overflow: 'hidden' }}>
+                            <span style={{
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                color: 'var(--color-text-primary)',
+                                letterSpacing: '-0.01em',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                            }}>
                                 {dayName.slice(0, 3)} {dateNum} {monthName}
                             </span>
-                            <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--color-text-tertiary)' }} />
-                            <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+                            <span style={metaSeparator} aria-hidden>·</span>
+                            <span style={{
+                                fontSize: '0.8rem',
+                                fontWeight: 500,
+                                color: 'var(--color-text-secondary)',
+                                fontVariantNumeric: 'tabular-nums',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                            }}>
                                 {timeStr}
                             </span>
+                            {!isPast && <TimeRemaining countdown={countdown} />}
                             {match.forfait && (
                                 <span style={{
                                     fontSize: '0.6rem',
@@ -158,14 +247,15 @@ export default function MatchCard({
                                     borderRadius: 6,
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.04em',
+                                    whiteSpace: 'nowrap',
+                                    flexShrink: 0,
                                 }}>
                                     Forfait
                                 </span>
                             )}
                         </div>
 
-                        {/* Response Buttons - Top right like compact variant */}
-                        <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                        <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <HeaderResponseButton type="yes" selected={myStatus === 'Present'} loading={updating === 'Present'} onClick={() => handleStatusUpdate('Present')} />
                             <HeaderResponseButton type="maybe" selected={myStatus === 'Maybe'} loading={updating === 'Maybe'} onClick={() => handleStatusUpdate('Maybe')} />
                             <HeaderResponseButton type="no" selected={myStatus === 'NotPresent'} loading={updating === 'NotPresent'} onClick={() => handleStatusUpdate('NotPresent')} />
@@ -174,14 +264,14 @@ export default function MatchCard({
 
                     {/* Teams with VS Badge - Original vertical layout */}
                     {team2 ? (
-                        <div style={{ marginBottom: 12 }}>
+                        <div>
                             <div style={{
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: 8,
+                                gap: 10,
                                 background: 'var(--color-bg-elevated)',
                                 borderRadius: 20,
-                                padding: '10px 14px',
+                                padding: '16px 16px',
                                 border: '0.5px solid var(--color-border-subtle)',
                             }}>
                                 {/* Team 1 */}
@@ -202,16 +292,17 @@ export default function MatchCard({
 
                                 {/* VS Divider */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <div style={{ flex: 1, height: '0.5px', background: 'var(--color-border)' }} />
-                                    <div style={{
-                                        padding: '5px 12px',
-                                        borderRadius: 8,
-                                        background: 'linear-gradient(135deg, #30d158 0%, #25a847 100%)',
-                                        boxShadow: '0 2px 6px rgba(48, 209, 88, 0.25)',
+                                    <div style={{ flex: 1, height: '0.5px', background: 'var(--color-border-subtle)' }} />
+                                    <span style={{
+                                        fontSize: '0.62rem',
+                                        fontWeight: 600,
+                                        color: 'var(--color-text-tertiary)',
+                                        letterSpacing: '0.12em',
+                                        textTransform: 'uppercase',
                                     }}>
-                                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'white', letterSpacing: '0.05em' }}>VS</span>
-                                    </div>
-                                    <div style={{ flex: 1, height: '0.5px', background: 'var(--color-border)' }} />
+                                        vs
+                                    </span>
+                                    <div style={{ flex: 1, height: '0.5px', background: 'var(--color-border-subtle)' }} />
                                 </div>
 
                                 {/* Team 2 */}
@@ -233,48 +324,19 @@ export default function MatchCard({
                         </div>
                     ) : (
                         <div style={{
-                            marginBottom: 16,
                             fontSize: '1.3rem',
                             fontWeight: 700,
                             color: 'var(--color-text-primary)',
                             textAlign: 'center',
                             lineHeight: 1.3,
+                            padding: '10px 0',
                         }}>
                             {team1}
                         </div>
                     )}
 
-                    {/* Countdown - Centered where buttons used to be */}
-                    {!isPast && (
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            gap: 4,
-                            marginBottom: 12,
-                            padding: '8px 16px',
-                            background: 'rgba(48, 209, 88, 0.1)',
-                            borderRadius: 12,
-                            border: '1px solid rgba(48, 209, 88, 0.15)',
-                        }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#30d158', letterSpacing: '0.02em' }}>
-                                {countdown.days > 0 ? (
-                                    // More than 1 day: show days and hours
-                                    <>{countdown.days}d {countdown.hours}h</>
-                                ) : countdown.hours > 0 ? (
-                                    // Less than 1 day: show hours and minutes
-                                    <>{countdown.hours}h {countdown.mins}m</>
-                                ) : (
-                                    // Less than 1 hour: show minutes and seconds
-                                    <>{countdown.mins}m {countdown.secs}s</>
-                                )}
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Squad Preview - Conditional based on showFullNames setting */}
                     {showFullNames ? (
-                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '0.5px solid var(--color-border-subtle)' }}>
+                        <div style={{ marginTop: 12 }}>
                             <SquadNamesList
                                 present={present}
                                 maybe={maybe}
@@ -282,24 +344,29 @@ export default function MatchCard({
                                 unknown={unknown}
                                 currentPlayerId={currentPlayerId}
                             />
+                            <TapForDetails />
                         </div>
                     ) : (
-                        <div style={{ marginTop: 8 }}>
-                            <SquadMeter
-                                present={present}
-                                maybe={maybe}
-                                notPresent={notPresent}
-                                unknown={unknown}
-                                currentPlayerId={currentPlayerId}
-                                size="md"
-                            />
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 10,
+                            marginTop: 12,
+                        }}>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                                <SquadMeter
+                                    present={present}
+                                    maybe={maybe}
+                                    notPresent={notPresent}
+                                    unknown={unknown}
+                                    currentPlayerId={currentPlayerId}
+                                    size="md"
+                                />
+                            </div>
+                            <TapAffordance />
                         </div>
                     )}
-
-                    {/* Tap hint - Bottom right like compact variant */}
-                    <div style={{ marginTop: 4, textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>Tap for details</span>
-                    </div>
                 </div>
 
                 {/* Modal */}
@@ -330,7 +397,7 @@ export default function MatchCard({
         >
             {/* Header - Compact */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--color-success)', letterSpacing: '0.03em', flexShrink: 0 }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.03em', flexShrink: 0 }}>
                     {compactDateStr} · {timeStr}
                 </span>
 
@@ -367,9 +434,8 @@ export default function MatchCard({
                 )}
             </div>
 
-            {/* Squad count - Compact (with showFullNames support) */}
             {showFullNames ? (
-                <div style={{ marginTop: 4, paddingTop: 6, borderTop: '0.5px solid var(--color-border-subtle)' }}>
+                <div style={{ marginTop: 'auto', paddingTop: 6, borderTop: '0.5px solid var(--color-border-subtle)' }}>
                     <SquadNamesList
                         present={present}
                         maybe={maybe}
@@ -377,23 +443,29 @@ export default function MatchCard({
                         unknown={unknown}
                         currentPlayerId={currentPlayerId}
                     />
+                    <TapForDetails />
                 </div>
             ) : (
-                <div style={{ marginTop: 4 }}>
-                    <SquadMeter
-                        present={present}
-                        maybe={maybe}
-                        notPresent={notPresent}
-                        unknown={unknown}
-                        currentPlayerId={currentPlayerId}
-                    />
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                    marginTop: 'auto',
+                    paddingTop: 4,
+                }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                        <SquadMeter
+                            present={present}
+                            maybe={maybe}
+                            notPresent={notPresent}
+                            unknown={unknown}
+                            currentPlayerId={currentPlayerId}
+                        />
+                    </div>
+                    <TapAffordance />
                 </div>
             )}
-
-            {/* Tap hint - Compact */}
-            <div style={{ marginTop: 4, textAlign: 'right' }}>
-                <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>Tap for details</span>
-            </div>
 
             {/* Modal */}
             <MatchPage match={match} dateObj={dateObj} roster={roster} currentPlayerId={currentPlayerId} open={!!isModalOpen} onClose={() => onCloseModal?.()} />

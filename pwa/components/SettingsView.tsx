@@ -61,7 +61,7 @@ export default function SettingsView({
     const [defaultLeague, setDefaultLeague] = useState<string>('');
     const [leagues, setLeagues] = useState<string[]>([]);
     const [showLeagueSelector, setShowLeagueSelector] = useState(false);
-    const [theme, setTheme] = useState<string>('original');
+    const [theme, setTheme] = useState<string>('oled');
     const [showThemeSelector, setShowThemeSelector] = useState(false);
     const { hasUpdate, updateApp, isChecking } = useVersionChecker();
 
@@ -80,7 +80,12 @@ export default function SettingsView({
         const savedLeague = localStorage.getItem('defaultLeague');
         if (savedLeague) setDefaultLeague(savedLeague);
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) setTheme(savedTheme);
+        const resolvedTheme = !savedTheme || savedTheme === 'original' ? 'oled' : savedTheme;
+        if (resolvedTheme !== savedTheme) {
+            localStorage.setItem('theme', resolvedTheme);
+            document.documentElement.setAttribute('data-theme', resolvedTheme);
+        }
+        setTheme(resolvedTheme);
 
         // Fetch leagues for the selector (only leagues where our team plays)
         const loadLeagues = async () => {
@@ -166,7 +171,6 @@ export default function SettingsView({
         document.documentElement.setAttribute('data-theme', newTheme);
         // Update meta theme-color
         const themeColors: Record<string, string> = {
-            original: '#050508',
             oled: '#000000',
             white: '#ffffff'
         };
@@ -180,7 +184,6 @@ export default function SettingsView({
     };
 
     const themeLabels: Record<string, string> = {
-        original: 'Original (Purple)',
         oled: 'OLED Black',
         white: 'White'
     };
@@ -882,47 +885,6 @@ export default function SettingsView({
                                     flexDirection: 'column',
                                     gap: 12,
                                 }}>
-                                    {/* Original Theme */}
-                                    <motion.button
-                                        onClick={() => handleSelectTheme('original')}
-                                        whileTap={{ scale: 0.98 }}
-                                        style={{
-                                            padding: 16,
-                                            background: theme === 'original' ? 'rgb(var(--color-accent-rgb) / 0.15)' : 'var(--color-surface-hover)',
-                                            border: `1px solid ${theme === 'original' ? 'rgb(var(--color-accent-rgb) / 0.3)' : 'var(--color-border)'}`,
-                                            borderRadius: 12,
-                                            cursor: 'pointer',
-                                            textAlign: 'left',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 12,
-                                        }}
-                                    >
-                                        <div style={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: 10,
-                                            background: '#050508',
-                                            border: '1px solid rgba(255, 255, 255, 0.12)',
-                                            position: 'relative',
-                                            overflow: 'hidden',
-                                        }}>
-                                            <div style={{
-                                                position: 'absolute',
-                                                inset: 0,
-                                                background: 'radial-gradient(ellipse at 30% 30%, rgba(175, 82, 222, 0.4) 0%, transparent 60%)',
-                                            }}/>
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: 600, color: theme === 'original' ? 'var(--color-accent)' : 'var(--color-text-primary)' }}>
-                                                Original
-                                            </div>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
-                                                Purple ethereal with gradient
-                                            </div>
-                                        </div>
-                                    </motion.button>
-
                                     {/* OLED Black Theme */}
                                     <motion.button
                                         onClick={() => handleSelectTheme('oled')}
