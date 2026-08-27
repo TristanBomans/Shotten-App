@@ -60,7 +60,12 @@ function readSubscription(input: PushSubscriptionBody | undefined) {
     return { endpoint, p256dh, auth };
 }
 
-async function flushOutbox(env: Env): Promise<{ sent: number; failed: number; gone: number }> {
+async function flushOutbox(env: Env): Promise<{
+    sent: number;
+    failed: number;
+    gone: number;
+    attempts: Array<{ id: number; status: number; ok: boolean; body: string }>;
+}> {
     const now = Date.now();
     const rows = await env.DB.prepare(
         'SELECT id, endpoint, p256dh, auth, title, body, url FROM outbox WHERE send_at <= ? ORDER BY send_at ASC LIMIT 10',
@@ -79,6 +84,7 @@ async function flushOutbox(env: Env): Promise<{ sent: number; failed: number; go
     let sent = 0;
     let failed = 0;
     let gone = 0;
+    const attempts: Array<{ id: number; status: number; ok: boolean; body: string }> = [];
     const vapidPublicRaw = parseVapidPublicRaw(env.VAPID_PUBLIC_KEY);
     const vapidPrivateJwk = parseVapidPrivateJwk(env.VAPID_PRIVATE_JWK);
 
@@ -98,6 +104,21 @@ async function flushOutbox(env: Env): Promise<{ sent: number; failed: number; go
             vapidSubject: env.VAPID_SUBJECT,
         });
 
+        attempts.push({
+            id: row.id,
+            status: result.status,
+            ok: result.ok || result.status === 201,
+            body: result.text.slice(0, 300),
+        });
+
+        console.log(JSON.stringify({
+            msg: 'webpush-attempt',
+            id: row.id,
+            status: result.status,
+            ok: result.ok,
+            body: result.text.slice(0, 300),
+        }));
+
         if (result.status === 404 || result.status === 410) {
             gone += 1;
             await env.DB.prepare('DELETE FROM subscriptions WHERE endpoint = ?').bind(row.endpoint).run();
@@ -112,15 +133,9 @@ async function flushOutbox(env: Env): Promise<{ sent: number; failed: number; go
         }
 
         failed += 1;
-        console.warn(JSON.stringify({
-            msg: 'webpush-failed',
-            status: result.status,
-            body: result.text.slice(0, 300),
-            endpointHost: new URL(row.endpoint).host,
-        }));
     }
 
-    return { sent, failed, gone };
+    return { sent, failed, gone, attempts };
 }
 
 export default {
@@ -136,6 +151,11 @@ export default {
                 ok: true,
                 vapidPublicKey: env.VAPID_PUBLIC_KEY,
             });
+        }
+
+        if (request.method === 'GET' && url.pathname === '/flush') {
+            const result = await flushOutbox(env);
+            return json(request, { ok: true, now: Date.now(), ...result });
         }
 
         if (request.method === 'POST' && url.pathname === '/subscribe') {
@@ -203,7 +223,13 @@ export default {
         return json(request, { ok: false, error: 'Not found' }, 404);
     },
 
-    async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
-        await flushOutbox(env);
+    async scheduled(controller: ScheduledController, env: Env): Promise<void> {
+        console.log(JSON.stringify({
+            msg: 'cron-tick',
+            cron: controller.cron,
+            scheduledTime: controller.scheduledTime,
+        }));
+        const result = await flushOutbox(env);
+        console.log(JSON.stringify({ msg: 'cron-flush', ...result, attempts: result.attempts }));
     },
 };
