@@ -36,21 +36,24 @@ export default function RootLayout({
                     dangerouslySetInnerHTML={{
                         __html: `
                             (function() {
-                                const theme = localStorage.getItem('theme') || 'original';
+                                let theme = localStorage.getItem('theme');
+                                if (!theme || theme === 'original') {
+                                    theme = 'oled';
+                                    localStorage.setItem('theme', theme);
+                                }
                                 document.documentElement.setAttribute('data-theme', theme);
-                                // Set meta theme-color based on theme
                                 const themeColors = {
-                                    original: '#050508',
                                     oled: '#000000',
                                     white: '#ffffff'
                                 };
                                 const meta = document.querySelector('meta[name="theme-color"]');
+                                const color = themeColors[theme] || '#000000';
                                 if (meta) {
-                                    meta.setAttribute('content', themeColors[theme] || '#050508');
+                                    meta.setAttribute('content', color);
                                 } else {
                                     const newMeta = document.createElement('meta');
                                     newMeta.setAttribute('name', 'theme-color');
-                                    newMeta.setAttribute('content', themeColors[theme] || '#050508');
+                                    newMeta.setAttribute('content', color);
                                     document.head.appendChild(newMeta);
                                 }
                             })();
@@ -59,7 +62,7 @@ export default function RootLayout({
                 />
             </head>
             <body>
-                {/* Ambient Background - theme-aware gradient for Original theme */}
+                {/* Ambient Background */}
                 <div className="ambient-bg" />
 
                 {/* Main Content */}

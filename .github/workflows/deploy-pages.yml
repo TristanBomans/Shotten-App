@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
     defaults:
       run:
         working-directory: pwa
@@ -23,6 +24,7 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+      WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.json
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,9 +56,82 @@ jobs:
         run: bun run build:cf
 
       - name: Deploy to Cloudflare Pages
+        id: deploy
         run: |
           bunx wrangler pages deploy .open-next/assets \
             --project-name shotten-app \
             --branch "${GITHUB_REF_NAME}" \
             --commit-hash "${GITHUB_SHA}" \
-            --commit-dirty=true
+            --commit-dirty=true \
+            | tee "${RUNNER_TEMP}/wrangler-deploy.log"
+
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          import os
+          import re
+
+          url = ""
+          alias = ""
+          environment = ""
+          output_path = os.environ.get("WRANGLER_OUTPUT_FILE_PATH", "")
+          log_path = os.path.join(os.environ["RUNNER_TEMP"], "wrangler-deploy.log")
+
+          if output_path and os.path.exists(output_path):
+              with open(output_path) as handle:
+                  for raw_line in handle:
+                      line = raw_line.strip()
+                      if not line:
+                          continue
+                      try:
+                          entry = json.loads(line)
+                      except json.JSONDecodeError:
+                          continue
+                      if entry.get("type") in ("pages-deploy", "pages-deploy-detailed"):
+                          url = entry.get("url") or url
+                          alias = entry.get("alias") or alias
+                          environment = entry.get("environment") or environment
+
+          if not url and os.path.exists(log_path):
+              text = open(log_path).read()
+              alias_match = re.search(r"Deployment alias URL:\s*(https://\S+)", text)
+              peek_match = re.search(r"Take a peek over at (https://\S+)", text)
+              if alias_match:
+                  alias = alias_match.group(1).rstrip(".")
+              if peek_match:
+                  url = peek_match.group(1).rstrip(".")
+
+          preview = alias or url
+          print(f"preview_url={preview}")
+          print(f"environment={environment}")
+          PY
+
+      - name: Comment preview URL on PR
+        if: github.ref != 'refs/heads/main' && steps.deploy.outputs.preview_url != ''
+        continue-on-error: true
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          PR_NUMBER=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No open pull request for $GITHUB_REF_NAME"
+            exit 0
+          fi
+
+          MARKER="<!-- shotten-pages-preview -->"
+          BODY=$(cat <<EOF
+          ${MARKER}
+          Preview is up: ${PREVIEW_URL}
+
+          Branch: \`${GITHUB_REF_NAME}\`
+          Commit: \`${GITHUB_SHA:0:7}\`
+          EOF
+          )
+
+          COMMENT_ID=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate --jq ".[] | select(.user.login==\"github-actions[bot]\" and (.body | contains(\"${MARKER}\"))) | .id" | tail -n 1)
+          if [ -n "$COMMENT_ID" ]; then
+            gh api "repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}" -X PATCH -f body="$BODY"
+          else
+            gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          fi

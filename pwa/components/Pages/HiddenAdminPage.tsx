@@ -3,8 +3,9 @@
 import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp, Save, RefreshCw } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp, Save, RefreshCw, Bell } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
+import { schedulePushTestInOneMinute, subscribePushTest, type PushTestState } from '@/lib/pushTest';
 
 interface HiddenAdminPageProps {
     open: boolean;
@@ -110,6 +111,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
     const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
     const [backupStatusLoading, setBackupStatusLoading] = useState(false);
     const [backupStatusError, setBackupStatusError] = useState<string | null>(null);
+    const [pushTest, setPushTest] = useState<PushTestState>({ status: 'idle', fireAt: null, message: null });
+    const [pushTestRemaining, setPushTestRemaining] = useState<number | null>(null);
 
     // Logs state
     const [logs, setLogs] = useState<RenderedLogEntry[]>([]);
@@ -294,6 +297,24 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
+    useEffect(() => {
+        return subscribePushTest(setPushTest);
+    }, []);
+
+    useEffect(() => {
+        if (pushTest.status !== 'scheduled' || !pushTest.fireAt) {
+            setPushTestRemaining(null);
+            return;
+        }
+
+        const tick = () => {
+            setPushTestRemaining(Math.max(0, Math.ceil((pushTest.fireAt! - Date.now()) / 1000)));
+        };
+        tick();
+        const interval = setInterval(tick, 250);
+        return () => clearInterval(interval);
+    }, [pushTest.status, pushTest.fireAt]);
+
     const handleTriggerScrape = async () => {
         hapticPatterns.tap();
         setScrapeLoading(true);
@@ -330,6 +351,11 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
         } finally {
             setBackupLoading(false);
         }
+    };
+
+    const handleSchedulePushTest = async () => {
+        hapticPatterns.tap();
+        await schedulePushTestInOneMinute();
     };
 
     const fetchLogs = useCallback(async (pageNum: number = 1, append: boolean = false) => {
@@ -635,8 +661,36 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                         </motion.button>
                                     </div>
 
+                                    <motion.button
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={handleSchedulePushTest}
+                                        disabled={pushTest.status === 'scheduled'}
+                                        style={{
+                                            marginTop: 10,
+                                            width: '100%',
+                                            padding: '10px 12px',
+                                            borderRadius: 10,
+                                            border: '1px solid var(--color-border)',
+                                            background: 'var(--color-surface)',
+                                            color: 'var(--color-text-primary)',
+                                            fontWeight: 500,
+                                            fontSize: '0.85rem',
+                                            cursor: pushTest.status === 'scheduled' ? 'default' : 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 6,
+                                            opacity: pushTest.status === 'scheduled' ? 0.7 : 1,
+                                        }}
+                                    >
+                                        <Bell size={14} />
+                                        {pushTest.status === 'scheduled' && pushTestRemaining !== null
+                                            ? `Notify in ${pushTestRemaining}s`
+                                            : 'Notify in 1 min'}
+                                    </motion.button>
+
                                     {/* Messages */}
-                                    {(scrapeMessage || backupMessage) && (
+                                    {(scrapeMessage || backupMessage || pushTest.message) && (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
                                             {scrapeMessage && (
                                                 <div
@@ -676,6 +730,26 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         <AlertCircle size={12} />
                                                     )}
                                                     {backupMessage}
+                                                </div>
+                                            )}
+                                            {pushTest.message && (
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 6,
+                                                        fontSize: '0.8rem',
+                                                        color: pushTest.status === 'error'
+                                                            ? 'var(--color-danger)'
+                                                            : 'var(--color-success)',
+                                                    }}
+                                                >
+                                                    {pushTest.status === 'error' ? (
+                                                        <AlertCircle size={12} />
+                                                    ) : (
+                                                        <CheckCircle2 size={12} />
+                                                    )}
+                                                    {pushTest.message}
                                                 </div>
                                             )}
                                         </div>
