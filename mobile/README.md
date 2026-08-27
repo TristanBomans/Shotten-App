@@ -1,3 +1,13 @@
+# DEPRECATED
+
+This Expo/React Native Android app is **frozen**. Do not add features or fix bugs here.
+
+The product is the PWA in `../pwa/`.
+
+The rest of this file is leftover setup for the archived app.
+
+---
+
 # Shotten Mobile
 
 Expo Router mobile app scaffold for Shotten attendance.
