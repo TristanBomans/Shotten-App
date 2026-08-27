@@ -118,26 +118,6 @@ async function ensureServiceWorker(): Promise<ServiceWorkerRegistration> {
 
     if (registration.active) return registration;
 
-    const pending = registration.installing ?? registration.waiting;
-    if (pending) {
-        await withTimeout(
-            new Promise<void>((resolve) => {
-                if (pending.state === 'activated') {
-                    resolve();
-                    return;
-                }
-                pending.addEventListener('statechange', () => {
-                    if (pending.state === 'activated' || pending.state === 'installed') {
-                        resolve();
-                    }
-                });
-            }),
-            8000,
-            'Service worker activate',
-        );
-        if (registration.active) return registration;
-    }
-
     return withTimeout(navigator.serviceWorker.ready, 8000, 'Service worker ready');
 }
 
@@ -269,14 +249,17 @@ export async function schedulePushTestInOneMinute(): Promise<PushTestState> {
         return next;
     }
 
-    emit({
-        status: 'requesting',
-        fireAt: null,
-        message: 'Asking for notification permission…',
-    });
-
     try {
-        const permission = await Notification.requestPermission();
+        let permission = Notification.permission;
+        if (permission === 'default') {
+            emit({
+                status: 'requesting',
+                fireAt: null,
+                message: 'Asking for notification permission…',
+            });
+            permission = await Notification.requestPermission();
+        }
+
         if (permission !== 'granted') {
             const next = {
                 status: 'error' as const,
@@ -287,17 +270,8 @@ export async function schedulePushTestInOneMinute(): Promise<PushTestState> {
             return next;
         }
 
-        emit({
-            status: 'requesting',
-            fireAt: null,
-            message: 'Preparing the service worker…',
-        });
-
-        await ensureServiceWorker();
-
         const fireAt = Date.now() + DELAY_MS;
         persistFireAt(fireAt);
-        await requestWakeLock();
         armTimer(fireAt);
 
         const next = {
@@ -306,6 +280,13 @@ export async function schedulePushTestInOneMinute(): Promise<PushTestState> {
             message: 'Scheduled. Keep Shotten open — Android pauses timers if you leave.',
         };
         emit(next);
+
+        // Do not hold up the countdown while a new worker installs. The timer
+        // will try again when it fires, and an existing active worker can be
+        // used immediately.
+        void ensureServiceWorker().catch(() => undefined);
+        void requestWakeLock();
+
         return next;
     } catch (error) {
         persistFireAt(null);

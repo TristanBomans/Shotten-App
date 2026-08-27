@@ -12,25 +12,51 @@ const PRECACHE_ASSETS = [
 // Install event - cache offline page
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(PRECACHE_ASSETS);
-        })
+        (async () => {
+            try {
+                const cache = await caches.open(CACHE_NAME);
+                await Promise.all(
+                    PRECACHE_ASSETS.map((asset) =>
+                        cache.add(asset).catch((error) => {
+                            console.warn(`Failed to precache ${asset}:`, error);
+                        })
+                    )
+                );
+            } catch (error) {
+                console.warn('Failed to open the precache:', error);
+            }
+
+            try {
+                await self.skipWaiting();
+            } catch (error) {
+                console.warn('Failed to skip waiting:', error);
+            }
+        })()
     );
-    self.skipWaiting();
 });
 
 // Activate event - clean old caches
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames
-                    .filter((name) => name !== CACHE_NAME)
-                    .map((name) => caches.delete(name))
-            );
-        })
+        (async () => {
+            try {
+                const cacheNames = await caches.keys();
+                await Promise.all(
+                    cacheNames
+                        .filter((name) => name !== CACHE_NAME)
+                        .map((name) => caches.delete(name))
+                );
+            } catch (error) {
+                console.warn('Failed to clean old caches:', error);
+            }
+
+            try {
+                await self.clients.claim();
+            } catch (error) {
+                console.warn('Failed to claim clients:', error);
+            }
+        })()
     );
-    self.clients.claim();
 });
 
 // Fetch event - network first, fallback to cache, then offline page
