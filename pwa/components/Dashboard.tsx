@@ -17,6 +17,7 @@ import NotificationSheet from './NotificationSheet';
 import RecentMatchesSheet from './RecentMatchesSheet';
 import UnlockDialog from './UnlockDialog';
 import { buildMatchReminders } from '@/lib/notifications';
+import { syncMatchPush } from '@/lib/pushSettings';
 
 type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
 
@@ -291,6 +292,13 @@ export default function Dashboard({
         window.addEventListener('attendanceUpdated', handleAttendanceUpdate);
         return () => window.removeEventListener('attendanceUpdated', handleAttendanceUpdate);
     }, [fetchMatches]);
+
+    useEffect(() => {
+        const enabled = localStorage.getItem('notificationsEnabled') === 'true';
+        void syncMatchPush(playerId, enabled).catch(() => {
+            // Keep the toggle as-is; the next Settings visit can retry.
+        });
+    }, [playerId]);
 
     // Cleanup timeouts
     useEffect(() => {
@@ -855,6 +863,7 @@ export default function Dashboard({
                     }}
                 >
                     <SettingsView
+                        playerId={playerId}
                         onLogout={onLogout}
                         onPlayerManagementOpenChange={onPlayerManagementOpenChange}
                         onOpenVersion={onOpenVersion}

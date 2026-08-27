@@ -196,16 +196,23 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     const targetUrl = event.notification.data?.url || '/';
+    const origin = self.location.origin;
+    const absoluteUrl = new URL(targetUrl, origin).href;
 
     event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-            for (const client of clients) {
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windowClients) => {
+            for (const client of windowClients) {
                 if ('focus' in client) {
-                    return client.focus();
+                    await client.focus();
+                    if ('navigate' in client) {
+                        return client.navigate(absoluteUrl);
+                    }
+                    client.postMessage({ type: 'NOTIFICATION_NAVIGATE', url: absoluteUrl });
+                    return client;
                 }
             }
             if (self.clients.openWindow) {
-                return self.clients.openWindow(targetUrl);
+                return self.clients.openWindow(absoluteUrl);
             }
         })
     );
