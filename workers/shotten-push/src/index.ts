@@ -5,6 +5,7 @@ export interface Env {
     VAPID_PUBLIC_KEY: string;
     VAPID_PRIVATE_JWK: string;
     VAPID_SUBJECT: string;
+    PUSH_FLUSH_SECRET: string;
 }
 
 interface PushSubscriptionBody {
@@ -37,7 +38,7 @@ function corsHeaders(request: Request): HeadersInit {
     return {
         'Access-Control-Allow-Origin': allowed ? origin : ALLOWED_ORIGIN_SUFFIXES[0],
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Max-Age': '86400',
     };
 }
@@ -50,6 +51,13 @@ function json(request: Request, data: unknown, status = 200): Response {
             ...corsHeaders(request),
         },
     });
+}
+
+function isAuthorizedFlush(request: Request, env: Env): boolean {
+    const secret = env.PUSH_FLUSH_SECRET;
+    if (!secret) return false;
+    const auth = request.headers.get('Authorization') || '';
+    return auth === `Bearer ${secret}`;
 }
 
 function readSubscription(input: PushSubscriptionBody | undefined) {
@@ -153,7 +161,10 @@ export default {
             });
         }
 
-        if (request.method === 'GET' && url.pathname === '/flush') {
+        if (url.pathname === '/flush' && (request.method === 'GET' || request.method === 'POST')) {
+            if (!isAuthorizedFlush(request, env)) {
+                return json(request, { ok: false, error: 'Unauthorized' }, 401);
+            }
             const result = await flushOutbox(env);
             return json(request, { ok: true, now: Date.now(), ...result });
         }
@@ -216,7 +227,7 @@ export default {
                 ok: true,
                 sendAt,
                 delaySeconds: Math.round(delayMs / 1000),
-                message: 'Scheduled on Cloudflare. You can lock the phone.',
+                message: 'Scheduled. You can lock the phone.',
             });
         }
 
