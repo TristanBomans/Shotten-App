@@ -12,7 +12,6 @@ import {
 } from './mockData';
 import { API_BASE_URL } from './config';
 import { parseDateToTimestamp } from './dateUtils';
-import { isSameTeamName, normalizeTeamName } from './teamNameMatching';
 import type { RecentMatchesResponse } from './recentMatches';
 
 // =============================================================================
@@ -119,18 +118,17 @@ export async function fetchRecentMatchesData(): Promise<RecentMatchesResponse> {
     return res.json();
 }
 
-// Find team by name (searches through all teams)
+export async function lookupScraperTeamByName(teamName: string): Promise<{ externalId: number; name: string } | null> {
+    const res = await fetch(`${API_BASE_URL}/api/lzv/team-lookup?name=${encodeURIComponent(teamName)}`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('Failed to look up scraper team');
+    return res.json();
+}
+
 export async function findScraperTeamByName(teamName: string): Promise<ScraperTeam | null> {
-    const teams = await fetchAllScraperTeams();
-    const normalized = normalizeTeamName(teamName);
-
-    const exactOrNear = teams.find(t => isSameTeamName(t.name, teamName));
-    if (exactOrNear) return exactOrNear;
-
-    return teams.find(t => {
-        const normalizedTeamName = normalizeTeamName(t.name);
-        return normalizedTeamName.includes(normalized) || normalized.includes(normalizedTeamName);
-    }) || null;
+    const lookup = await lookupScraperTeamByName(teamName);
+    if (!lookup) return null;
+    return fetchScraperTeamById(lookup.externalId);
 }
 
 // =============================================================================

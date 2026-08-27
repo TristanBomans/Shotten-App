@@ -418,6 +418,15 @@ export async function getLzvTeam(externalId: number): Promise<LzvTeam | null> {
     return data;
 }
 
+export async function getLzvTeamNameIndex(): Promise<{ external_id: number; name: string }[]> {
+    const { data, error } = await getSupabaseClient()
+        .from('lzv_teams')
+        .select('external_id, name');
+
+    if (error) throw error;
+    return data || [];
+}
+
 export async function getLzvMatches(teamId?: number): Promise<LzvMatch[]> {
     let query = getSupabaseClient()
         .from('lzv_matches')

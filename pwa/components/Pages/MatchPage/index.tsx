@@ -100,6 +100,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
 
     // Fetch opponent team data
     const {
+        opponentExternalId,
         opponentData,
         opponentPlayers,
         ownTeamData,
@@ -112,6 +113,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
     } = useOpponentTeamData({
         opponentTeam,
         ownTeam,
+        open,
         enabled: activeTab === 'opponent',
     });
 
@@ -475,7 +477,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                                         padding: '14px 16px',
                                         background: 'transparent',
                                         border: 'none',
-                                        borderBottom: opponentData?.externalId ? '0.5px solid var(--color-border-subtle)' : 'none',
+                                        borderBottom: opponentExternalId ? '0.5px solid var(--color-border-subtle)' : 'none',
                                         color: 'var(--color-text-primary)',
                                         fontSize: '0.95rem',
                                         fontWeight: 500,
@@ -486,11 +488,11 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                                     <Calendar size={18} color="var(--color-text-secondary)" />
                                     Add to Calendar
                                 </button>
-                                {opponentData?.externalId && (
+                                {opponentExternalId && (
                                     <button
                                         onClick={() => {
                                             hapticPatterns.tap();
-                                            window.open(`https://www.lzvcup.be/teams/detail/${opponentData.externalId}`, '_blank');
+                                            window.open(`https://www.lzvcup.be/teams/detail/${opponentExternalId}`, '_blank');
                                             setShowMenu(false);
                                         }}
                                         style={{
