@@ -11,6 +11,7 @@
 CREATE TABLE IF NOT EXISTS core_teams (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
+    lzv_external_id INTEGER,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -33,6 +34,8 @@ CREATE TABLE IF NOT EXISTS core_matches (
     team_name TEXT,
     team_id INTEGER REFERENCES core_teams(id),
     forfait BOOLEAN DEFAULT FALSE,
+    lzv_match_external_id TEXT,
+    opponent_lzv_id INTEGER,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -89,6 +92,8 @@ CREATE TABLE IF NOT EXISTS lzv_matches (
     away_score INTEGER DEFAULT 0,
     location TEXT,
     team_id INTEGER NOT NULL,
+    home_team_id INTEGER,
+    away_team_id INTEGER,
     status TEXT DEFAULT 'Scheduled' CHECK (status IN ('Scheduled', 'Played', 'Postponed')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -126,6 +131,8 @@ CREATE INDEX IF NOT EXISTS idx_attendances_match_id ON attendances(match_id);
 CREATE INDEX IF NOT EXISTS idx_attendances_player_id ON attendances(player_id);
 CREATE INDEX IF NOT EXISTS idx_core_matches_team_id ON core_matches(team_id);
 CREATE INDEX IF NOT EXISTS idx_core_matches_date ON core_matches(date);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_core_teams_lzv_external_id ON core_teams(lzv_external_id) WHERE lzv_external_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_core_matches_lzv_match ON core_matches(lzv_match_external_id);
 CREATE INDEX IF NOT EXISTS idx_lzv_matches_team_id ON lzv_matches(team_id);
 CREATE INDEX IF NOT EXISTS idx_lzv_matches_date ON lzv_matches(date);
 CREATE INDEX IF NOT EXISTS idx_lzv_teams_external_id ON lzv_teams(external_id);

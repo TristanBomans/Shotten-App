@@ -7,6 +7,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 export interface CoreTeam {
     id: number;
     name: string;
+    lzv_external_id: number | null;
     created_at?: string;
     updated_at?: string;
 }
@@ -27,6 +28,8 @@ export interface CoreMatch {
     team_name: string | null;
     team_id: number | null;
     forfait: boolean;
+    lzv_match_external_id?: string | null;
+    opponent_lzv_id?: number | null;
     created_at?: string;
     updated_at?: string;
 }
@@ -74,6 +77,8 @@ export interface LzvMatch {
     away_score: number;
     location: string | null;
     team_id: number;
+    home_team_id?: number | null;
+    away_team_id?: number | null;
     status: 'Scheduled' | 'Played' | 'Postponed';
 }
 
@@ -110,6 +115,7 @@ export interface PlayerResponse {
 export interface TeamResponse {
     id: number;
     name: string;
+    lzvExternalId: number | null;
 }
 
 export interface AttendanceResponse {
@@ -127,6 +133,8 @@ export interface MatchResponse {
     teamName: string | null;
     teamId: number | null;
     forfait: boolean;
+    opponentLzvId: number | null;
+    lzvMatchExternalId: string | null;
     attendances: AttendanceResponse[];
 }
 
@@ -278,6 +286,26 @@ export async function getCoreTeams(): Promise<CoreTeam[]> {
     return data || [];
 }
 
+export async function getOwnLzvTeams(): Promise<{ id: number; name: string; lzvExternalId: number }[]> {
+    const teams = await getCoreTeams();
+    const mapped = teams
+        .filter((team): team is CoreTeam & { lzv_external_id: number } => team.lzv_external_id != null)
+        .map(team => ({
+            id: team.id,
+            name: team.name,
+            lzvExternalId: team.lzv_external_id,
+        }));
+
+    if (mapped.length > 0) return mapped;
+
+    const fallback = teams.find(team => team.name.toLowerCase().includes('wille ma ni kunne'));
+    return [{
+        id: fallback?.id ?? 0,
+        name: fallback?.name ?? 'Wille ma ni kunne',
+        lzvExternalId: 1319,
+    }];
+}
+
 export async function getCoreMatches(playerId?: number, teamId?: number, teamName?: string): Promise<CoreMatch[]> {
     let query = getSupabaseClient()
         .from('core_matches')
@@ -416,6 +444,15 @@ export async function getLzvTeam(externalId: number): Promise<LzvTeam | null> {
     
     if (error) return null;
     return data;
+}
+
+export async function getLzvTeamNameIndex(): Promise<{ external_id: number; name: string }[]> {
+    const { data, error } = await getSupabaseClient()
+        .from('lzv_teams')
+        .select('external_id, name');
+
+    if (error) throw error;
+    return data || [];
 }
 
 export async function getLzvMatches(teamId?: number): Promise<LzvMatch[]> {
@@ -558,7 +595,8 @@ export function toPlayerResponse(player: CorePlayer): PlayerResponse {
 export function toTeamResponse(team: CoreTeam): TeamResponse {
     return {
         id: team.id,
-        name: team.name
+        name: team.name,
+        lzvExternalId: team.lzv_external_id ?? null
     };
 }
 
@@ -575,6 +613,8 @@ export async function toMatchResponse(match: CoreMatch): Promise<MatchResponse> 
         teamName: match.team_name,
         teamId: match.team_id,
         forfait: match.forfait,
+        opponentLzvId: match.opponent_lzv_id ?? null,
+        lzvMatchExternalId: match.lzv_match_external_id ?? null,
         attendances: attendances.map(a => {
             const player = playerMap.get(a.player_id);
             return {
@@ -612,6 +652,8 @@ export async function toMatchesResponse(matches: CoreMatch[]): Promise<MatchResp
         teamName: match.team_name,
         teamId: match.team_id,
         forfait: match.forfait,
+        opponentLzvId: match.opponent_lzv_id ?? null,
+        lzvMatchExternalId: match.lzv_match_external_id ?? null,
         attendances: (attendancesByMatch.get(match.id) || []).map(a => {
             const player = playerMap.get(a.player_id);
             return {

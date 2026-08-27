@@ -1,17 +1,26 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { findScraperTeamByName, fetchScraperPlayers, type ScraperTeam, type ScraperPlayer } from '@/lib/useData';
+import {
+    lookupScraperTeamByName,
+    fetchScraperTeamById,
+    fetchScraperPlayers,
+    type ScraperTeam,
+    type ScraperPlayer,
+} from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 
 interface UseOpponentTeamDataProps {
     opponentTeam: string | null;
     ownTeam: string | null;
+    open: boolean;
     enabled: boolean;
+    knownOpponentId?: number | null;
 }
 
 interface UseOpponentTeamDataResult {
+    opponentExternalId: number | null;
     opponentData: ScraperTeam | null;
     opponentPlayers: ScraperPlayer[];
     opponentMatches: any[];
@@ -27,8 +36,12 @@ interface UseOpponentTeamDataResult {
 export function useOpponentTeamData({
     opponentTeam,
     ownTeam,
+    open,
     enabled,
+    knownOpponentId = null,
 }: UseOpponentTeamDataProps): UseOpponentTeamDataResult {
+    const [opponentExternalId, setOpponentExternalId] = useState<number | null>(null);
+    const [lookupDone, setLookupDone] = useState(false);
     const [opponentData, setOpponentData] = useState<ScraperTeam | null>(null);
     const [opponentPlayers, setOpponentPlayers] = useState<ScraperPlayer[]>([]);
     const [opponentMatches, setOpponentMatches] = useState<any[]>([]);
@@ -40,52 +53,130 @@ export function useOpponentTeamData({
     const [aiLoading, setAiLoading] = useState(false);
     const [aiError, setAiError] = useState<string | null>(null);
     const aiCacheRef = useRef<Map<string, string>>(new Map());
+    const detailsLoadedForRef = useRef<number | null>(null);
+    const lookedUpTeamRef = useRef<string | null>(null);
 
-    // Reset AI analysis when opponent changes
+    // Reset when opponent changes
     useEffect(() => {
+        setOpponentExternalId(null);
+        setLookupDone(false);
+        setOpponentData(null);
+        setOpponentPlayers([]);
+        setOpponentMatches([]);
+        setOwnTeamData(null);
         setAiAnalysis(null);
         setAiError(null);
+        detailsLoadedForRef.current = null;
+        lookedUpTeamRef.current = null;
     }, [opponentTeam]);
 
+    // Light lookup: only the LZV id, so the menu link works on the squad tab
     useEffect(() => {
-        if (!opponentTeam || !enabled) return;
+        if (knownOpponentId) {
+            setOpponentExternalId(knownOpponentId);
+            setLookupDone(true);
+            lookedUpTeamRef.current = opponentTeam;
+            return;
+        }
 
+        if (!open || !opponentTeam) {
+            if (!opponentTeam) setLookupDone(true);
+            return;
+        }
+
+        if (lookedUpTeamRef.current === opponentTeam) {
+            setLookupDone(true);
+            return;
+        }
+
+        let cancelled = false;
+
+        const lookup = async () => {
+            try {
+                const result = await lookupScraperTeamByName(opponentTeam);
+                if (cancelled) return;
+                lookedUpTeamRef.current = opponentTeam;
+                setOpponentExternalId(result?.externalId ?? null);
+            } catch (error) {
+                console.warn('Failed to look up opponent team:', error);
+                if (!cancelled) {
+                    lookedUpTeamRef.current = opponentTeam;
+                    setOpponentExternalId(null);
+                }
+            } finally {
+                if (!cancelled) setLookupDone(true);
+            }
+        };
+
+        void lookup();
+        return () => {
+            cancelled = true;
+        };
+    }, [open, opponentTeam, knownOpponentId]);
+
+    // Heavy load: full team, players, matches, own team — only on the opponent tab
+    useEffect(() => {
+        if (!open || !enabled || !opponentTeam || !lookupDone) {
+            if (open && enabled && opponentTeam && !lookupDone) setLoading(true);
+            return;
+        }
+
+        if (!opponentExternalId) {
+            setLoading(false);
+            return;
+        }
+
+        if (detailsLoadedForRef.current === opponentExternalId) {
+            setLoading(false);
+            return;
+        }
+
+        let cancelled = false;
         setLoading(true);
 
         const fetchTeamData = async () => {
             try {
-                // Fetch opponent team
-                const team = await findScraperTeamByName(opponentTeam);
+                const team = await fetchScraperTeamById(opponentExternalId);
+                if (cancelled) return;
                 if (team) {
                     setOpponentData(team);
-                    // Fetch players
-                    const players = await fetchScraperPlayers(team.externalId);
-                    setOpponentPlayers(players.slice(0, 5)); // Top 5 players
 
-                    // Fetch matches for recent form
-                    const matchesRes = await fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`);
+                    const [players, matchesRes] = await Promise.all([
+                        fetchScraperPlayers(team.externalId),
+                        fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`),
+                    ]);
+                    if (cancelled) return;
+
+                    setOpponentPlayers(players.slice(0, 5));
                     if (matchesRes.ok) {
-                        const matchesData = await matchesRes.json();
-                        setOpponentMatches(matchesData);
+                        setOpponentMatches(await matchesRes.json());
                     }
                 }
 
-                // Fetch own team data for comparison
                 if (ownTeam) {
-                    const ownTeamResult = await findScraperTeamByName(ownTeam);
-                    if (ownTeamResult) {
-                        setOwnTeamData(ownTeamResult);
+                    const ownLookup = await lookupScraperTeamByName(ownTeam);
+                    if (cancelled) return;
+                    if (ownLookup) {
+                        const ownTeamResult = await fetchScraperTeamById(ownLookup.externalId);
+                        if (!cancelled && ownTeamResult) {
+                            setOwnTeamData(ownTeamResult);
+                        }
                     }
                 }
+
+                if (!cancelled) detailsLoadedForRef.current = opponentExternalId;
             } catch (error) {
                 console.warn('Failed to fetch team data:', error);
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
-        fetchTeamData();
-    }, [opponentTeam, ownTeam, enabled]);
+        void fetchTeamData();
+        return () => {
+            cancelled = true;
+        };
+    }, [open, opponentTeam, ownTeam, enabled, opponentExternalId, lookupDone]);
 
     // Calculate recent form from opponent matches
     const recentForm = useMemo(() => {
@@ -180,9 +271,8 @@ export function useOpponentTeamData({
         }
     }, [opponentData, ownTeamData, aiAnalysis, aiLoading, aiError, fetchAIAnalysis]);
 
-
-
     return {
+        opponentExternalId,
         opponentData,
         opponentPlayers,
         opponentMatches,

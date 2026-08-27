@@ -1,6 +1,8 @@
 # Shotten App
 
-An app for our futsal team to track attendance at matches. The app revolves around our two teams: **Fc Degradé** and **Wille Ma ni Kunnen** – everything is centered around these two teams.
+An app for our futsal team to track attendance at matches. The app revolves around our two teams: **Fc Degradé** and **Wille Ma ni Kunnen**.
+
+The product is the **PWA** in `pwa/`.
 
 Production URL: **https://shotten.taltiko.com**
 
@@ -14,10 +16,9 @@ Production URL: **https://shotten.taltiko.com**
 
 ## Project Structure
 
-The project contains two apps:
-
 ### PWA (`pwa/`)
-The Next.js progressive web app — the primary client:
+
+The Next.js progressive web app — this is what we build and deploy:
 
 - `pwa/app/` for the page, layout, manifest, and API routes
   - `pwa/app/api/` REST API: `Matches`, `Players`, `Teams` (core data), `lzv/` (scraper data), `ai/opponent-analysis`
@@ -27,16 +28,8 @@ The Next.js progressive web app — the primary client:
 - `pwa/supabase/` for the SQL schema and migrations
 - `pwa/open-next.config.ts` and `pwa/scripts/build-opennext.sh` for the Cloudflare/OpenNext build pipeline
 
-### Native Mobile (`mobile/`)
-A React Native app built with Expo, providing a native Android experience alongside the PWA:
-
-- `mobile/src/app/` for screens and navigation (Expo Router, file-based `(tabs)/`)
-- `mobile/src/components/` for reusable UI components
-- `mobile/src/lib/` for API clients, types, and utilities
-- `mobile/src/state/` for session and preferences context
-- `mobile/src/theme/` for the Android dark theme
-
 ### Data Sync
+
 External data is fetched by a separate backend worker ([`shotten-backend-node`](../shotten-backend-node)) and written to the shared Supabase database. The app reads from that same database.
 
 | Source | Frequency | What |
@@ -47,7 +40,6 @@ External data is fetched by a separate backend worker ([`shotten-backend-node`](
 
 ## Hosting & Deployments
 
-### PWA
 The PWA runs on **Cloudflare Pages** via the OpenNext adapter.
 
 - **Trigger**: every push that touches `pwa/**` deploys, using the branch name as the Cloudflare Pages branch
@@ -55,16 +47,8 @@ The PWA runs on **Cloudflare Pages** via the OpenNext adapter.
 - **Preview**: every other branch gets its own preview URL
 - **Build**: happens automatically on every push via `.github/workflows/deploy-pages.yml`
 
-### Mobile
-The native mobile app is distributed via **GitHub Releases** as an Android APK:
-
-- Push a tag like `mobile-v*.*.*` to trigger a stable release build (EAS profile `production`)
-- Manual preview builds via GitHub Actions `workflow_dispatch` (EAS profile `preview`, always prerelease)
-- Build mode is local EAS build on the runner — no EAS cloud build workers
-
 ## Tech Stack
 
-### PWA
 | Technology | Purpose |
 |------------|---------|
 | [Next.js 16](https://nextjs.org/docs) | React framework with App Router and API routes |
@@ -82,26 +66,9 @@ The native mobile app is distributed via **GitHub Releases** as an Android APK:
 | [Wrangler 4](https://developers.cloudflare.com/workers/wrangler/) | Cloudflare CLI |
 | `clsx`, `tailwind-merge`, `react-markdown`, `remark-gfm`, `react-tooltip` | Supporting UI and content utilities |
 
-### Mobile
-| Technology | Purpose |
-|------------|---------|
-| [React Native 0.81](https://reactnative.dev/) | Native mobile UI |
-| [Expo 54](https://expo.dev/) | Development platform and build tooling |
-| [Expo Router 6](https://docs.expo.dev/router/introduction/) | File-based navigation |
-| [TypeScript](https://www.typescriptlang.org/) | Type safety |
-| [React Native Gesture Handler](https://docs.swmansion.com/react-native-gesture-handler/) | Touch and gesture handling |
-| [React Native Screens / Safe Area Context](https://reactnavigation.dev/) | Native navigation primitives |
-| [React Native SVG](https://github.com/software-mansion/react-native-svg) | Vector graphics |
-| [Expo Linear Gradient](https://docs.expo.dev/versions/latest/sdk/linear-gradient/) | Gradient backgrounds |
-| [Async Storage](https://react-native-async-storage.github.io/async-storage/) | Local persistence |
-| [Vitest](https://vitest.dev/) | Unit tests |
-
 ## Local Development
 
-### Requirements
-
-- [Bun](https://bun.sh/) (package manager & runtime, `bun@1.3.6`)
-- Node 22 (see `.nvmrc`)
+Install [Bun](https://bun.sh/) on your system (`bun@1.3.6`). Node 22 is in `.nvmrc`.
 
 ```bash
 # macOS / Linux
@@ -110,8 +77,6 @@ curl -fsSL https://bun.sh/install | bash
 # Windows (via PowerShell)
 powershell -c "irm bun.sh/install.ps1 | iex"
 ```
-
-### PWA
 
 1. **Install dependencies**:
    ```bash
@@ -132,39 +97,13 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-### Mobile
-
-1. **Install dependencies**:
-   ```bash
-   cd mobile
-   bun install
-   ```
-
-2. **Start Expo**:
-   ```bash
-   bun start
-   ```
-
-3. Scan the QR code with the Expo Go app on your Android device
-
-By default the mobile app targets `https://shotten.taltiko.com`. Override with `EXPO_PUBLIC_API_BASE_URL` if needed.
-
-### Useful commands
-
 ```bash
-# PWA
-cd pwa && bun dev                # Start PWA development server
+cd pwa && bun dev                # Start development server
 cd pwa && bun run build          # Next.js build (webpack)
-cd pwa && bun run build:cf       # Build PWA for Cloudflare Pages (OpenNext)
+cd pwa && bun run build:cf       # Build for Cloudflare Pages (OpenNext)
 cd pwa && bun run preview        # Build + local wrangler preview
 cd pwa && bun run deploy         # Build + deploy to Cloudflare Pages
 cd pwa && bun run lint           # ESLint check
-
-# Mobile
-cd mobile && bun start           # Start Expo development server
-cd mobile && bun run android     # Run on Android emulator/device
-cd mobile && bun run test        # Run unit tests (Vitest)
-cd mobile && bun run typecheck   # TypeScript check
 ```
 
 ## Contributing
@@ -197,3 +136,9 @@ See something that's not right or missing a feature? [Feel free to create an iss
 ---
 
 _Built for Fc Degradé & Wille Ma ni Kunnen_
+
+<details>
+<summary>Deprecated native app (do not use)</summary>
+
+`mobile/` is a frozen Expo/React Native Android app. It is **not** under active development. Do not add features, fix bugs, or open PRs against it unless explicitly asked. Notes live in `mobile/README.md`.
+</details>

@@ -1,0 +1,10 @@
+---
+description: Ignore the deprecated native mobile app unless the user explicitly asks for it.
+alwaysApply: true
+---
+
+# Deprecated native app
+
+`mobile/` is frozen. The PWA in `pwa/` is the app.
+
+Do not search, edit, or discuss `mobile/` unless the user explicitly asks about the deprecated native Android/Expo app.

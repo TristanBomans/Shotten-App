@@ -114,3 +114,16 @@ export function isHomeTeamForMatch(teamName: string, homeTeam: string, awayTeam:
 
     return homeScore > awayScore;
 }
+
+export function findNamedTeam<T extends { name: string }>(teams: T[], teamName: string): T | undefined {
+    const exactOrNear = teams.find(t => isSameTeamName(t.name, teamName));
+    if (exactOrNear) return exactOrNear;
+
+    const normalized = normalizeTeamName(teamName);
+    if (!normalized) return undefined;
+
+    return teams.find(t => {
+        const normalizedTeamName = normalizeTeamName(t.name);
+        return normalizedTeamName.includes(normalized) || normalized.includes(normalizedTeamName);
+    });
+}

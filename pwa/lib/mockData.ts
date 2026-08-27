@@ -19,13 +19,17 @@ export interface Match {
     date: string;
     location?: string;
     teamId: number;
+    teamName?: string | null;
     forfait?: boolean;
+    opponentLzvId?: number | null;
+    lzvMatchExternalId?: string | null;
     attendances: Attendance[];
 }
 
 export interface Team {
     id: number;
     name: string;
+    lzvExternalId?: number | null;
 }
 
 // Teams
