@@ -664,7 +664,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                     <motion.button
                                         whileTap={{ scale: 0.98 }}
                                         onClick={handleSchedulePushTest}
-                                        disabled={pushTest.status === 'scheduled'}
+                                        disabled={pushTest.status === 'scheduled' || pushTest.status === 'requesting'}
                                         style={{
                                             marginTop: 10,
                                             width: '100%',
@@ -675,18 +675,24 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                             color: 'var(--color-text-primary)',
                                             fontWeight: 500,
                                             fontSize: '0.85rem',
-                                            cursor: pushTest.status === 'scheduled' ? 'default' : 'pointer',
+                                            cursor: pushTest.status === 'scheduled' || pushTest.status === 'requesting' ? 'default' : 'pointer',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             gap: 6,
-                                            opacity: pushTest.status === 'scheduled' ? 0.7 : 1,
+                                            opacity: pushTest.status === 'scheduled' || pushTest.status === 'requesting' ? 0.7 : 1,
                                         }}
                                     >
-                                        <Bell size={14} />
-                                        {pushTest.status === 'scheduled' && pushTestRemaining !== null
-                                            ? `Notify in ${pushTestRemaining}s`
-                                            : 'Notify in 1 min'}
+                                        {pushTest.status === 'requesting' ? (
+                                            <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                                        ) : (
+                                            <Bell size={14} />
+                                        )}
+                                        {pushTest.status === 'requesting'
+                                            ? 'Asking permission…'
+                                            : pushTest.status === 'scheduled' && pushTestRemaining !== null
+                                                ? `Notify in ${pushTestRemaining}s`
+                                                : 'Notify in 1 min'}
                                     </motion.button>
 
                                     {/* Messages */}
@@ -741,13 +747,17 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         fontSize: '0.8rem',
                                                         color: pushTest.status === 'error'
                                                             ? 'var(--color-danger)'
-                                                            : 'var(--color-success)',
+                                                            : pushTest.status === 'fired'
+                                                                ? 'var(--color-success)'
+                                                                : 'var(--color-text-secondary)',
                                                     }}
                                                 >
                                                     {pushTest.status === 'error' ? (
                                                         <AlertCircle size={12} />
-                                                    ) : (
+                                                    ) : pushTest.status === 'fired' ? (
                                                         <CheckCircle2 size={12} />
+                                                    ) : (
+                                                        <Bell size={12} />
                                                     )}
                                                     {pushTest.message}
                                                 </div>

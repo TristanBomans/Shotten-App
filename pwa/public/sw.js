@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shotten-v4';
+const CACHE_NAME = 'shotten-v5';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
@@ -107,6 +107,34 @@ self.addEventListener('fetch', (event) => {
                 // Return a simple error for other requests
                 return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
             })
+    );
+});
+
+self.addEventListener('message', (event) => {
+    const data = event.data;
+    if (!data || data.type !== 'SHOW_TEST_NOTIFICATION') return;
+
+    const title = data.title || 'Shotten test';
+    const options = data.options || {
+        body: 'If you can read this, notifications work on this device.',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-192x192.png',
+        tag: 'shotten-push-test',
+        data: { url: '/' },
+        renotify: true,
+    };
+
+    const reply = event.ports && event.ports[0];
+
+    event.waitUntil(
+        self.registration.showNotification(title, options).then(
+            () => {
+                reply?.postMessage({ ok: true });
+            },
+            (error) => {
+                reply?.postMessage({ ok: false, error: String(error) });
+            }
+        )
     );
 });
 

@@ -12,6 +12,7 @@ export default function ServiceWorkerRegistration() {
             navigator.serviceWorker.register('/sw.js').then(
                 (registration) => {
                     console.log('SW registered:', registration.scope);
+                    void registration.update();
                 },
                 (error) => {
                     console.log('SW registration failed:', error);
@@ -19,11 +20,7 @@ export default function ServiceWorkerRegistration() {
             );
         };
 
-        if (document.readyState === 'complete') {
-            register();
-        } else {
-            window.addEventListener('load', register, { once: true });
-        }
+        register();
     }, []);
 
     return null;
