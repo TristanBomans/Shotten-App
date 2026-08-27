@@ -23,6 +23,21 @@ interface TestBody {
     url?: string;
 }
 
+interface EnqueueItem {
+    playerId?: number;
+    matchId?: number;
+    kind?: string;
+    title?: string;
+    body?: string;
+    url?: string;
+    tag?: string;
+    sendAt?: number;
+}
+
+interface EnqueueBody {
+    items?: EnqueueItem[];
+}
+
 const ALLOWED_ORIGIN_SUFFIXES = [
     'https://shotten.taltiko.com',
     'http://localhost:3000',
@@ -76,7 +91,7 @@ async function flushOutbox(env: Env): Promise<{
 }> {
     const now = Date.now();
     const rows = await env.DB.prepare(
-        'SELECT id, endpoint, p256dh, auth, title, body, url FROM outbox WHERE send_at <= ? ORDER BY send_at ASC LIMIT 10',
+        'SELECT id, endpoint, p256dh, auth, title, body, url, tag FROM outbox WHERE send_at <= ? ORDER BY send_at ASC LIMIT 10',
     )
         .bind(now)
         .all<{
@@ -87,6 +102,7 @@ async function flushOutbox(env: Env): Promise<{
             title: string;
             body: string;
             url: string | null;
+            tag: string | null;
         }>();
 
     let sent = 0;
@@ -104,7 +120,7 @@ async function flushOutbox(env: Env): Promise<{
             payload: {
                 title: row.title,
                 body: row.body,
-                tag: 'shotten-push-test',
+                tag: row.tag || 'shotten',
                 data: { url: row.url || '/' },
             },
             vapidPublicRaw,
@@ -146,6 +162,70 @@ async function flushOutbox(env: Env): Promise<{
     return { sent, failed, gone, attempts };
 }
 
+async function enqueueItems(env: Env, items: EnqueueItem[]): Promise<{
+    queued: number;
+    skipped: number;
+    duplicate: number;
+    nosub: number;
+}> {
+    let queued = 0;
+    let skipped = 0;
+    let duplicate = 0;
+    let nosub = 0;
+
+    for (const item of items.slice(0, 50)) {
+        const playerId = Number(item.playerId);
+        const matchId = Number(item.matchId);
+        const kind = typeof item.kind === 'string' ? item.kind.trim() : '';
+        const title = typeof item.title === 'string' ? item.title.trim() : '';
+        const bodyText = typeof item.body === 'string' ? item.body.trim() : '';
+        if (!Number.isFinite(playerId) || playerId <= 0 || !kind || !title || !bodyText) {
+            skipped += 1;
+            continue;
+        }
+
+        const subs = await env.DB.prepare(
+            'SELECT endpoint, p256dh, auth FROM subscriptions WHERE player_id = ?',
+        )
+            .bind(playerId)
+            .all<{ endpoint: string; p256dh: string; auth: string }>();
+
+        if (!subs.results?.length) {
+            nosub += 1;
+            continue;
+        }
+
+        const claimed = await env.DB.prepare(
+            'INSERT OR IGNORE INTO sent (player_id, match_id, kind, sent_at) VALUES (?, ?, ?, ?)',
+        )
+            .bind(playerId, Number.isFinite(matchId) ? matchId : 0, kind, Date.now())
+            .run();
+
+        if (!claimed.meta.changes) {
+            duplicate += 1;
+            continue;
+        }
+
+        const sendAt = typeof item.sendAt === 'number' && Number.isFinite(item.sendAt)
+            ? item.sendAt
+            : Date.now();
+        const tag = (item.tag || kind).slice(0, 80);
+        const itemUrl = item.url || '/';
+
+        for (const sub of subs.results) {
+            await env.DB.prepare(
+                `INSERT INTO outbox (endpoint, p256dh, auth, title, body, url, tag, send_at, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            )
+                .bind(sub.endpoint, sub.p256dh, sub.auth, title, bodyText, itemUrl, tag, sendAt, Date.now())
+                .run();
+            queued += 1;
+        }
+    }
+
+    return { queued, skipped, duplicate, nosub };
+}
+
 export default {
     async fetch(request: Request, env: Env): Promise<Response> {
         if (request.method === 'OPTIONS') {
@@ -167,6 +247,24 @@ export default {
             }
             const result = await flushOutbox(env);
             return json(request, { ok: true, now: Date.now(), ...result });
+        }
+
+        if (request.method === 'POST' && url.pathname === '/enqueue') {
+            if (!isAuthorizedFlush(request, env)) {
+                return json(request, { ok: false, error: 'Unauthorized' }, 401);
+            }
+            const enqueueBody = await request.json<EnqueueBody>().catch(() => ({} as EnqueueBody));
+            const items = Array.isArray(enqueueBody.items) ? enqueueBody.items : [];
+            const result = await enqueueItems(env, items);
+            return json(request, { ok: true, ...result });
+        }
+
+        if (request.method === 'POST' && url.pathname === '/unsubscribe') {
+            const body = await request.json<TestBody>().catch(() => ({} as TestBody));
+            const sub = readSubscription(body.subscription);
+            if (!sub) return json(request, { ok: false, error: 'Missing subscription' }, 400);
+            await env.DB.prepare('DELETE FROM subscriptions WHERE endpoint = ?').bind(sub.endpoint).run();
+            return json(request, { ok: true });
         }
 
         if (request.method === 'POST' && url.pathname === '/subscribe') {

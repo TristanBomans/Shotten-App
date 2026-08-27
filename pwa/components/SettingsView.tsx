@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, Database, Wifi, WifiOff, Bell, Smartphone, Info, ChevronRight, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck, Flag } from 'lucide-react';
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
+import { disableMatchPush, enableMatchPush } from '@/lib/pushSettings';
+import { isWebPushSupported } from '@/lib/webPushClient';
 import { hapticPatterns } from '@/lib/haptic';
 import { useVersionChecker } from './VersionChecker';
 import PlayerManagementPage from './Pages/PlayerManagementPage';
@@ -14,6 +16,7 @@ import ForfaitMatchesPage from './Pages/ForfaitMatchesPage';
 
 interface SettingsViewProps {
     onLogout: () => void;
+    playerId: number;
     onPlayerManagementOpenChange?: (isOpen: boolean) => void;
     onOpenVersion: () => void;
     isVersionOpen: boolean;
@@ -35,6 +38,7 @@ interface SettingsViewProps {
 
 export default function SettingsView({
     onLogout,
+    playerId,
     onPlayerManagementOpenChange,
     onOpenVersion,
     isVersionOpen,
@@ -56,6 +60,9 @@ export default function SettingsView({
     const [useMock, setUseMock] = useState(true);
     const [isLocalhost, setIsLocalhost] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+    const [notificationsBusy, setNotificationsBusy] = useState(false);
+    const [notificationsMessage, setNotificationsMessage] = useState<string | null>(null);
+    const [pushSupported, setPushSupported] = useState(true);
     const [hapticFeedback, setHapticFeedback] = useState(true);
     const [showFullNames, setShowFullNames] = useState(true);
     const [defaultLeague, setDefaultLeague] = useState<string>('');
@@ -73,6 +80,7 @@ export default function SettingsView({
         );
         const notifPref = localStorage.getItem('notificationsEnabled');
         setNotificationsEnabled(notifPref === 'true');
+        setPushSupported(isWebPushSupported());
         const hapticPref = localStorage.getItem('hapticFeedback');
         setHapticFeedback(hapticPref !== 'false');
         const fullNamesPref = localStorage.getItem('showFullNames');
@@ -114,16 +122,27 @@ export default function SettingsView({
     };
 
     const handleToggleNotifications = async () => {
+        if (notificationsBusy) return;
         hapticPatterns.toggle();
-        if (!notificationsEnabled && 'Notification' in window) {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
+        setNotificationsBusy(true);
+        setNotificationsMessage(null);
+        try {
+            if (!notificationsEnabled) {
+                const result = await enableMatchPush(playerId);
                 setNotificationsEnabled(true);
                 localStorage.setItem('notificationsEnabled', 'true');
+                setNotificationsMessage(result.message);
+            } else {
+                const result = await disableMatchPush();
+                setNotificationsEnabled(false);
+                localStorage.setItem('notificationsEnabled', 'false');
+                setNotificationsMessage(result.message);
             }
-        } else {
-            setNotificationsEnabled(!notificationsEnabled);
-            localStorage.setItem('notificationsEnabled', (!notificationsEnabled).toString());
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Could not update notifications.';
+            setNotificationsMessage(message);
+        } finally {
+            setNotificationsBusy(false);
         }
     };
 
@@ -226,17 +245,27 @@ export default function SettingsView({
                         Preferences
                     </div>
 
-                    {/* Notifications Toggle - Disabled until future update */}
-                    <div style={{ opacity: 0.5, pointerEvents: 'none' }}>
+                    {/* Notifications */}
+                    <div style={{ opacity: notificationsBusy || !pushSupported ? 0.6 : 1 }}>
                         <SettingRow
                             icon={<Bell size={20} />}
                             iconBg="rgb(var(--color-warning-rgb) / 0.15)"
                             iconColor="var(--color-warning)"
                             title="Notifications"
-                            subtitle="Coming in future update"
+                            subtitle={
+                                !pushSupported
+                                    ? 'Install Shotten to your home screen first'
+                                    : notificationsBusy
+                                        ? 'Updating…'
+                                        : notificationsMessage
+                                            ? notificationsMessage
+                                            : notificationsEnabled
+                                                ? 'Attendance and kickoff alerts on this phone'
+                                                : 'Attendance and kickoff alerts'
+                            }
                             toggle
-                            toggleValue={false}
-                            onToggle={() => {}}
+                            toggleValue={notificationsEnabled}
+                            onToggle={pushSupported ? handleToggleNotifications : undefined}
                             hasBorder
                         />
                     </div>
