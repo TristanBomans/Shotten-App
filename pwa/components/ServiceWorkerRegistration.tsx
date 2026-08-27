@@ -4,18 +4,25 @@ import { useEffect } from 'react';
 
 export default function ServiceWorkerRegistration() {
     useEffect(() => {
-        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-            // Register service worker after page load
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(
-                    (registration) => {
-                        console.log('SW registered:', registration.scope);
-                    },
-                    (error) => {
-                        console.log('SW registration failed:', error);
-                    }
-                );
-            });
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+            return;
+        }
+
+        const register = () => {
+            navigator.serviceWorker.register('/sw.js').then(
+                (registration) => {
+                    console.log('SW registered:', registration.scope);
+                },
+                (error) => {
+                    console.log('SW registration failed:', error);
+                }
+            );
+        };
+
+        if (document.readyState === 'complete') {
+            register();
+        } else {
+            window.addEventListener('load', register, { once: true });
         }
     }, []);
 

@@ -257,7 +257,7 @@ export default function SettingsView({
                         iconBg="rgb(var(--color-accent-rgb) / 0.15)"
                         iconColor="var(--color-accent)"
                         title="Show Full Names"
-                        subtitle={showFullNames ? 'Names visible on cards' : 'Avatars only'}
+                        subtitle={showFullNames ? 'Names visible on cards' : 'Compact attendance on cards'}
                         toggle
                         toggleValue={showFullNames}
                         onToggle={handleToggleFullNames}

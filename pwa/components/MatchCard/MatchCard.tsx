@@ -9,7 +9,7 @@ import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import type { MatchCardProps, RosterPlayer, AttendanceStatus } from './types';
 import Confetti from './Confetti';
 import { HeaderResponseButton } from './ResponseButtons';
-import { PlayerAvatars, SquadNamesList } from './SquadDisplay';
+import { SquadMeter, SquadNamesList } from './SquadDisplay';
 import MatchPage from '../Pages/MatchPage';
 
 export default function MatchCard({
@@ -79,6 +79,8 @@ export default function MatchCard({
     const myStatus = roster.find(p => p.id === currentPlayerId)?.status || 'Unknown';
     const present = roster.filter(p => p.status === 'Present');
     const maybe = roster.filter(p => p.status === 'Maybe');
+    const notPresent = roster.filter(p => p.status === 'NotPresent');
+    const unknown = roster.filter(p => p.status === 'Unknown');
 
     // Date formatting
     const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
@@ -276,20 +278,21 @@ export default function MatchCard({
                             <SquadNamesList
                                 present={present}
                                 maybe={maybe}
-                                notPresent={roster.filter(p => p.status === 'NotPresent')}
-                                unknown={roster.filter(p => p.status === 'Unknown')}
+                                notPresent={notPresent}
+                                unknown={unknown}
                                 currentPlayerId={currentPlayerId}
                             />
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 8, borderTop: '0.5px solid var(--color-border-subtle)' }}>
-                            <PlayerAvatars players={[...present, ...maybe].slice(0, 4)} currentPlayerId={currentPlayerId} size="sm" />
-                            {present.length > 0 && (
-                                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>{present.length} in</span>
-                            )}
-                            {maybe.length > 0 && (
-                                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>+{maybe.length}</span>
-                            )}
+                        <div style={{ marginTop: 8 }}>
+                            <SquadMeter
+                                present={present}
+                                maybe={maybe}
+                                notPresent={notPresent}
+                                unknown={unknown}
+                                currentPlayerId={currentPlayerId}
+                                size="md"
+                            />
                         </div>
                     )}
 
@@ -370,20 +373,20 @@ export default function MatchCard({
                     <SquadNamesList
                         present={present}
                         maybe={maybe}
-                        notPresent={roster.filter(p => p.status === 'NotPresent')}
-                        unknown={roster.filter(p => p.status === 'Unknown')}
+                        notPresent={notPresent}
+                        unknown={unknown}
                         currentPlayerId={currentPlayerId}
                     />
                 </div>
             ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, paddingTop: 6, borderTop: '0.5px solid var(--color-border-subtle)' }}>
-                    <PlayerAvatars players={present.slice(0, 3)} currentPlayerId={currentPlayerId} size="sm" />
-                    {present.length > 0 && (
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>{present.length} in</span>
-                    )}
-                    {maybe.length > 0 && (
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>+{maybe.length}</span>
-                    )}
+                <div style={{ marginTop: 4 }}>
+                    <SquadMeter
+                        present={present}
+                        maybe={maybe}
+                        notPresent={notPresent}
+                        unknown={unknown}
+                        currentPlayerId={currentPlayerId}
+                    />
                 </div>
             )}
 

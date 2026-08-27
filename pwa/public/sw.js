@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shotten-v3';
+const CACHE_NAME = 'shotten-v4';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
@@ -107,5 +107,52 @@ self.addEventListener('fetch', (event) => {
                 // Return a simple error for other requests
                 return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
             })
+    );
+});
+
+self.addEventListener('push', (event) => {
+    let title = 'Shotten';
+    let options = {
+        body: 'New update',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-192x192.png',
+        data: { url: '/' },
+    };
+
+    try {
+        if (event.data) {
+            const payload = event.data.json();
+            title = payload.title || title;
+            options = {
+                ...options,
+                body: payload.body || options.body,
+                tag: payload.tag || 'shotten',
+                data: payload.data || options.data,
+            };
+        }
+    } catch {
+        if (event.data) {
+            options.body = event.data.text();
+        }
+    }
+
+    event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const targetUrl = event.notification.data?.url || '/';
+
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+            for (const client of clients) {
+                if ('focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (self.clients.openWindow) {
+                return self.clients.openWindow(targetUrl);
+            }
+        })
     );
 });
