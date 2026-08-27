@@ -6,6 +6,8 @@
   "no_bundle": true,
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://bvwjoptvnxpttwkstiue.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_YaWg2zCaLJqZrVYv0K-9sQ_vXXYEImm"
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_YaWg2zCaLJqZrVYv0K-9sQ_vXXYEImm",
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "BEETGiu_J0SHmKQoNgVJrFKJqI6fePz6K1lHXCWJ_BiV4j4buX4pHaL7NF-3iBXEsgGcbrVhJk8Faca1hcnWVKA",
+    "NEXT_PUBLIC_PUSH_WORKER_URL": "https://shotten-push.bomanstristan.workers.dev"
   }
 }

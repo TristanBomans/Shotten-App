@@ -8,19 +8,13 @@ export interface PushTestState {
 
 const DELAY_MS = 60_000;
 const STORAGE_KEY = 'shotten-push-test-fire-at';
-const TEST_TITLE = 'Shotten test';
-const TEST_OPTIONS = {
-    body: 'If you can read this, notifications work on this device.',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-192x192.png',
-    tag: 'shotten-push-test',
-    renotify: true,
-    vibrate: [180, 80, 180],
-    data: { url: '/' },
-};
+const PUSH_WORKER_URL =
+    process.env.NEXT_PUBLIC_PUSH_WORKER_URL || 'https://shotten-push.bomanstristan.workers.dev';
+const VAPID_PUBLIC_KEY =
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+    'BEETGiu_J0SHmKQoNgVJrFKJqI6fePz6K1lHXCWJ_BiV4j4buX4pHaL7NF-3iBXEsgGcbrVhJk8Faca1hcnWVKA';
 
 let timer: ReturnType<typeof setTimeout> | null = null;
-let wakeLock: WakeLockSentinel | null = null;
 let state: PushTestState = { status: 'idle', fireAt: null, message: null };
 const listeners = new Set<(next: PushTestState) => void>();
 
@@ -71,29 +65,6 @@ function clearTimer() {
     }
 }
 
-async function releaseWakeLock() {
-    const current = wakeLock;
-    wakeLock = null;
-    if (!current) return;
-    try {
-        await current.release();
-    } catch {
-        // Already released when the page went to the background.
-    }
-}
-
-async function requestWakeLock() {
-    if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
-    try {
-        wakeLock = await navigator.wakeLock.request('screen');
-        wakeLock.addEventListener('release', () => {
-            if (wakeLock) wakeLock = null;
-        });
-    } catch {
-        // Not allowed while hidden, or unsupported on this device.
-    }
-}
-
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
     return new Promise((resolve, reject) => {
         const timeout = window.setTimeout(() => {
@@ -121,73 +92,35 @@ async function ensureServiceWorker(): Promise<ServiceWorkerRegistration> {
     return withTimeout(navigator.serviceWorker.ready, 8000, 'Service worker ready');
 }
 
-async function showViaServiceWorker(registration: ServiceWorkerRegistration) {
-    const worker = registration.active;
-    if (!worker) {
-        throw new Error('No active service worker');
-    }
-
-    await new Promise<void>((resolve, reject) => {
-        const channel = new MessageChannel();
-        const timeout = window.setTimeout(() => {
-            reject(new Error('Service worker did not show the notification'));
-        }, 5000);
-
-        channel.port1.onmessage = (event) => {
-            window.clearTimeout(timeout);
-            if (event.data?.ok) {
-                resolve();
-                return;
-            }
-            reject(new Error(event.data?.error || 'Service worker rejected the notification'));
-        };
-
-        worker.postMessage(
-            {
-                type: 'SHOW_TEST_NOTIFICATION',
-                title: TEST_TITLE,
-                options: TEST_OPTIONS,
-            },
-            [channel.port2],
-        );
-    });
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const output = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
+    return output;
 }
 
-async function showTestNotification() {
-    const registration = await ensureServiceWorker();
-
-    try {
-        await showViaServiceWorker(registration);
-        return;
-    } catch (swError) {
-        try {
-            await registration.showNotification(TEST_TITLE, TEST_OPTIONS);
-            return;
-        } catch {
-            throw swError;
-        }
+async function subscribeWebPush(registration: ServiceWorkerRegistration): Promise<PushSubscription> {
+    const existing = await registration.pushManager.getSubscription();
+    if (existing) {
+        await existing.unsubscribe();
     }
+
+    return registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+    });
 }
 
 async function fireScheduledNotification() {
     clearTimer();
     persistFireAt(null);
-    await releaseWakeLock();
-
-    try {
-        await showTestNotification();
-        emit({
-            status: 'fired',
-            fireAt: null,
-            message: 'Test notification sent. Check the shade if no popup appeared.',
-        });
-    } catch (error) {
-        emit({
-            status: 'error',
-            fireAt: null,
-            message: error instanceof Error ? error.message : 'Failed to show the test notification.',
-        });
-    }
+    emit({
+        status: 'fired',
+        fireAt: null,
+        message: 'Cloudflare should have delivered the push. Check the notification shade.',
+    });
 }
 
 function armTimer(fireAt: number) {
@@ -201,8 +134,6 @@ function armTimer(fireAt: number) {
 function onVisibilityChange() {
     if (document.visibilityState !== 'visible') return;
     if (state.status !== 'scheduled' || !state.fireAt) return;
-
-    void requestWakeLock();
 
     if (Date.now() >= state.fireAt) {
         void fireScheduledNotification();
@@ -228,22 +159,19 @@ if (restoredFireAt && restoredFireAt > Date.now()) {
     emit({
         status: 'scheduled',
         fireAt: restoredFireAt,
-        message: 'Scheduled. Keep Shotten open — Android pauses timers if you leave.',
+        message: 'Scheduled via Cloudflare. You can lock the phone.',
     });
     armTimer(restoredFireAt);
-} else if (restoredFireAt && Date.now() - restoredFireAt < 5 * 60_000) {
-    persistFireAt(null);
-    void fireScheduledNotification();
 } else if (restoredFireAt) {
     persistFireAt(null);
 }
 
 export async function schedulePushTestInOneMinute(): Promise<PushTestState> {
-    if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) {
+    if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
         const next = {
             status: 'error' as const,
             fireAt: null,
-            message: 'Notifications are not supported in this browser.',
+            message: 'Web Push is not supported in this browser.',
         };
         emit(next);
         return next;
@@ -270,27 +198,41 @@ export async function schedulePushTestInOneMinute(): Promise<PushTestState> {
             return next;
         }
 
-        const fireAt = Date.now() + DELAY_MS;
+        emit({
+            status: 'requesting',
+            fireAt: null,
+            message: 'Subscribing to Web Push…',
+        });
+
+        const registration = await ensureServiceWorker();
+        const subscription = await subscribeWebPush(registration);
+
+        const response = await fetch(`${PUSH_WORKER_URL}/test`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                subscription: subscription.toJSON(),
+                delaySeconds: Math.round(DELAY_MS / 1000),
+            }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data?.ok) {
+            throw new Error(data?.error || `Push worker returned ${response.status}`);
+        }
+
+        const fireAt = typeof data.sendAt === 'number' ? data.sendAt : Date.now() + DELAY_MS;
         persistFireAt(fireAt);
         armTimer(fireAt);
 
         const next = {
             status: 'scheduled' as const,
             fireAt,
-            message: 'Scheduled. Keep Shotten open — Android pauses timers if you leave.',
+            message: data.message || 'Scheduled via Cloudflare. You can lock the phone.',
         };
         emit(next);
-
-        // Do not hold up the countdown while a new worker installs. The timer
-        // will try again when it fires, and an existing active worker can be
-        // used immediately.
-        void ensureServiceWorker().catch(() => undefined);
-        void requestWakeLock();
-
         return next;
     } catch (error) {
         persistFireAt(null);
-        await releaseWakeLock();
         const next = {
             status: 'error' as const,
             fireAt: null,

@@ -28,6 +28,11 @@ npm-debug.log*
 !/pwa/.env.example
 /pwa/.wrangler/
 
+# push worker
+/workers/shotten-push/node_modules
+/workers/shotten-push/.wrangler
+
+
 # typescript
 /pwa/*.tsbuildinfo
 /pwa/next-env.d.ts
