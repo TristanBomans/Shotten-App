@@ -11,6 +11,7 @@ import type { AttendanceStatus, RosterPlayer } from './types';
 import Confetti from './Confetti';
 import MatchPage from '../Pages/MatchPage';
 import { ResponseControl } from '../ui/controls';
+import AvailabilityCounts from './AvailabilityCounts';
 import AvailabilityRoster from './AvailabilityRoster';
 
 interface MatchSummaryProps {
@@ -239,6 +240,15 @@ export default function MatchSummary({
                         style={{ color: 'var(--text-3)', opacity: 0.7, flexShrink: 0 }}
                     />
                 </div>
+
+                {!showFullNames && (
+                    <AvailabilityCounts
+                        present={present.length}
+                        maybe={maybe.length}
+                        notPresent={notPresent.length}
+                        unknown={unknown.length}
+                    />
+                )}
 
                 {/* Roster breakdown */}
                 {showFullNames && (
