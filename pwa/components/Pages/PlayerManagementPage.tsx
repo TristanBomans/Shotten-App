@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Check, Trash2, UserPlus, Loader2 } from 'lucide-react';
+import { Check, Trash2, UserPlus } from 'lucide-react';
 import { usePlayerManagement } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import type { Player } from '@/lib/mockData';
+import FlowPage from '../ui/FlowPage';
 
 interface PlayerManagementPageProps {
     isOpen: boolean;
@@ -92,396 +92,277 @@ export default function PlayerManagementPage({ isOpen, onClose }: PlayerManageme
         setDeleteConfirmId(null);
     };
 
-    const handleClose = () => {
-        hapticPatterns.tap();
-        onClose();
-    };
+    const gridTemplate = `minmax(0, 1fr) ${teams.map(() => '40px').join(' ')} 40px`;
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0, x: '100%' }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: '100%' }}
-                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'var(--color-bg)',
-                        zIndex: 10020,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                    }}
-                >
-                    {/* Top fade gradient */}
+        <FlowPage
+            open={isOpen}
+            title="Manage Players"
+            subtitle="Tap a name to rename, toggle team membership"
+            onBack={onClose}
+        >
+            {loading ? (
+                <div className="flex-center" style={{ padding: 48 }}>
+                    <div className="spinner" />
+                </div>
+            ) : (
+                <div className="list-section">
+                    {/* Table header */}
                     <div
                         style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: 'calc(var(--safe-top) + 92px)',
-                            background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
-                            pointerEvents: 'none',
-                            zIndex: 4,
-                        }}
-                    />
-
-                    {/* Back button */}
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            handleClose();
-                        }}
-                        aria-label="Back"
-                        style={{
-                            position: 'absolute',
-                            top: 'calc(var(--safe-top) + 20px)',
-                            left: 12,
-                            zIndex: 5,
-                            width: 40,
-                            height: 40,
-                            borderRadius: '50%',
-                            background: 'var(--color-glass-heavy)',
-                            backdropFilter: 'blur(40px) saturate(180%)',
-                            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                            border: '0.5px solid var(--color-border)',
-                            color: 'var(--color-text-primary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            boxShadow: 'var(--shadow-lg)',
+                            display: 'grid',
+                            gridTemplateColumns: gridTemplate,
+                            gap: 8,
+                            padding: '10px 14px 9px',
+                            fontSize: '0.6rem',
+                            fontWeight: 700,
+                            color: 'var(--text-3)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
                         }}
                     >
-                        <ChevronLeft size={22} strokeWidth={2} />
-                    </motion.button>
+                        <div>Name</div>
+                        {teams.map(team => (
+                            <div
+                                key={team.id}
+                                title={team.name}
+                                style={{
+                                    textAlign: 'center',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                {team.name.substring(0, 8)}
+                            </div>
+                        ))}
+                        <div />
+                    </div>
 
-                    {/* Centered bold title */}
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: 'calc(var(--safe-top) + 20px)',
-                            left: 64,
-                            right: 64,
-                            height: 40,
-                            zIndex: 5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            pointerEvents: 'none',
-                        }}
-                    >
-                        <span
+                    {/* Player rows */}
+                    {players.map(player => (
+                        <div
+                            key={player.id}
+                            className="row row-static"
                             style={{
-                                fontSize: '1.0625rem',
-                                fontWeight: 700,
-                                color: 'var(--color-text-primary)',
-                                letterSpacing: '-0.01em',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: '100%',
+                                display: 'grid',
+                                gridTemplateColumns: gridTemplate,
+                                gap: 8,
+                                alignItems: 'center',
+                                minHeight: 56,
                             }}
                         >
-                            Manage Players
-                        </span>
-                    </div>
+                            {/* Name cell */}
+                            {editingId === player.id ? (
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    className="field"
+                                    value={editingName}
+                                    onChange={(e) => setEditingName(e.target.value)}
+                                    onBlur={() => handleSaveEdit(player)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSaveEdit(player);
+                                        if (e.key === 'Escape') {
+                                            setEditingId(null);
+                                            setEditingName('');
+                                        }
+                                    }}
+                                    style={{ minHeight: 38 }}
+                                />
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => handleStartEdit(player)}
+                                    style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        minWidth: 0,
+                                        textAlign: 'left',
+                                        fontSize: 'var(--fs-sm)',
+                                        fontWeight: 600,
+                                        color: 'var(--text-1)',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        padding: '8px 0',
+                                        cursor: 'pointer',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {player.name}
+                                </button>
+                            )}
 
-                    {/* Content */}
+                            {/* Team toggle cells */}
+                            {teams.map(team => {
+                                const isInTeam = player.teamIds.includes(team.id);
+                                return (
+                                    <button
+                                        key={team.id}
+                                        className="press"
+                                        onClick={() => handleToggleTeam(player, team.id)}
+                                        disabled={saving}
+                                        aria-label={`${player.name} in ${team.name}`}
+                                        aria-pressed={isInTeam}
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 'var(--r-sm)',
+                                            border: `1px solid ${isInTeam ? 'rgb(var(--ok-rgb) / 0.3)' : 'var(--border-hairline)'}`,
+                                            background: isInTeam ? 'rgb(var(--ok-rgb) / 0.13)' : 'var(--bg-subtle)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: saving ? 'wait' : 'pointer',
+                                            margin: '0 auto',
+                                        }}
+                                    >
+                                        {isInTeam && <Check size={17} style={{ color: 'var(--ok)' }} />}
+                                    </button>
+                                );
+                            })}
+
+                            {/* Delete button */}
+                            {deleteConfirmId === player.id ? (
+                                <button
+                                    className="press"
+                                    onClick={() => handleDelete(player.id)}
+                                    aria-label={`Confirm delete ${player.name}`}
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 'var(--r-sm)',
+                                        border: 'none',
+                                        background: 'var(--no)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        color: '#fff',
+                                    }}
+                                >
+                                    <Check size={16} />
+                                </button>
+                            ) : (
+                                <button
+                                    className="press"
+                                    onClick={() => {
+                                        hapticPatterns.tap();
+                                        setDeleteConfirmId(player.id);
+                                        setTimeout(() => setDeleteConfirmId(null), 3000);
+                                    }}
+                                    aria-label={`Delete ${player.name}`}
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 'var(--r-sm)',
+                                        border: '1px solid rgb(var(--no-rgb) / 0.2)',
+                                        background: 'rgb(var(--no-rgb) / 0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        color: 'var(--no)',
+                                    }}
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Add new player row */}
                     <div
+                        className="row row-static"
                         style={{
-                            flex: 1,
-                            overflowY: 'auto',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            paddingTop: 'calc(var(--safe-top) + 84px)',
-                            paddingBottom: 'calc(var(--safe-bottom, 0px) + 24px)',
+                            display: 'grid',
+                            gridTemplateColumns: gridTemplate,
+                            gap: 8,
+                            alignItems: 'center',
+                            minHeight: 56,
                         }}
                     >
-                        {/* Loading state */}
-                        {loading ? (
-                            <div style={{
-                                flex: 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: 40,
-                            }}>
-                                <Loader2 size={32} style={{ color: 'var(--color-accent)', animation: 'spin 1s linear infinite' }} />
-                            </div>
+                        {isAddingNew ? (
+                            <input
+                                ref={newInputRef}
+                                type="text"
+                                className="field"
+                                placeholder="Player name..."
+                                value={newPlayerName}
+                                onChange={(e) => setNewPlayerName(e.target.value)}
+                                onBlur={() => {
+                                    if (!newPlayerName.trim()) setIsAddingNew(false);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleAddNew();
+                                    if (e.key === 'Escape') {
+                                        setIsAddingNew(false);
+                                        setNewPlayerName('');
+                                    }
+                                }}
+                                style={{ minHeight: 38 }}
+                            />
                         ) : (
-                            <>
-                                {/* Table Header */}
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: `1fr ${teams.map(() => '44px').join(' ')} 44px`,
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    setIsAddingNew(true);
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    width: '100%',
+                                    minWidth: 0,
+                                    alignItems: 'center',
                                     gap: 8,
-                                    padding: '12px 20px',
-                                    borderBottom: '0.5px solid var(--color-border)',
-                                }}>
-                                    <div style={{
-                                        fontSize: '0.75rem',
-                                        fontWeight: 600,
-                                        color: 'var(--color-text-primary)',
-                                        textTransform: 'uppercase',
-                                    }}>
-                                        Name
-                                    </div>
-                                    {teams.map(team => (
-                                        <div
-                                            key={team.id}
-                                            style={{
-                                                fontSize: '0.65rem',
-                                                fontWeight: 600,
-                                                color: 'var(--color-text-primary)',
-                                                textTransform: 'uppercase',
-                                                textAlign: 'center',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                            title={team.name}
-                                        >
-                                            {team.name.substring(0, 8)}
-                                        </div>
-                                    ))}
-                                    <div />
-                                </div>
+                                    textAlign: 'left',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    padding: '8px 0',
+                                    cursor: 'pointer',
+                                    color: 'var(--accent)',
+                                    fontSize: 'var(--fs-sm)',
+                                    fontWeight: 600,
+                                }}
+                            >
+                                <UserPlus size={16} />
+                                Add new player...
+                            </button>
+                        )}
 
-                                {/* Player List */}
-                                <div style={{
-                                    padding: '0 20px',
-                                }}>
-                                    {players.map(player => (
-                                        <div
-                                            key={player.id}
-                                            style={{
-                                                display: 'grid',
-                                                gridTemplateColumns: `1fr ${teams.map(() => '44px').join(' ')} 44px`,
-                                                gap: 8,
-                                                alignItems: 'center',
-                                                padding: '14px 0',
-                                                borderBottom: '0.5px solid var(--color-border-subtle)',
-                                            }}
-                                        >
-                                            {/* Name cell */}
-                                            {editingId === player.id ? (
-                                                <input
-                                                    ref={inputRef}
-                                                    type="text"
-                                                    value={editingName}
-                                                    onChange={(e) => setEditingName(e.target.value)}
-                                                    onBlur={() => handleSaveEdit(player)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleSaveEdit(player);
-                                                        if (e.key === 'Escape') {
-                                                            setEditingId(null);
-                                                            setEditingName('');
-                                                        }
-                                                    }}
-                                                    style={{
-                                                        background: 'var(--color-input-bg)',
-                                                        border: '1px solid var(--color-accent)',
-                                                        borderRadius: 8,
-                                                        padding: '8px 12px',
-                                                        color: 'var(--color-text-primary)',
-                                                        fontSize: '1rem',
-                                                        outline: 'none',
-                                                        width: '100%',
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div
-                                                    onClick={() => handleStartEdit(player)}
-                                                    style={{
-                                                        color: 'var(--color-text-primary)',
-                                                        fontSize: '1rem',
-                                                        fontWeight: 500,
-                                                        cursor: 'pointer',
-                                                        padding: '8px 0',
-                                                    }}
-                                                >
-                                                    {player.name}
-                                                </div>
-                                            )}
+                        {/* Empty cells for alignment */}
+                        {teams.map(team => (
+                            <div key={team.id} />
+                        ))}
 
-                                            {/* Team toggle cells */}
-                                            {teams.map(team => {
-                                                const isInTeam = player.teamIds.includes(team.id);
-                                                return (
-                                                    <motion.button
-                                                        key={team.id}
-                                                        onClick={() => handleToggleTeam(player, team.id)}
-                                                        disabled={saving}
-                                                        whileTap={{ scale: 0.9 }}
-                                                        style={{
-                                                            width: 44,
-                                                            height: 44,
-                                                            borderRadius: 10,
-                                                            border: 'none',
-                                                            background: isInTeam
-                                                                ? 'var(--color-success-glow)'
-                                                                : 'var(--color-surface)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            cursor: saving ? 'wait' : 'pointer',
-                                                            margin: '0 auto',
-                                                        }}
-                                                    >
-                                                        {isInTeam && (
-                                                            <Check size={20} style={{ color: 'var(--color-success)' }} />
-                                                        )}
-                                                    </motion.button>
-                                                );
-                                            })}
-
-                                            {/* Delete button */}
-                                            {deleteConfirmId === player.id ? (
-                                                <motion.button
-                                                    onClick={() => handleDelete(player.id)}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    style={{
-                                                        width: 44,
-                                                        height: 44,
-                                                        borderRadius: 10,
-                                                        border: 'none',
-                                                        background: 'var(--color-danger)',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        cursor: 'pointer',
-                                                        color: 'var(--color-text-primary)',
-                                                    }}
-                                                >
-                                                    <Check size={18} />
-                                                </motion.button>
-                                            ) : (
-                                                <motion.button
-                                                    onClick={() => {
-                                                        hapticPatterns.tap();
-                                                        setDeleteConfirmId(player.id);
-                                                        setTimeout(() => setDeleteConfirmId(null), 3000);
-                                                    }}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    style={{
-                                                        width: 44,
-                                                        height: 44,
-                                                        borderRadius: 10,
-                                                        border: 'none',
-                                                        background: 'var(--color-danger-glow)',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        cursor: 'pointer',
-                                                        color: 'var(--color-danger)',
-                                                    }}
-                                                >
-                                                    <Trash2 size={18} />
-                                                </motion.button>
-                                            )}
-                                        </div>
-                                    ))}
-
-                                    {/* Add new player row */}
-                                    <div style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: `1fr ${teams.map(() => '44px').join(' ')} 44px`,
-                                        gap: 8,
-                                        alignItems: 'center',
-                                        padding: '14px 0 24px',
-                                    }}>
-                                        {isAddingNew ? (
-                                            <input
-                                                ref={newInputRef}
-                                                type="text"
-                                                placeholder="Player name..."
-                                                value={newPlayerName}
-                                                onChange={(e) => setNewPlayerName(e.target.value)}
-                                                onBlur={() => {
-                                                    if (!newPlayerName.trim()) setIsAddingNew(false);
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') handleAddNew();
-                                                    if (e.key === 'Escape') {
-                                                        setIsAddingNew(false);
-                                                        setNewPlayerName('');
-                                                    }
-                                                }}
-                                                style={{
-                                                    background: 'var(--color-input-bg)',
-                                                    border: '1px solid var(--color-accent)',
-                                                    borderRadius: 8,
-                                                    padding: '8px 12px',
-                                                    color: 'var(--color-text-primary)',
-                                                    fontSize: '1rem',
-                                                    outline: 'none',
-                                                    width: '100%',
-                                                }}
-                                            />
-                                        ) : (
-                                        <motion.button
-                                            onClick={() => {
-                                                hapticPatterns.tap();
-                                                setIsAddingNew(true);
-                                            }}
-                                            whileTap={{ scale: 0.98 }}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 8,
-                                                padding: '10px 0',
-                                                background: 'none',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                color: 'var(--color-accent)',
-                                                fontSize: '1rem',
-                                                fontWeight: 500,
-                                            }}
-                                        >
-                                            <UserPlus size={18} />
-                                            Add new player...
-                                        </motion.button>
-                                        )}
-
-                                        {/* Empty cells for alignment */}
-                                        {teams.map(team => (
-                                            <div key={team.id} />
-                                        ))}
-
-                                        {isAddingNew && newPlayerName.trim() ? (
-                                            <motion.button
-                                                onClick={handleAddNew}
-                                                whileTap={{ scale: 0.9 }}
-                                                style={{
-                                                    width: 44,
-                                                    height: 44,
-                                                    borderRadius: 10,
-                                                    border: 'none',
-                                                    background: 'var(--color-success)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    cursor: 'pointer',
-                                                    color: 'var(--color-text-primary)',
-                                                }}
-                                            >
-                                                <Check size={18} />
-                                            </motion.button>
-                                        ) : (
-                                            <div />
-                                        )}
-                                    </div>
-                                </div>
-                            </>
+                        {isAddingNew && newPlayerName.trim() ? (
+                            <button
+                                className="press"
+                                onClick={handleAddNew}
+                                aria-label="Save new player"
+                                style={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 'var(--r-sm)',
+                                    border: 'none',
+                                    background: 'var(--ok)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    color: '#000',
+                                }}
+                            >
+                                <Check size={16} />
+                            </button>
+                        ) : (
+                            <div />
                         )}
                     </div>
-                </motion.div>
+                </div>
             )}
-        </AnimatePresence>
+        </FlowPage>
     );
 }

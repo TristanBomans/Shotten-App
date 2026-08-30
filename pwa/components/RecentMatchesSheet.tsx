@@ -1,13 +1,13 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { Trophy, X, Calendar } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import { Trophy, Calendar } from 'lucide-react';
 import { parseDate } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
 import type { RecentMatchItem } from '@/lib/recentMatches';
 import { isSameTeamName } from '@/lib/teamNameMatching';
 import type { Match } from '@/lib/mockData';
+import Sheet from './ui/Sheet';
+import { EmptyState } from './ui/controls';
 
 interface RecentMatchesSheetProps {
     open: boolean;
@@ -20,41 +20,21 @@ interface RecentMatchesSheetProps {
     onClose: () => void;
 }
 
-type StatusBadgeMeta = {
-    label: string;
-    color: string;
-    background: string;
-    border: string;
-};
-
 type InternalMatchLike = Match & {
     teamId: number | null;
     teamName?: string | null;
 };
 
-function resultMeta(result: RecentMatchItem['result']): StatusBadgeMeta {
-    if (result === 'W') {
-        return {
-            label: 'W',
-            color: 'var(--color-success)',
-            background: 'rgb(var(--color-success-rgb) / 0.10)',
-            border: 'rgb(var(--color-success-rgb) / 0.18)',
-        };
-    }
-    if (result === 'L') {
-        return {
-            label: 'L',
-            color: 'var(--color-danger)',
-            background: 'rgb(var(--color-danger-rgb) / 0.10)',
-            border: 'rgb(var(--color-danger-rgb) / 0.18)',
-        };
-    }
-    return {
-        label: 'D',
-        color: 'var(--color-warning)',
-        background: 'rgb(var(--color-warning-rgb) / 0.10)',
-        border: 'rgb(var(--color-warning-rgb) / 0.18)',
-    };
+function resultColor(result: RecentMatchItem['result']): string {
+    if (result === 'W') return 'var(--ok)';
+    if (result === 'L') return 'var(--no)';
+    return 'var(--warn)';
+}
+
+function resultBg(result: RecentMatchItem['result']): string {
+    if (result === 'W') return 'rgb(var(--ok-rgb) / 0.12)';
+    if (result === 'L') return 'rgb(var(--no-rgb) / 0.12)';
+    return 'rgb(var(--warn-rgb) / 0.12)';
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -120,9 +100,12 @@ function matchesRecentTeam(match: RecentMatchItem, internalMatch: InternalMatchL
     return false;
 }
 
-function getAttendanceStatus(match: RecentMatchItem, internalMatches: InternalMatchLike[], playerId: number): 'present' | 'not-present' | 'maybe' | 'unknown' {
+function findInternalMatch(
+    match: RecentMatchItem,
+    internalMatches: InternalMatchLike[]
+): InternalMatchLike | undefined {
     const recentMatchDate = parseDate(match.date);
-    if (!recentMatchDate) return 'unknown';
+    if (!recentMatchDate) return undefined;
 
     const sameTeamMatches = internalMatches
         .map(internalMatch => ({
@@ -139,8 +122,15 @@ function getAttendanceStatus(match: RecentMatchItem, internalMatches: InternalMa
             Math.abs(right.internalDate!.getTime() - recentMatchDate.getTime())
         );
 
-    const internalMatch = sameTeamMatches[0]?.internalMatch;
+    return sameTeamMatches[0]?.internalMatch;
+}
 
+function getAttendanceStatus(
+    match: RecentMatchItem,
+    internalMatches: InternalMatchLike[],
+    playerId: number
+): 'present' | 'not-present' | 'maybe' | 'unknown' {
+    const internalMatch = findInternalMatch(match, internalMatches);
     if (!internalMatch) return 'unknown';
 
     const attendance = internalMatch.attendances?.find(a => a.playerId === playerId);
@@ -153,10 +143,10 @@ function getAttendanceStatus(match: RecentMatchItem, internalMatches: InternalMa
 }
 
 function attendanceDotColor(status: ReturnType<typeof getAttendanceStatus>): string {
-    if (status === 'present') return 'var(--color-success)';
-    if (status === 'maybe') return 'var(--color-warning)';
-    if (status === 'not-present') return 'var(--color-danger)';
-    return 'var(--color-text-tertiary)';
+    if (status === 'present') return 'var(--ok)';
+    if (status === 'maybe') return 'var(--warn)';
+    if (status === 'not-present') return 'var(--no)';
+    return 'var(--text-3)';
 }
 
 function attendanceLabel(status: ReturnType<typeof getAttendanceStatus>): string {
@@ -167,413 +157,194 @@ function attendanceLabel(status: ReturnType<typeof getAttendanceStatus>): string
 }
 
 function isForfaitMatch(match: RecentMatchItem, internalMatches: InternalMatchLike[]): boolean {
-    const recentMatchDate = parseDate(match.date);
-    if (!recentMatchDate) return false;
-
-    const sameTeamMatches = internalMatches
-        .map(internalMatch => ({
-            internalMatch,
-            internalDate: parseDate(internalMatch.date),
-        }))
-        .filter(({ internalDate, internalMatch }) =>
-            internalDate !== null &&
-            matchesRecentTeam(match, internalMatch) &&
-            isSameCalendarDay(recentMatchDate, internalDate)
-        )
-        .sort((left, right) =>
-            Math.abs(left.internalDate!.getTime() - recentMatchDate.getTime()) -
-            Math.abs(right.internalDate!.getTime() - recentMatchDate.getTime())
-        );
-
-    return sameTeamMatches[0]?.internalMatch.forfait === true;
+    return findInternalMatch(match, internalMatches)?.forfait === true;
 }
 
 export default function RecentMatchesSheet({
     open,
     loading,
     matches,
-    recentCount,
-    hasRecentWithin3Days,
     playerId,
     internalMatches = [],
     onClose,
 }: RecentMatchesSheetProps) {
-    if (typeof document === 'undefined') return null;
+    const handleClose = () => {
+        hapticPatterns.tap();
+        onClose();
+    };
 
-    return createPortal(
-        <AnimatePresence>
-            {open && (
-                <>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            onClose();
-                        }}
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            background: 'var(--color-overlay)',
-                            backdropFilter: 'blur(16px) saturate(180%)',
-                            WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-                            zIndex: 10012,
-                        }}
-                    />
+    return (
+        <Sheet
+            open={open}
+            onClose={handleClose}
+            title="Recent Matches"
+            subtitle={matches.length > 0 ? `${matches.length} result${matches.length === 1 ? '' : 's'}` : undefined}
+        >
+            {loading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="skeleton" style={{ height: 52 }} />
+                    ))}
+                </div>
+            ) : matches.length === 0 ? (
+                <EmptyState icon={<Trophy size={18} />} title="No matches yet" compact />
+            ) : (
+                <div className="list-section">
+                    {matches.map((match) => {
+                        const attStatus = getAttendanceStatus(match, internalMatches, playerId);
+                        const attColor = attendanceDotColor(attStatus);
+                        const attLabel = attendanceLabel(attStatus);
+                        const isRecent = isRecentMatch(match.date);
+                        const isForfait = isForfaitMatch(match, internalMatches);
+                        const isUpcoming = isUpcomingMatch(match.date);
 
-                    <div
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 10013,
-                            display: 'flex',
-                            alignItems: 'flex-end',
-                            justifyContent: 'center',
-                            padding: 16,
-                            pointerEvents: 'none',
-                        }}
-                    >
-                        <motion.div
-                            initial={{ opacity: 0, y: 30, scale: 0.96 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 30, scale: 0.96 }}
-                            transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                            style={{
-                                pointerEvents: 'auto',
-                                width: '100%',
-                                maxWidth: 480,
-                                maxHeight: '75dvh',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                borderRadius: 24,
-                                border: '1px solid var(--color-border)',
-                                background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(50px) saturate(180%)',
-                                WebkitBackdropFilter: 'blur(50px) saturate(180%)',
-                                boxShadow: 'var(--shadow-lg)',
-                                overflow: 'hidden',
-                            }}
-                        >
-                            {/* Header */}
+                        const badgeColor = isUpcoming
+                            ? 'var(--accent)'
+                            : isForfait
+                                ? 'var(--no)'
+                                : resultColor(match.result);
+                        const badgeBg = isUpcoming
+                            ? 'rgb(var(--accent-rgb) / 0.12)'
+                            : isForfait
+                                ? 'rgb(var(--no-rgb) / 0.12)'
+                                : resultBg(match.result);
+
+                        return (
                             <div
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '16px 20px',
-                                    borderBottom: '1px solid var(--color-border-subtle)',
-                                }}
+                                key={match.externalId}
+                                className="row row-static"
+                                style={{ paddingTop: 10, paddingBottom: 10 }}
                             >
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                                    <h3
-                                        style={{
-                                            fontSize: '1.05rem',
-                                            fontWeight: 700,
-                                            margin: 0,
-                                            color: 'var(--color-text-primary)',
-                                            letterSpacing: '-0.02em',
-                                        }}
-                                    >
-                                        Recent Matches
-                                    </h3>
-                                    {matches.length > 0 && (
-                                        <span
-                                            style={{
-                                                fontSize: '0.75rem',
-                                                color: 'var(--color-text-tertiary)',
-                                                fontWeight: 500,
-                                            }}
-                                        >
-                                            {matches.length}
-                                        </span>
-                                    )}
-                                </div>
-
-                                <button
-                                    onClick={() => {
-                                        hapticPatterns.tap();
-                                        onClose();
-                                    }}
-                                    aria-label="Close recent matches"
+                                {/* Result indicator */}
+                                <span
+                                    className="flex-center t-num"
                                     style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: 10,
-                                        border: '1px solid var(--color-border)',
-                                        background: 'var(--color-surface)',
-                                        color: 'var(--color-text-secondary)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        cursor: 'pointer',
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: 8,
+                                        background: badgeBg,
+                                        color: badgeColor,
+                                        fontSize: '0.7rem',
+                                        fontWeight: 800,
                                         flexShrink: 0,
-                                        transition: 'all 0.15s ease',
+                                        position: 'relative',
                                     }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = 'var(--color-surface-hover)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = 'var(--color-surface)';
-                                    }}
+                                    aria-label={
+                                        isUpcoming ? 'Upcoming' : isForfait ? 'Forfait' : `Result ${match.result}`
+                                    }
                                 >
-                                    <X size={15} />
-                                </button>
-                            </div>
+                                    {isUpcoming ? <Calendar size={13} /> : isForfait ? 'F' : match.result}
+                                    {isRecent && !isUpcoming && (
+                                        <span
+                                            aria-hidden
+                                            style={{
+                                                position: 'absolute',
+                                                top: -2,
+                                                right: -2,
+                                                width: 7,
+                                                height: 7,
+                                                borderRadius: '50%',
+                                                background: isForfait ? 'var(--no)' : 'var(--accent)',
+                                                border: '2px solid var(--bg-sheet)',
+                                            }}
+                                        />
+                                    )}
+                                </span>
 
-                            {/* Content */}
-                            <div
-                                className="scrollbar-hide"
-                                style={{
-                                    overflowY: 'auto',
-                                    padding: '8px 12px 12px',
-                                }}
-                            >
-                                {loading ? (
-                                    <div
+                                {/* Match info */}
+                                <span style={{ flex: 1, minWidth: 0 }}>
+                                    <span
                                         style={{
-                                            padding: '32px 0',
-                                            textAlign: 'center',
-                                            color: 'var(--color-text-tertiary)',
-                                            fontSize: '0.82rem',
+                                            display: 'block',
+                                            fontSize: 'var(--fs-xs)',
+                                            fontWeight: 600,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
                                         }}
                                     >
-                                        Loading matches...
-                                    </div>
-                                ) : matches.length === 0 ? (
-                                    <div
+                                        {match.teamName}
+                                        <span style={{ fontWeight: 400, color: 'var(--text-3)' }}> vs </span>
+                                        {match.opponent}
+                                    </span>
+                                    <span
                                         style={{
-                                            padding: '32px 0',
                                             display: 'flex',
-                                            flexDirection: 'column',
                                             alignItems: 'center',
-                                            gap: 8,
-                                            color: 'var(--color-text-tertiary)',
+                                            gap: 6,
+                                            marginTop: 2,
+                                            fontSize: 'var(--fs-3xs)',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
                                         }}
                                     >
-                                        <Trophy size={24} style={{ opacity: 0.4 }} />
-                                        <div style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
-                                            No matches yet
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                        {matches.map((match, index) => {
-                                            const result = resultMeta(match.result);
-                                            const attStatus = getAttendanceStatus(match, internalMatches, playerId);
-                                            const attColor = attendanceDotColor(attStatus);
-                                            const attLabel = attendanceLabel(attStatus);
-                                            const isRecent = isRecentMatch(match.date);
-                                            const isForfait = isForfaitMatch(match, internalMatches);
-                                            const isUpcoming = isUpcomingMatch(match.date);
-                                            const shouldHighlightForfait = isForfait && isRecent;
-                                            const cardBorder = shouldHighlightForfait
-                                                ? '1px solid rgb(var(--color-danger-rgb) / 0.2)'
-                                                : isRecent
-                                                    ? '1px solid rgb(var(--color-accent-rgb) / 0.2)'
-                                                    : isUpcoming
-                                                        ? '1px solid rgb(var(--color-accent-rgb) / 0.15)'
-                                                        : '1px solid transparent';
-                                            const cardBackground = shouldHighlightForfait
-                                                ? 'rgb(var(--color-danger-rgb) / 0.04)'
-                                                : isRecent
-                                                    ? 'rgb(var(--color-accent-rgb) / 0.04)'
-                                                    : isUpcoming
-                                                        ? 'rgb(var(--color-accent-rgb) / 0.02)'
-                                                        : 'transparent';
-                                            const cardHoverBackground = shouldHighlightForfait
-                                                ? 'rgb(var(--color-danger-rgb) / 0.08)'
-                                                : isRecent
-                                                    ? 'rgb(var(--color-accent-rgb) / 0.08)'
-                                                    : isUpcoming
-                                                        ? 'rgb(var(--color-accent-rgb) / 0.06)'
-                                                        : 'var(--color-surface-hover)';
-
-                                            return (
-                                                <motion.div
-                                                    key={match.externalId}
-                                                    initial={{ opacity: 0, x: -8 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    transition={{ delay: index * 0.03, duration: 0.2 }}
+                                        <span style={{ color: 'var(--text-2)', flexShrink: 0 }}>
+                                            {formatRelativeTime(match.date)}
+                                        </span>
+                                        {attLabel && !isForfait && (
+                                            <>
+                                                <span style={{ color: 'var(--text-3)', flexShrink: 0 }} aria-hidden>·</span>
+                                                <span
                                                     style={{
-                                                        display: 'flex',
+                                                        display: 'inline-flex',
                                                         alignItems: 'center',
-                                                        gap: 12,
-                                                        padding: '10px 12px',
-                                                        borderRadius: 14,
-                                                        cursor: 'default',
-                                                        transition: 'background 0.15s ease',
-                                                        border: cardBorder,
-                                                        background: cardBackground,
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        e.currentTarget.style.background = cardHoverBackground;
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        e.currentTarget.style.background = cardBackground;
+                                                        gap: 4,
+                                                        color: attColor,
+                                                        fontWeight: 600,
+                                                        flexShrink: 0,
                                                     }}
                                                 >
-                                                    {/* Result indicator */}
-                                                    <div
+                                                    <span
+                                                        aria-hidden
                                                         style={{
-                                                            width: 28,
-                                                            height: 28,
-                                                            borderRadius: 8,
-                                                            background: isUpcoming 
-                                                                ? 'rgb(var(--color-accent-rgb) / 0.10)' 
-                                                                : isForfait 
-                                                                    ? 'rgb(var(--color-danger-rgb) / 0.10)' 
-                                                                    : result.background,
-                                                            border: `1px solid ${isUpcoming 
-                                                                ? 'rgb(var(--color-accent-rgb) / 0.18)' 
-                                                                : isForfait 
-                                                                    ? 'rgb(var(--color-danger-rgb) / 0.18)' 
-                                                                    : result.border}`,
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            fontSize: '0.7rem',
-                                                            fontWeight: 800,
-                                                            color: isUpcoming 
-                                                                ? 'var(--color-accent)' 
-                                                                : isForfait 
-                                                                    ? 'var(--color-danger)' 
-                                                                    : result.color,
-                                                            letterSpacing: '0.02em',
-                                                            flexShrink: 0,
-                                                            position: 'relative',
+                                                            width: 5,
+                                                            height: 5,
+                                                            borderRadius: '50%',
+                                                            background: attColor,
                                                         }}
-                                                    >
-                                                        {isUpcoming ? (
-                                                            <Calendar size={14} />
-                                                        ) : isForfait ? (
-                                                            'F'
-                                                        ) : (
-                                                            result.label
-                                                        )}
-                                                        {isRecent && !isUpcoming && (
-                                                            <span
-                                                                style={{
-                                                                    position: 'absolute',
-                                                                    top: -2,
-                                                                    right: -2,
-                                                                    width: 8,
-                                                                    height: 8,
-                                                                    borderRadius: '50%',
-                                                                    background: isForfait ? 'var(--color-danger)' : 'var(--color-accent)',
-                                                                    border: '2px solid var(--color-surface)',
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </div>
+                                                    />
+                                                    {attLabel}
+                                                </span>
+                                            </>
+                                        )}
+                                        {match.location && (
+                                            <>
+                                                <span style={{ color: 'var(--text-3)', flexShrink: 0 }} aria-hidden>·</span>
+                                                <span
+                                                    style={{
+                                                        color: 'var(--text-3)',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                    }}
+                                                >
+                                                    {match.location}
+                                                </span>
+                                            </>
+                                        )}
+                                    </span>
+                                </span>
 
-                                                    {/* Match info */}
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div
-                                                            style={{
-                                                                fontSize: '0.84rem',
-                                                                fontWeight: 600,
-                                                                color: 'var(--color-text-primary)',
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis',
-                                                                whiteSpace: 'nowrap',
-                                                                lineHeight: 1.3,
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 6,
-                                                            }}
-                                                        >
-                                                            {match.teamName}
-                                                            <span style={{ fontWeight: 400, color: 'var(--color-text-tertiary)', fontSize: '0.75rem' }}>
-                                                                vs
-                                                            </span>
-                                                            {match.opponent}
-                                                        </div>
-                                                        <div
-                                                            style={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 6,
-                                                                marginTop: 3,
-                                                                whiteSpace: 'nowrap',
-                                                                overflow: 'hidden',
-                                                            }}
-                                                        >
-                                                            <span style={{ fontSize: '0.72rem', color: 'var(--color-accent)', fontWeight: 500, flexShrink: 0 }}>
-                                                                {formatRelativeTime(match.date)}
-                                                            </span>
-                                                            {attLabel && !isForfait && (
-                                                                <>
-                                                                    <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', flexShrink: 0 }}>·</span>
-                                                                    <span
-                                                                        style={{
-                                                                            display: 'inline-flex',
-                                                                            alignItems: 'center',
-                                                                            gap: 4,
-                                                                            fontSize: '0.72rem',
-                                                                            color: attColor,
-                                                                            fontWeight: 500,
-                                                                            flexShrink: 0,
-                                                                        }}
-                                                                    >
-                                                                        <span
-                                                                            style={{
-                                                                                width: 5,
-                                                                                height: 5,
-                                                                                borderRadius: '50%',
-                                                                                background: attColor,
-                                                                            }}
-                                                                        />
-                                                                        {attLabel}
-                                                                    </span>
-                                                                </>
-                                                            )}
-                                                            {match.location && (
-                                                                <>
-                                                                    <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)', flexShrink: 0 }}>·</span>
-                                                                    <span
-                                                                        style={{
-                                                                            fontSize: '0.72rem',
-                                                                            color: 'var(--color-text-tertiary)',
-                                                                            overflow: 'hidden',
-                                                                            textOverflow: 'ellipsis',
-                                                                        }}
-                                                                    >
-                                                                        {match.location}
-                                                                    </span>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Score */}
-                                                    {!isUpcoming && (
-                                                        <div
-                                                            style={{
-                                                                fontSize: isForfait ? '0.75rem' : '1rem',
-                                                                fontWeight: isForfait ? 700 : 800,
-                                                                color: isForfait ? 'var(--color-danger)' : 'var(--color-text-primary)',
-                                                                letterSpacing: '-0.02em',
-                                                                fontVariantNumeric: 'tabular-nums',
-                                                                flexShrink: 0,
-                                                                textTransform: isForfait ? 'uppercase' : 'none',
-                                                            }}
-                                                        >
-                                                            {isForfait ? 'Forfait' : match.scoreline}
-                                                        </div>
-                                                    )}
-                                                </motion.div>
-                                            );
-                                        })}
-                                    </div>
+                                {/* Score */}
+                                {!isUpcoming && (
+                                    <span
+                                        className="t-num"
+                                        style={{
+                                            fontSize: isForfait ? 'var(--fs-3xs)' : 'var(--fs-sm)',
+                                            fontWeight: 800,
+                                            color: isForfait ? 'var(--no)' : 'var(--text-1)',
+                                            letterSpacing: '-0.01em',
+                                            flexShrink: 0,
+                                            textTransform: isForfait ? 'uppercase' : 'none',
+                                        }}
+                                    >
+                                        {isForfait ? 'Forfait' : match.scoreline}
+                                    </span>
                                 )}
                             </div>
-                        </motion.div>
-                    </div>
-                </>
+                        );
+                    })}
+                </div>
             )}
-        </AnimatePresence>,
-        document.body
+        </Sheet>
     );
 }

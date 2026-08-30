@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
@@ -21,12 +20,12 @@ interface StatsViewProps {
 
 // Rank configuration — percentage based
 export const RANKS = [
-    { name: 'Club Legend', icon: Trophy, minPct: 90, color: 'var(--color-warning)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
-    { name: 'Ultra', icon: Megaphone, minPct: 75, color: 'var(--color-warning-secondary)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
-    { name: 'Plastic Fan', icon: Sparkles, minPct: 60, color: 'var(--color-accent)', bg: 'rgb(var(--color-accent-rgb) / 0.15)' },
-    { name: 'Bench Warmer', icon: Armchair, minPct: 45, color: 'var(--color-text-tertiary)', bg: 'rgb(var(--color-text-tertiary-rgb) / 0.15)' },
-    { name: 'Casual', icon: Beer, minPct: 25, color: 'var(--color-warning-secondary)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
-    { name: 'Professional Ghost', icon: Ghost, minPct: 0, color: 'var(--color-accent-secondary)', bg: 'rgb(var(--color-accent-rgb) / 0.15)' },
+    { name: 'Club Legend', icon: Trophy, minPct: 90, color: 'var(--warn)', bg: 'rgb(var(--warn-rgb) / 0.13)' },
+    { name: 'Ultra', icon: Megaphone, minPct: 75, color: 'var(--warn)', bg: 'rgb(var(--warn-rgb) / 0.13)' },
+    { name: 'Plastic Fan', icon: Sparkles, minPct: 60, color: 'var(--accent)', bg: 'rgb(var(--accent-rgb) / 0.13)' },
+    { name: 'Bench Warmer', icon: Armchair, minPct: 45, color: 'var(--text-3)', bg: 'var(--bg-subtle)' },
+    { name: 'Casual', icon: Beer, minPct: 25, color: 'var(--warn)', bg: 'rgb(var(--warn-rgb) / 0.13)' },
+    { name: 'Professional Ghost', icon: Ghost, minPct: 0, color: 'var(--tbd)', bg: 'rgb(var(--tbd-rgb) / 0.13)' },
 ];
 
 function getRank(attendancePct: number) {
@@ -163,6 +162,13 @@ function calculatePlayerStats(player: Player, allMatches: Match[]) {
 
 export type PlayerWithStats = Player & { stats: ReturnType<typeof calculatePlayerStats> };
 
+const formDotColor: Record<MatchResult['status'], string> = {
+    present: 'var(--ok)',
+    maybe: 'var(--warn)',
+    notPresent: 'var(--no)',
+    ghost: 'var(--tbd)',
+};
+
 export default function StatsView({
     matches,
     players,
@@ -192,141 +198,125 @@ export default function StatsView({
         : null;
 
     return (
-        <div className="container content-under-top-overlay">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-            >
-                {/* Leaderboard - Clean simple layout */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    style={{
-                        background: 'var(--color-surface)',
-                        backdropFilter: 'blur(40px) saturate(180%)',
-                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                        borderRadius: 20,
-                        border: '0.5px solid var(--color-border)',
-                        overflow: 'hidden',
-                    }}
-                >
-                    {playerStats.map((player, i) => (
-                        <motion.div
+        <div className="screen">
+            <div className="section-label">
+                <span>Attendance leaderboard</span>
+                <span className="t-num">{playerStats.length}</span>
+            </div>
+            <div className="list-section">
+                {playerStats.map((player, i) => {
+                    const isMe = player.id === currentPlayerId;
+                    const RankIcon = player.stats.rank.icon;
+                    return (
+                        <button
                             key={player.id}
+                            className="row"
                             onClick={() => {
                                 hapticPatterns.tap();
                                 onSelectPlayer?.(player.id);
                             }}
-                            whileTap={{ scale: 0.98 }}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.02 }}
+                            aria-label={`${player.name}, rank ${i + 1}, ${player.stats.attendancePct} percent attendance`}
                             style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 12,
-                                padding: '14px 16px',
-                                background: player.id === currentPlayerId
-                                    ? 'rgb(var(--color-accent-rgb) / 0.15)'
-                                    : 'transparent',
-                                borderLeft: player.id === currentPlayerId
-                                    ? '3px solid var(--color-accent)'
-                                    : '3px solid transparent',
-                                cursor: 'pointer',
-                                borderBottom: i < playerStats.length - 1
-                                    ? '0.5px solid var(--color-border-subtle)'
-                                    : 'none',
+                                minHeight: 58,
+                                background: isMe ? 'rgb(var(--accent-rgb) / 0.08)' : undefined,
+                                boxShadow: isMe ? 'inset 3px 0 0 var(--accent)' : undefined,
                             }}
                         >
-                            {/* Rank */}
-                            <span style={{
-                                width: 28,
-                                fontSize: i < 3 ? '1.1rem' : '0.9rem',
-                                fontWeight: 600,
-                                color: i === 0 ? 'var(--color-warning)' : i === 1 ? 'var(--color-text-secondary)' : i === 2 ? 'var(--color-warning-secondary)' : 'var(--color-text-tertiary)',
-                                textAlign: 'center',
-                            }}>
-                                {i < 3 ? ['🥇', '🥈', '🥉'][i] : `#${i + 1}`}
+                            {/* Position */}
+                            <span
+                                className="t-num"
+                                style={{
+                                    width: 26,
+                                    textAlign: 'center',
+                                    fontSize: 'var(--fs-2xs)',
+                                    fontWeight: 800,
+                                    color: i === 0
+                                        ? 'var(--warn)'
+                                        : i < 3
+                                            ? 'var(--text-1)'
+                                            : 'var(--text-3)',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                {i + 1}
                             </span>
 
-                            {/* Avatar - Rank Icon */}
-                            <div style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: '50%',
-                                background: player.stats.rank.bg,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                                color: player.stats.rank.color,
-                            }}>
-                                <player.stats.rank.icon size={20} />
-                            </div>
+                            {/* Rank icon tile */}
+                            <span
+                                className="flex-center"
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 9,
+                                    background: player.stats.rank.bg,
+                                    color: player.stats.rank.color,
+                                    flexShrink: 0,
+                                }}
+                                aria-hidden
+                            >
+                                <RankIcon size={16} />
+                            </span>
 
-                            {/* Info - simplified */}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{
-                                    fontSize: '1rem',
-                                    fontWeight: 600,
-                                    color: 'var(--color-text-primary)',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                }}>
+                            {/* Name + form */}
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                                <span
+                                    style={{
+                                        display: 'block',
+                                        fontSize: 'var(--fs-sm)',
+                                        fontWeight: isMe ? 700 : 600,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
                                     {player.name}
-                                </div>
-                                {/* Recent Form dots only */}
-                                <div style={{ display: 'flex', gap: 3, marginTop: 4 }}>
-                                    {player.stats.recentForm.map((status, j) => (
-                                        <div
-                                            key={j}
-                                            style={{
-                                                width: 8,
-                                                height: 8,
-                                                borderRadius: '50%',
-                                                background: status === 'present' ? 'var(--color-success)' :
-                                                    status === 'maybe' ? 'var(--color-warning)' :
-                                                        status === 'notPresent' ? 'var(--color-danger)' :
-                                                            'var(--color-text-tertiary)',
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
+                                </span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                                    <span style={{ display: 'flex', gap: 3 }} aria-hidden>
+                                        {player.stats.recentForm.map((status, j) => (
+                                            <span
+                                                key={j}
+                                                style={{
+                                                    width: 6,
+                                                    height: 6,
+                                                    borderRadius: '50%',
+                                                    background: formDotColor[status],
+                                                }}
+                                            />
+                                        ))}
+                                    </span>
+                                    <span style={{ fontSize: '0.625rem', color: player.stats.rank.color, fontWeight: 600 }}>
+                                        {player.stats.rank.name}
+                                    </span>
+                                </span>
+                            </span>
 
                             {/* Attendance % */}
-                            <div style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'flex-end',
-                                gap: 2,
-                            }}>
-                                <div style={{
-                                    fontSize: '1.25rem',
-                                    fontWeight: 700,
-                                    color: player.stats.attendancePct >= 80
-                                        ? 'var(--color-success)'
-                                        : player.stats.attendancePct >= 50
-                                            ? 'var(--color-warning)'
-                                            : 'var(--color-danger)',
-                                }}>
+                            <span style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <span
+                                    className="t-num"
+                                    style={{
+                                        display: 'block',
+                                        fontSize: 'var(--fs-base)',
+                                        fontWeight: 800,
+                                        letterSpacing: '-0.01em',
+                                        color: player.stats.attendancePct >= 80
+                                            ? 'var(--ok)'
+                                            : player.stats.attendancePct >= 50
+                                                ? 'var(--warn)'
+                                                : 'var(--no)',
+                                    }}
+                                >
                                     {player.stats.attendancePct}%
-                                </div>
-                                <div style={{
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    color: 'var(--color-text-tertiary)',
-                                }}>
+                                </span>
+                                <span style={{ display: 'block', fontSize: '0.625rem', color: 'var(--text-3)', fontWeight: 600 }}>
                                     present
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </motion.div>
-            </motion.div>
+                                </span>
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
 
             {/* Rules Page */}
             <RulesPage open={isRulesOpen} onClose={() => setRulesOpen(false)} />

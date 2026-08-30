@@ -18,121 +18,54 @@ export default function UnlockDialog({ open, onConfirm, onCancel }: UnlockDialog
             {open && (
                 <>
                     <motion.div
+                        className="backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.18 }}
+                        style={{ zIndex: 10030 }}
                         onClick={() => {
                             hapticPatterns.tap();
                             onCancel();
                         }}
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            background: 'var(--color-overlay)',
-                            backdropFilter: 'blur(12px) saturate(180%)',
-                            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-                            zIndex: 10020,
-                        }}
                     />
-                    <div
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 10021,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 20,
-                            pointerEvents: 'none',
-                        }}
+                    <motion.div
+                        className="dialog"
+                        role="alertdialog"
+                        aria-modal="true"
+                        aria-label="Hidden admin features"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.96 }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                        style={{ zIndex: 10031, textAlign: 'center' }}
                     >
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                                pointerEvents: 'auto',
-                                width: '100%',
-                                maxWidth: 320,
-                                background: 'var(--color-surface)',
-                                backdropFilter: 'blur(40px) saturate(180%)',
-                                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                                borderRadius: 20,
-                                border: '0.5px solid var(--color-border)',
-                                padding: 20,
-                                boxShadow: 'var(--shadow-lg)',
-                                textAlign: 'center',
-                            }}
-                        >
-                            <div
-                                style={{
-                                    fontSize: '1.1rem',
-                                    fontWeight: 700,
-                                    color: 'var(--color-text-primary)',
-                                    marginBottom: 8,
+                        <h2 style={{ fontSize: 'var(--fs-base)', fontWeight: 700, marginBottom: 6 }}>
+                            Hidden Admin Features
+                        </h2>
+                        <p className="t-body" style={{ marginBottom: 18 }}>
+                            Want to unlock the secret feature?
+                        </p>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button
+                                className="btn btn-quiet press"
+                                style={{ flex: 1 }}
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    onCancel();
                                 }}
                             >
-                                Hidden Admin Features
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: '0.95rem',
-                                    color: 'var(--color-text-secondary)',
-                                    marginBottom: 20,
-                                    lineHeight: 1.4,
-                                }}
+                                No
+                            </button>
+                            <button
+                                className="btn btn-primary press"
+                                style={{ flex: 1 }}
+                                onClick={onConfirm}
                             >
-                                Want to unlock the secret feature?
-                            </div>
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    gap: 10,
-                                }}
-                            >
-                                <button
-                                    onClick={() => {
-                                        hapticPatterns.tap();
-                                        onCancel();
-                                    }}
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px 14px',
-                                        borderRadius: 12,
-                                        border: '1px solid var(--color-border)',
-                                        background: 'transparent',
-                                        color: 'var(--color-text-secondary)',
-                                        fontWeight: 600,
-                                        fontSize: '0.95rem',
-                                        cursor: 'pointer',
-                                    }}
-                                >
-                                    No
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        onConfirm();
-                                    }}
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px 14px',
-                                        borderRadius: 12,
-                                        border: 'none',
-                                        background: 'var(--color-accent)',
-                                        color: '#fff',
-                                        fontWeight: 600,
-                                        fontSize: '0.95rem',
-                                        cursor: 'pointer',
-                                    }}
-                                >
-                                    Yes
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
+                                Yes
+                            </button>
+                        </div>
+                    </motion.div>
                 </>
             )}
         </AnimatePresence>,

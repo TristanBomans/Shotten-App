@@ -1,6 +1,12 @@
 import type { Metadata, Viewport } from 'next';
+import { DM_Sans } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
+
+const dmSans = DM_Sans({
+    subsets: ['latin'],
+    variable: '--font-dm-sans',
+});
 
 export const metadata: Metadata = {
     title: 'Shotten - Team Tracker',
@@ -26,7 +32,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="en" suppressHydrationWarning className={dmSans.variable}>
             <head>
                 <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
                 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -44,7 +50,7 @@ export default function RootLayout({
                                 document.documentElement.setAttribute('data-theme', theme);
                                 const themeColors = {
                                     oled: '#000000',
-                                    white: '#ffffff'
+                                    white: '#f2f2f6'
                                 };
                                 const meta = document.querySelector('meta[name="theme-color"]');
                                 const color = themeColors[theme] || '#000000';

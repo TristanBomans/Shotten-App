@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import type { RosterPlayer, StatusGroup } from '../../MatchCard/types';
+import type { StatusGroup } from '../../MatchBoard/types';
+import { Avatar } from '../../ui/controls';
 
 interface SquadViewProps {
     statusGroups: StatusGroup[];
@@ -9,47 +10,75 @@ interface SquadViewProps {
 }
 
 export default function SquadView({ statusGroups, currentPlayerId }: SquadViewProps) {
+    const hasAny = statusGroups.some(group => group.players.length > 0);
+
+    if (!hasAny) {
+        return (
+            <p className="t-caption" style={{ textAlign: 'center', padding: '32px 0' }}>
+                No squad information yet.
+            </p>
+        );
+    }
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {statusGroups.map(({ title, players, color, emoji }) => (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {statusGroups.map(({ title, players, color }) => (
                 players.length > 0 && (
-                    <div key={title}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                            <span>{emoji}</span>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                                {title} ({players.length})
-                            </span>
+                    <section key={title} style={{ marginBottom: 'var(--sp-5)' }}>
+                        <div className="section-label">
+                            <span style={{ color }}>{title}</span>
+                            <span className="t-num" style={{ color }}>{players.length}</span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            {players.map((player) => (
-                                <div key={player.id} style={{
-                                    display: 'flex', alignItems: 'center', gap: 12,
-                                    padding: '10px 12px',
-                                    background: player.id === currentPlayerId ? 'var(--color-surface-hover)' : 'var(--color-bg-elevated)',
-                                    borderRadius: 12,
-                                    border: player.id === currentPlayerId ? '0.5px solid var(--color-border)' : '0.5px solid var(--color-border-subtle)',
-                                }}>
-                                    <div style={{
-                                        width: 32, height: 32, borderRadius: '50%',
-                                        background: color,
-                                        color: title === 'No Response' ? 'var(--color-text-primary)' : 'black',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: '0.85rem', fontWeight: 700, flexShrink: 0,
-                                    }}>
-                                        {player.name.charAt(0)}
+                        <div className="list-section">
+                            {players.map((player) => {
+                                const isMe = player.id === currentPlayerId;
+                                return (
+                                    <div
+                                        key={player.id}
+                                        className="row row-static"
+                                        style={{
+                                            minHeight: 48,
+                                            background: isMe ? 'var(--bg-subtle)' : undefined,
+                                        }}
+                                    >
+                                        <span style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+                                            <Avatar name={player.name} size="sm" highlight={isMe} />
+                                            <span
+                                                aria-hidden
+                                                style={{
+                                                    position: 'absolute',
+                                                    bottom: -1,
+                                                    right: -1,
+                                                    width: 9,
+                                                    height: 9,
+                                                    borderRadius: '50%',
+                                                    background: color,
+                                                    border: '2px solid var(--bg-panel)',
+                                                }}
+                                            />
+                                        </span>
+                                        <span
+                                            style={{
+                                                fontSize: 'var(--fs-sm)',
+                                                fontWeight: isMe ? 700 : 500,
+                                                minWidth: 0,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {player.name}
+                                            {isMe && (
+                                                <span style={{ marginLeft: 6, fontSize: 'var(--fs-3xs)', color: 'var(--text-3)' }}>
+                                                    (you)
+                                                </span>
+                                            )}
+                                        </span>
                                     </div>
-                                    <span style={{
-                                        fontSize: '0.9rem',
-                                        fontWeight: player.id === currentPlayerId ? 600 : 400,
-                                        color: 'var(--color-text-primary)',
-                                    }}>
-                                        {player.name}
-                                        {player.id === currentPlayerId && <span style={{ marginLeft: 6, fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>(you)</span>}
-                                    </span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
-                    </div>
+                    </section>
                 )
             ))}
         </div>

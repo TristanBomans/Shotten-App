@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo, type ElementType, type ReactNode, type CSSProperties } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, UserCircle, Trophy, Calendar, Users, TrendingUp, X, MoreHorizontal, ExternalLink, Home, Navigation } from 'lucide-react';
-import { parseDate, parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
+import { ChevronLeft, UserCircle, Trophy, Calendar, X, MoreHorizontal, ExternalLink, Home, Navigation, Palette } from 'lucide-react';
+import { parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 import { fetchScraperPlayers } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
+import { ListSection, Row, MetricRow } from '../ui/ListSection';
+import { EmptyState } from '../ui/controls';
 
 const teamDetailTabs = ['overview', 'matches', 'squad'] as const;
 type TeamDetailTab = typeof teamDetailTabs[number];
@@ -34,46 +36,10 @@ interface TeamDetailPageProps {
     onClose: () => void;
 }
 
-const SectionCard = ({ children, style }: { children: ReactNode; style?: CSSProperties }) => (
-    <div style={{
-        background: 'var(--color-bg-elevated)',
-        backdropFilter: 'blur(40px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-        borderRadius: 16,
-        border: '0.5px solid var(--color-border)',
-        padding: 16,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        ...style,
-    }}>
-        {children}
-    </div>
-);
-
-const SectionHeader = ({ icon: Icon, title, color = 'var(--color-text-tertiary)' }: {
-    icon: ElementType;
-    title: string;
-    color?: string;
-}) => (
-    <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 12,
-    }}>
-        <Icon size={14} style={{ color }} />
-        <span style={{
-            fontSize: '0.7rem',
-            fontWeight: 700,
-            color: 'var(--color-text-secondary)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-        }}>
-            {title}
-        </span>
-    </div>
-);
+interface CoreMatchLike {
+    date: string;
+    forfait?: boolean;
+}
 
 export default function TeamDetailPage({ team, open, onClose }: TeamDetailPageProps) {
     const [showImage, setShowImage] = useState(false);
@@ -85,9 +51,6 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
     const [menuOpen, setMenuOpen] = useState(false);
 
     const scrollRef = useRef<HTMLDivElement>(null);
-    const overviewRef = useRef<HTMLDivElement>(null);
-    const matchesRef = useRef<HTMLDivElement>(null);
-    const squadRef = useRef<HTMLDivElement>(null);
 
     // Fetch matches for this team (LZV + CoreMatches merged)
     useEffect(() => {
@@ -99,55 +62,52 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                     fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`),
                     fetch(`${API_BASE_URL}/api/Matches?teamName=${encodeURIComponent(team.name)}`)
                 ]);
-                
+
                 let lzvMatches: ScraperMatch[] = [];
-                let coreMatches: any[] = [];
-                
+                let coreMatches: CoreMatchLike[] = [];
+
                 if (lzvRes.ok) {
                     lzvMatches = await lzvRes.json();
                 }
-                
+
                 if (coreRes.ok) {
                     coreMatches = await coreRes.json();
                 }
-                
+
                 // Fix LZV dates: stored as UTC but represent Belgian local time
                 // Strip timezone to treat them as local dates
                 const fixLzvDate = (dateStr: string): string => {
-                    // Remove timezone offset (e.g., +00:00 or Z) to treat as local time
                     return dateStr.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
                 };
-                
-                // Merge CoreMatch forfait data into LZV matches
-                // Match on calendar day (same logic as RecentMatchesSheet)
+
+                // Merge CoreMatch forfait data into LZV matches (match on calendar day)
                 const mergedMatches = lzvMatches.map((lzvMatch: ScraperMatch) => {
                     const fixedDate = fixLzvDate(lzvMatch.date);
                     const lzvDate = new Date(fixedDate);
-                    
-                    const coreMatch = coreMatches.find((core: any) => {
+
+                    const coreMatch = coreMatches.find((core) => {
                         const coreDate = new Date(core.date);
-                        // Match on calendar day
-                        const sameCalendarDay = 
+                        return (
                             lzvDate.getFullYear() === coreDate.getFullYear() &&
                             lzvDate.getMonth() === coreDate.getMonth() &&
-                            lzvDate.getDate() === coreDate.getDate();
-                        return sameCalendarDay;
+                            lzvDate.getDate() === coreDate.getDate()
+                        );
                     });
-                    
+
                     if (coreMatch) {
                         return {
                             ...lzvMatch,
                             date: fixedDate,
-                            forfait: coreMatch.forfait
+                            forfait: coreMatch.forfait,
                         };
                     }
-                    
+
                     return {
                         ...lzvMatch,
-                        date: fixedDate
+                        date: fixedDate,
                     };
                 });
-                
+
                 setMatches(mergedMatches);
             } catch (error) {
                 console.warn('Failed to fetch team matches:', error);
@@ -195,7 +155,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
 
     const scrollToView = (view: TeamDetailTab) => {
         if (scrollRef.current) {
-            const viewIndex = view === 'overview' ? 0 : view === 'matches' ? 1 : 2;
+            const viewIndex = teamDetailTabs.indexOf(view);
             const left = viewIndex * scrollRef.current.clientWidth;
             scrollRef.current.scrollTo({ left, behavior: 'smooth' });
         }
@@ -211,8 +171,6 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
             }
         }
     }, [open]);
-
-    if (typeof document === 'undefined') return null;
 
     const hasTeam = !!team?.externalId;
 
@@ -235,30 +193,19 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
         });
     }, [hasTeam, team?.name, matches]);
 
-    // Split matches into upcoming and past
-    const now = Date.now();
-    const upcomingMatches = matches
-        .filter(m => parseDateToTimestamp(m.date) > now || m.status === 'Scheduled')
-        .sort((a, b) => parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date));
-    const pastMatches = matches
-        .filter(m => parseDateToTimestamp(m.date) <= now && m.status === 'Played')
-        .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date));
+    if (typeof document === 'undefined') return null;
+
     const winRate = team.matchesPlayed && team.matchesPlayed > 0
         ? Math.round(((team.wins || 0) / team.matchesPlayed) * 100)
         : 0;
 
-    // Sort players by goals
-    // Extract per-team stats for THIS team specifically
+    // Sort players by goals, using per-team stats for THIS team when available
     const sortedPlayers = hasTeam
         ? players
             .map(p => {
-                // Find stats for this specific team
                 const teamStats = p.teamStats?.find(ts => ts.teamId === team.externalId);
-
-                // Use team-specific stats if available, otherwise fall back to aggregated
                 return {
                     ...p,
-                    // Override with per-team stats
                     goals: teamStats?.goals ?? p.goals,
                     assists: teamStats?.assists ?? p.assists,
                     gamesPlayed: teamStats?.gamesPlayed ?? p.gamesPlayed,
@@ -268,186 +215,139 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
             .sort((a, b) => b.goals - a.goals)
         : [];
 
+    const paneStyle: CSSProperties = {
+        minWidth: '100%',
+        scrollSnapAlign: 'center',
+        scrollSnapStop: 'always',
+        overflowY: 'auto',
+    };
+
     return createPortal(
         <AnimatePresence>
             {open && (
                 <motion.div
-                    initial={{ opacity: 0, x: '100%' }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: '100%' }}
-                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'var(--color-bg)',
-                        zIndex: 10020,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                    }}
+                    className="flow-page"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={team?.name || 'Team detail'}
+                    initial={{ x: '100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 32 }}
                 >
-                    {/* Header: floating glass pills (back + title) */}
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            zIndex: 5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            padding: 'calc(var(--safe-top) + 20px) 12px 10px',
-                        }}
-                    >
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                onClose();
-                            }}
-                            aria-label="Back"
-                            style={{
-                                flexShrink: 0,
-                                width: 40,
-                                height: 40,
-                                borderRadius: '50%',
-                                background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(40px) saturate(180%)',
-                                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                                border: '0.5px solid var(--color-border)',
-                                color: 'var(--color-text-primary)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                boxShadow: 'var(--shadow-lg)',
-                            }}
-                        >
-                            <ChevronLeft size={22} strokeWidth={2} />
-                        </motion.button>
-
-                        <div
-                            style={{
-                                flex: 1,
-                                minWidth: 0,
-                                padding: '8px 14px',
-                                borderRadius: 999,
-                                background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(40px) saturate(180%)',
-                                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                                border: '0.5px solid var(--color-border)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: 2,
-                                overflow: 'hidden',
-                                boxShadow: 'var(--shadow-lg)',
-                            }}
-                        >
-                            <div
-                                style={{
-                                    fontSize: '0.9rem',
-                                    fontWeight: 700,
-                                    color: 'var(--color-text-primary)',
-                                    lineHeight: 1.2,
-                                    width: '100%',
-                                    textAlign: 'center',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
+                    {/* Header */}
+                    <div className="flow-header">
+                        <div className="flow-header-inner">
+                            <button
+                                className="icon-action press"
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    onClose();
                                 }}
+                                aria-label="Back"
                             >
-                                {team?.name || ''}
-                            </div>
-                            {team?.leagueName && (
-                                <div
+                                <ChevronLeft size={18} />
+                            </button>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                                <h2
                                     style={{
-                                        fontSize: '0.72rem',
-                                        color: 'var(--color-text-secondary)',
-                                        lineHeight: 1.2,
-                                        width: '100%',
-                                        textAlign: 'center',
+                                        fontSize: 'var(--fs-sm)',
+                                        fontWeight: 700,
+                                        letterSpacing: '-0.01em',
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
                                     }}
                                 >
-                                    {team.leagueName}
-                                </div>
-                            )}
+                                    {team?.name || ''}
+                                </h2>
+                                {team?.leagueName && (
+                                    <p
+                                        className="t-caption"
+                                        style={{
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            marginTop: -1,
+                                        }}
+                                    >
+                                        {team.leagueName}
+                                    </p>
+                                )}
+                            </div>
+                            <button
+                                className="icon-action press"
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    setMenuOpen(o => !o);
+                                }}
+                                aria-label="More options"
+                                aria-expanded={menuOpen}
+                                style={menuOpen ? { background: 'var(--bg-subtle-strong)', color: 'var(--text-1)' } : undefined}
+                            >
+                                <MoreHorizontal size={17} />
+                            </button>
                         </div>
 
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                setMenuOpen(o => !o);
-                            }}
-                            aria-label="More options"
+                        {/* Segmented tabs */}
+                        <div
                             style={{
-                                flexShrink: 0,
-                                width: 40,
-                                height: 40,
-                                borderRadius: '50%',
-                                background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(40px) saturate(180%)',
-                                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                                border: '0.5px solid var(--color-border)',
-                                color: 'var(--color-text-primary)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                boxShadow: 'var(--shadow-lg)',
+                                maxWidth: 'calc(var(--content-max) + 2 * var(--screen-x))',
+                                margin: '0 auto',
+                                padding: '0 var(--screen-x) 10px',
+                                width: '100%',
                             }}
                         >
-                            <MoreHorizontal size={20} strokeWidth={2} />
-                        </motion.button>
+                            <div className="seg" role="tablist" aria-label="Team views">
+                                {([
+                                    { id: 'overview', label: 'Overview' },
+                                    { id: 'matches', label: 'Matches' },
+                                    { id: 'squad', label: 'Squad' },
+                                ] as const).map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        role="tab"
+                                        aria-selected={activeTab === tab.id}
+                                        className="seg-item"
+                                        onClick={() => {
+                                            hapticPatterns.tap();
+                                            setActiveTab(tab.id);
+                                            scrollToView(tab.id);
+                                        }}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Dropdown menu */}
                     <AnimatePresence>
                         {menuOpen && (
                             <>
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
+                                <div
                                     onClick={() => {
                                         hapticPatterns.tap();
                                         setMenuOpen(false);
                                     }}
-                                    style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        zIndex: 6,
-                                    }}
+                                    style={{ position: 'fixed', inset: 0, zIndex: 10024 }}
                                 />
                                 <motion.div
-                                    initial={{ opacity: 0, scale: 0.92, y: -8 }}
+                                    className="menu"
+                                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.92, y: -8 }}
-                                    transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                                    transition={{ duration: 0.14, ease: 'easeOut' }}
                                     style={{
-                                        position: 'absolute',
-                                        top: 'calc(var(--safe-top) + 68px)',
-                                        right: 12,
-                                        zIndex: 7,
-                                        minWidth: 220,
-                                        padding: 6,
-                                        borderRadius: 14,
-                                        background: 'var(--color-glass-heavy)',
-                                        backdropFilter: 'blur(40px) saturate(180%)',
-                                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                                        border: '0.5px solid var(--color-border)',
-                                        boxShadow: 'var(--shadow-lg)',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 2,
+                                        top: 'calc(var(--safe-top) + var(--header-h))',
+                                        right: 'var(--screen-x)',
+                                        zIndex: 10025,
+                                        transformOrigin: 'top right',
                                     }}
                                 >
                                     <a
+                                        className="menu-item"
                                         href={`https://www.lzvcup.be/teams/detail/${team?.externalId || ''}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
@@ -455,20 +355,9 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                             hapticPatterns.tap();
                                             setMenuOpen(false);
                                         }}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 10,
-                                            padding: '10px 12px',
-                                            borderRadius: 10,
-                                            color: 'var(--color-text-primary)',
-                                            fontSize: '0.9rem',
-                                            fontWeight: 500,
-                                            textDecoration: 'none',
-                                            cursor: 'pointer',
-                                        }}
+                                        style={{ textDecoration: 'none' }}
                                     >
-                                        <ExternalLink size={16} style={{ color: 'var(--color-text-secondary)' }} />
+                                        <ExternalLink size={16} style={{ color: 'var(--text-2)' }} />
                                         View on LZV Cup
                                     </a>
                                 </motion.div>
@@ -492,453 +381,263 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                         }}
                     >
                         {/* Overview Tab */}
-                        <div
-                            ref={overviewRef}
-                            data-view="overview"
-                            style={{
-                                minWidth: '100%',
-                                scrollSnapAlign: 'center',
-                                scrollSnapStop: 'always',
-                                padding: 'calc(var(--safe-top) + 84px) 16px calc(var(--safe-bottom, 0px) + 100px)',
-                                overflowY: 'auto',
-                            }}
-                        >
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                <SectionCard style={{ padding: 20 }}>
-                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                                        {team?.imageBase64 ? (
-                                            <img
-                                                src={team.imageBase64}
-                                                alt={team?.name || ''}
-                                                onClick={() => {
-                                                    hapticPatterns.tap();
-                                                    setShowImage(true);
-                                                }}
-                                                style={{
-                                                    width: 72, height: 72,
-                                                    borderRadius: 14,
-                                                    objectFit: 'cover',
-                                                    border: '1px solid var(--color-border)',
-                                                    cursor: 'zoom-in',
-                                                    flexShrink: 0,
-                                                }}
-                                            />
-                                        ) : (
-                                            <div style={{
-                                                width: 72, height: 72,
-                                                borderRadius: 14,
-                                                background: 'var(--color-surface-hover)',
-                                                border: '1px solid var(--color-border)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-accent)',
+                        <div data-view="overview" className="scrollbar-hide" style={paneStyle}>
+                            <div className="flow-body-inner">
+                                {/* Team header */}
+                                <div className="panel" style={{ padding: 16, display: 'flex', gap: 14, alignItems: 'center', marginBottom: 'var(--sp-5)' }}>
+                                    {team?.imageBase64 ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            src={team.imageBase64}
+                                            alt={team?.name || ''}
+                                            onClick={() => {
+                                                hapticPatterns.tap();
+                                                setShowImage(true);
+                                            }}
+                                            style={{
+                                                width: 56,
+                                                height: 56,
+                                                borderRadius: 12,
+                                                objectFit: 'cover',
+                                                border: '1px solid var(--border-hairline)',
+                                                cursor: 'zoom-in',
                                                 flexShrink: 0,
-                                            }}>
-                                                {team?.name?.charAt(0) || ''}
-                                            </div>
-                                        )}
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{
-                                                fontSize: '1.25rem',
+                                            }}
+                                        />
+                                    ) : (
+                                        <div
+                                            className="flex-center"
+                                            style={{
+                                                width: 56,
+                                                height: 56,
+                                                borderRadius: 12,
+                                                background: 'var(--bg-subtle)',
+                                                border: '1px solid var(--border-hairline)',
+                                                fontSize: '1.4rem',
                                                 fontWeight: 700,
-                                                color: 'var(--color-text-primary)',
+                                                color: 'var(--text-2)',
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            {team?.name?.charAt(0) || ''}
+                                        </div>
+                                    )}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <h3
+                                            style={{
+                                                fontSize: 'var(--fs-base)',
+                                                fontWeight: 700,
+                                                letterSpacing: '-0.01em',
                                                 whiteSpace: 'nowrap',
                                                 overflow: 'hidden',
                                                 textOverflow: 'ellipsis',
-                                            }}>
-                                                {team?.name || ''}
-                                            </div>
-                                            {team?.leagueName && (
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 6,
-                                                    marginTop: 4,
-                                                }}>
-                                                    <Trophy size={12} style={{ color: 'var(--color-text-tertiary)' }} />
-                                                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                                                        {team.leagueName}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
+                                            }}
+                                        >
+                                            {team?.name || ''}
+                                        </h3>
+                                        {team?.leagueName && (
+                                            <p style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3, fontSize: 'var(--fs-2xs)', color: 'var(--text-3)' }}>
+                                                <Trophy size={11} />
+                                                {team.leagueName}
+                                            </p>
+                                        )}
                                     </div>
-                                </SectionCard>
+                                </div>
 
+                                {/* Season stats */}
                                 {team.rank !== undefined && (
-                                    <SectionCard>
-                                        <SectionHeader
-                                            icon={TrendingUp}
-                                            title="Season Stats"
-                                            color="var(--color-accent)"
+                                    <ListSection label="Season stats">
+                                        <MetricRow
+                                            label="Rank"
+                                            value={
+                                                <span style={{ color: team.rank === 1 ? 'var(--warn)' : undefined }}>
+                                                    #{team.rank}
+                                                </span>
+                                            }
                                         />
-                                        <div style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            padding: '8px 0',
-                                        }}>
-                                            <StatItem label="Rank" value={`#${team.rank}`} color={team.rank === 1 ? 'var(--color-warning)' : 'var(--color-text-primary)'} />
-                                            <StatItem label="Points" value={team.points || 0} />
-                                            <StatItem label="Record" value={`${team.wins || 0}-${team.draws || 0}-${team.losses || 0}`} />
-                                            <StatItem
-                                                label="Goal Diff"
-                                                value={`${(team.goalDifference || 0) >= 0 ? '+' : ''}${team.goalDifference || 0}`}
-                                                color={(team.goalDifference || 0) >= 0 ? 'var(--color-success)' : 'var(--color-danger)'}
-                                            />
-                                        </div>
-                                    </SectionCard>
+                                        <MetricRow label="Points" value={team.points || 0} />
+                                        <MetricRow
+                                            label="Record (W-D-L)"
+                                            value={`${team.wins || 0}-${team.draws || 0}-${team.losses || 0}`}
+                                        />
+                                        <MetricRow
+                                            label="Goal difference"
+                                            value={
+                                                <span style={{ color: (team.goalDifference || 0) >= 0 ? 'var(--ok)' : 'var(--no)' }}>
+                                                    {(team.goalDifference || 0) >= 0 ? '+' : ''}
+                                                    {team.goalDifference || 0}
+                                                </span>
+                                            }
+                                        />
+                                    </ListSection>
                                 )}
 
+                                {/* Recent form */}
                                 {(loadingMatches || recentForm.length > 0) && (
-                                    <SectionCard>
-                                        <SectionHeader
-                                            icon={TrendingUp}
-                                            title="Recent Form"
-                                            color="var(--color-success)"
-                                        />
-                                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                            {loadingMatches ? (
-                                                // Skeleton loading state
-                                                Array.from({ length: 5 }).map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        style={{
-                                                            width: 36, height: 36,
-                                                            borderRadius: 10,
-                                                            background: 'var(--color-surface-hover)',
-                                                            animation: 'pulse 1.5s ease-in-out infinite',
-                                                        }}
-                                                    />
+                                    <ListSection label="Recent form">
+                                        <div className="row row-static" style={{ gap: 7 }}>
+                                            {loadingMatches
+                                                ? Array.from({ length: 5 }).map((_, i) => (
+                                                    <div key={i} className="skeleton" style={{ width: 32, height: 32, borderRadius: 8 }} />
                                                 ))
-                                            ) : (
-                                                recentForm.map((result, i) => (
-                                                    <motion.div
+                                                : recentForm.map((result, i) => (
+                                                    <span
                                                         key={i}
-                                                        initial={{ scale: 0, opacity: 0 }}
-                                                        animate={{ scale: 1, opacity: 1 }}
-                                                        transition={{ delay: i * 0.05 }}
+                                                        className="flex-center t-num"
                                                         style={{
-                                                            width: 36, height: 36,
-                                                            borderRadius: 10,
-                                                            background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.2)' :
-                                                                result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.2)' :
-                                                                    'rgb(var(--color-warning-rgb) / 0.2)',
-                                                            border: `1px solid ${result === 'W' ? 'rgb(var(--color-success-rgb) / 0.3)' :
-                                                                result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.3)' :
-                                                                    'rgb(var(--color-warning-rgb) / 0.3)'}`,
-                                                            color: result === 'W' ? 'var(--color-success)' :
-                                                                result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            fontSize: '0.9rem',
+                                                            width: 32,
+                                                            height: 32,
+                                                            borderRadius: 8,
+                                                            fontSize: 'var(--fs-2xs)',
                                                             fontWeight: 800,
+                                                            color: result === 'W' ? 'var(--ok)' : result === 'L' ? 'var(--no)' : 'var(--warn)',
+                                                            background: `rgb(var(--${result === 'W' ? 'ok' : result === 'L' ? 'no' : 'warn'}-rgb) / 0.13)`,
+                                                            border: `1px solid rgb(var(--${result === 'W' ? 'ok' : result === 'L' ? 'no' : 'warn'}-rgb) / 0.26)`,
                                                         }}
                                                     >
                                                         {result}
-                                                    </motion.div>
-                                                ))
-                                            )}
+                                                    </span>
+                                                ))}
                                         </div>
-                                    </SectionCard>
+                                    </ListSection>
                                 )}
 
-                                <SectionCard>
-                                    <SectionHeader
-                                        icon={Trophy}
-                                        title="Goal Profile"
-                                        color="var(--color-warning)"
+                                {/* Goal profile */}
+                                <ListSection label="Goal profile">
+                                    <MetricRow label="Played" value={team.matchesPlayed || 0} />
+                                    <MetricRow
+                                        label="Goals for"
+                                        value={<span style={{ color: 'var(--ok)' }}>{team.goalsFor || 0}</span>}
                                     />
-                                    <div style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                                        gap: 12,
-                                    }}>
-                                        <CompactStat label="Played" value={team.matchesPlayed || 0} />
-                                        <CompactStat label="For" value={team.goalsFor || 0} color="var(--color-success)" />
-                                        <CompactStat label="Against" value={team.goalsAgainst || 0} color="var(--color-danger)" />
-                                    </div>
-                                </SectionCard>
+                                    <MetricRow
+                                        label="Goals against"
+                                        value={<span style={{ color: 'var(--no)' }}>{team.goalsAgainst || 0}</span>}
+                                    />
+                                </ListSection>
 
-                                <SectionCard>
-                                    <SectionHeader
-                                        icon={TrendingUp}
-                                        title="Win Rate"
-                                        color="var(--color-success)"
-                                    />
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                        <div style={{
-                                            width: 64,
-                                            height: 64,
-                                            borderRadius: 16,
-                                            background: 'linear-gradient(135deg, rgb(var(--color-success-rgb) / 0.16), var(--color-surface-hover))',
-                                            border: '1px solid rgb(var(--color-success-rgb) / 0.2)',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            flexShrink: 0,
-                                        }}>
-                                            <div style={{
-                                                fontSize: '1.4rem',
-                                                fontWeight: 900,
-                                                color: 'var(--color-success)',
-                                                lineHeight: 1,
-                                            }}>
-                                                {winRate}%
-                                            </div>
-                                            <div style={{
-                                                fontSize: '0.6rem',
-                                                color: 'var(--color-text-tertiary)',
-                                                marginTop: 3,
-                                                fontWeight: 700,
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.05em',
-                                            }}>
-                                                Wins
-                                            </div>
-                                        </div>
-                                        <div style={{
-                                            flex: 1,
-                                            minWidth: 0,
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 10,
-                                        }}>
-                                            <div>
-                                                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                                                    {team.wins || 0}/{team.matchesPlayed || 0} matches won
-                                                </div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 3 }}>
-                                                    {team.wins || 0} wins · {team.draws || 0} draws · {team.losses || 0} losses
-                                                </div>
-                                            </div>
-                                            <div style={{
-                                                height: 7,
-                                                borderRadius: 999,
-                                                background: 'var(--color-surface-hover)',
-                                                overflow: 'hidden',
-                                            }}>
-                                                <motion.div
+                                {/* Win rate */}
+                                <ListSection label="Win rate">
+                                    <div className="row row-static" style={{ alignItems: 'center', gap: 14, paddingTop: 12, paddingBottom: 12 }}>
+                                        <span
+                                            className="t-num"
+                                            style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--ok)', flexShrink: 0 }}
+                                        >
+                                            {winRate}%
+                                        </span>
+                                        <span style={{ flex: 1, minWidth: 0 }}>
+                                            <span style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: 600 }}>
+                                                {team.wins || 0}/{team.matchesPlayed || 0} matches won
+                                            </span>
+                                            <span style={{ display: 'block', fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', marginTop: 1 }}>
+                                                {team.wins || 0} wins · {team.draws || 0} draws · {team.losses || 0} losses
+                                            </span>
+                                            <span style={{ display: 'block', marginTop: 6, height: 5, borderRadius: 'var(--r-full)', background: 'var(--bg-subtle)', overflow: 'hidden' }}>
+                                                <motion.span
                                                     initial={{ width: 0 }}
                                                     animate={{ width: `${winRate}%` }}
-                                                    transition={{ duration: 0.55, ease: 'easeOut' }}
-                                                    style={{
-                                                        height: '100%',
-                                                        borderRadius: 999,
-                                                        background: 'var(--color-success)',
-                                                    }}
+                                                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                                                    style={{ display: 'block', height: '100%', background: 'var(--ok)', borderRadius: 'var(--r-full)' }}
                                                 />
-                                            </div>
-                                        </div>
+                                            </span>
+                                        </span>
                                     </div>
-                                </SectionCard>
+                                </ListSection>
 
+                                {/* Team info */}
                                 {(team.colors || team.manager || team.description) && (
-                                    <SectionCard>
-                                        <SectionHeader
-                                            icon={UserCircle}
-                                            title="Team Info"
-                                            color="var(--color-accent)"
-                                        />
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                            {team.colors && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <span style={{ fontSize: '1rem' }}>🎨</span>
-                                                    <span style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
-                                                        {team.colors}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {team.manager && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <UserCircle size={16} style={{ color: 'var(--color-text-tertiary)' }} />
-                                                    <span style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
-                                                        {team.manager}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {team.description && (
-                                                <div style={{
-                                                    fontSize: '0.85rem',
-                                                    color: 'var(--color-text-secondary)',
-                                                    fontStyle: 'italic',
-                                                    lineHeight: 1.5,
-                                                    paddingTop: team.manager || team.colors ? 8 : 0,
-                                                    borderTop: team.manager || team.colors ? '1px solid var(--color-border-subtle)' : 'none',
-                                                }}>
-                                                    "{team.description}"
-                                                </div>
-                                            )}
-                                        </div>
-                                    </SectionCard>
+                                    <ListSection label="Team info">
+                                        {team.colors && <Row icon={<Palette size={15} />} title={team.colors} />}
+                                        {team.manager && (
+                                            <Row icon={<UserCircle size={15} />} title={team.manager} subtitle="Manager" />
+                                        )}
+                                        {team.description && (
+                                            <div className="row row-static">
+                                                <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-2)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                                                    &ldquo;{team.description}&rdquo;
+                                                </p>
+                                            </div>
+                                        )}
+                                    </ListSection>
                                 )}
                             </div>
                         </div>
 
                         {/* Matches Tab */}
-                        <div
-                            ref={matchesRef}
-                            data-view="matches"
-                            style={{
-                                minWidth: '100%',
-                                scrollSnapAlign: 'center',
-                                scrollSnapStop: 'always',
-                                padding: 'calc(var(--safe-top) + 84px) 16px calc(var(--safe-bottom, 0px) + 100px)',
-                                overflowY: 'auto',
-                            }}
-                        >
-                            {loadingMatches ? (
-                                <div style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    padding: 40, color: 'var(--color-text-secondary)',
-                                }}>
-                                    <div className="spinner" style={{ width: 24, height: 24 }} />
-                                </div>
-                            ) : matches.length === 0 ? (
-                                <div style={{
-                                    textAlign: 'center', padding: 40,
-                                    color: 'var(--color-text-tertiary)',
-                                }}>
-                                    No matches available
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    {[...matches]
-                                        .sort((a, b) => parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date))
-                                        .map(match => (
-                                            <MatchRow key={match.externalId} match={match} teamName={team?.name || ''} />
-                                        ))}
-                                </div>
-                            )}
+                        <div data-view="matches" className="scrollbar-hide" style={paneStyle}>
+                            <div className="flow-body-inner">
+                                {loadingMatches ? (
+                                    <div className="flex-center" style={{ padding: 40 }}>
+                                        <div className="spinner" />
+                                    </div>
+                                ) : matches.length === 0 ? (
+                                    <EmptyState title="No matches available" compact />
+                                ) : (
+                                    <div className="list-section">
+                                        {[...matches]
+                                            .sort((a, b) => parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date))
+                                            .map(match => (
+                                                <MatchRow key={match.externalId} match={match} teamName={team?.name || ''} />
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Squad Tab */}
-                        <div
-                            ref={squadRef}
-                            data-view="squad"
-                            style={{
-                                minWidth: '100%',
-                                scrollSnapAlign: 'center',
-                                scrollSnapStop: 'always',
-                                padding: 'calc(var(--safe-top) + 84px) 16px calc(var(--safe-bottom, 0px) + 100px)',
-                                overflowY: 'auto',
-                            }}
-                        >
-                            {loadingPlayers ? (
-                                <div style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    padding: 40, color: 'var(--color-text-secondary)',
-                                }}>
-                                    <div className="spinner" style={{ width: 24, height: 24 }} />
-                                </div>
-                            ) : sortedPlayers.length > 0 ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    {sortedPlayers.map((player, i) => (
-                                        <div key={player.externalId} style={{
-                                            display: 'flex', alignItems: 'center', gap: 12,
-                                            padding: '10px 12px',
-                                            background: i < 3 ? 'rgb(var(--color-warning-rgb) / 0.08)' : 'var(--color-surface-hover)',
-                                            borderRadius: 12,
-                                            border: '0.5px solid var(--color-border-subtle)',
-                                        }}>
-                                            <div style={{
-                                                width: 32, height: 32, borderRadius: '50%',
-                                                background: i < 3 ? 'var(--color-warning)' : 'var(--color-surface-hover)',
-                                                color: i < 3 ? 'var(--color-bg)' : 'var(--color-text-primary)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: '0.8rem', fontWeight: 700, flexShrink: 0,
-                                            }}>
-                                                {player.number || i + 1}
+                        <div data-view="squad" className="scrollbar-hide" style={paneStyle}>
+                            <div className="flow-body-inner">
+                                {loadingPlayers ? (
+                                    <div className="flex-center" style={{ padding: 40 }}>
+                                        <div className="spinner" />
+                                    </div>
+                                ) : sortedPlayers.length > 0 ? (
+                                    <div className="list-section">
+                                        {sortedPlayers.map((player, i) => (
+                                            <div key={player.externalId} className="row row-static" style={{ minHeight: 52 }}>
+                                                <span
+                                                    className="flex-center t-num"
+                                                    style={{
+                                                        width: 28,
+                                                        height: 28,
+                                                        borderRadius: '50%',
+                                                        background: i < 3 ? 'rgb(var(--warn-rgb) / 0.14)' : 'var(--bg-subtle)',
+                                                        color: i < 3 ? 'var(--warn)' : 'var(--text-2)',
+                                                        fontSize: '0.7rem',
+                                                        fontWeight: 700,
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    {player.number || i + 1}
+                                                </span>
+                                                <span style={{ flex: 1, minWidth: 0 }}>
+                                                    <span
+                                                        style={{
+                                                            display: 'block',
+                                                            fontSize: 'var(--fs-xs)',
+                                                            fontWeight: 500,
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                    >
+                                                        {player.name}
+                                                    </span>
+                                                    <span className="t-num" style={{ display: 'block', fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', marginTop: 1 }}>
+                                                        {player.gamesPlayed} games
+                                                    </span>
+                                                </span>
+                                                <span className="t-num" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-2)', flexShrink: 0 }}>
+                                                    <span style={{ color: 'var(--ok)', fontWeight: 700 }}>{player.goals}</span> G
+                                                    {' · '}
+                                                    <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{player.assists}</span> A
+                                                </span>
                                             </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{
-                                                    fontSize: '0.9rem', color: 'var(--color-text-primary)', fontWeight: 500,
-                                                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                                                }}>
-                                                    {player.name}
-                                                </div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>
-                                                    {player.gamesPlayed} games
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'flex', gap: 12, fontSize: '0.9rem' }}>
-                                                <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>⚽ {player.goals}</span>
-                                                <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>🎯 {player.assists}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div style={{
-                                    textAlign: 'center', padding: 40,
-                                    color: 'var(--color-text-tertiary)',
-                                }}>
-                                    No player stats available
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Tabs (liquid glass pill) at bottom */}
-                    <div style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        zIndex: 5,
-                        padding: '8px 20px calc(var(--safe-bottom, 0px) + 8px)',
-                    }}>
-                        <div style={{
-                            display: 'flex',
-                            gap: 2,
-                            padding: 4,
-                            background: 'var(--color-glass-heavy)',
-                            backdropFilter: 'blur(60px) saturate(180%)',
-                            WebkitBackdropFilter: 'blur(60px) saturate(180%)',
-                            border: '0.5px solid var(--color-border)',
-                            borderRadius: 999,
-                            boxShadow: 'var(--shadow-lg)',
-                            maxWidth: 320,
-                            margin: '0 auto',
-                        }}>
-                            {([
-                                { id: 'overview', icon: TrendingUp, label: 'Overview' },
-                                { id: 'matches', icon: Calendar, label: 'Matches' },
-                                { id: 'squad', icon: Users, label: 'Squad' },
-                            ] as const).map(tab => {
-                                const isActive = activeTab === tab.id;
-                                return (
-                                    <motion.button
-                                        key={tab.id}
-                                        onClick={() => {
-                                            hapticPatterns.tap();
-                                            setActiveTab(tab.id);
-                                            scrollToView(tab.id);
-                                        }}
-                                        whileTap={{ scale: 0.95 }}
-                                        style={{
-                                            flex: 1,
-                                            padding: '6px 8px',
-                                            background: isActive ? 'var(--color-surface-hover)' : 'transparent',
-                                            border: 'none',
-                                            borderRadius: 999,
-                                            color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            gap: 2,
-                                            transition: 'all 0.2s',
-                                        }}
-                                    >
-                                        <tab.icon size={18} strokeWidth={1.75} />
-                                        <span style={{ fontSize: '0.6rem', fontWeight: 600, lineHeight: 1 }}>
-                                            {tab.label}
-                                        </span>
-                                    </motion.button>
-                                );
-                            })}
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <EmptyState title="No player stats available" compact />
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -946,6 +645,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                     <AnimatePresence>
                         {showImage && team?.imageBase64 && (
                             <motion.div
+                                className="backdrop flex-center"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
@@ -953,47 +653,31 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                     hapticPatterns.tap();
                                     setShowImage(false);
                                 }}
-                                style={{
-                                    position: 'fixed',
-                                    inset: 0,
-                                    zIndex: 10021,
-                                    background: 'var(--color-overlay)',
-                                    backdropFilter: 'blur(10px) saturate(180%)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: 20,
-                                }}
+                                style={{ zIndex: 10026, padding: 20 }}
                             >
                                 <motion.img
-                                    initial={{ scale: 0.8 }}
+                                    initial={{ scale: 0.9 }}
                                     animate={{ scale: 1 }}
-                                    exit={{ scale: 0.8 }}
+                                    exit={{ scale: 0.9 }}
                                     src={team.imageBase64}
+                                    alt={team?.name || 'Team'}
                                     style={{
                                         maxWidth: '100%',
                                         maxHeight: '80vh',
-                                        borderRadius: 16,
+                                        borderRadius: 'var(--r-lg)',
                                         objectFit: 'contain',
                                     }}
                                 />
                                 <button
+                                    className="icon-action press"
                                     onClick={() => {
                                         hapticPatterns.tap();
                                         setShowImage(false);
                                     }}
-                                    style={{
-                                        position: 'absolute',
-                                        top: 20, right: 20,
-                                        background: 'var(--color-surface-hover)',
-                                        border: 'none', borderRadius: '50%',
-                                        width: 40, height: 40,
-                                        color: 'var(--color-text-primary)',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        cursor: 'pointer',
-                                    }}
+                                    aria-label="Close image"
+                                    style={{ position: 'absolute', top: 'calc(var(--safe-top) + 16px)', right: 16 }}
                                 >
-                                    <X size={24} />
+                                    <X size={16} />
                                 </button>
                             </motion.div>
                         )}
@@ -1005,87 +689,11 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
     );
 }
 
-// Sub-components
-function StatItem({ label, value, color = 'var(--color-text-primary)' }: {
-    label: string;
-    value: ReactNode;
-    color?: string;
-}) {
-    return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 4,
-        }}>
-            <div style={{
-                fontSize: '1.25rem',
-                fontWeight: 700,
-                color,
-            }}>
-                {value}
-            </div>
-            <div style={{
-                fontSize: '0.65rem',
-                color: 'var(--color-text-tertiary)',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-            }}>
-                {label}
-            </div>
-        </div>
-    );
-}
-
-function CompactStat({ label, value, color = 'var(--color-text-primary)' }: {
-    label: string;
-    value: ReactNode;
-    color?: string;
-}) {
-    return (
-        <div style={{
-            padding: '12px 8px',
-            minHeight: 72,
-            background: 'var(--color-surface-hover)',
-            borderRadius: 12,
-            border: '0.5px solid var(--color-border-subtle)',
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-        }}>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color }}>
-                {value}
-            </div>
-            <div style={{
-                fontSize: '0.65rem',
-                color: 'var(--color-text-tertiary)',
-                marginTop: 4,
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-            }}>
-                {label}
-            </div>
-        </div>
-    );
-}
-
 function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }) {
     if (!teamName || !match) {
         return (
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 12px',
-                background: 'var(--color-surface)',
-                borderRadius: 12,
-                border: '1px solid var(--color-border-subtle)',
-                opacity: 0.5,
-            }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Loading match...</span>
+            <div className="row row-static" style={{ opacity: 0.5 }}>
+                <span className="t-caption">Loading match...</span>
             </div>
         );
     }
@@ -1098,91 +706,82 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
     const isForfait = match.forfait === true;
 
     const result = teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D';
-    const resultColor = result === 'W' ? 'var(--color-success)' : result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)';
-    const resultBgRgb = result === 'W' ? 'var(--color-success-rgb)' : result === 'L' ? 'var(--color-danger-rgb)' : 'var(--color-warning-rgb)';
-    const forfaitColor = 'var(--color-text-tertiary)';
-    const forfaitRgb = 'var(--color-text-tertiary-rgb)';
+    const resultColor = result === 'W' ? 'var(--ok)' : result === 'L' ? 'var(--no)' : 'var(--warn)';
+    const resultToken = result === 'W' ? 'ok' : result === 'L' ? 'no' : 'warn';
 
     const dateStr = formatDateSafe(match.date, { day: 'numeric', month: 'short' }, 'TBD');
     const timeStr = formatTimeSafe(match.date, { hour: '2-digit', minute: '2-digit' }, 'TBD');
 
     return (
-        <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px 12px',
-            background: !isPlayed 
-                ? 'rgb(var(--color-accent-rgb) / 0.03)' 
-                : isPlayed && !isForfait 
-                    ? 'var(--color-surface-hover)' 
-                    : 'var(--color-surface)',
-            borderRadius: 12,
-            border: `1px solid ${!isPlayed 
-                ? 'rgb(var(--color-accent-rgb) / 0.12)' 
-                : isPlayed && !isForfait 
-                    ? 'var(--color-border)' 
-                    : 'var(--color-border-subtle)'}`,
-            opacity: isForfait ? 0.6 : 1,
-        }}>
-            {/* Result indicator */}
-            <div style={{
-                width: 28, height: 28,
-                borderRadius: 8,
-                background: !isPlayed 
-                    ? 'rgb(var(--color-accent-rgb) / 0.10)' 
-                    : isForfait 
-                        ? `rgb(${forfaitRgb} / 0.10)` 
-                        : `rgb(${resultBgRgb} / 0.10)`,
-                border: `1px solid ${!isPlayed 
-                    ? 'rgb(var(--color-accent-rgb) / 0.18)' 
-                    : isForfait 
-                        ? `rgb(${forfaitRgb} / 0.18)` 
-                        : `rgb(${resultBgRgb} / 0.18)`}`,
-                color: !isPlayed 
-                    ? 'var(--color-accent)' 
-                    : isForfait 
-                        ? forfaitColor 
-                        : resultColor,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                flexShrink: 0,
-            }}>
-                {!isPlayed ? <Calendar size={14} /> : isForfait ? 'F' : result}
-            </div>
+        <div className="row row-static" style={{ minHeight: 52, opacity: isForfait ? 0.6 : 1 }}>
+            <span
+                className="flex-center t-num"
+                style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    background: !isPlayed
+                        ? 'rgb(var(--accent-rgb) / 0.12)'
+                        : isForfait
+                            ? 'rgb(var(--tbd-rgb) / 0.12)'
+                            : `rgb(var(--${resultToken}-rgb) / 0.12)`,
+                    color: !isPlayed ? 'var(--accent)' : isForfait ? 'var(--tbd)' : resultColor,
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    flexShrink: 0,
+                }}
+                aria-label={!isPlayed ? 'Scheduled' : isForfait ? 'Forfait' : `Result ${result}`}
+            >
+                {!isPlayed ? <Calendar size={13} /> : isForfait ? 'F' : result}
+            </span>
 
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                    fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                }}>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {opponent}
-                    </span>
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.5 }}>
+            <span style={{ flex: 1, minWidth: 0 }}>
+                <span
+                    style={{
+                        display: 'block',
+                        fontSize: 'var(--fs-xs)',
+                        fontWeight: 500,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    {opponent}
+                </span>
+                <span
+                    className="t-num"
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        marginTop: 1,
+                        fontSize: 'var(--fs-3xs)',
+                        color: 'var(--text-3)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                    }}
+                >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.6 }} aria-label={isHome ? 'Home' : 'Away'}>
                         {isHome ? <Home size={10} strokeWidth={2} /> : <Navigation size={10} strokeWidth={2} />}
                     </span>
-                    <span>{dateStr} • {timeStr}</span>
-                    {match.location && <span>• {match.location}</span>}
-                </div>
-            </div>
+                    <span>{dateStr} · {timeStr}</span>
+                    {match.location && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>· {match.location}</span>}
+                </span>
+            </span>
 
-            {/* Score for played matches */}
             {isPlayed && (
-                <div style={{
-                    fontSize: isForfait ? '0.75rem' : '0.95rem',
-                    fontWeight: isForfait ? 700 : 700,
-                    color: isForfait ? forfaitColor : resultColor,
-                    textTransform: isForfait ? 'uppercase' : 'none',
-                    letterSpacing: isForfait ? '0.02em' : 'normal',
-                }}>
+                <span
+                    className="t-num"
+                    style={{
+                        fontSize: isForfait ? 'var(--fs-3xs)' : 'var(--fs-sm)',
+                        fontWeight: 800,
+                        color: isForfait ? 'var(--tbd)' : resultColor,
+                        textTransform: isForfait ? 'uppercase' : 'none',
+                        flexShrink: 0,
+                    }}
+                >
                     {isForfait ? 'Forfait' : `${teamScore} - ${opponentScore}`}
-                </div>
+                </span>
             )}
         </div>
     );

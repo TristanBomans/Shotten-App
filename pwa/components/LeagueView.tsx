@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, type CSSProperties } from 'react';
-import { motion } from 'framer-motion';
 import { fetchAllScraperTeams, type ScraperTeam } from '@/lib/useData';
 import { Loader2 } from 'lucide-react';
 import TeamDetailPage from './Pages/TeamDetailPage';
 import { hapticPatterns } from '@/lib/haptic';
+import { EmptyState } from './ui/controls';
 
 interface LeagueViewProps {
     selectedLeague: string;
@@ -20,15 +20,15 @@ function isOwnTeam(name: string) {
 }
 
 function rankColor(rank: number, total: number) {
-    if (rank === 1) return 'var(--color-warning)';
-    if (rank === total && total > 1) return 'var(--color-danger)';
-    return 'var(--color-text-tertiary)';
+    if (rank === 1) return 'var(--warn)';
+    if (rank === total && total > 1) return 'var(--no)';
+    return 'var(--text-3)';
 }
 
 function gdColor(gd: number) {
-    if (gd > 0) return 'var(--color-success)';
-    if (gd < 0) return 'var(--color-danger)';
-    return 'var(--color-text-tertiary)';
+    if (gd > 0) return 'var(--ok)';
+    if (gd < 0) return 'var(--no)';
+    return 'var(--text-3)';
 }
 
 const TABULAR: CSSProperties = { fontVariantNumeric: 'tabular-nums' };
@@ -43,36 +43,33 @@ function TeamMeta({ team }: { team: ScraperTeam }) {
     const gf = team.goalsFor ?? 0;
     const ga = team.goalsAgainst ?? 0;
 
-    const letter: CSSProperties = { fontStyle: 'normal', fontWeight: 600 };
-    const num: CSSProperties = { fontWeight: 600, color: 'var(--color-text-secondary)', ...TABULAR };
-
     return (
         <div
             style={{
-                marginTop: 3,
-                fontSize: '0.72rem',
-                letterSpacing: '0.01em',
-                color: 'var(--color-text-tertiary)',
+                marginTop: 2,
+                fontSize: 'var(--fs-3xs)',
+                color: 'var(--text-3)',
                 display: 'flex',
                 alignItems: 'baseline',
                 gap: 5,
                 whiteSpace: 'nowrap',
+                ...TABULAR,
             }}
         >
-            <span style={TABULAR}>{played} played</span>
-            <span style={{ opacity: 0.5 }}>·</span>
-            <span style={TABULAR}>
-                <span style={num}>{w}</span>
-                <i style={{ ...letter, color: 'var(--color-success)' }}>W</i>
+            <span>{played} played</span>
+            <span style={{ opacity: 0.5 }} aria-hidden>·</span>
+            <span>
+                <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>{w}</span>
+                <span style={{ color: 'var(--ok)', fontWeight: 600 }}>W</span>
                 {'\u00A0'}
-                <span style={num}>{d}</span>
-                <i style={{ ...letter, color: 'var(--color-text-tertiary)' }}>D</i>
+                <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>{d}</span>
+                <span style={{ fontWeight: 600 }}>D</span>
                 {'\u00A0'}
-                <span style={num}>{l}</span>
-                <i style={{ ...letter, color: 'var(--color-danger)' }}>L</i>
+                <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>{l}</span>
+                <span style={{ color: 'var(--no)', fontWeight: 600 }}>L</span>
             </span>
-            <span style={{ opacity: 0.5 }}>·</span>
-            <span style={TABULAR}>
+            <span style={{ opacity: 0.5 }} aria-hidden>·</span>
+            <span>
                 {gf}<span style={{ opacity: 0.6 }}>–</span>{ga}
             </span>
         </div>
@@ -150,41 +147,36 @@ export default function LeagueView({
 
     if (loading) {
         return (
-            <div className="container content-under-top-overlay flex-center" style={{ minHeight: '60dvh' }}>
-                <Loader2 className="animate-spin" size={24} color="var(--color-text-secondary)" />
+            <div className="screen flex-center" style={{ minHeight: '60dvh' }}>
+                <Loader2 className="animate-spin" size={22} color="var(--text-2)" />
             </div>
         );
     }
 
+    const gridTemplate = '24px minmax(0, 1fr) 40px 40px';
+
     return (
         <>
-            <div className="container content-under-top-overlay">
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25 }}
-                    style={{
-                        background: 'var(--color-surface)',
-                        backdropFilter: 'blur(40px) saturate(180%)',
-                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                        borderRadius: 16,
-                        border: '0.5px solid var(--color-border)',
-                        overflow: 'hidden',
-                    }}
-                >
+            <div className="screen">
+                <div className="section-label">
+                    <span>Standings{selectedLeague ? ` — ${selectedLeague}` : ''}</span>
+                    <span className="t-num">{filteredTeams.length}</span>
+                </div>
+                <div className="list-section">
+                    {/* Table header */}
                     <div
                         style={{
                             display: 'grid',
-                            gridTemplateColumns: '26px 1fr 38px 42px',
-                            gap: 12,
-                            padding: '12px 18px 11px',
-                            borderBottom: '0.5px solid var(--color-border-subtle)',
-                            fontSize: '0.62rem',
-                            fontWeight: 600,
-                            color: 'var(--color-text-tertiary)',
+                            gridTemplateColumns: gridTemplate,
+                            gap: 10,
+                            padding: '10px 14px 9px',
+                            fontSize: '0.6rem',
+                            fontWeight: 700,
+                            color: 'var(--text-3)',
                             textTransform: 'uppercase',
                             letterSpacing: '0.09em',
                         }}
+                        aria-hidden
                     >
                         <div>#</div>
                         <div>Team</div>
@@ -195,97 +187,83 @@ export default function LeagueView({
                     {filteredTeams.length > 0 ? filteredTeams.map((team, index) => {
                         const rank = team.rank ?? index + 1;
                         const highlighted = isOwnTeam(team.name);
-                        const isLast = index === filteredTeams.length - 1;
                         const gd = team.goalDifference ?? 0;
 
                         return (
-                            <motion.button
+                            <button
                                 key={team.externalId}
                                 type="button"
+                                className="row"
                                 onClick={() => handleTeamClick(team)}
-                                whileTap={{ scale: 0.99 }}
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.02, duration: 0.18 }}
+                                aria-label={`${team.name}, position ${rank}, ${team.points ?? 0} points`}
                                 style={{
-                                    width: '100%',
-                                    border: 'none',
-                                    cursor: 'pointer',
                                     display: 'grid',
-                                    gridTemplateColumns: '26px 1fr 38px 42px',
-                                    gap: 12,
-                                    padding: '18px 18px',
+                                    gridTemplateColumns: gridTemplate,
+                                    gap: 10,
+                                    padding: '13px 14px',
+                                    minHeight: 56,
                                     alignItems: 'center',
-                                    textAlign: 'left',
-                                    background: highlighted
-                                        ? 'rgb(var(--color-accent-rgb) / 0.055)'
-                                        : 'transparent',
-                                    boxShadow: highlighted
-                                        ? 'inset 2px 0 0 var(--color-accent)'
-                                        : 'inset 2px 0 0 transparent',
-                                    borderBottom: isLast
-                                        ? 'none'
-                                        : '0.5px solid var(--color-border-subtle)',
+                                    background: highlighted ? 'rgb(var(--accent-rgb) / 0.08)' : undefined,
+                                    boxShadow: highlighted ? 'inset 3px 0 0 var(--accent)' : undefined,
                                 }}
                             >
-                                <div
+                                <span
+                                    className="t-num"
                                     style={{
-                                        fontWeight: 600,
-                                        fontSize: '0.82rem',
-                                        ...TABULAR,
+                                        fontWeight: 700,
+                                        fontSize: 'var(--fs-2xs)',
                                         color: rankColor(rank, filteredTeams.length),
                                     }}
                                 >
                                     {rank}
-                                </div>
+                                </span>
 
-                                <div style={{ minWidth: 0 }}>
-                                    <div
+                                <span style={{ minWidth: 0 }}>
+                                    <span
                                         style={{
+                                            display: 'block',
                                             fontWeight: highlighted ? 700 : 600,
-                                            fontSize: '0.92rem',
-                                            color: 'var(--color-text-primary)',
-                                            lineHeight: 1.25,
-                                            letterSpacing: '-0.005em',
+                                            fontSize: 'var(--fs-xs)',
+                                            lineHeight: 1.3,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
                                         }}
                                     >
                                         {team.name}
-                                    </div>
+                                    </span>
                                     <TeamMeta team={team} />
-                                </div>
+                                </span>
 
-                                <div
+                                <span
+                                    className="t-num"
                                     style={{
                                         textAlign: 'right',
                                         fontWeight: 600,
-                                        fontSize: '0.8rem',
-                                        ...TABULAR,
+                                        fontSize: 'var(--fs-2xs)',
                                         color: gdColor(gd),
                                     }}
                                 >
                                     {gd > 0 ? `+${gd}` : gd}
-                                </div>
+                                </span>
 
-                                <div
+                                <span
+                                    className="t-num"
                                     style={{
                                         textAlign: 'right',
-                                        fontWeight: 700,
-                                        fontSize: '1.02rem',
-                                        ...TABULAR,
+                                        fontWeight: 800,
+                                        fontSize: 'var(--fs-sm)',
                                         letterSpacing: '-0.01em',
-                                        color: 'var(--color-text-primary)',
                                     }}
                                 >
                                     {team.points ?? 0}
-                                </div>
-                            </motion.button>
+                                </span>
+                            </button>
                         );
                     }) : (
-                        <div style={{ padding: 28, textAlign: 'center', color: 'var(--color-text-tertiary)' }}>
-                            No teams found for this league
-                        </div>
+                        <EmptyState title="No teams found" description="No teams found for this league." compact />
                     )}
-                </motion.div>
+                </div>
             </div>
 
             <TeamDetailPage

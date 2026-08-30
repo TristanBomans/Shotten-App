@@ -1,12 +1,13 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, Line, ReferenceLine, YAxis } from 'recharts';
-import { ChevronLeft } from 'lucide-react';
+import { Check, HelpCircle, X, Ghost, Flame, Snowflake, Trophy } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { RANKS, type PlayerWithStats, type AttendanceHistoryPoint } from '../StatsView';
+import FlowPage from '../ui/FlowPage';
+import { ListSection } from '../ui/ListSection';
+import { StatusChip } from '../ui/controls';
 
 interface PlayerDetailPageProps {
     open: boolean;
@@ -15,17 +16,20 @@ interface PlayerDetailPageProps {
     onClose: () => void;
 }
 
+const statusConfig = {
+    present: { icon: Check, color: 'var(--ok)', bg: 'rgb(var(--ok-rgb) / 0.13)', label: 'Present' },
+    maybe: { icon: HelpCircle, color: 'var(--warn)', bg: 'rgb(var(--warn-rgb) / 0.13)', label: 'Maybe' },
+    notPresent: { icon: X, color: 'var(--no)', bg: 'rgb(var(--no-rgb) / 0.12)', label: 'Absent' },
+    ghost: { icon: Ghost, color: 'var(--tbd)', bg: 'rgb(var(--tbd-rgb) / 0.12)', label: 'Ghost' },
+} as const;
+
 export default function PlayerDetailPage({ open, player, rank, onClose }: PlayerDetailPageProps) {
-    if (typeof document === 'undefined') return null;
     if (!player?.stats) return null;
 
     const s = player.stats;
     const currentRank = s.rank;
     const currentRankIndex = RANKS.findIndex(r => r.name === currentRank.name);
     const nextRank = currentRankIndex > 0 ? RANKS[currentRankIndex - 1] : null;
-    const progressToNext = nextRank
-        ? Math.max(0.05, Math.min(1, (s.attendancePct - currentRank.minPct) / (nextRank.minPct - currentRank.minPct)))
-        : 1;
 
     const neededPresent = nextRank
         ? Math.max(0, Math.ceil(((nextRank.minPct / 100) * s.totalMatches - s.presentCount) / (1 - nextRank.minPct / 100)))
@@ -34,362 +38,172 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
     const streakValue = s.currentStreakPresent > 0 ? s.currentStreakPresent : s.currentStreakAbsent;
     const streakIsPositive = s.currentStreakPresent > 0;
     const streakLabel = streakIsPositive ? 'present' : s.currentStreakAbsent > 0 ? 'missed' : 'no streak';
-    const streakColor = streakIsPositive ? '#ff6b35' : s.currentStreakAbsent > 0 ? 'var(--color-danger)' : 'var(--color-text-tertiary)';
 
-    return createPortal(
-        <AnimatePresence>
-            {open && (
-                <motion.div
-                    initial={{ opacity: 0, x: '100%' }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: '100%' }}
-                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'var(--color-bg)',
-                        zIndex: 10020,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                    }}
-            >
-                {/* Top fade gradient */}
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: 'calc(var(--safe-top) + 92px)',
-                        background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
-                        pointerEvents: 'none',
-                        zIndex: 4,
-                    }}
-                />
-
-                {/* Back button */}
-                <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => { hapticPatterns.tap(); onClose(); }}
-                    aria-label="Back"
-                    style={{
-                        position: 'absolute',
-                        top: 'calc(var(--safe-top) + 20px)',
-                        left: 12,
-                        zIndex: 5,
-                        width: 40,
-                        height: 40,
-                        borderRadius: '50%',
-                        background: 'var(--color-glass-heavy)',
-                        backdropFilter: 'blur(40px) saturate(180%)',
-                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                        border: '0.5px solid var(--color-border)',
-                        color: 'var(--color-text-primary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        boxShadow: 'var(--shadow-lg)',
-                    }}
-                >
-                    <ChevronLeft size={22} strokeWidth={2} />
-                </motion.button>
-
-                {/* Centered bold title with subtitle */}
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: 'calc(var(--safe-top) + 20px)',
-                        left: 64,
-                        right: 64,
-                        height: 44,
-                        zIndex: 5,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 1,
-                        pointerEvents: 'none',
-                    }}
-                >
-                    <span
-                        style={{
-                            fontSize: '1rem',
-                            fontWeight: 700,
-                            color: 'var(--color-text-primary)',
-                            letterSpacing: '-0.01em',
-                            lineHeight: 1.15,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: '100%',
-                        }}
-                    >
-                        {player.name}
-                    </span>
-                    <span
-                        style={{
-                            fontSize: '0.72rem',
-                            color: 'var(--color-text-secondary)',
-                            lineHeight: 1.2,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: '100%',
-                        }}
-                    >
-                        #{rank} · {s.rank.name} · {s.attendancePct}% present
-                    </span>
-                </div>
-
-                {/* Scrollable Content */}
-                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingTop: 'calc(var(--safe-top) + 84px)' }}>
-                    <div style={{ padding: '24px 20px 20px' }}>
-                        {/* Attendance Card */}
-                        <div style={{ padding: '18px 8px', background: 'var(--color-bg-elevated)', borderRadius: 16, textAlign: 'center', border: '0.5px solid var(--color-border)' }}>
-                            <div style={{ fontSize: '1.875rem', fontWeight: 800, color: s.rank.color }}>{s.attendancePct}%</div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>Attendance Rate</div>
-
-                            {/* Attendance Sparkline */}
-                            {s.attendanceHistory && s.attendanceHistory.length > 1 && (
-                                <div style={{ marginTop: 12, marginLeft: -8, marginRight: -8 }}>
-                                    <AttendanceSparkline history={s.attendanceHistory} />
-                                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>Season trend</div>
-                                </div>
-                            )}
-
-                            {/* Next rank text */}
-                            {nextRank && neededPresent > 0 && (
-                                <div style={{ marginTop: 14, fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>
-                                    {neededPresent} more present {neededPresent === 1 ? 'match' : 'matches'} to reach <span style={{ color: nextRank.color, fontWeight: 600 }}>{nextRank.name} ({nextRank.minPct}%)</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Activity Overview Card */}
-                        <div style={{
-                            marginTop: 16,
-                            padding: 18,
-                            background: 'var(--color-bg-elevated)',
-                            borderRadius: 16,
-                            border: '0.5px solid var(--color-border)',
-                        }}>
-                            {/* Header with mini attendance pill */}
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                marginBottom: 16,
-                            }}>
-                                <span style={{
-                                    fontSize: '0.7rem',
-                                    fontWeight: 600,
-                                    color: 'var(--color-text-tertiary)',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.04em',
-                                }}>
-                                    Activity
-                                </span>
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                    padding: '3px 10px',
-                                    background: 'var(--color-bg)',
-                                    borderRadius: 20,
-                                    border: '0.5px solid var(--color-border-subtle)',
-                                }}>
-                                    <div style={{
-                                        width: 48,
-                                        height: 4,
-                                        borderRadius: 2,
-                                        background: 'var(--color-border-subtle)',
-                                        overflow: 'hidden',
-                                    }}>
-                                        <div style={{
-                                            width: `${s.attendancePct}%`,
-                                            height: '100%',
-                                            background: 'var(--color-success)',
-                                            borderRadius: 2,
-                                        }} />
-                                    </div>
-                                    <span style={{
-                                        fontSize: '0.65rem',
-                                        fontWeight: 700,
-                                        color: 'var(--color-success)',
-                                    }}>
-                                        {s.attendancePct}%
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Stats Grid - single row of 4 */}
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(4, 1fr)',
-                                gap: 8,
-                            }}>
-                                <StatMini icon="✓" label="Present" value={s.presentCount} color="var(--color-success)" />
-                                <StatMini icon="?" label="Maybe" value={s.maybeCount} color="var(--color-warning)" />
-                                <StatMini icon="✕" label="Absent" value={s.absentCount} color="var(--color-danger)" />
-                                <StatMini icon="·" label="Ghost" value={s.ghostCount} color="var(--color-text-tertiary)" />
-                            </div>
-
-                            {/* Streak & Best - only show if there's an actual streak */}
-                            {(s.currentStreakPresent >= 3 || s.currentStreakAbsent >= 2) && (
-                                <div style={{
-                                    display: 'flex',
-                                    gap: 6,
-                                    marginTop: 12,
-                                }}>
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 5,
-                                        padding: '5px 10px',
-                                        borderRadius: 20,
-                                        background: streakIsPositive ? 'rgba(255,107,53,0.08)' : 'var(--color-bg)',
-                                        border: `0.5px solid ${streakIsPositive ? 'rgba(255,107,53,0.2)' : 'var(--color-border-subtle)'}`,
-                                    }}>
-                                        <span>{streakIsPositive ? '🔥' : '❄️'}</span>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: streakColor }}>{streakValue}</span>
-                                        <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)' }}>{streakLabel}</span>
-                                    </div>
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 5,
-                                        padding: '5px 10px',
-                                        borderRadius: 20,
-                                        background: 'rgba(247,203,97,0.04)',
-                                        border: '0.5px solid rgba(247,203,97,0.15)',
-                                    }}>
-                                        <span>🏆</span>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f7cb61' }}>{s.bestStreak}</span>
-                                        <span style={{ fontSize: '0.6rem', color: 'var(--color-text-tertiary)' }}>best</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Recent Form - compact cells with icons */}
-                            {s.recentForm.length > 0 && (
-                                <div style={{ marginTop: 16 }}>
-                                    <div style={{
-                                        fontSize: '0.65rem',
-                                        fontWeight: 600,
-                                        color: 'var(--color-text-tertiary)',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.04em',
-                                        marginBottom: 8,
-                                    }}>
-                                        Last {s.recentForm.length} matches
-                                    </div>
-                                    <div style={{
-                                        display: 'flex',
-                                        gap: 4,
-                                    }}>
-                                        {s.recentForm.map((status, j) => {
-                                            const config = {
-                                                present: { icon: '✓', color: 'var(--color-success)', bg: 'rgb(var(--color-success-rgb) / 0.15)' },
-                                                maybe: { icon: '?', color: 'var(--color-warning)', bg: 'rgb(var(--color-warning-rgb) / 0.15)' },
-                                                notPresent: { icon: '✕', color: 'var(--color-danger)', bg: 'rgb(var(--color-danger-rgb) / 0.15)' },
-                                                ghost: { icon: '·', color: 'var(--color-text-tertiary)', bg: 'var(--color-surface-hover)' },
-                                            };
-                                            const c = config[status as keyof typeof config] || config.ghost;
-                                            return (
-                                                <div
-                                                    key={j}
-                                                    style={{
-                                                        flex: 1,
-                                                        height: 28,
-                                                        borderRadius: 6,
-                                                        background: c.bg,
-                                                        color: c.color,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: 700,
-                                                        minWidth: 0,
-                                                    }}
-                                                >
-                                                    {c.icon}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Match History */}
-                    <div style={{ padding: '0 20px calc(var(--safe-bottom, 0px) + 24px)', flex: 1 }}>
-                        <h3 style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', marginBottom: 10 }}>
-                            Match History
-                        </h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            {s.matchResults.map((result) => (
-                                <div key={result.matchId} style={{
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                    padding: '10px 12px', background: 'var(--color-bg-elevated)', borderRadius: 10,
-                                    border: '0.5px solid var(--color-border-subtle)',
-                                }}>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--color-text-primary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {result.matchName.replace(/-/g, ' – ')}
-                                        </div>
-                                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>{result.date.toLocaleDateString()}</div>
-                                    </div>
-                                    <span style={{ fontSize: '0.9rem' }}>
-                                        {result.status === 'present' ? '✅' : result.status === 'maybe' ? '⚠️' : result.status === 'notPresent' ? '❌' : '👻'}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </motion.div>
-        )}
-        </AnimatePresence>,
-        document.body
-    );
-}
-
-function StatMini({ icon, label, value, color }: { icon: string; label: string; value: number; color: string }) {
-    const isZero = value === 0;
     return (
-        <div style={{
-            textAlign: 'center',
-            padding: '8px 2px',
-        }}>
-            <div style={{
-                fontSize: '0.8rem',
-                color: isZero ? 'var(--color-text-tertiary)' : color,
-                opacity: isZero ? 0.4 : 1,
-                marginBottom: 2,
-            }}>
-                {icon}
+        <FlowPage
+            open={open}
+            title={player.name}
+            subtitle={`#${rank} · ${s.rank.name} · ${s.attendancePct}% present`}
+            onBack={() => {
+                hapticPatterns.tap();
+                onClose();
+            }}
+        >
+            {/* Attendance rate */}
+            <div className="panel" style={{ padding: '18px 14px', textAlign: 'center', marginBottom: 'var(--sp-5)' }}>
+                <div
+                    className="t-num"
+                    style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.02em', color: s.rank.color }}
+                >
+                    {s.attendancePct}%
+                </div>
+                <div className="t-label" style={{ marginTop: 2 }}>Attendance rate</div>
+
+                {s.attendanceHistory && s.attendanceHistory.length > 1 && (
+                    <div style={{ marginTop: 12 }}>
+                        <AttendanceSparkline history={s.attendanceHistory} />
+                        <div className="t-caption" style={{ marginTop: 4 }}>Season trend</div>
+                    </div>
+                )}
+
+                {nextRank && neededPresent > 0 && (
+                    <p className="t-caption" style={{ marginTop: 12 }}>
+                        {neededPresent} more present {neededPresent === 1 ? 'match' : 'matches'} to reach{' '}
+                        <span style={{ color: nextRank.color, fontWeight: 700 }}>
+                            {nextRank.name} ({nextRank.minPct}%)
+                        </span>
+                    </p>
+                )}
             </div>
-            <div style={{
-                fontSize: '1rem',
-                fontWeight: 800,
-                color: isZero ? 'var(--color-text-tertiary)' : color,
-                lineHeight: 1.2,
-            }}>
-                {value}
-            </div>
-            <div style={{
-                fontSize: '0.55rem',
-                fontWeight: 600,
-                color: 'var(--color-text-tertiary)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.02em',
-            }}>
-                {label}
-            </div>
-        </div>
+
+            {/* Activity */}
+            <ListSection label="Activity">
+                <div
+                    className="row row-static"
+                    style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, paddingTop: 12, paddingBottom: 12 }}
+                >
+                    {([
+                        ['present', s.presentCount],
+                        ['maybe', s.maybeCount],
+                        ['notPresent', s.absentCount],
+                        ['ghost', s.ghostCount],
+                    ] as const).map(([key, value]) => {
+                        const cfg = statusConfig[key];
+                        const Icon = cfg.icon;
+                        const isZero = value === 0;
+                        return (
+                            <span key={key} style={{ textAlign: 'center', opacity: isZero ? 0.45 : 1 }}>
+                                <Icon size={13} style={{ color: cfg.color }} aria-hidden />
+                                <span
+                                    className="t-num"
+                                    style={{ display: 'block', fontSize: 'var(--fs-base)', fontWeight: 800, color: isZero ? 'var(--text-3)' : cfg.color }}
+                                >
+                                    {value}
+                                </span>
+                                <span style={{ display: 'block', fontSize: '0.575rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-3)' }}>
+                                    {cfg.label}
+                                </span>
+                            </span>
+                        );
+                    })}
+                </div>
+
+                {(s.currentStreakPresent >= 3 || s.currentStreakAbsent >= 2) && (
+                    <div className="row row-static" style={{ gap: 8, minHeight: 44 }}>
+                        <StatusChip tone={streakIsPositive ? 'warn' : 'no'}>
+                            {streakIsPositive ? <Flame size={11} /> : <Snowflake size={11} />}
+                            <span className="t-num" style={{ fontWeight: 800 }}>{streakValue}</span>
+                            {streakLabel}
+                        </StatusChip>
+                        <StatusChip tone="warn">
+                            <Trophy size={11} />
+                            <span className="t-num" style={{ fontWeight: 800 }}>{s.bestStreak}</span>
+                            best
+                        </StatusChip>
+                    </div>
+                )}
+
+                {s.recentForm.length > 0 && (
+                    <div className="row row-static" style={{ display: 'block', paddingTop: 10, paddingBottom: 12 }}>
+                        <span className="t-label" style={{ display: 'block', marginBottom: 8 }}>
+                            Last {s.recentForm.length} matches
+                        </span>
+                        <span style={{ display: 'flex', gap: 4 }}>
+                            {s.recentForm.map((status, j) => {
+                                const cfg = statusConfig[status as keyof typeof statusConfig] || statusConfig.ghost;
+                                const Icon = cfg.icon;
+                                return (
+                                    <span
+                                        key={j}
+                                        className="flex-center"
+                                        style={{
+                                            flex: 1,
+                                            height: 28,
+                                            borderRadius: 6,
+                                            background: cfg.bg,
+                                            color: cfg.color,
+                                            minWidth: 0,
+                                        }}
+                                        aria-label={cfg.label}
+                                    >
+                                        <Icon size={13} strokeWidth={2.5} />
+                                    </span>
+                                );
+                            })}
+                        </span>
+                    </div>
+                )}
+            </ListSection>
+
+            {/* Match history */}
+            <ListSection label="Match history">
+                {s.matchResults.length === 0 ? (
+                    <div className="row row-static">
+                        <span className="t-caption">No matches yet.</span>
+                    </div>
+                ) : (
+                    s.matchResults.map((result) => {
+                        const cfg = statusConfig[result.status];
+                        const Icon = cfg.icon;
+                        return (
+                            <div key={result.matchId} className="row row-static" style={{ minHeight: 48 }}>
+                                <span style={{ flex: 1, minWidth: 0 }}>
+                                    <span
+                                        style={{
+                                            display: 'block',
+                                            fontSize: 'var(--fs-xs)',
+                                            fontWeight: 500,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        {result.matchName.replace(/-/g, ' – ')}
+                                    </span>
+                                    <span className="t-num" style={{ display: 'block', fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', marginTop: 1 }}>
+                                        {result.date.toLocaleDateString()}
+                                    </span>
+                                </span>
+                                <span
+                                    className="flex-center"
+                                    style={{
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: 7,
+                                        background: cfg.bg,
+                                        color: cfg.color,
+                                        flexShrink: 0,
+                                    }}
+                                    aria-label={cfg.label}
+                                >
+                                    <Icon size={12} strokeWidth={2.5} />
+                                </span>
+                            </div>
+                        );
+                    })
+                )}
+            </ListSection>
+        </FlowPage>
     );
 }
 
@@ -407,7 +221,7 @@ function AttendanceSparkline({ history }: { history: AttendanceHistoryPoint[] })
                 ? Math.max(280, Math.min(window.innerWidth - 56, 520))
                 : 320;
             const nextWidth = Math.round(width || fallbackWidth);
-            const nextHeight = Math.round(height || 220);
+            const nextHeight = Math.round(height || 180);
 
             if (nextWidth > 0 && nextHeight > 0) {
                 setDimensions({ width: nextWidth, height: nextHeight });
@@ -429,7 +243,7 @@ function AttendanceSparkline({ history }: { history: AttendanceHistoryPoint[] })
     if (history.length < 2) return null;
 
     const endPct = history[history.length - 1].attendancePct;
-    const trendColor = endPct >= 50 ? 'var(--color-success)' : 'var(--color-danger)';
+    const trendColor = endPct >= 50 ? 'var(--ok)' : 'var(--no)';
     const pcts = history.map((point) => point.attendancePct);
     const visualMin = Math.min(...pcts, 0);
     const visualMax = Math.max(...pcts, 100);
@@ -439,36 +253,35 @@ function AttendanceSparkline({ history }: { history: AttendanceHistoryPoint[] })
     const chartMax = Math.min(100, visualMax + yPadding);
 
     return (
-        <div ref={containerRef} style={{ position: 'relative', width: '100%', height: 220 }}>
+        <div ref={containerRef} style={{ position: 'relative', width: '100%', height: 180 }}>
             {dimensions && (
-            <LineChart
-                width={dimensions.width}
-                height={dimensions.height}
-                data={history}
-                margin={{ top: 10, right: 8, bottom: 10, left: 24 }}
-            >
-                <YAxis
-                    domain={[chartMin, chartMax]}
-                    tick={{ fontSize: 10, fill: 'var(--color-text-tertiary)' }}
-                    tickFormatter={(v: number) => `${v}%`}
-                    width={24}
-                    axisLine={false}
-                    tickLine={false}
-                />
-                <ReferenceLine y={25} stroke="var(--color-border-subtle)" strokeDasharray="3 3" strokeOpacity={0.5} />
-                <ReferenceLine y={50} stroke="var(--color-border-subtle)" strokeDasharray="3 3" strokeOpacity={0.8} />
-                <ReferenceLine y={75} stroke="var(--color-border-subtle)" strokeDasharray="3 3" strokeOpacity={0.5} />
-                <Line
-                    type="monotone"
-                    dataKey="attendancePct"
-                    stroke={trendColor}
-                    strokeWidth={3}
-                    dot={false}
-                    isAnimationActive={false}
-                />
-            </LineChart>
+                <LineChart
+                    width={dimensions.width}
+                    height={dimensions.height}
+                    data={history}
+                    margin={{ top: 10, right: 8, bottom: 10, left: 24 }}
+                >
+                    <YAxis
+                        domain={[chartMin, chartMax]}
+                        tick={{ fontSize: 10, fill: 'var(--text-3)' }}
+                        tickFormatter={(v: number) => `${v}%`}
+                        width={24}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <ReferenceLine y={25} stroke="var(--border-subtle)" strokeDasharray="3 3" strokeOpacity={0.5} />
+                    <ReferenceLine y={50} stroke="var(--border-subtle)" strokeDasharray="3 3" strokeOpacity={0.8} />
+                    <ReferenceLine y={75} stroke="var(--border-subtle)" strokeDasharray="3 3" strokeOpacity={0.5} />
+                    <Line
+                        type="monotone"
+                        dataKey="attendancePct"
+                        stroke={trendColor}
+                        strokeWidth={2.5}
+                        dot={false}
+                        isAnimationActive={false}
+                    />
+                </LineChart>
             )}
         </div>
     );
 }
-

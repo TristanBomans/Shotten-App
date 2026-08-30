@@ -1,11 +1,10 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { BellRing, CheckCircle2, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import { CheckCircle2 } from 'lucide-react';
 import { formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import type { MatchReminder } from '@/lib/notifications';
 import { hapticPatterns } from '@/lib/haptic';
+import Sheet from './ui/Sheet';
 
 interface NotificationSheetProps {
     open: boolean;
@@ -16,286 +15,132 @@ interface NotificationSheetProps {
 }
 
 function urgencyColor(urgency: MatchReminder['urgency']): string {
-    if (urgency === 'high') return 'var(--color-danger)';
-    if (urgency === 'medium') return 'var(--color-warning)';
-    return 'var(--color-accent)';
+    if (urgency === 'high') return 'var(--no)';
+    if (urgency === 'medium') return 'var(--warn)';
+    return 'var(--accent)';
 }
 
-export default function NotificationSheet({ open, reminders, totalCount, onReminderSelect, onClose }: NotificationSheetProps) {
-    if (typeof document === 'undefined') return null;
+export default function NotificationSheet({
+    open,
+    reminders,
+    totalCount,
+    onReminderSelect,
+    onClose,
+}: NotificationSheetProps) {
+    const handleClose = () => {
+        hapticPatterns.tap();
+        onClose();
+    };
 
-    return createPortal(
-        <AnimatePresence>
-            {open && (
-                <>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.18 }}
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            onClose();
-                        }}
+    return (
+        <Sheet
+            open={open}
+            onClose={handleClose}
+            title="Match Reminders"
+            subtitle={
+                totalCount > 0
+                    ? `${totalCount} pending response${totalCount === 1 ? '' : 's'}`
+                    : 'All caught up'
+            }
+        >
+            {reminders.length === 0 ? (
+                <div className="panel-inset row row-static" style={{ borderRadius: 'var(--r-md)' }}>
+                    <span
+                        className="flex-center"
                         style={{
-                            position: 'fixed',
-                            inset: 0,
-                            background: 'var(--color-overlay)',
-                            backdropFilter: 'blur(12px) saturate(180%)',
-                            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-                            zIndex: 10010,
+                            width: 34,
+                            height: 34,
+                            borderRadius: 10,
+                            background: 'rgb(var(--ok-rgb) / 0.13)',
+                            color: 'var(--ok)',
+                            flexShrink: 0,
                         }}
-                    />
-
-                    <div
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 10011,
-                            display: 'flex',
-                            alignItems: 'flex-end',
-                            justifyContent: 'center',
-                            padding: 12,
-                            pointerEvents: 'none',
-                        }}
+                        aria-hidden
                     >
-                        <motion.div
-                            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 24, scale: 0.98 }}
-                            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-                            style={{
-                                pointerEvents: 'auto',
-                                width: '100%',
-                                maxWidth: 560,
-                                maxHeight: '80dvh',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                borderRadius: 24,
-                                border: '1px solid var(--color-border)',
-                                background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(40px) saturate(180%)',
-                                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                                boxShadow: 'var(--shadow-lg)',
-                                overflow: 'hidden',
+                        <CheckCircle2 size={17} />
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                        <span style={{ display: 'block', fontWeight: 700, fontSize: 'var(--fs-sm)' }}>
+                            All up to date
+                        </span>
+                        <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-3)' }}>
+                            No pending match responses right now.
+                        </span>
+                    </span>
+                </div>
+            ) : (
+                <div className="list-section">
+                    {reminders.map((reminder) => (
+                        <button
+                            key={reminder.matchId}
+                            className="row"
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                onReminderSelect(reminder.matchId);
                             }}
+                            style={{ alignItems: 'flex-start', paddingTop: 12, paddingBottom: 12 }}
                         >
-                            <div
+                            <span
+                                aria-hidden
                                 style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    gap: 12,
-                                    padding: '16px 16px 12px',
-                                    borderBottom: '1px solid var(--color-border-subtle)',
+                                    width: 3,
+                                    alignSelf: 'stretch',
+                                    borderRadius: 2,
+                                    background: urgencyColor(reminder.urgency),
+                                    flexShrink: 0,
                                 }}
-                            >
-                                <div style={{ minWidth: 0 }}>
-                                    <div
+                            />
+                            <span style={{ minWidth: 0, flex: 1 }}>
+                                <span className="flex-between" style={{ gap: 8, marginBottom: 2 }}>
+                                    <span
                                         style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 8,
-                                            color: 'var(--color-warning)',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 700,
+                                            fontSize: '0.625rem',
+                                            fontWeight: 800,
+                                            letterSpacing: '0.07em',
                                             textTransform: 'uppercase',
-                                            letterSpacing: '0.06em',
-                                            marginBottom: 4,
+                                            color: urgencyColor(reminder.urgency),
                                         }}
                                     >
-                                        <BellRing size={14} />
-                                        Match Reminders
-                                    </div>
-                                    <h3
-                                        style={{
-                                            fontSize: '1.12rem',
-                                            fontWeight: 700,
-                                            margin: 0,
-                                            color: 'var(--color-text-primary)',
-                                        }}
+                                        {reminder.rankLabel}
+                                    </span>
+                                    <span
+                                        className="t-num"
+                                        style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', whiteSpace: 'nowrap' }}
                                     >
-                                        {totalCount > 0 ? `${totalCount} pending response${totalCount === 1 ? '' : 's'}` : 'All caught up'}
-                                    </h3>
-                                </div>
-
-                                <button
-                                    onClick={() => {
-                                        hapticPatterns.tap();
-                                        onClose();
-                                    }}
-                                    aria-label="Close notifications"
+                                        {formatDateSafe(reminder.matchDate, {
+                                            weekday: 'short',
+                                            day: 'numeric',
+                                            month: 'short',
+                                        })}{' '}
+                                        · {formatTimeSafe(reminder.matchDate)}
+                                    </span>
+                                </span>
+                                <span
                                     style={{
-                                        width: 34,
-                                        height: 34,
-                                        borderRadius: 999,
-                                        border: '1px solid var(--color-border)',
-                                        background: 'var(--color-surface)',
-                                        color: 'var(--color-text-secondary)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        cursor: 'pointer',
-                                        flexShrink: 0,
+                                        display: 'block',
+                                        fontWeight: 700,
+                                        fontSize: 'var(--fs-sm)',
+                                        marginBottom: 2,
                                     }}
                                 >
-                                    <X size={16} />
-                                </button>
-                            </div>
-
-                            <div
-                                className="scrollbar-hide"
-                                style={{
-                                    overflowY: 'auto',
-                                    padding: 12,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 10,
-                                }}
-                            >
-                                {reminders.length === 0 ? (
-                                    <div
-                                        style={{
-                                            padding: 18,
-                                            borderRadius: 16,
-                                            border: '1px solid var(--color-border)',
-                                            background: 'var(--color-surface)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 12,
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                width: 40,
-                                                height: 40,
-                                                borderRadius: 999,
-                                                background: 'rgb(var(--color-success-rgb) / 0.15)',
-                                                color: 'var(--color-success)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                flexShrink: 0,
-                                            }}
-                                        >
-                                            <CheckCircle2 size={18} />
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                                                All up to date
-                                            </div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                                No pending match responses right now.
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    reminders.map((reminder) => (
-                                        <motion.button
-                                            key={reminder.matchId}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={() => {
-                                                hapticPatterns.tap();
-                                                onReminderSelect(reminder.matchId);
-                                            }}
-                                            style={{
-                                                border: '1px solid var(--color-border)',
-                                                background: 'var(--color-surface)',
-                                                borderRadius: 16,
-                                                padding: 14,
-                                                width: '100%',
-                                                textAlign: 'left',
-                                                cursor: 'pointer',
-                                            }}
-                                        >
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    gap: 10,
-                                                    marginBottom: 8,
-                                                }}
-                                            >
-                                                <span
-                                                    style={{
-                                                        fontSize: '0.7rem',
-                                                        fontWeight: 700,
-                                                        letterSpacing: '0.05em',
-                                                        textTransform: 'uppercase',
-                                                        color: urgencyColor(reminder.urgency),
-                                                    }}
-                                                >
-                                                    {reminder.rankLabel}
-                                                </span>
-                                                <span
-                                                    style={{
-                                                        fontSize: '0.75rem',
-                                                        color: 'var(--color-text-tertiary)',
-                                                        whiteSpace: 'nowrap',
-                                                    }}
-                                                >
-                                                    {formatDateSafe(reminder.matchDate, {
-                                                        weekday: 'short',
-                                                        day: 'numeric',
-                                                        month: 'short',
-                                                    })}{' '}
-                                                    · {formatTimeSafe(reminder.matchDate)}
-                                                </span>
-                                            </div>
-
-                                            <div
-                                                style={{
-                                                    fontSize: '0.98rem',
-                                                    fontWeight: 700,
-                                                    color: 'var(--color-text-primary)',
-                                                    marginBottom: 6,
-                                                }}
-                                            >
-                                                {reminder.matchName}
-                                            </div>
-
-                                            <div
-                                                style={{
-                                                    fontSize: '0.86rem',
-                                                    color: 'var(--color-text-secondary)',
-                                                    marginBottom: 8,
-                                                }}
-                                            >
-                                                {reminder.message}
-                                            </div>
-
-                                            <div
-                                                style={{
-                                                    fontSize: '0.78rem',
-                                                    color: 'var(--color-accent)',
-                                                    fontWeight: 600,
-                                                }}
-                                            >
-                                                Tap to jump to this match.
-                                            </div>
-                                        </motion.button>
-                                    ))
-                                )}
-
-                                {totalCount > reminders.length && (
-                                    <div
-                                        style={{
-                                            textAlign: 'center',
-                                            fontSize: '0.8rem',
-                                            color: 'var(--color-text-tertiary)',
-                                            paddingTop: 4,
-                                        }}
-                                    >
-                                        +{totalCount - reminders.length} extra reminders hidden for your mental well-being.
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    </div>
-                </>
+                                    {reminder.matchName}
+                                </span>
+                                <span
+                                    style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-2)' }}
+                                >
+                                    {reminder.message}
+                                </span>
+                            </span>
+                        </button>
+                    ))}
+                </div>
             )}
-        </AnimatePresence>,
-        document.body
+
+            {totalCount > reminders.length && (
+                <p className="t-caption" style={{ textAlign: 'center', paddingTop: 10 }}>
+                    +{totalCount - reminders.length} extra reminders hidden for your mental well-being.
+                </p>
+            )}
+        </Sheet>
     );
 }
