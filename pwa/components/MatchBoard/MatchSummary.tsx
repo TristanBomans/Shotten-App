@@ -11,6 +11,7 @@ import type { AttendanceStatus, RosterPlayer } from './types';
 import Confetti from './Confetti';
 import MatchPage from '../Pages/MatchPage';
 import { ResponseControl } from '../ui/controls';
+import AvailabilityCounts from './AvailabilityCounts';
 import AvailabilityRoster from './AvailabilityRoster';
 
 interface MatchSummaryProps {
@@ -37,8 +38,8 @@ function formatCountdown(diffMs: number): string {
 
 /**
  * One dense, uniform availability panel per upcoming match. Every panel keeps
- * the roster breakdown and the player's one-tap response visible without any
- * extra interaction.
+ * either the four category counts or the roster breakdown alongside the
+ * player's one-tap response.
  */
 export default function MatchSummary({
     match,
@@ -240,20 +241,30 @@ export default function MatchSummary({
                     />
                 </div>
 
-                {/* Roster breakdown */}
-                <div
-                    className="hairline-t"
-                    style={{ marginTop: 9, paddingTop: 8 }}
-                >
-                    <AvailabilityRoster
-                        present={present}
-                        maybe={maybe}
-                        notPresent={notPresent}
-                        unknown={unknown}
-                        currentPlayerId={currentPlayerId}
-                        showNames={showFullNames}
+                {!showFullNames && (
+                    <AvailabilityCounts
+                        present={present.length}
+                        maybe={maybe.length}
+                        notPresent={notPresent.length}
+                        unknown={unknown.length}
                     />
-                </div>
+                )}
+
+                {/* Roster breakdown */}
+                {showFullNames && (
+                    <div
+                        className="hairline-t"
+                        style={{ marginTop: 9, paddingTop: 8 }}
+                    >
+                        <AvailabilityRoster
+                            present={present}
+                            maybe={maybe}
+                            notPresent={notPresent}
+                            unknown={unknown}
+                            currentPlayerId={currentPlayerId}
+                        />
+                    </div>
+                )}
             </div>
 
             <MatchPage

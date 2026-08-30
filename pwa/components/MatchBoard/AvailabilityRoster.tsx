@@ -11,7 +11,6 @@ interface AvailabilityRosterProps {
     notPresent: RosterEntry[];
     unknown: RosterEntry[];
     currentPlayerId: number;
-    showNames: boolean;
 }
 
 const groups = [
@@ -22,8 +21,8 @@ const groups = [
 ] as const;
 
 /**
- * Dense per-category roster. Full names and compact counts are intentionally
- * mutually exclusive so the card stays readable in either display mode.
+ * Dense per-category roster: a fixed-width status column, wrapped names and a
+ * right-aligned count. The current player reads as "you" and is highlighted.
  */
 export default function AvailabilityRoster({
     present,
@@ -31,7 +30,6 @@ export default function AvailabilityRoster({
     notPresent,
     unknown,
     currentPlayerId,
-    showNames,
 }: AvailabilityRosterProps) {
     const data = { present, maybe, notPresent, unknown };
     const total = present.length + maybe.length + notPresent.length + unknown.length;
@@ -50,15 +48,7 @@ export default function AvailabilityRoster({
                 const players = data[key];
                 if (players.length === 0) return null;
                 return (
-                    <div
-                        key={key}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'baseline',
-                            gap: 8,
-                            justifyContent: showNames ? undefined : 'space-between',
-                        }}
-                    >
+                    <div key={key} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                         <span
                             style={{
                                 fontSize: '0.625rem',
@@ -72,55 +62,52 @@ export default function AvailabilityRoster({
                         >
                             {label}
                         </span>
-                        {showNames ? (
-                            <span
-                                style={{
-                                    flex: 1,
-                                    minWidth: 0,
-                                    fontSize: 'var(--fs-2xs)',
-                                    lineHeight: 1.5,
-                                    color: 'var(--text-2)',
-                                }}
-                            >
-                                {players.map((player, i) => {
-                                    const isMe = player.id === currentPlayerId;
-                                    return (
-                                        <span key={player.id}>
-                                            <span
-                                                style={
-                                                    isMe
-                                                        ? {
-                                                            color: 'var(--text-1)',
-                                                            fontWeight: 700,
-                                                            borderBottom: `1.5px solid ${color}`,
-                                                        }
-                                                        : undefined
-                                                }
-                                            >
-                                                {isMe ? 'you' : player.name}
-                                            </span>
-                                            {i < players.length - 1 && (
-                                                <span style={{ color: 'var(--text-3)', opacity: 0.6 }}>{' · '}</span>
-                                            )}
+                        <span
+                            style={{
+                                flex: 1,
+                                minWidth: 0,
+                                fontSize: 'var(--fs-2xs)',
+                                lineHeight: 1.5,
+                                color: 'var(--text-2)',
+                            }}
+                        >
+                            {players.map((player, i) => {
+                                const isMe = player.id === currentPlayerId;
+                                return (
+                                    <span key={player.id}>
+                                        <span
+                                            style={
+                                                isMe
+                                                    ? {
+                                                        color: 'var(--text-1)',
+                                                        fontWeight: 700,
+                                                        borderBottom: `1.5px solid ${color}`,
+                                                    }
+                                                    : undefined
+                                            }
+                                        >
+                                            {isMe ? 'you' : player.name}
                                         </span>
-                                    );
-                                })}
-                            </span>
-                        ) : (
-                            <span
-                                className="t-num"
-                                style={{
-                                    fontSize: 'var(--fs-2xs)',
-                                    fontWeight: 700,
-                                    color,
-                                    flexShrink: 0,
-                                    minWidth: 16,
-                                    textAlign: 'right',
-                                }}
-                            >
-                                {players.length}
-                            </span>
-                        )}
+                                        {i < players.length - 1 && (
+                                            <span style={{ color: 'var(--text-3)', opacity: 0.6 }}>{' · '}</span>
+                                        )}
+                                    </span>
+                                );
+                            })}
+                        </span>
+                        <span
+                            className="t-num"
+                            style={{
+                                fontSize: 'var(--fs-2xs)',
+                                fontWeight: 700,
+                                color,
+                                flexShrink: 0,
+                                minWidth: 16,
+                                textAlign: 'right',
+                            }}
+                        >
+                            {players.length}
+                        </span>
                     </div>
                 );
             })}
