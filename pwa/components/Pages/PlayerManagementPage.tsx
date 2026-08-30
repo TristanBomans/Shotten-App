@@ -306,14 +306,20 @@ export default function PlayerManagementPage({ isOpen, onClose }: PlayerManageme
                             />
                         ) : (
                             <button
+                                type="button"
                                 onClick={() => {
                                     hapticPatterns.tap();
                                     setIsAddingNew(true);
                                 }}
                                 style={{
                                     display: 'flex',
+                                    width: '100%',
+                                    minWidth: 0,
                                     alignItems: 'center',
                                     gap: 8,
+                                    textAlign: 'left',
+                                    background: 'transparent',
+                                    border: 'none',
                                     padding: '8px 0',
                                     cursor: 'pointer',
                                     color: 'var(--accent)',
