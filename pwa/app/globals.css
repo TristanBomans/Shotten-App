@@ -752,24 +752,29 @@ button {
   }
 }
 
-/* Bottom tab bar (mobile): docked, solid, hairline top */
+/* Bottom tab bar (mobile): floating capsule with four equal icon targets */
 .tabbar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: calc(var(--safe-bottom) + var(--sp-3));
+  left: 50%;
   z-index: 950;
   display: flex;
-  padding: 0 var(--sp-2) var(--safe-bottom);
+  gap: 4px;
+  width: min(calc(100% - 120px), 220px);
+  height: var(--tabbar-h);
+  padding: 5px;
   background: var(--bg-header);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--separator);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-full);
+  box-shadow: 0 10px 32px rgb(0 0 0 / 0.35);
+  transform: translateX(-50%);
   transition: transform var(--t-base), opacity var(--t-base);
 }
 
 .tabbar[data-hidden='true'] {
-  transform: translateY(100%);
+  transform: translate(-50%, calc(100% + var(--safe-bottom) + var(--sp-4)));
   opacity: 0;
   pointer-events: none;
 }
@@ -777,22 +782,41 @@ button {
 .tabbar-item {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  height: var(--tabbar-h);
+  min-width: 0;
+  height: 100%;
   border: none;
+  border-radius: var(--r-full);
   background: transparent;
   color: var(--text-3);
-  font-size: var(--fs-3xs);
-  font-weight: 600;
   cursor: pointer;
-  transition: color var(--t-fast);
+  transition: color var(--t-fast), background var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
 }
 
-.tabbar-item[aria-current='true'] {
+.tabbar-item svg {
+  transition: transform var(--t-fast);
+}
+
+.tabbar-item[aria-current='page'] {
+  background: var(--bg-subtle-strong);
   color: var(--text-1);
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+
+.tabbar-item[aria-current='page'] svg {
+  transform: scale(1.06);
+}
+
+.tabbar-item:active {
+  transform: scale(0.94);
+}
+
+@media (hover: hover) {
+  .tabbar-item:not([aria-current='page']):hover {
+    background: var(--bg-subtle);
+    color: var(--text-2);
+  }
 }
 
 @media (min-width: 1024px) {
@@ -843,7 +867,7 @@ button {
     color: var(--text-1);
   }
 
-  .siderail-item[aria-current='true'] {
+  .siderail-item[aria-current='page'] {
     background: var(--bg-subtle-strong);
     color: var(--text-1);
   }

@@ -20,8 +20,8 @@ const navItems: { id: View; icon: React.ComponentType<{ size?: number | string }
 ];
 
 /**
- * Primary navigation: a docked bottom tab bar on mobile and a persistent
- * side rail on desktop. Both render from the same nav model.
+ * Primary navigation: a floating icon dock on mobile and a persistent side
+ * rail on desktop. Both render from the same nav model.
  */
 export default function AppNav({ currentView, onNavigate, isHidden = false }: AppNavProps) {
     const isNavigatingRef = useRef(false);
@@ -41,18 +41,19 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
 
     return (
         <>
-            {/* Mobile: docked tab bar */}
+            {/* Mobile: floating capsule dock */}
             <nav className="tabbar" data-hidden={isHidden} aria-label="Primary">
                 {navItems.map(({ id, icon: Icon, label }) => (
                     <button
                         key={id}
+                        type="button"
                         className="tabbar-item"
                         aria-current={currentView === id ? 'page' : undefined}
                         aria-label={label}
+                        title={label}
                         onClick={() => handleNavigate(id)}
                     >
                         <Icon size={21} />
-                        <span>{label}</span>
                     </button>
                 ))}
             </nav>
