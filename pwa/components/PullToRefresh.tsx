@@ -139,8 +139,8 @@ export default function PullToRefresh({
                         width: 40,
                         height: 40,
                         borderRadius: '50%',
-                        backgroundColor: 'var(--color-surface)',
-                        backdropFilter: 'blur(20px) saturate(180%)',
+                        backgroundColor: 'var(--bg-panel-raised)',
+                        border: '1px solid var(--border-hairline)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -156,7 +156,7 @@ export default function PullToRefresh({
                     <RefreshCw
                         size={20}
                         style={{
-                            color: 'var(--color-accent)',
+                            color: 'var(--text-2)',
                         }}
                     />
                 </motion.div>

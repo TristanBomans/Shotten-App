@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlayerSelect from '@/components/PlayerSelect';
 import Dashboard from '@/components/Dashboard';
-import FloatingNav from '@/components/FloatingNav';
+import AppNav from '@/components/ui/AppNav';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
 type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
@@ -52,7 +52,7 @@ const getViewFromParams = (params: SearchParamsLike | null): View => {
 const getModalFromParams = (params: SearchParamsLike | null): Modal => {
     const modalParam = params?.get('modal') as Modal;
     if (!modalParam) return null;
-    const knownModals: Modal[] = ['version', 'match', 'players', 'respond', 'admin', 'team', 'rules', 'playerDetail'];
+    const knownModals: Modal[] = ['version', 'match', 'players', 'respond', 'admin', 'team', 'rules', 'playerDetail', 'forfait'];
     return knownModals.includes(modalParam) ? modalParam : null;
 };
 
@@ -261,7 +261,7 @@ function HomeContent() {
             </AnimatePresence>
 
             {selectedPlayerId && (
-                <FloatingNav
+                <AppNav
                     currentView={currentView}
                     onNavigate={(view) => handleNavChange(view)}
                     isHidden={isPlayerManagementOpen}

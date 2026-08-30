@@ -1,6 +1,6 @@
 # Shotten — frontend flow voor gewone spelers
 
-Deze documentatie beschrijft de gebruikersflow van de Shotten PWA voor een gewone speler, uitsluitend vanuit frontend-oogpunt. De verborgen admin-flow is bewust niet opgenomen. De captures zijn gemaakt vanaf de actuele `main`-versie op branch `docs/non-admin-flow-screenshots`, in een production build met een viewport van **360 × 780 CSS-pixels** — het formaat dat voor deze Galaxy S25-capture wordt gebruikt.
+Deze documentatie beschrijft de gebruikersflow van de Shotten PWA voor een gewone speler, uitsluitend vanuit frontend-oogpunt. De verborgen admin-flow is bewust niet opgenomen. De captures zijn gemaakt vanaf de herontworpen frontend op branch `docs/non-admin-flow-screenshots`, in een production-achtige viewport van **360 × 780 CSS-pixels** — het formaat dat voor deze Galaxy S25-capture wordt gebruikt.
 
 De screenshots zijn op **30 augustus 2026** genomen met Tristan als geselecteerd profiel en met de toen beschikbare live wedstrijddata. Namen, tijden, standen en aantallen kunnen dus wijzigen wanneer de backenddata later verandert.
 
@@ -20,7 +20,7 @@ Home ↔ Stats ↔ League ↔ Settings
   spelerdetail teamdetail instellingen & hulpschermen
 ```
 
-De app bewaart het gekozen spelerprofiel lokaal op het toestel. Bij een volgend bezoek wordt de speler daardoor meteen naar de dashboardflow gebracht. De vier hoofdviews zijn horizontaal navigeerbaar door te swipen en zijn ook bereikbaar via de zwevende navigatie onderaan: **Home**, **Stats**, **League** en **Settings**.
+De app bewaart het gekozen spelerprofiel lokaal op het toestel. Bij een volgend bezoek wordt de speler daardoor meteen naar de dashboardflow gebracht. De vier hoofdviews zijn horizontaal navigeerbaar door te swipen en zijn ook bereikbaar via de vastgezette navigatie onderaan: **Home**, **Stats**, **League** en **Settings**. Op desktop verschijnt dezelfde navigatie als een persistente zijbalk.
 
 ## Belangrijk Home-aandachtspunt
 
@@ -32,7 +32,7 @@ Home moet voor spelers in één overzichtelijke pagina de volledige beschikbaarh
 - wie nog niet heeft geantwoord / **TBD** is;
 - hoeveel spelers er in elke categorie zitten, per opkomende match.
 
-De huidige frontend toont die informatie al per matchkaart met de groepen `In`, `Maybe`, `Out` en `TBD`, maar de lijst met komende matchen loopt verticaal door. Voor de uiteindelijke Home-UX is het dus belangrijk dat dit overzicht compact, scanbaar en op één pagina blijft — zeker voor meerdere toekomstige matchen. De primaire actie van een speler moet vanuit die kaart duidelijk blijven: met één tik de eigen aanwezigheid op **Present**, **Maybe** of **NotPresent** zetten.
+De huidige frontend toont die informatie per matchpaneel met de groepen `In`, `Maybe`, `Out` en `TBD`, inclusief aantallen en (wanneer *Show Full Names* aan staat) de namen. De lijst met komende matchen loopt verticaal door in één overzicht — zonder extra tikken of detailnavigatie. De primaire actie van een speler blijft vanuit dat paneel: met één tik de eigen aanwezigheid op **Present**, **Maybe** of **NotPresent** zetten.
 
 ## Schermen en frontendgedrag
 
@@ -53,18 +53,18 @@ Frontendgedrag:
 
 ![Home](screenshots/02-home.png)
 
-Home is de primaire werkruimte. Bovenaan staat de eerstvolgende match als `Next Match`. Daaronder staan alle andere toekomstige matchen in `Upcoming Matches`.
+Home is de primaire werkruimte. Bovenaan staat de eerstvolgende match gemarkeerd als `NEXT`. Daaronder staan alle andere toekomstige matchen in hetzelfde overzicht `Upcoming matches`.
 
-Op elke kaart staat frontendmatig:
+Op elk paneel staat frontendmatig:
 
 - datum, uur en countdown tot de aftrap;
 - beide teams en locatie-informatie wanneer beschikbaar;
 - beschikbaarheid gegroepeerd in `In`, `Maybe`, `Out` en `TBD`;
 - het aantal spelers per groep;
 - de drie compacte antwoordknoppen voor aanwezig, misschien en afwezig;
-- `Tap for details` om de volledige matchweergave te openen.
+- een chevron om de volledige matchweergave te openen.
 
-De kaart van de huidige speler is visueel herkenbaar. De eigen status kan direct op de kaart worden gewijzigd; de dashboardstaat wordt daarna optimistisch aangepast zodat de gebruiker niet op een volledige refresh hoeft te wachten. Pull-to-refresh kan de data opnieuw ophalen. De navigatiebalk blijft onderaan beschikbaar.
+De rij van de huidige speler is visueel herkenbaar. De eigen status kan direct op het paneel worden gewijzigd; de dashboardstaat wordt daarna optimistisch aangepast zodat de gebruiker niet op een volledige refresh hoeft te wachten. Pull-to-refresh kan de data opnieuw ophalen. De navigatiebalk blijft onderaan beschikbaar.
 
 ### 3. Recente matchen-sheet
 
@@ -86,7 +86,7 @@ Wanneer er wel reminders zijn, kan de gebruiker op een reminder tikken. De sheet
 
 ![Matchdetail — Squad](screenshots/04-match-detail-squad.png)
 
-Een tik op een matchkaart opent een full-screen matchdetail. De bovenste glass header bevat een backknop, de matchnaam met datum/locatie en het `More`-menu. Onderaan staat een segment control met `Squad` en `Opponent`.
+Een tik op een matchpaneel opent een full-screen matchdetail. De compacte header bevat een backknop, de matchnaam met datum/locatie en het `More`-menu. Onderaan de header staat een segment control met `Squad` en `Opponent`.
 
 In `Squad` worden spelers per antwoordstatus gegroepeerd. De frontend maakt daardoor onmiddellijk zichtbaar:
 

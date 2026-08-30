@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronRight } from 'lucide-react';
+import { Search, Check, ChevronRight } from 'lucide-react';
 import { usePlayers } from '@/lib/useData';
 import type { Player } from '@/lib/mockData';
+import { Avatar, EmptyState } from './ui/controls';
 
 interface PlayerSelectProps {
     onSelect: (id: number) => void;
@@ -31,125 +32,115 @@ export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
     };
 
     return (
-        <div className="container" style={{
-            minHeight: '100dvh',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            paddingBottom: 'var(--space-2xl)',
-        }}>
+        <div
+            style={{
+                minHeight: '100dvh',
+                display: 'flex',
+                flexDirection: 'column',
+                paddingTop: 'calc(var(--safe-top) + 48px)',
+                paddingBottom: 'calc(var(--safe-bottom) + 24px)',
+                paddingLeft: 'var(--screen-x)',
+                paddingRight: 'var(--screen-x)',
+            }}
+        >
             <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
-                style={{ maxWidth: '28rem', margin: '0 auto', width: '100%' }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+                style={{
+                    maxWidth: 440,
+                    margin: '0 auto',
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    flex: 1,
+                    minHeight: 0,
+                }}
             >
-                {/* Header */}
-                <div style={{ textAlign: 'center', marginBottom: 'var(--space-2xl)' }}>
-                    {/* Logo */}
-                    <motion.div
-                        className="animate-float"
+                {/* Wordmark */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
+                    <span
+                        className="flex-center"
                         style={{
-                            width: 72,
-                            height: 72,
-                            borderRadius: 'var(--radius-xl)',
-                            background: 'linear-gradient(135deg, var(--color-accent), var(--color-success))',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 auto var(--space-lg)',
-                            boxShadow: '0 0 40px var(--color-accent-glow)',
+                            width: 30,
+                            height: 30,
+                            borderRadius: 8,
+                            background: 'var(--primary)',
+                            color: 'var(--primary-foreground)',
+                            fontWeight: 800,
+                            fontSize: '1rem',
                         }}
+                        aria-hidden
                     >
-                        <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>S</span>
-                    </motion.div>
-
-                    <span className="text-label" style={{
-                        display: 'inline-block',
-                        padding: 'var(--space-xs) var(--space-md)',
-                        background: 'var(--color-surface)',
-                        borderRadius: 'var(--radius-full)',
-                        marginBottom: 'var(--space-md)',
-                    }}>
-                        Team Tracker
+                        S
                     </span>
-
-                    <h1 className="text-display" style={{ marginBottom: 'var(--space-sm)' }}>
-                        Welcome to Shotten
-                    </h1>
-                    <p className="text-body">
-                        Select your profile to continue
-                    </p>
+                    <span style={{ fontWeight: 700, fontSize: 'var(--fs-base)', letterSpacing: '-0.01em' }}>
+                        Shotten
+                    </span>
                 </div>
+
+                <h1 className="t-display" style={{ marginBottom: 6 }}>
+                    Who are you?
+                </h1>
+                <p className="t-body" style={{ marginBottom: 20 }}>
+                    Select your profile to continue.
+                </p>
 
                 {/* Search */}
-                <div className="glass-panel" style={{
-                    padding: 'var(--space-sm)',
-                    marginBottom: 'var(--space-lg)',
-                }}>
-                    <div style={{ position: 'relative' }}>
-                        <Search
-                            size={20}
-                            style={{
-                                position: 'absolute',
-                                left: 'var(--space-md)',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                color: 'var(--color-text-tertiary)',
-                                pointerEvents: 'none',
-                            }}
-                        />
-                        <input
-                            type="text"
-                            placeholder="Search players..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="glass-input"
-                            style={{ paddingLeft: 'calc(var(--space-md) + 28px)' }}
-                        />
-                    </div>
+                <div style={{ position: 'relative', marginBottom: 14 }}>
+                    <Search
+                        size={16}
+                        style={{
+                            position: 'absolute',
+                            left: 14,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: 'var(--text-3)',
+                            pointerEvents: 'none',
+                        }}
+                        aria-hidden
+                    />
+                    <input
+                        type="text"
+                        placeholder="Search players..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="field"
+                        aria-label="Search players"
+                        style={{ paddingLeft: 40 }}
+                    />
                 </div>
 
-                {/* Player List */}
-                <div style={{
-                    maxHeight: 'calc(100dvh - 420px)',
-                    overflowY: 'auto',
-                    paddingRight: 'var(--space-xs)',
-                }} className="scrollbar-hide">
+                {/* Player list */}
+                <div
+                    className="scrollbar-hide"
+                    style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+                >
                     {loading && players.length === 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-                            {[...Array(5)].map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="glass-panel skeleton"
-                                    style={{ height: 72, opacity: 1 - i * 0.15 }}
-                                />
+                        <div className="list-section">
+                            {[...Array(6)].map((_, i) => (
+                                <div key={i} className="row row-static" style={{ minHeight: 56 }}>
+                                    <div className="skeleton" style={{ width: 30, height: 30, borderRadius: '50%' }} />
+                                    <div className="skeleton" style={{ width: `${55 - i * 5}%`, height: 13, borderRadius: 4 }} />
+                                </div>
                             ))}
                         </div>
+                    ) : filteredPlayers.length === 0 ? (
+                        <EmptyState title="No players found" description="Try a different search." compact />
                     ) : (
-                        <AnimatePresence mode="popLayout">
-                            {filteredPlayers.map((player, i) => (
-                                <PlayerCard
-                                    key={player.id}
-                                    player={player}
-                                    index={i}
-                                    isSelected={selectedId === player.id}
-                                    isDisabled={selectedId !== null && selectedId !== player.id}
-                                    onSelect={() => handleSelect(player.id)}
-                                />
-                            ))}
-
-                            {filteredPlayers.length === 0 && (
-                                <motion.p
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="text-caption"
-                                    style={{ textAlign: 'center', padding: 'var(--space-xl)' }}
-                                >
-                                    No players found
-                                </motion.p>
-                            )}
-                        </AnimatePresence>
+                        <div className="list-section">
+                            <AnimatePresence initial={false}>
+                                {filteredPlayers.map((player) => (
+                                    <PlayerRow
+                                        key={player.id}
+                                        player={player}
+                                        isSelected={selectedId === player.id}
+                                        isDisabled={selectedId !== null && selectedId !== player.id}
+                                        onSelect={() => handleSelect(player.id)}
+                                    />
+                                ))}
+                            </AnimatePresence>
+                        </div>
                     )}
                 </div>
             </motion.div>
@@ -157,87 +148,60 @@ export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
     );
 }
 
-interface PlayerCardProps {
+interface PlayerRowProps {
     player: Player;
-    index: number;
     isSelected: boolean;
     isDisabled: boolean;
     onSelect: () => void;
 }
 
-function PlayerCard({ player, index, isSelected, isDisabled, onSelect }: PlayerCardProps) {
+function PlayerRow({ player, isSelected, isDisabled, onSelect }: PlayerRowProps) {
     return (
         <motion.button
             layout
-            initial={{ opacity: 0, x: -20 }}
-            animate={{
-                opacity: isDisabled ? 0.3 : 1,
-                x: 0,
-                scale: isSelected ? 1.02 : 1,
-                filter: isDisabled ? 'blur(2px)' : 'none',
-            }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{
-                delay: index * 0.03,
-                layout: { type: 'spring', stiffness: 400, damping: 30 }
-            }}
+            exit={{ opacity: 0 }}
+            animate={{ opacity: isDisabled ? 0.35 : 1 }}
             onClick={onSelect}
             disabled={isSelected || isDisabled}
-            className={`glass-panel touch-target ${isSelected ? 'animate-pulse-glow status-present' : ''}`}
+            className="row"
             style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 'var(--space-md) var(--space-lg)',
-                marginBottom: 'var(--space-sm)',
-                border: isSelected ? '1px solid var(--color-accent)' : undefined,
-                boxShadow: isSelected ? 'var(--shadow-glow)' : undefined,
-                cursor: isSelected || isDisabled ? 'default' : 'pointer',
+                minHeight: 56,
+                background: isSelected ? 'var(--bg-subtle)' : undefined,
             }}
         >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                {/* Avatar */}
-                <div
-                    className="avatar avatar-md"
-                    style={{
-                        background: isSelected
-                            ? 'var(--color-accent)'
-                            : 'var(--color-surface)',
-                        color: isSelected ? 'white' : 'var(--color-text-secondary)',
-                    }}
-                >
-                    {player.name.charAt(0)}
-                </div>
-
-                {/* Name */}
-                <span className="text-headline" style={{
-                    color: isSelected ? 'white' : 'var(--color-text-primary)'
-                }}>
-                    {player.name}
-                </span>
-            </div>
-
-            {/* Arrow / Check */}
+            <Avatar name={player.name} size="sm" highlight={isSelected} />
+            <span
+                style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontWeight: 600,
+                    fontSize: 'var(--fs-sm)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    textAlign: 'left',
+                }}
+            >
+                {player.name}
+            </span>
             {isSelected ? (
-                <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
+                <motion.span
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="flex-center"
                     style={{
-                        width: 32,
-                        height: 32,
+                        width: 22,
+                        height: 22,
                         borderRadius: '50%',
-                        background: 'var(--color-text-primary)',
-                        color: 'var(--color-bg)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        background: 'var(--ok)',
+                        color: '#000',
+                        flexShrink: 0,
                     }}
                 >
-                    <ChevronRight size={20} />
-                </motion.div>
+                    <Check size={13} strokeWidth={3} />
+                </motion.span>
             ) : (
-                <ChevronRight size={20} style={{ color: 'var(--color-text-tertiary)' }} />
+                <ChevronRight size={16} style={{ color: 'var(--text-3)', flexShrink: 0 }} aria-hidden />
             )}
         </motion.button>
     );

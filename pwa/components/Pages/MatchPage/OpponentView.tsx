@@ -2,16 +2,18 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, UserCircle, Sparkles, AlertCircle, TrendingUp, Trophy, Users, Zap } from 'lucide-react';
+import { Loader2, UserCircle, Sparkles, AlertCircle, Trophy, Palette } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
+import { ListSection, Row, MetricRow } from '../../ui/ListSection';
+import { InlineNotice } from '../../ui/controls';
 
 // Mistral AI logo
 function MistralLogo({ size = 14 }: { size?: number }) {
     return (
         <svg
             width={size}
-            height={size * (91/129)}
+            height={size * (91 / 129)}
             viewBox="0 0 129 91"
             style={{ fillRule: 'evenodd', clipRule: 'evenodd' }}
         >
@@ -43,73 +45,11 @@ interface OpponentViewProps {
     onGenerateAI: (force?: boolean) => void;
 }
 
-// Section Card Component - Consistent container for all sections
-const SectionCard = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) => (
-    <div style={{
-        background: 'var(--color-bg-elevated)',
-        backdropFilter: 'blur(40px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-        borderRadius: 16,
-        border: '0.5px solid var(--color-border)',
-        padding: 16,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        ...style,
-    }}>
-        {children}
-    </div>
-);
-
-const SkeletonBlock = ({ height, width = '100%', radius = 12 }: { height: number; width?: React.CSSProperties['width']; radius?: number }) => (
-    <div
-        className="skeleton"
-        style={{
-            width,
-            height,
-            borderRadius: radius,
-        }}
-    />
-);
-
-const SkeletonSectionHeader = ({ width = 128 }: { width?: React.CSSProperties['width'] }) => (
-    <div style={{ marginBottom: 12 }}>
-        <SkeletonBlock height={14} width={width} radius={7} />
-    </div>
-);
-
-// Section Header Component - Consistent header with icon
-const SectionHeader = ({ icon: Icon, title, color = 'var(--color-text-tertiary)', rightContent }: {
-    icon: React.ElementType;
-    title: string;
-    color?: string;
-    rightContent?: React.ReactNode;
-}) => (
-    <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 12,
-    }}>
-        <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-        }}>
-            <Icon size={14} style={{ color }} />
-            <span style={{
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                color: 'var(--color-text-secondary)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-            }}>
-                {title}
-            </span>
-        </div>
-        {rightContent}
-    </div>
-);
+function formColor(result: 'W' | 'L' | 'D'): string {
+    if (result === 'W') return 'var(--ok)';
+    if (result === 'L') return 'var(--no)';
+    return 'var(--warn)';
+}
 
 export default function OpponentView({
     opponentTeam,
@@ -132,88 +72,17 @@ export default function OpponentView({
 
     if (loading && !opponentData) {
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <SectionCard style={{ padding: 20 }}>
-                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                        <SkeletonBlock height={72} width={72} radius={14} />
-                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <SkeletonBlock height={24} width="72%" radius={10} />
-                            <SkeletonBlock height={14} width="48%" radius={8} />
-                        </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="panel" style={{ padding: 16, display: 'flex', gap: 14, alignItems: 'center' }}>
+                    <div className="skeleton" style={{ width: 56, height: 56, borderRadius: 12 }} />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div className="skeleton" style={{ height: 16, width: '70%' }} />
+                        <div className="skeleton" style={{ height: 11, width: '45%' }} />
                     </div>
-                </SectionCard>
-
-                <SectionCard style={{ minHeight: 128 }}>
-                    <SkeletonSectionHeader width={132} />
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                        gap: 16,
-                        alignItems: 'end',
-                    }}>
-                        {[...Array(4)].map((_, index) => (
-                            <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                                <SkeletonBlock height={28} width={48} radius={10} />
-                                <SkeletonBlock height={12} width={44} radius={6} />
-                            </div>
-                        ))}
-                    </div>
-                </SectionCard>
-
-                <SectionCard>
-                    <SkeletonSectionHeader width={124} />
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        {[...Array(5)].map((_, index) => (
-                            <SkeletonBlock key={index} height={36} width={36} radius={10} />
-                        ))}
-                    </div>
-                </SectionCard>
-
-                <SectionCard>
-                    <SkeletonSectionHeader width={104} />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <SkeletonBlock height={18} width="42%" radius={8} />
-                        <SkeletonBlock height={18} width="58%" radius={8} />
-                        <SkeletonBlock height={48} width="100%" radius={10} />
-                    </div>
-                </SectionCard>
-
-                <SectionCard>
-                    <SkeletonSectionHeader width={118} />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {[...Array(4)].map((_, index) => (
-                            <div
-                                key={index}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 12,
-                                    padding: '12px 0',
-                                    borderBottom: index < 3 ? '1px solid var(--color-border-subtle)' : 'none',
-                                }}
-                            >
-                                <SkeletonBlock height={22} width={22} radius={8} />
-                                <SkeletonBlock height={28} width={28} radius={14} />
-                                <SkeletonBlock height={16} width="38%" radius={8} />
-                                <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-                                    <SkeletonBlock height={14} width={34} radius={7} />
-                                    <SkeletonBlock height={14} width={34} radius={7} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </SectionCard>
-
-                <SectionCard>
-                    <SkeletonSectionHeader width={136} />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <SkeletonBlock height={16} width="100%" radius={8} />
-                        <SkeletonBlock height={16} width="92%" radius={8} />
-                        <SkeletonBlock height={16} width="86%" radius={8} />
-                    </div>
-                </SectionCard>
-
-                <SkeletonBlock height={54} width="100%" radius={14} />
+                </div>
+                {[128, 72, 160].map((height, i) => (
+                    <div key={i} className="panel skeleton" style={{ height }} />
+                ))}
             </div>
         );
     }
@@ -240,15 +109,15 @@ export default function OpponentView({
             if (themAhead) themWins++;
         });
 
-        const getVerdict = () => {
-            if (usWins === 4) return { text: 'Clear Favorite', emoji: '🔥', color: '#22c55e' };
-            if (usWins >= 3) return { text: 'Advantage', emoji: '💪', color: '#22c55e' };
-            if (themWins === 4) return { text: 'Underdogs', emoji: '⚡', color: '#ef4444' };
-            if (themWins >= 3) return { text: 'Tough Match', emoji: '⚠️', color: '#f59e0b' };
-            return { text: 'Even Match', emoji: '⚖️', color: '#6b7280' };
-        };
-
-        const verdict = getVerdict();
+        const verdict = usWins === 4
+            ? { text: 'Clear favorite', color: 'var(--ok)' }
+            : usWins >= 3
+                ? { text: 'Advantage', color: 'var(--ok)' }
+                : themWins === 4
+                    ? { text: 'Underdogs', color: 'var(--no)' }
+                    : themWins >= 3
+                        ? { text: 'Tough match', color: 'var(--warn)' }
+                        : { text: 'Even match', color: 'var(--text-2)' };
 
         const formatValue = (val: number, label: string) => {
             if (label === 'Rank') return `#${val}`;
@@ -257,208 +126,86 @@ export default function OpponentView({
         };
 
         return (
-            <SectionCard style={{ padding: 16 }}>
-                {/* Header */}
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: 12,
-                }}>
-                    <span style={{
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: 'var(--color-text-secondary)',
-                    }}>
-                        Head To Head
+            <ListSection
+                label="Head to head"
+                labelAction={
+                    <span style={{ color: verdict.color, textTransform: 'none', letterSpacing: 0 }}>
+                        {verdict.text}
                     </span>
-                    <span style={{
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                        color: verdict.color,
-                    }}>
-                        {verdict.emoji} {verdict.text}
+                }
+            >
+                <div className="row row-static" style={{ minHeight: 36, paddingTop: 8, paddingBottom: 4 }}>
+                    <span style={{ flex: 1, fontSize: 'var(--fs-3xs)', fontWeight: 800, letterSpacing: '0.07em', color: 'var(--ok)' }}>
+                        US
+                    </span>
+                    <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-3)' }}>vs</span>
+                    <span style={{ flex: 1, textAlign: 'right', fontSize: 'var(--fs-3xs)', fontWeight: 800, letterSpacing: '0.07em', color: 'var(--no)' }}>
+                        THEM
                     </span>
                 </div>
+                {comparisons.map((stat) => {
+                    const usAhead = stat.lowerIsBetter ? stat.us < stat.them : stat.us > stat.them;
+                    const themAhead = stat.lowerIsBetter ? stat.them < stat.us : stat.them > stat.us;
 
-                {/* Column Headers */}
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto 1fr',
-                    gap: 12,
-                    padding: '8px 0',
-                    borderBottom: '1px solid var(--color-border)',
-                    marginBottom: 4,
-                }}>
-                    <span style={{
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                        color: '#22c55e',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                    }}>
-                        Us
-                    </span>
-                    <span style={{
-                        fontSize: '0.6rem',
-                        color: 'var(--color-text-tertiary)',
-                    }}>
-                        vs
-                    </span>
-                    <span style={{
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                        color: '#ef4444',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        textAlign: 'right',
-                    }}>
-                        Them
-                    </span>
-                </div>
-
-                {/* Stats List */}
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    {comparisons.map((stat, index) => {
-                        const usAhead = stat.lowerIsBetter ? stat.us < stat.them : stat.us > stat.them;
-                        const themAhead = stat.lowerIsBetter ? stat.them < stat.us : stat.them > stat.us;
-                        const isTie = stat.us === stat.them;
-
-                        return (
-                            <motion.div
-                                key={stat.label}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: index * 0.05 }}
+                    return (
+                        <div key={stat.label} className="row row-static" style={{ minHeight: 42 }}>
+                            <span
+                                className="t-num"
                                 style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr auto 1fr',
-                                    gap: 12,
-                                    alignItems: 'center',
-                                    padding: '10px 0',
-                                    borderBottom: index < 3 ? '1px solid var(--color-border-subtle)' : 'none',
+                                    flex: 1,
+                                    fontSize: 'var(--fs-sm)',
+                                    fontWeight: 700,
+                                    color: usAhead ? 'var(--ok)' : 'var(--text-2)',
                                 }}
                             >
-                                {/* Your value */}
-                                <span style={{
-                                    fontSize: '1rem',
-                                    fontWeight: 700,
-                                    color: usAhead ? '#22c55e' : isTie ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                                }}>
-                                    {formatValue(stat.us, stat.label)}
-                                </span>
-
-                                {/* Label */}
-                                <span style={{
-                                    fontSize: '0.65rem',
+                                {formatValue(stat.us, stat.label)}
+                            </span>
+                            <span
+                                style={{
+                                    fontSize: 'var(--fs-3xs)',
                                     fontWeight: 600,
-                                    color: 'var(--color-text-tertiary)',
+                                    color: 'var(--text-3)',
                                     textTransform: 'uppercase',
-                                    letterSpacing: '0.05em',
-                                }}>
-                                    {stat.label}
-                                </span>
-
-                                {/* Their value */}
-                                <span style={{
-                                    fontSize: '1rem',
-                                    fontWeight: 700,
-                                    color: themAhead ? '#ef4444' : isTie ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                                    letterSpacing: '0.06em',
+                                }}
+                            >
+                                {stat.label}
+                            </span>
+                            <span
+                                className="t-num"
+                                style={{
+                                    flex: 1,
                                     textAlign: 'right',
-                                }}>
-                                    {formatValue(stat.them, stat.label)}
-                                </span>
-                            </motion.div>
-                        );
-                    })}
-                </div>
-
-                {/* Summary */}
-                <div style={{
-                    marginTop: 12,
-                    paddingTop: 12,
-                    borderTop: '1px solid var(--color-border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 20,
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                    }}>
-                        <span style={{
-                            fontSize: '1.1rem',
-                            fontWeight: 800,
-                            color: usWins >= themWins ? '#22c55e' : 'var(--color-text-secondary)',
-                        }}>
-                            {usWins}
-                        </span>
-                        <span style={{
-                            fontSize: '0.65rem',
-                            color: 'var(--color-text-tertiary)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                        }}>
-                            Us
-                        </span>
-                    </div>
-
-                    <span style={{
-                        fontSize: '0.7rem',
-                        color: 'var(--color-text-tertiary)',
-                    }}>
-                        —
+                                    fontSize: 'var(--fs-sm)',
+                                    fontWeight: 700,
+                                    color: themAhead ? 'var(--no)' : 'var(--text-2)',
+                                }}
+                            >
+                                {formatValue(stat.them, stat.label)}
+                            </span>
+                        </div>
+                    );
+                })}
+                <div className="row row-static" style={{ minHeight: 40, justifyContent: 'center', gap: 14 }}>
+                    <span className="t-num" style={{ fontWeight: 800, color: usWins >= themWins ? 'var(--ok)' : 'var(--text-2)' }}>
+                        {usWins}
                     </span>
-
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                    }}>
-                        <span style={{
-                            fontSize: '0.65rem',
-                            color: 'var(--color-text-tertiary)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                        }}>
-                            Them
-                        </span>
-                        <span style={{
-                            fontSize: '1.1rem',
-                            fontWeight: 800,
-                            color: themWins > usWins ? '#ef4444' : 'var(--color-text-secondary)',
-                        }}>
-                            {themWins}
-                        </span>
-                    </div>
+                    <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-3)' }}>—</span>
+                    <span className="t-num" style={{ fontWeight: 800, color: themWins > usWins ? 'var(--no)' : 'var(--text-2)' }}>
+                        {themWins}
+                    </span>
                 </div>
-            </SectionCard>
+            </ListSection>
         );
     };
 
-    const renderTeamHeader = () => {
-        if (!opponentData) {
-            return (
-                <SectionCard>
-                    <div style={{
-                        textAlign: 'center',
-                        color: 'var(--color-text-tertiary)',
-                        fontSize: '0.85rem',
-                    }}>
-                        Team data not available
-                    </div>
-                </SectionCard>
-            );
-        }
-
-        return (
-            <SectionCard style={{ padding: 20 }}>
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {/* Team header */}
+            {opponentData ? (
+                <div className="panel" style={{ padding: 16, display: 'flex', gap: 14, alignItems: 'center', marginBottom: 'var(--sp-5)' }}>
                     {opponentData.imageBase64 ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={opponentData.imageBase64}
                             alt={opponentData.name}
@@ -467,511 +214,315 @@ export default function OpponentView({
                                 onImageClick();
                             }}
                             style={{
-                                width: 72, height: 72,
-                                borderRadius: 14,
+                                width: 56,
+                                height: 56,
+                                borderRadius: 12,
                                 objectFit: 'cover',
-                                border: '1px solid var(--color-border)',
+                                border: '1px solid var(--border-hairline)',
                                 cursor: 'pointer',
                                 flexShrink: 0,
                             }}
                         />
                     ) : (
-                        <div style={{
-                            width: 72, height: 72,
-                            borderRadius: 14,
-                            background: 'var(--color-surface-hover)',
-                            border: '1px solid var(--color-border)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-accent)',
-                            flexShrink: 0,
-                        }}>
+                        <div
+                            className="flex-center"
+                            style={{
+                                width: 56,
+                                height: 56,
+                                borderRadius: 12,
+                                background: 'var(--bg-subtle)',
+                                border: '1px solid var(--border-hairline)',
+                                fontSize: '1.4rem',
+                                fontWeight: 700,
+                                color: 'var(--text-2)',
+                                flexShrink: 0,
+                            }}
+                        >
                             {opponentData.name.charAt(0)}
                         </div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                            fontSize: '1.25rem',
-                            fontWeight: 700,
-                            color: 'var(--color-text-primary)',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                        }}>
+                        <h3
+                            style={{
+                                fontSize: 'var(--fs-base)',
+                                fontWeight: 700,
+                                letterSpacing: '-0.01em',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            }}
+                        >
                             {opponentData.name}
-                        </div>
+                        </h3>
                         {opponentData.leagueName && (
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                marginTop: 4,
-                            }}>
-                                <Trophy size={12} style={{ color: 'var(--color-text-tertiary)' }} />
-                                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                                    {opponentData.leagueName}
-                                </span>
-                            </div>
+                            <p style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3, fontSize: 'var(--fs-2xs)', color: 'var(--text-3)' }}>
+                                <Trophy size={11} />
+                                {opponentData.leagueName}
+                            </p>
                         )}
                     </div>
                 </div>
-            </SectionCard>
-        );
-    };
-
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Team Header Card */}
-            {renderTeamHeader()}
-
-            {/* Stats Overview Card */}
-            {opponentData?.rank !== undefined && (
-                <SectionCard>
-                    <SectionHeader
-                        icon={TrendingUp}
-                        title="Season Stats"
-                        color="var(--color-accent)"
-                    />
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '8px 0',
-                    }}>
-                        <StatItem label="Rank" value={`#${opponentData.rank}`} color={opponentData.rank === 1 ? 'var(--color-warning)' : 'var(--color-text-primary)'} />
-                        <StatItem label="Points" value={opponentData.points || 0} />
-                        <StatItem label="Record" value={`${opponentData.wins || 0}-${opponentData.draws || 0}-${opponentData.losses || 0}`} />
-                        <StatItem
-                            label="Goal Diff"
-                            value={`${(opponentData.goalDifference || 0) >= 0 ? '+' : ''}${opponentData.goalDifference || 0}`}
-                            color={(opponentData.goalDifference || 0) >= 0 ? 'var(--color-success)' : 'var(--color-danger)'}
-                        />
-                    </div>
-                </SectionCard>
+            ) : (
+                <div className="panel" style={{ padding: 20, textAlign: 'center', marginBottom: 'var(--sp-5)' }}>
+                    <p className="t-caption">Team data not available</p>
+                </div>
             )}
 
-            {/* Recent Form Card */}
-            {(loading || recentForm.length > 0) && (
-                <SectionCard>
-                    <SectionHeader
-                        icon={TrendingUp}
-                        title="Recent Form"
-                        color="var(--color-success)"
+            {/* Season stats */}
+            {opponentData?.rank !== undefined && (
+                <ListSection label="Season stats">
+                    <MetricRow label="Rank" value={`#${opponentData.rank}`} />
+                    <MetricRow label="Points" value={opponentData.points || 0} />
+                    <MetricRow
+                        label="Record (W-D-L)"
+                        value={`${opponentData.wins || 0}-${opponentData.draws || 0}-${opponentData.losses || 0}`}
                     />
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        {loading ? (
-                            // Skeleton loading state
-                            Array.from({ length: 5 }).map((_, i) => (
-                                <div
-                                    key={i}
-                                    style={{
-                                        width: 36, height: 36,
-                                        borderRadius: 10,
-                                        background: 'var(--color-surface-hover)',
-                                        animation: 'pulse 1.5s ease-in-out infinite',
-                                    }}
-                                />
+                    <MetricRow
+                        label="Goal difference"
+                        value={
+                            <span style={{ color: (opponentData.goalDifference || 0) >= 0 ? 'var(--ok)' : 'var(--no)' }}>
+                                {(opponentData.goalDifference || 0) >= 0 ? '+' : ''}
+                                {opponentData.goalDifference || 0}
+                            </span>
+                        }
+                    />
+                </ListSection>
+            )}
+
+            {/* Recent form */}
+            {(loading || recentForm.length > 0) && (
+                <ListSection label="Recent form">
+                    <div className="row row-static" style={{ gap: 7 }}>
+                        {loading
+                            ? Array.from({ length: 5 }).map((_, i) => (
+                                <div key={i} className="skeleton" style={{ width: 32, height: 32, borderRadius: 8 }} />
                             ))
-                        ) : (
-                            recentForm.map((result, i) => (
-                                <motion.div
+                            : recentForm.map((result, i) => (
+                                <span
                                     key={i}
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ delay: i * 0.05 }}
+                                    className="flex-center t-num"
                                     style={{
-                                        width: 36, height: 36,
-                                        borderRadius: 10,
-                                        background: result === 'W' ? 'rgb(var(--color-success-rgb) / 0.2)' :
-                                            result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.2)' :
-                                                'rgb(var(--color-warning-rgb) / 0.2)',
-                                        border: `1px solid ${result === 'W' ? 'rgb(var(--color-success-rgb) / 0.3)' :
-                                            result === 'L' ? 'rgb(var(--color-danger-rgb) / 0.3)' :
-                                                'rgb(var(--color-warning-rgb) / 0.3)'}`,
-                                        color: result === 'W' ? 'var(--color-success)' :
-                                            result === 'L' ? 'var(--color-danger)' : 'var(--color-warning)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '0.9rem',
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 8,
+                                        fontSize: 'var(--fs-2xs)',
                                         fontWeight: 800,
+                                        color: formColor(result),
+                                        background: `rgb(var(--${result === 'W' ? 'ok' : result === 'L' ? 'no' : 'warn'}-rgb) / 0.13)`,
+                                        border: `1px solid rgb(var(--${result === 'W' ? 'ok' : result === 'L' ? 'no' : 'warn'}-rgb) / 0.26)`,
                                     }}
                                 >
                                     {result}
-                                </motion.div>
-                            ))
-                        )}
+                                </span>
+                            ))}
                     </div>
-                </SectionCard>
+                </ListSection>
             )}
 
-            {/* Win Rate Card */}
+            {/* Win rate */}
             {opponentData && (
-                <SectionCard>
-                    <SectionHeader
-                        icon={TrendingUp}
-                        title="Win Rate"
-                        color="var(--color-success)"
-                    />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div style={{
-                            width: 64,
-                            height: 64,
-                            borderRadius: 16,
-                            background: 'linear-gradient(135deg, rgb(var(--color-success-rgb) / 0.16), var(--color-surface-hover))',
-                            border: '1px solid rgb(var(--color-success-rgb) / 0.2)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                        }}>
-                            <div style={{
-                                fontSize: '1.4rem',
-                                fontWeight: 900,
-                                color: 'var(--color-success)',
-                                lineHeight: 1,
-                            }}>
-                                {winRate}%
-                            </div>
-                            <div style={{
-                                fontSize: '0.6rem',
-                                color: 'var(--color-text-tertiary)',
-                                marginTop: 3,
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                            }}>
-                                Wins
-                            </div>
-                        </div>
-                        <div style={{
-                            flex: 1,
-                            minWidth: 0,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 10,
-                        }}>
-                            <div>
-                                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                                    {opponentData.wins || 0}/{opponentData.matchesPlayed || 0} matches won
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 3 }}>
-                                    {opponentData.wins || 0} wins · {opponentData.draws || 0} draws · {opponentData.losses || 0} losses
-                                </div>
-                            </div>
-                            <div style={{
-                                height: 7,
-                                borderRadius: 999,
-                                background: 'var(--color-surface-hover)',
-                                overflow: 'hidden',
-                            }}>
-                                <motion.div
+                <ListSection label="Win rate">
+                    <div className="row row-static" style={{ alignItems: 'center', gap: 14, paddingTop: 12, paddingBottom: 12 }}>
+                        <span
+                            className="t-num"
+                            style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--ok)', flexShrink: 0 }}
+                        >
+                            {winRate}%
+                        </span>
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: 600 }}>
+                                {opponentData.wins || 0}/{opponentData.matchesPlayed || 0} matches won
+                            </span>
+                            <span style={{ display: 'block', marginTop: 6, height: 5, borderRadius: 'var(--r-full)', background: 'var(--bg-subtle)', overflow: 'hidden' }}>
+                                <motion.span
                                     initial={{ width: 0 }}
                                     animate={{ width: `${winRate}%` }}
-                                    transition={{ duration: 0.55, ease: 'easeOut' }}
-                                    style={{
-                                        height: '100%',
-                                        borderRadius: 999,
-                                        background: 'var(--color-success)',
-                                    }}
+                                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                                    style={{ display: 'block', height: '100%', background: 'var(--ok)', borderRadius: 'var(--r-full)' }}
                                 />
-                            </div>
-                        </div>
+                            </span>
+                        </span>
                     </div>
-                </SectionCard>
+                </ListSection>
             )}
 
-            {/* Manager & Description Card */}
+            {/* Team info */}
             {opponentData && (opponentData.manager || opponentData.description || opponentData.colors) && (
-                <SectionCard>
-                    <SectionHeader
-                        icon={UserCircle}
-                        title="Team Info"
-                        color="var(--color-accent)"
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {opponentData.colors && (
-                            <div style={{
-                                display: 'flex', alignItems: 'center', gap: 10,
-                            }}>
-                                <span style={{ fontSize: '1rem' }}>🎨</span>
-                                <span style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
-                                    {opponentData.colors}
-                                </span>
-                            </div>
-                        )}
-                        {opponentData.manager && (
-                            <div style={{
-                                display: 'flex', alignItems: 'center', gap: 10,
-                            }}>
-                                <UserCircle size={16} style={{ color: 'var(--color-text-tertiary)' }} />
-                                <span style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
-                                    {opponentData.manager}
-                                </span>
-                            </div>
-                        )}
-                        {opponentData.description && (
-                            <div style={{
-                                fontSize: '0.85rem',
-                                color: 'var(--color-text-secondary)',
-                                fontStyle: 'italic',
-                                lineHeight: 1.5,
-                                paddingTop: opponentData.manager || opponentData.colors ? 8 : 0,
-                                borderTop: opponentData.manager || opponentData.colors ? '1px solid var(--color-border-subtle)' : 'none',
-                            }}>
-                                "{opponentData.description}"
-                            </div>
-                        )}
-                    </div>
-                </SectionCard>
+                <ListSection label="Team info">
+                    {opponentData.colors && (
+                        <Row icon={<Palette size={15} />} title={opponentData.colors} />
+                    )}
+                    {opponentData.manager && (
+                        <Row icon={<UserCircle size={15} />} title={opponentData.manager} subtitle="Manager" />
+                    )}
+                    {opponentData.description && (
+                        <div className="row row-static">
+                            <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-2)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                                &ldquo;{opponentData.description}&rdquo;
+                            </p>
+                        </div>
+                    )}
+                </ListSection>
             )}
 
-            {/* Top Players Card */}
+            {/* Top scorers */}
             {opponentPlayers.length > 0 && (
-                <SectionCard>
-                    <SectionHeader
-                        icon={Users}
-                        title="Top Scorers"
-                        color="var(--color-danger)"
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {opponentPlayers.slice(0, 5).map((player, i) => (
-                            <div key={player.externalId} style={{
-                                display: 'flex', alignItems: 'center', gap: 12,
-                                padding: '12px 0',
-                                borderBottom: i < 4 ? '1px solid var(--color-border-subtle)' : 'none',
-                            }}>
-                                <div style={{
-                                    width: 24, height: 24,
-                                    color: i === 0 ? 'var(--color-warning)' :
-                                        i === 1 ? 'var(--color-text-secondary)' :
-                                            i === 2 ? 'var(--color-warning-secondary)' :
-                                                'var(--color-text-tertiary)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.85rem', fontWeight: 800, flexShrink: 0,
-                                }}>
-                                    {i + 1}
-                                </div>
-                                <div style={{
-                                    width: 28, height: 28, borderRadius: '50%',
-                                    background: 'var(--color-surface-hover)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-secondary)', flexShrink: 0,
-                                }}>
-                                    {player.number || '-'}
-                                </div>
-                                <div style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>
-                                    {player.name}
-                                </div>
-                                <div style={{ display: 'flex', gap: 12, fontSize: '0.85rem', alignItems: 'center' }}>
-                                    <span style={{ color: 'var(--color-text-secondary)' }}>
-                                        <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>{player.goals}</span> ⚽
-                                    </span>
-                                    <span style={{ color: 'var(--color-text-secondary)' }}>
-                                        <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>{player.assists}</span> 🎯
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </SectionCard>
+                <ListSection label="Top scorers">
+                    {opponentPlayers.slice(0, 5).map((player, i) => (
+                        <div key={player.externalId} className="row row-static" style={{ minHeight: 46 }}>
+                            <span
+                                className="t-num"
+                                style={{
+                                    width: 18,
+                                    fontSize: 'var(--fs-2xs)',
+                                    fontWeight: 800,
+                                    color: i === 0 ? 'var(--warn)' : 'var(--text-3)',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                {i + 1}
+                            </span>
+                            <span
+                                className="flex-center t-num"
+                                style={{
+                                    width: 26,
+                                    height: 26,
+                                    borderRadius: '50%',
+                                    background: 'var(--bg-subtle)',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 700,
+                                    color: 'var(--text-2)',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                {player.number || '-'}
+                            </span>
+                            <span
+                                style={{
+                                    flex: 1,
+                                    minWidth: 0,
+                                    fontSize: 'var(--fs-xs)',
+                                    fontWeight: 500,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                {player.name}
+                            </span>
+                            <span className="t-num" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-2)', flexShrink: 0 }}>
+                                <span style={{ color: 'var(--ok)', fontWeight: 700 }}>{player.goals}</span> G
+                                {' · '}
+                                <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{player.assists}</span> A
+                            </span>
+                        </div>
+                    ))}
+                </ListSection>
             )}
 
-            {/* Head-to-Head Comparison */}
+            {/* Head-to-head comparison */}
             {renderHeadToHead()}
 
-            {/* AI Scouting Report */}
+            {/* AI scouting report */}
             {opponentData && (ownTeamData || loading || aiLoading || aiAnalysis || aiError) && (
-                <SectionCard>
-                    <SectionHeader
-                        icon={Sparkles}
-                        title="AI Scouting Report"
-                        color="var(--color-accent-secondary)"
-                    />
+                <ListSection label="AI scouting report">
+                    <div className="row row-static" style={{ display: 'block', padding: '14px 16px' }}>
+                        {!ownTeamData && loading && (
+                            <div className="flex-center" style={{ flexDirection: 'column', gap: 8, padding: 12 }}>
+                                <Loader2 className="animate-spin" size={20} style={{ color: 'var(--text-2)' }} />
+                                <span className="t-caption">Preparing scouting data...</span>
+                            </div>
+                        )}
 
-                    {!ownTeamData && loading && (
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 24,
-                            color: 'var(--color-text-secondary)',
-                            gap: 10,
-                            flexDirection: 'column',
-                        }}>
-                            <Loader2 className="animate-spin" size={24} style={{ color: 'var(--color-accent)' }} />
-                            <span style={{ fontSize: '0.85rem' }}>Preparing scouting data...</span>
-                        </div>
-                    )}
+                        {ownTeamData && !aiAnalysis && !aiLoading && !aiError && (
+                            <button
+                                className="btn btn-quiet press"
+                                style={{ width: '100%' }}
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    onGenerateAI();
+                                }}
+                            >
+                                <Sparkles size={15} />
+                                Generate AI Analysis
+                            </button>
+                        )}
 
-                    {ownTeamData && !aiAnalysis && !aiLoading && !aiError && (
-                        <motion.button
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                onGenerateAI();
-                            }}
-                            whileTap={{ scale: 0.97 }}
-                            style={{
-                                width: '100%',
-                                padding: '14px 16px',
-                                background: 'rgb(var(--color-accent-rgb) / 0.12)',
-                                border: '1px solid rgb(var(--color-accent-rgb) / 0.2)',
-                                borderRadius: 12,
-                                color: 'var(--color-accent)',
-                                fontSize: '0.9rem',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: 8,
-                            }}
-                        >
-                            <Sparkles size={18} />
-                            Generate AI Analysis
-                        </motion.button>
-                    )}
+                        {aiLoading && (
+                            <div className="flex-center" style={{ flexDirection: 'column', gap: 8, padding: 12 }}>
+                                <Loader2 className="animate-spin" size={20} style={{ color: 'var(--text-2)' }} />
+                                <span className="t-caption">Analyzing opponent data...</span>
+                            </div>
+                        )}
 
-                    {aiLoading && (
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 24,
-                            color: 'var(--color-text-secondary)',
-                            gap: 10,
-                            flexDirection: 'column',
-                        }}>
-                            <Loader2 className="animate-spin" size={24} style={{ color: 'var(--color-accent)' }} />
-                            <span style={{ fontSize: '0.85rem' }}>Analyzing opponent data...</span>
-                        </div>
-                    )}
-
-                    {aiError && (
-                        <div style={{
-                            padding: '14px',
-                            background: 'rgb(var(--color-danger-rgb) / 0.1)',
-                            border: '1px solid rgb(var(--color-danger-rgb) / 0.2)',
-                            borderRadius: 10,
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: 10,
-                        }}>
-                            <AlertCircle size={18} style={{ color: 'var(--color-danger)', flexShrink: 0, marginTop: 2 }} />
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--color-danger)', fontWeight: 600 }}>
-                                    Analysis failed
-                                </div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
-                                    {aiError}
-                                </div>
-                                <motion.button
+                        {aiError && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                <InlineNotice tone="error">
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                        <AlertCircle size={13} />
+                                        Analysis failed: {aiError}
+                                    </span>
+                                </InlineNotice>
+                                <button
+                                    className="btn btn-quiet press"
                                     onClick={() => {
                                         hapticPatterns.tap();
                                         onGenerateAI();
                                     }}
-                                    whileTap={{ scale: 0.95 }}
-                                    style={{
-                                        marginTop: 10,
-                                        padding: '8px 16px',
-                                        background: 'var(--color-surface-hover)',
-                                        border: 'none',
-                                        borderRadius: 8,
-                                        color: 'var(--color-text-primary)',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                    }}
                                 >
                                     Try Again
-                                </motion.button>
+                                </button>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {aiAnalysis && !aiLoading && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                        >
-                            <p style={{
-                                margin: 0,
-                                fontSize: '0.9rem',
-                                lineHeight: 1.7,
-                                color: 'var(--color-text-primary)',
-                                whiteSpace: 'pre-line',
-                            }}>
-                                {aiAnalysis}
-                            </p>
-                        </motion.div>
-                    )}
-
-                    {/* Powered by Mistral */}
-                    {(aiAnalysis || aiLoading || (!ownTeamData && loading)) && (
-                        <div style={{
-                            marginTop: 12,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                            gap: 6,
-                            color: 'var(--color-text-tertiary)',
-                            fontSize: '0.65rem',
-                        }}>
-                            <span>Powered by</span>
-                            <a
-                                href="https://mistral.ai"
-                                target="_blank"
-                                rel="noopener noreferrer"
+                        {aiAnalysis && !aiLoading && (
+                            <motion.p
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 4,
-                                    color: 'var(--color-text-secondary)',
-                                    textDecoration: 'none',
+                                    fontSize: 'var(--fs-xs)',
+                                    lineHeight: 1.65,
+                                    color: 'var(--text-1)',
+                                    whiteSpace: 'pre-line',
                                 }}
                             >
-                                <MistralLogo size={12} />
-                                <span>Mistral</span>
-                            </a>
-                        </div>
-                    )}
-                </SectionCard>
+                                {aiAnalysis}
+                            </motion.p>
+                        )}
+
+                        {(aiAnalysis || aiLoading || (!ownTeamData && loading)) && (
+                            <div
+                                style={{
+                                    marginTop: 10,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-end',
+                                    gap: 5,
+                                    color: 'var(--text-3)',
+                                    fontSize: '0.625rem',
+                                }}
+                            >
+                                <span>Powered by</span>
+                                <a
+                                    href="https://mistral.ai"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        color: 'var(--text-2)',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    <MistralLogo size={11} />
+                                    <span>Mistral</span>
+                                </a>
+                            </div>
+                        )}
+                    </div>
+                </ListSection>
             )}
-
-
-        </div>
-    );
-}
-
-// Stat Item Component - Simple inline stat
-function StatItem({ label, value, color = 'var(--color-text-primary)' }: {
-    label: string;
-    value: React.ReactNode;
-    color?: string;
-}) {
-    return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 4,
-        }}>
-            <div style={{
-                fontSize: '1.25rem',
-                fontWeight: 700,
-                color: color,
-            }}>
-                {value}
-            </div>
-            <div style={{
-                fontSize: '0.65rem',
-                color: 'var(--color-text-tertiary)',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-            }}>
-                {label}
-            </div>
         </div>
     );
 }

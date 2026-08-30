@@ -5,14 +5,15 @@ import { motion } from 'framer-motion';
 import { fetchRecentMatchesData, useMatches, useAllPlayers, type ScraperTeam } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import type { RecentMatchesResponse } from '@/lib/recentMatches';
-import MatchCard from './MatchCard';
+import MatchSummary from './MatchBoard/MatchSummary';
 import StatsView from './StatsView';
 import SettingsView from './SettingsView';
 import LeagueView from './LeagueView';
 import LeagueSelector from './LeagueSelector';
 import PullToRefresh from './PullToRefresh';
 import { parseDateToTimestamp } from '@/lib/dateUtils';
-import TopOverlayHeader from './TopOverlayHeader';
+import ScreenHeader from './ui/ScreenHeader';
+import { EmptyState } from './ui/controls';
 import NotificationSheet from './NotificationSheet';
 import RecentMatchesSheet from './RecentMatchesSheet';
 import UnlockDialog from './UnlockDialog';
@@ -361,9 +362,6 @@ export default function Dashboard({
     const heroMatch = matches.find(m => parseDateToTimestamp(m.date) > threshold);
     const remainingMatches = matches.filter(m => m.id !== heroMatch?.id);
     const upcomingMatches = remainingMatches.filter(m => parseDateToTimestamp(m.date) > threshold);
-    const pastMatches = remainingMatches
-        .filter(m => parseDateToTimestamp(m.date) <= threshold)
-        .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date));
     const notificationSummary = useMemo(
         () => buildMatchReminders(matches, playerId),
         [matches, playerId]
@@ -522,11 +520,14 @@ export default function Dashboard({
         }, focusDelay);
     }, [currentView, onViewChange]);
 
+    // One ordered availability board: the next match first, then the rest.
+    const boardMatches = heroMatch ? [heroMatch, ...upcomingMatches] : upcomingMatches;
+
     // Loading state - only show skeleton on initial load when no data yet
     if (loading && matches.length === 0 && !hasEverLoaded.current) {
         return (
             <>
-                <TopOverlayHeader
+                <ScreenHeader
                     title={currentTitle}
                     notificationCount={notificationSummary.count}
                     onNotificationPress={openNotificationSheet}
@@ -551,12 +552,14 @@ export default function Dashboard({
                     internalMatches={matches}
                     onClose={closeRecentMatchesSheet}
                 />
-                <div className="container content-under-top-overlay">
-                    <div className="glass-panel-heavy skeleton" style={{ height: 320, marginBottom: 'var(--space-xl)' }} />
-                    <div className="grid-cards">
-                        {[...Array(4)].map((_, i) => (
-                            <div key={i} className="glass-panel skeleton" style={{ height: 200 }} />
-                        ))}
+                <div className="app-frame">
+                    <div className="screen">
+                        <div className="skeleton" style={{ width: 128, height: 11, marginBottom: 10 }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="panel skeleton" style={{ height: 148 }} />
+                            ))}
+                        </div>
                     </div>
                 </div>
             </>
@@ -567,7 +570,7 @@ export default function Dashboard({
     if (error) {
         return (
             <>
-                <TopOverlayHeader
+                <ScreenHeader
                     title={currentTitle}
                     notificationCount={notificationSummary.count}
                     onNotificationPress={openNotificationSheet}
@@ -592,28 +595,25 @@ export default function Dashboard({
                     internalMatches={matches}
                     onClose={closeRecentMatchesSheet}
                 />
-                <div className="container content-under-top-overlay flex-center" style={{ minHeight: '80dvh' }}>
-                    <motion.div
-                        className="glass-panel-heavy"
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        style={{
-                            padding: 'var(--space-2xl)',
-                            textAlign: 'center',
-                            maxWidth: 400,
-                        }}
-                    >
-                        <div style={{ fontSize: '4rem', marginBottom: 'var(--space-lg)' }}>👻</div>
-                        <h2 className="text-title" style={{ marginBottom: 'var(--space-sm)' }}>
-                            Connection Lost
-                        </h2>
-                        <p className="text-body" style={{ marginBottom: 'var(--space-lg)' }}>
-                            Unable to reach the server. Check your connection.
-                        </p>
-                        <button className="btn btn-primary touch-target" onClick={() => fetchMatches()}>
-                            Try Again
-                        </button>
-                    </motion.div>
+                <div className="app-frame">
+                    <div className="screen flex-center" style={{ minHeight: '80dvh' }}>
+                        <motion.div
+                            className="panel"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            style={{ padding: 28, textAlign: 'center', maxWidth: 360, width: '100%' }}
+                        >
+                            <h2 className="t-title" style={{ marginBottom: 6 }}>
+                                Connection lost
+                            </h2>
+                            <p className="t-body" style={{ marginBottom: 18 }}>
+                                Unable to reach the server. Check your connection.
+                            </p>
+                            <button className="btn btn-primary press" onClick={() => fetchMatches()}>
+                                Try Again
+                            </button>
+                        </motion.div>
+                    </div>
                 </div>
             </>
         );
@@ -621,100 +621,48 @@ export default function Dashboard({
 
     // Skeleton loading component for refresh
     const SkeletonContent = (
-        <div className="container content-under-top-overlay">
-            {/* Skeleton for hero match */}
-            <div className="glass-panel-heavy skeleton" style={{ height: 320, marginBottom: 'var(--space-xl)' }} />
-
-            {/* Skeleton for upcoming matches */}
-            <h2 className="text-label" style={{ marginBottom: 'var(--space-md)' }}>
-                Upcoming Matches
-            </h2>
-            <div className="grid-cards">
+        <div className="screen">
+            <div className="skeleton" style={{ width: 128, height: 11, marginBottom: 10 }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[...Array(4)].map((_, i) => (
-                    <div key={i} className="glass-panel skeleton" style={{ height: 200 }} />
+                    <div key={i} className="panel skeleton" style={{ height: 148 }} />
                 ))}
             </div>
         </div>
     );
 
-    // Home content component
+    // Home content: the one-page availability board for all upcoming matches.
     const HomeContent = (
-        <div className="container content-under-top-overlay">
-            {/* Hero Section */}
-            {heroMatch ? (
-                <section style={{ marginBottom: 'var(--space-2xl)', position: 'relative' }}>
-                    <h2 className="text-label" style={{ marginBottom: 'var(--space-md)' }}>
-                        Next Match
-                    </h2>
-                    <motion.div
-                        ref={(node) => setMatchCardRef(heroMatch.id, node)}
-                        className={highlightedMatchId === heroMatch.id ? 'match-focus-pulse' : undefined}
-                        style={{ borderRadius: 'var(--radius-xl)' }}
-                        animate={highlightedMatchId === heroMatch.id ? { scale: [1, 1.01, 1] } : { scale: 1 }}
-                        transition={highlightedMatchId === heroMatch.id
-                            ? { duration: 0.8, times: [0, 0.35, 1], ease: 'easeOut' }
-                            : { duration: 0.2 }}
-                    >
-                        <MatchCard
-                            match={heroMatch}
-                            currentPlayerId={playerId}
-                            allPlayers={players}
-                            onUpdate={handleUpdate}
-                            variant="hero"
-                            isModalOpen={currentModal === 'match' && currentModalId === heroMatch.id.toString()}
-                            onOpenModal={() => onOpenModal('match', heroMatch.id.toString())}
-                            onCloseModal={onCloseModal}
-                        />
-                    </motion.div>
-                </section>
+        <div className="screen">
+            {boardMatches.length === 0 ? (
+                <EmptyState
+                    title="No upcoming matches"
+                    description="Check back later or contact the admin."
+                />
             ) : (
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        padding: '48px 24px',
-                        marginBottom: 'var(--space-2xl)',
-                        textAlign: 'center',
-                        color: 'var(--color-text-tertiary)',
-                    }}
-                >
-                    <div style={{ fontSize: '2rem', opacity: 0.3, marginBottom: 4 }}>⚽</div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
-                        No upcoming matches
+                <section ref={upcomingRef}>
+                    <div className="section-label">
+                        <span>Upcoming matches</span>
+                        <span className="t-num">{boardMatches.length}</span>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>
-                        Check back later or contact the admin
-                    </div>
-                </div>
-            )}
-
-            {/* Upcoming Matches */}
-            {upcomingMatches.length > 0 && (
-                <section ref={upcomingRef} style={{ marginBottom: 'var(--space-2xl)' }}>
-                    <h2 className="text-label" style={{ marginBottom: 'var(--space-md)' }}>
-                        Upcoming Matches
-                    </h2>
-                    <div className="grid-cards">
-                        {upcomingMatches.map((match) => (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {boardMatches.map((match) => (
                             <motion.div
                                 key={match.id}
                                 ref={(node) => setMatchCardRef(match.id, node)}
                                 className={highlightedMatchId === match.id ? 'match-focus-pulse' : undefined}
-                                style={{ height: '100%', width: '100%', borderRadius: 'var(--radius-lg)' }}
+                                style={{ borderRadius: 'var(--r-md)' }}
                                 animate={highlightedMatchId === match.id ? { scale: [1, 1.01, 1] } : { scale: 1 }}
                                 transition={highlightedMatchId === match.id
                                     ? { duration: 0.8, times: [0, 0.35, 1], ease: 'easeOut' }
                                     : { duration: 0.2 }}
                             >
-                                <MatchCard
+                                <MatchSummary
                                     match={match}
                                     currentPlayerId={playerId}
                                     allPlayers={players}
                                     onUpdate={handleUpdate}
-                                    variant="compact"
+                                    isNext={match.id === heroMatch?.id}
                                     isModalOpen={currentModal === 'match' && currentModalId === match.id.toString()}
                                     onOpenModal={() => onOpenModal('match', match.id.toString())}
                                     onCloseModal={onCloseModal}
@@ -724,14 +672,12 @@ export default function Dashboard({
                     </div>
                 </section>
             )}
-
-
         </div>
     );
 
     return (
         <>
-            <TopOverlayHeader
+            <ScreenHeader
                 title={currentTitle}
                 notificationCount={notificationSummary.count}
                 onNotificationPress={openNotificationSheet}
@@ -772,12 +718,14 @@ export default function Dashboard({
                     onOpenChange={setIsLeagueSelectorOpen}
                 />
             )}
+            <div className="app-frame">
             <div
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
+                className="scrollbar-hide"
                 style={{
                     display: 'flex',
-                    width: '100vw',
+                    width: '100%',
                     height: '100dvh',
                     overflowX: 'auto',
                     overflowY: 'hidden',
@@ -787,13 +735,12 @@ export default function Dashboard({
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
                 }}
-                className="scrollbar-hide"
             >
                 {/* Home View */}
                 <div
                     data-view="home"
                     style={{
-                        width: '100vw',
+                        width: '100%',
                         height: '100dvh',
                         flexShrink: 0,
                         scrollSnapAlign: 'start',
@@ -810,7 +757,7 @@ export default function Dashboard({
                 <div
                     data-view="stats"
                     style={{
-                        width: '100vw',
+                        width: '100%',
                         height: '100dvh',
                         flexShrink: 0,
                         scrollSnapAlign: 'start',
@@ -833,7 +780,7 @@ export default function Dashboard({
                 <div
                     data-view="league"
                     style={{
-                        width: '100vw',
+                        width: '100%',
                         height: '100dvh',
                         flexShrink: 0,
                         scrollSnapAlign: 'start',
@@ -854,7 +801,7 @@ export default function Dashboard({
                 <div
                     data-view="settings"
                     style={{
-                        width: '100vw',
+                        width: '100%',
                         height: '100dvh',
                         flexShrink: 0,
                         scrollSnapAlign: 'start',
@@ -884,6 +831,7 @@ export default function Dashboard({
                         onCloseForfait={onCloseModal}
                     />
                 </div>
+            </div>
             </div>
         </>
     );

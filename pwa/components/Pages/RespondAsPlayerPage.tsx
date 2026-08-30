@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Loader2, Calendar, MapPin, X } from 'lucide-react';
-import { useAllPlayers, useUpdateAttendance, getUseMockData } from '@/lib/useData';
+import { Calendar, MapPin } from 'lucide-react';
+import { useAllPlayers, useUpdateAttendance } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
-import HeaderResponseButton from '../MatchCard/ResponseButtons/HeaderResponseButton';
 import type { Player, Match } from '@/lib/mockData';
 import { parseDateToTimestamp } from '@/lib/dateUtils';
+import FlowPage from '../ui/FlowPage';
+import { ListSection, Row } from '../ui/ListSection';
+import { Avatar, EmptyState, ResponseControl, type AttendanceStatus } from '../ui/controls';
 
 interface RespondAsPlayerPageProps {
     isOpen: boolean;
@@ -66,7 +68,6 @@ export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayer
         hapticPatterns.tap();
         setSelectedPlayer(player);
         setStep('matches');
-        // Fetch matches for this player directly
         fetchMatchesForPlayer(player.id);
     };
 
@@ -77,7 +78,7 @@ export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayer
         setLocalMatches([]);
     };
 
-    const handleResponse = async (matchId: number, status: 'Present' | 'NotPresent' | 'Maybe') => {
+    const handleResponse = async (matchId: number, status: AttendanceStatus) => {
         if (!selectedPlayer) return;
 
         hapticPatterns.tap();
@@ -110,10 +111,10 @@ export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayer
         }
     };
 
-    const getPlayerStatus = (match: Match): 'Present' | 'NotPresent' | 'Maybe' | null => {
+    const getPlayerStatus = (match: Match): AttendanceStatus | null => {
         if (!selectedPlayer) return null;
         const attendance = match.attendances?.find(a => a.playerId === selectedPlayer.id);
-        return attendance?.status ?? null;
+        return (attendance?.status as AttendanceStatus | undefined) ?? null;
     };
 
     const formatDate = (dateStr: string) => {
@@ -128,367 +129,115 @@ export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayer
     };
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0, x: '100%' }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: '100%' }}
-                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'var(--color-bg)',
-                        zIndex: 10020,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                    }}
-                >
-                    {/* Top fade gradient */}
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: 'calc(var(--safe-top) + 92px)',
-                            background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
-                            pointerEvents: 'none',
-                            zIndex: 4,
-                        }}
-                    />
-
-                    {/* Back button (or close on player step) */}
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            if (step === 'matches') {
-                                handleBackToPlayers();
-                            } else {
-                                onClose();
-                            }
-                        }}
-                        aria-label={step === 'matches' ? 'Back' : 'Close'}
-                        style={{
-                            position: 'absolute',
-                            top: 'calc(var(--safe-top) + 20px)',
-                            left: 12,
-                            zIndex: 5,
-                            width: 40,
-                            height: 40,
-                            borderRadius: '50%',
-                            background: 'var(--color-glass-heavy)',
-                            backdropFilter: 'blur(40px) saturate(180%)',
-                            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                            border: '0.5px solid var(--color-border)',
-                            color: 'var(--color-text-primary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            boxShadow: 'var(--shadow-lg)',
-                        }}
+        <FlowPage
+            open={isOpen}
+            title={step === 'player' ? 'Respond as Player' : selectedPlayer?.name || ''}
+            subtitle={step === 'player' ? 'Pick who you are answering for' : 'Upcoming matches'}
+            onBack={step === 'matches' ? handleBackToPlayers : onClose}
+            onClose={step === 'matches' ? onClose : undefined}
+        >
+            <AnimatePresence mode="wait">
+                {step === 'player' ? (
+                    <motion.div
+                        key="player-step"
+                        initial={{ opacity: 0, x: -16 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -16 }}
+                        transition={{ duration: 0.16 }}
                     >
-                        <ChevronLeft size={22} strokeWidth={2} />
-                    </motion.button>
-
-                    {/* Centered bold title */}
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: 'calc(var(--safe-top) + 20px)',
-                            left: 64,
-                            right: 64,
-                            height: 40,
-                            zIndex: 5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            pointerEvents: 'none',
-                        }}
+                        {playersLoading ? (
+                            <div className="flex-center" style={{ gap: 8, padding: '40px 0', color: 'var(--text-3)' }}>
+                                <div className="spinner" />
+                                Loading players...
+                            </div>
+                        ) : (
+                            <ListSection label="Players">
+                                {players.map(player => (
+                                    <Row
+                                        key={player.id}
+                                        icon={<Avatar name={player.name} size="xs" />}
+                                        title={player.name}
+                                        chevron
+                                        onClick={() => handleSelectPlayer(player)}
+                                    />
+                                ))}
+                            </ListSection>
+                        )}
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="matches-step"
+                        initial={{ opacity: 0, x: 16 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 16 }}
+                        transition={{ duration: 0.16 }}
                     >
-                        <span
-                            style={{
-                                fontSize: '1.0625rem',
-                                fontWeight: 700,
-                                color: 'var(--color-text-primary)',
-                                letterSpacing: '-0.01em',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: '100%',
-                            }}
-                        >
-                            {step === 'player' ? 'Select Player' : selectedPlayer?.name}
-                        </span>
-                    </div>
-
-                    {step === 'matches' && (
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                onClose();
-                            }}
-                            aria-label="Close"
-                            style={{
-                                position: 'absolute',
-                                top: 'calc(var(--safe-top) + 20px)',
-                                right: 12,
-                                zIndex: 5,
-                                width: 40,
-                                height: 40,
-                                borderRadius: '50%',
-                                background: 'var(--color-glass-heavy)',
-                                backdropFilter: 'blur(40px) saturate(180%)',
-                                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                                border: '0.5px solid var(--color-border)',
-                                color: 'var(--color-text-primary)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                boxShadow: 'var(--shadow-lg)',
-                            }}
-                        >
-                            <X size={20} strokeWidth={2} />
-                        </motion.button>
-                    )}
-
-                    {/* Content */}
-                    <div
-                        style={{
-                            flex: 1,
-                            overflowY: 'auto',
-                            padding: 'calc(var(--safe-top) + 84px) 20px calc(var(--safe-bottom, 0px) + 24px)',
-                        }}
-                    >
-                        <AnimatePresence mode="wait">
-                            {step === 'player' ? (
-                                <motion.div
-                                    key="player-step"
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 8,
-                                    }}
-                                >
-                                    {playersLoading ? (
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 8,
-                                                padding: '40px 0',
-                                                color: 'var(--color-text-tertiary)',
-                                            }}
-                                        >
-                                            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                                            Loading players...
-                                        </div>
-                                    ) : (
-                                        players.map(player => (
-                                            <motion.button
-                                                key={player.id}
-                                                onClick={() => handleSelectPlayer(player)}
-                                                whileTap={{ scale: 0.98 }}
-                                                style={{
-                                                    padding: '14px 16px',
-                                                    background: 'var(--color-surface-hover)',
-                                                    border: '1px solid var(--color-border-subtle)',
-                                                    borderRadius: 12,
-                                                    cursor: 'pointer',
-                                                    textAlign: 'left',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 12,
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        width: 36,
-                                                        height: 36,
-                                                        borderRadius: '50%',
-                                                        background: 'var(--color-accent)',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        color: '#fff',
-                                                        fontSize: '0.9rem',
-                                                        fontWeight: 600,
-                                                    }}
-                                                >
-                                                    {player.name.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div style={{ flex: 1 }}>
-                                                    <div
-                                                        style={{
-                                                            fontWeight: 600,
-                                                            color: 'var(--color-text-primary)',
-                                                            fontSize: '0.95rem',
-                                                        }}
-                                                    >
-                                                        {player.name}
-                                                    </div>
-                                                </div>
-                                                <ChevronRight size={18} style={{ color: 'var(--color-text-tertiary)' }} />
-                                            </motion.button>
-                                        ))
-                                    )}
-                                </motion.div>
-                            ) : (
-                                <motion.div
-                                    key="matches-step"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 20 }}
-                                    style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 12,
-                                    }}
-                                >
-                                    {matchesLoading ? (
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 8,
-                                                padding: '40px 0',
-                                                color: 'var(--color-text-tertiary)',
-                                            }}
-                                        >
-                                            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                                            Loading matches...
-                                        </div>
-                                    ) : localMatches.length === 0 ? (
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 8,
-                                                padding: '48px 24px',
-                                                textAlign: 'center',
-                                                color: 'var(--color-text-tertiary)',
-                                            }}
-                                        >
-                                            <div style={{ fontSize: '2rem', opacity: 0.3, marginBottom: 4 }}>⚽</div>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
-                                                No upcoming matches
-                                            </div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>
-                                                This player has no matches to respond to
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        localMatches.map(match => {
-                                            const status = getPlayerStatus(match);
-                                            return (
-                                                <div
-                                                    key={match.id}
-                                                    style={{
-                                                        padding: '14px 16px',
-                                                        background: 'var(--color-surface-hover)',
-                                                        border: '1px solid var(--color-border-subtle)',
-                                                        borderRadius: 12,
-                                                    }}
-                                                >
-                                                    <div
+                        {matchesLoading ? (
+                            <div className="flex-center" style={{ gap: 8, padding: '40px 0', color: 'var(--text-3)' }}>
+                                <div className="spinner" />
+                                Loading matches...
+                            </div>
+                        ) : localMatches.length === 0 ? (
+                            <EmptyState
+                                icon={<Calendar size={20} />}
+                                title="No upcoming matches"
+                                description="This player has no matches to respond to."
+                            />
+                        ) : (
+                            <div className="list-section">
+                                {localMatches.map(match => {
+                                    const status = getPlayerStatus(match);
+                                    return (
+                                        <div key={match.id} className="row row-static" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 10 }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, width: '100%' }}>
+                                                <div style={{ minWidth: 0, flex: 1 }}>
+                                                    <p style={{ fontWeight: 600, fontSize: 'var(--fs-sm)' }}>
+                                                        {match.name}
+                                                    </p>
+                                                    <p
+                                                        className="t-num"
                                                         style={{
                                                             display: 'flex',
-                                                            justifyContent: 'space-between',
-                                                            alignItems: 'flex-start',
-                                                            marginBottom: 12,
+                                                            alignItems: 'center',
+                                                            gap: 5,
+                                                            marginTop: 3,
+                                                            fontSize: 'var(--fs-2xs)',
+                                                            color: 'var(--text-3)',
                                                         }}
                                                     >
-                                                        <div style={{ flex: 1 }}>
-                                                            <div
-                                                                style={{
-                                                                    fontWeight: 600,
-                                                                    color: 'var(--color-text-primary)',
-                                                                    fontSize: '0.95rem',
-                                                                    marginBottom: 6,
-                                                                }}
-                                                            >
-                                                                {match.name}
-                                                            </div>
-                                                            <div
-                                                                style={{
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: 6,
-                                                                    fontSize: '0.8rem',
-                                                                    color: 'var(--color-text-secondary)',
-                                                                    marginBottom: 4,
-                                                                }}
-                                                            >
-                                                                <Calendar size={12} />
-                                                                {formatDate(match.date)}
-                                                            </div>
-                                                            {match.location && (
-                                                                <div
-                                                                    style={{
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 6,
-                                                                        fontSize: '0.8rem',
-                                                                        color: 'var(--color-text-secondary)',
-                                                                    }}
-                                                                >
-                                                                    <MapPin size={12} />
-                                                                    {match.location}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    <div
-                                                        style={{
-                                                            display: 'flex',
-                                                            justifyContent: 'center',
-                                                            gap: 16,
-                                                            paddingTop: 8,
-                                                            borderTop: '1px solid var(--color-border-subtle)',
-                                                        }}
-                                                    >
-                                                        <HeaderResponseButton
-                                                            type="yes"
-                                                            selected={status === 'Present'}
-                                                            loading={updatingMatchId === match.id && updating === 'Present'}
-                                                            onClick={() => handleResponse(match.id, 'Present')}
-                                                        />
-                                                        <HeaderResponseButton
-                                                            type="maybe"
-                                                            selected={status === 'Maybe'}
-                                                            loading={updatingMatchId === match.id && updating === 'Maybe'}
-                                                            onClick={() => handleResponse(match.id, 'Maybe')}
-                                                        />
-                                                        <HeaderResponseButton
-                                                            type="no"
-                                                            selected={status === 'NotPresent'}
-                                                            loading={updatingMatchId === match.id && updating === 'NotPresent'}
-                                                            onClick={() => handleResponse(match.id, 'NotPresent')}
-                                                        />
-                                                    </div>
+                                                        <Calendar size={11} />
+                                                        {formatDate(match.date)}
+                                                    </p>
+                                                    {match.location && (
+                                                        <p
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 5,
+                                                                marginTop: 2,
+                                                                fontSize: 'var(--fs-2xs)',
+                                                                color: 'var(--text-3)',
+                                                            }}
+                                                        >
+                                                            <MapPin size={11} />
+                                                            {match.location}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                            );
-                                        })
-                                    )}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+                                                <ResponseControl
+                                                    status={status ?? 'Unknown'}
+                                                    updating={updatingMatchId === match.id ? (updating as AttendanceStatus | null) : null}
+                                                    onSelect={(s) => handleResponse(match.id, s)}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </FlowPage>
     );
 }
