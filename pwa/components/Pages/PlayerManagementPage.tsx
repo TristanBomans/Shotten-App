@@ -172,12 +172,18 @@ export default function PlayerManagementPage({ isOpen, onClose }: PlayerManageme
                                 />
                             ) : (
                                 <button
+                                    type="button"
                                     onClick={() => handleStartEdit(player)}
                                     style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        minWidth: 0,
                                         textAlign: 'left',
                                         fontSize: 'var(--fs-sm)',
                                         fontWeight: 600,
                                         color: 'var(--text-1)',
+                                        background: 'transparent',
+                                        border: 'none',
                                         padding: '8px 0',
                                         cursor: 'pointer',
                                         overflow: 'hidden',

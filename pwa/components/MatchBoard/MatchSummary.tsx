@@ -11,7 +11,6 @@ import type { AttendanceStatus, RosterPlayer } from './types';
 import Confetti from './Confetti';
 import MatchPage from '../Pages/MatchPage';
 import { ResponseControl } from '../ui/controls';
-import AvailabilityCounts from './AvailabilityCounts';
 import AvailabilityRoster from './AvailabilityRoster';
 
 interface MatchSummaryProps {
@@ -38,8 +37,8 @@ function formatCountdown(diffMs: number): string {
 
 /**
  * One dense, uniform availability panel per upcoming match. Every panel keeps
- * the four category counts, the roster breakdown and the player's one-tap
- * response visible without any extra interaction.
+ * the roster breakdown and the player's one-tap response visible without any
+ * extra interaction.
  */
 export default function MatchSummary({
     match,
@@ -240,14 +239,6 @@ export default function MatchSummary({
                         style={{ color: 'var(--text-3)', opacity: 0.7, flexShrink: 0 }}
                     />
                 </div>
-
-                {/* Counts: always visible for every match */}
-                <AvailabilityCounts
-                    present={present.length}
-                    maybe={maybe.length}
-                    notPresent={notPresent.length}
-                    unknown={unknown.length}
-                />
 
                 {/* Roster breakdown */}
                 {showFullNames && (

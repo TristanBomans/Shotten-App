@@ -554,7 +554,6 @@ export default function Dashboard({
                 />
                 <div className="app-frame">
                     <div className="screen">
-                        <div className="skeleton" style={{ width: 128, height: 11, marginBottom: 10 }} />
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                             {[...Array(4)].map((_, i) => (
                                 <div key={i} className="panel skeleton" style={{ height: 148 }} />
@@ -622,7 +621,6 @@ export default function Dashboard({
     // Skeleton loading component for refresh
     const SkeletonContent = (
         <div className="screen">
-            <div className="skeleton" style={{ width: 128, height: 11, marginBottom: 10 }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[...Array(4)].map((_, i) => (
                     <div key={i} className="panel skeleton" style={{ height: 148 }} />
@@ -641,10 +639,6 @@ export default function Dashboard({
                 />
             ) : (
                 <section ref={upcomingRef}>
-                    <div className="section-label">
-                        <span>Upcoming matches</span>
-                        <span className="t-num">{boardMatches.length}</span>
-                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {boardMatches.map((match) => (
                             <motion.div
