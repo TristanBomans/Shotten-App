@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+const MAX_RELEASE_COMMITS = 5;
+
 function isMobileReleaseRef(ref) {
   if (!ref) return false;
   return /^mobile-v[^/]+$/.test(ref) || /^mobile-preview[^/]*$/.test(ref);
@@ -49,9 +51,12 @@ async function main() {
   const version = getVersion();
   const commitHash = getCommitHash();
 
-  // Get last 10 commits with their dates, then filter out [redacted] ones
-  const rawCommits = getRecentCommits(10);
-  const commits = rawCommits.filter(c => !c.message.includes('[redacted]')).slice(0, 5);
+  // Read the complete history before filtering so redacted commits do not
+  // reduce the number of visible release notes.
+  const rawCommits = getRecentCommits();
+  const commits = rawCommits
+    .filter(c => !c.message.includes('[redacted]'))
+    .slice(0, MAX_RELEASE_COMMITS);
   console.log('Recent commits:');
   commits.forEach(c => console.log(`  - [${c.date}] ${c.message}`));
 
@@ -64,7 +69,7 @@ async function main() {
   if (!hasMistral || !hasApiKey) {
     const reason = !hasMistral ? 'Mistral AI package not available' : 'MISTRAL_API_KEY not found';
     console.warn(`⚠️  ${reason} - skipping AI changelog`);
-    releases = [];
+    releases = commits.map(createFallbackRelease);
   } else {
     // Generate changelog via Mistral AI with retries
     console.log('\nGenerating changelog via Mistral AI...');
@@ -75,7 +80,7 @@ async function main() {
       releases.forEach(r => console.log(`  - [${r.date}] ${r.changes.length} bullet(s)`));
     } catch (error) {
       console.warn('⚠️  Failed to generate AI changelog:', error.message);
-      releases = [];
+      releases = commits.map(createFallbackRelease);
     }
   }
 
@@ -125,12 +130,12 @@ function getCommitHash() {
   }
 }
 
-function getRecentCommits(count = 5) {
+function getRecentCommits(count) {
   try {
     // Get full commit message (including body) and ISO date for each commit
     // Use a unique delimiter to separate commits
     const output = execSync(
-      `git log -${count} --pretty=format:"%B|||DATEDELIM|||%aI|||COMMITDELIM|||"`,
+      `git log${count ? ` -${count}` : ''} --pretty=format:"%B|||DATEDELIM|||%aI|||COMMITDELIM|||"`,
       { encoding: 'utf8' }
     );
     return output
@@ -148,6 +153,14 @@ function getRecentCommits(count = 5) {
   }
 }
 
+function createFallbackRelease(commit) {
+  const subject = commit.message.split(/\r?\n/, 1)[0].trim();
+  return {
+    date: commit.date,
+    changes: [`🛠️ ${subject || 'Includes the latest improvements'}`],
+  };
+}
+
 async function generateChangelog(commits, apiKey, Mistral) {
   if (commits.length === 0) {
     throw new Error('No commits found to generate changelog');
@@ -158,6 +171,7 @@ async function generateChangelog(commits, apiKey, Mistral) {
   const prompt = `Convert these git commit messages into user-friendly release notes in English.
 
 Rules:
+- Return exactly one item for every commit index. Never omit an index.
 - For each commit, provide 1-4 bullet points depending on how much content there is
 - Start each bullet with an emoji
 - Focus on what the user experiences, not technical details
@@ -212,8 +226,9 @@ ${commits.map((c, i) => `${i}. ${c.message}`).join('\n')}`;
       continue;
     }
 
+    const parsedItems = Array.isArray(parsed) ? parsed : [];
     const coveredCount = commits.filter((_, index) => {
-      const item = parsed.find(p => p.index === index);
+      const item = parsedItems.find(p => Number(p?.index) === index);
       return Array.isArray(item?.bullets) && item.bullets.length > 0;
     }).length;
 
@@ -231,16 +246,18 @@ ${commits.map((c, i) => `${i}. ${c.message}`).join('\n')}`;
 
   const releases = commits
     .map((commit, index) => {
-      const item = parsed?.find(p => p.index === index);
-      if (!Array.isArray(item?.bullets) || item.bullets.length === 0) {
-        return null;
-      }
+      const item = Array.isArray(parsed)
+        ? parsed.find(p => Number(p?.index) === index)
+        : null;
+      const bullets = Array.isArray(item?.bullets)
+        ? item.bullets.filter(bullet => typeof bullet === 'string' && bullet.trim())
+        : [];
+
       return {
         date: commit.date,
-        changes: item.bullets,
+        changes: bullets.length > 0 ? bullets : createFallbackRelease(commit).changes,
       };
-    })
-    .filter(Boolean);
+    });
 
   return releases;
 }

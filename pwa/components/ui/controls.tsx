@@ -101,7 +101,7 @@ const responseKinds: { kind: 'yes' | 'maybe' | 'no'; status: AttendanceStatus; l
  * a pending update shows an inline spinner on the tapped option.
  */
 export function ResponseControl({ status, updating, onSelect, size = 'md' }: ResponseControlProps) {
-    const dim = size === 'md' ? { w: 38, h: 32, icon: 14 } : { w: 32, h: 28, icon: 12 };
+    const dim = size === 'md' ? { w: 32, h: 28, icon: 13 } : { w: 27, h: 24, icon: 11 };
 
     return (
         <div

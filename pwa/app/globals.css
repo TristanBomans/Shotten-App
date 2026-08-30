@@ -621,10 +621,8 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 30px;
   border: 1px solid var(--border-hairline);
-  border-radius: 7px;
+  border-radius: 5px;
   background: var(--bg-subtle);
   color: var(--text-3);
   cursor: pointer;
@@ -637,7 +635,7 @@ button {
 .resp::after {
   content: '';
   position: absolute;
-  inset: -7px -5px;
+  inset: -9px -7px;
 }
 
 .resp:active {
@@ -645,20 +643,20 @@ button {
 }
 
 .resp[data-selected='true'][data-kind='yes'] {
-  background: rgb(var(--ok-rgb) / 0.2);
-  border-color: rgb(var(--ok-rgb) / 0.45);
+  background: rgb(var(--ok-rgb) / 0.16);
+  border-color: rgb(var(--ok-rgb) / 0.35);
   color: var(--ok);
 }
 
 .resp[data-selected='true'][data-kind='maybe'] {
-  background: rgb(var(--warn-rgb) / 0.18);
-  border-color: rgb(var(--warn-rgb) / 0.45);
+  background: rgb(var(--warn-rgb) / 0.14);
+  border-color: rgb(var(--warn-rgb) / 0.35);
   color: var(--warn);
 }
 
 .resp[data-selected='true'][data-kind='no'] {
-  background: rgb(var(--no-rgb) / 0.16);
-  border-color: rgb(var(--no-rgb) / 0.45);
+  background: rgb(var(--no-rgb) / 0.13);
+  border-color: rgb(var(--no-rgb) / 0.35);
   color: var(--no);
 }
 
