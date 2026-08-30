@@ -241,20 +241,19 @@ export default function MatchSummary({
                 </div>
 
                 {/* Roster breakdown */}
-                {showFullNames && (
-                    <div
-                        className="hairline-t"
-                        style={{ marginTop: 9, paddingTop: 8 }}
-                    >
-                        <AvailabilityRoster
-                            present={present}
-                            maybe={maybe}
-                            notPresent={notPresent}
-                            unknown={unknown}
-                            currentPlayerId={currentPlayerId}
-                        />
-                    </div>
-                )}
+                <div
+                    className="hairline-t"
+                    style={{ marginTop: 9, paddingTop: 8 }}
+                >
+                    <AvailabilityRoster
+                        present={present}
+                        maybe={maybe}
+                        notPresent={notPresent}
+                        unknown={unknown}
+                        currentPlayerId={currentPlayerId}
+                        showNames={showFullNames}
+                    />
+                </div>
             </div>
 
             <MatchPage
