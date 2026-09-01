@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost, Hourglass, CalendarDays, Clock3 } from 'lucide-react';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
@@ -169,6 +169,16 @@ const formDotColor: Record<MatchResult['status'], string> = {
     ghost: 'var(--tbd)',
 };
 
+function formatCountdownShort(diffMs: number): { value: string; label: string } {
+    if (diffMs <= 0) return { value: '0', label: 'now' };
+    const mins = Math.floor(diffMs / 60_000);
+    const hours = Math.floor(mins / 60);
+    const days = Math.floor(hours / 24);
+    if (days > 0) return { value: String(days), label: days === 1 ? 'day' : 'days' };
+    if (hours > 0) return { value: String(hours), label: hours === 1 ? 'hour' : 'hours' };
+    return { value: String(mins), label: mins === 1 ? 'minute' : 'minutes' };
+}
+
 export default function StatsView({
     matches,
     players,
@@ -180,6 +190,12 @@ export default function StatsView({
 }: StatsViewProps) {
     const [internalShowRules, setInternalShowRules] = useState(false);
     const isRulesOpen = showRules ?? internalShowRules;
+
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 30_000);
+        return () => clearInterval(interval);
+    }, []);
 
     const setRulesOpen = (open: boolean) => {
         if (showRules === undefined) {
@@ -193,9 +209,170 @@ export default function StatsView({
         stats: calculatePlayerStats(player, matches),
     })).sort((a, b) => b.stats.attendancePct - a.stats.attendancePct);
 
+    const hasLeaderboardData = useMemo(
+        () => playerStats.some(p => p.stats.totalMatches > 0),
+        [playerStats]
+    );
+
+    const nextMatch = useMemo(() => {
+        const upcoming = matches
+            .map(m => ({ match: m, ts: parseDateToTimestamp(m.date) }))
+            .filter(({ ts }) => ts > now)
+            .sort((a, b) => a.ts - b.ts);
+        return upcoming[0]?.match ?? null;
+    }, [matches, now]);
+
+    const nextMatchDate = useMemo(
+        () => (nextMatch ? parseDate(nextMatch.date) : null),
+        [nextMatch]
+    );
+
     const selectedPlayer = selectedPlayerId != null
         ? playerStats.find(p => p.id === selectedPlayerId) || null
         : null;
+
+    if (!hasLeaderboardData) {
+        const diffMs = nextMatchDate ? nextMatchDate.getTime() - now : null;
+        const short = diffMs != null ? formatCountdownShort(diffMs) : null;
+        const dateStr = nextMatchDate
+            ? nextMatchDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+            : null;
+        const timeStr = nextMatchDate
+            ? nextMatchDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+            : null;
+
+        return (
+            <div className="screen">
+                <div className="section-label">
+                    <span>Attendance leaderboard</span>
+                    <span className="t-num" style={{ opacity: 0.5 }}>{playerStats.length}</span>
+                </div>
+
+                <div
+                    className="panel"
+                    style={{
+                        padding: '28px 18px 22px',
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 0,
+                    }}
+                >
+                    <span
+                        className="flex-center"
+                        style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 12,
+                            background: 'var(--bg-subtle)',
+                            border: '1px solid var(--border-subtle)',
+                            color: 'var(--text-3)',
+                            marginBottom: 14,
+                        }}
+                        aria-hidden
+                    >
+                        <Hourglass size={20} />
+                    </span>
+
+                    <h2 className="t-title" style={{ marginBottom: 6 }}>
+                        No data yet
+                    </h2>
+
+                    {nextMatch && diffMs != null && diffMs > 0 ? (
+                        <>
+                            <p className="t-body" style={{ maxWidth: 320, marginBottom: 16 }}>
+                                The season hasn&apos;t started yet. Rankings will appear once the first match is played.
+                            </p>
+
+                            <div
+                                role="timer"
+                                aria-label={`Season starts in ${short?.value} ${short?.label}`}
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    fontSize: 'var(--fs-2xs)',
+                                    fontWeight: 500,
+                                    color: 'var(--text-3)',
+                                    letterSpacing: '0.01em',
+                                    marginBottom: 14,
+                                }}
+                            >
+                                <Clock3 size={12} style={{ opacity: 0.7 }} aria-hidden />
+                                <span className="t-num">Season starts in {short?.value} {short?.label}</span>
+                            </div>
+
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    marginTop: 2,
+                                    padding: '8px 12px',
+                                    borderRadius: 'var(--r-sm)',
+                                    background: 'var(--bg-subtle)',
+                                    border: '1px solid var(--border-subtle)',
+                                    maxWidth: '100%',
+                                }}
+                            >
+                                <span
+                                    className="flex-center"
+                                    style={{
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: 8,
+                                        background: 'var(--bg-panel-raised)',
+                                        border: '1px solid var(--border-hairline)',
+                                        color: 'var(--text-2)',
+                                        flexShrink: 0,
+                                    }}
+                                    aria-hidden
+                                >
+                                    <CalendarDays size={14} />
+                                </span>
+                                <span style={{ textAlign: 'left', minWidth: 0 }}>
+                                    <span
+                                        style={{
+                                            display: 'block',
+                                            fontSize: 'var(--fs-xs)',
+                                            fontWeight: 700,
+                                            lineHeight: 1.2,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        {nextMatch.name.replace(/-/g, ' — ')}
+                                    </span>
+                                    <span
+                                        className="t-num"
+                                        style={{ display: 'block', fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', fontWeight: 600 }}
+                                    >
+                                        {dateStr} · {timeStr}
+                                        {nextMatch.location ? ` · ${nextMatch.location}` : ''}
+                                    </span>
+                                </span>
+                            </div>
+                        </>
+                    ) : (
+                        <p className="t-body" style={{ maxWidth: 320 }}>
+                            No matches have been played yet. Rankings will appear once results are in.
+                        </p>
+                    )}
+                </div>
+
+                <RulesPage open={isRulesOpen} onClose={() => setRulesOpen(false)} />
+
+                <PlayerDetailPage
+                    open={Boolean(selectedPlayer)}
+                    player={selectedPlayer || ({} as PlayerWithStats)}
+                    rank={selectedPlayer ? playerStats.findIndex(p => p.id === selectedPlayer.id) + 1 : 0}
+                    onClose={() => onSelectPlayer?.(null)}
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="screen">
