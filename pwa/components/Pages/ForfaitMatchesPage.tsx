@@ -5,7 +5,7 @@ import { Flag } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { API_BASE_URL } from '@/lib/config';
 import type { Match } from '@/lib/mockData';
-import { parseDate } from '@/lib/dateUtils';
+import { parseDate, formatMatchDate } from '@/lib/dateUtils';
 import FlowPage from '../ui/FlowPage';
 import { Switch, StatusChip, EmptyState } from '../ui/controls';
 
@@ -83,9 +83,7 @@ export default function ForfaitMatchesPage({ isOpen, onClose }: ForfaitMatchesPa
                 <div className="list-section">
                     {matches.map((match) => {
                         const matchDate = parseDate(match.date);
-                        const dateStr = matchDate
-                            ? matchDate.toLocaleDateString('nl-BE', { day: 'numeric', month: 'short', year: 'numeric' })
-                            : match.date;
+                        const dateStr = matchDate ? formatMatchDate(matchDate, match.date) : match.date;
                         const isUpcoming = matchDate ? matchDate.getTime() > Date.now() : false;
                         const isForfait = match.forfait || false;
 

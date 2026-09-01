@@ -12,6 +12,16 @@ interface PlayerManagementPageProps {
     onClose: () => void;
 }
 
+function teamInitials(name: string) {
+    const initials = name
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(word => word[0] ?? '')
+        .join('')
+        .toUpperCase();
+    return initials.slice(0, 4) || 'Team';
+}
+
 export default function PlayerManagementPage({ isOpen, onClose }: PlayerManagementPageProps) {
     const {
         players,
@@ -93,12 +103,15 @@ export default function PlayerManagementPage({ isOpen, onClose }: PlayerManageme
     };
 
     const gridTemplate = `minmax(0, 1fr) ${teams.map(() => '40px').join(' ')} 40px`;
+    const teamSubtitle = teams.length === 1
+        ? `${teams[0].name} · tap a name to rename`
+        : 'Tap a name to rename, toggle team membership';
 
     return (
         <FlowPage
             open={isOpen}
             title="Manage Players"
-            subtitle="Tap a name to rename, toggle team membership"
+            subtitle={teamSubtitle}
             onBack={onClose}
         >
             {loading ? (
@@ -126,14 +139,9 @@ export default function PlayerManagementPage({ isOpen, onClose }: PlayerManageme
                             <div
                                 key={team.id}
                                 title={team.name}
-                                style={{
-                                    textAlign: 'center',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                }}
+                                style={{ textAlign: 'center' }}
                             >
-                                {team.name.substring(0, 8)}
+                                {teams.length === 1 ? 'Team' : teamInitials(team.name)}
                             </div>
                         ))}
                         <div />

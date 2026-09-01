@@ -38,6 +38,9 @@ export function parseDateToTimestamp(dateStr: string | Date | null | undefined):
     return date ? date.getTime() : 0;
 }
 
+/** Shared locale for every user-facing date in the app. */
+export const DATE_LOCALE = 'en-GB';
+
 /**
  * Format a date safely, returning fallback if invalid
  */
@@ -50,10 +53,34 @@ export function formatDateSafe(
     if (!date) return fallback;
 
     try {
-        return date.toLocaleDateString('en-GB', options);
+        return date.toLocaleDateString(DATE_LOCALE, options);
     } catch {
         return fallback;
     }
+}
+
+/**
+ * Match dates: "Sat 12 Sept", with a year only when it isn't the current one
+ * ("Wed 28 Apr 2027").
+ */
+export function formatMatchDate(
+    dateStr: string | Date | null | undefined,
+    fallback: string = 'Invalid Date'
+): string {
+    const date = parseDate(dateStr);
+    if (!date) return fallback;
+
+    const includeYear = date.getFullYear() !== new Date().getFullYear();
+    return formatDateSafe(
+        date,
+        {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+            ...(includeYear ? { year: 'numeric' } : {}),
+        },
+        fallback
+    ).replace(/,/g, '');
 }
 
 /**
@@ -68,7 +95,7 @@ export function formatTimeSafe(
     if (!date) return fallback;
 
     try {
-        return date.toLocaleTimeString('en-GB', options);
+        return date.toLocaleTimeString(DATE_LOCALE, options);
     } catch {
         return fallback;
     }

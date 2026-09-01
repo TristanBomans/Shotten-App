@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, LogOut, Database, Wifi, WifiOff, Bell, Smartphone, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck, Flag } from 'lucide-react';
+import { Check, LogOut, Database, Wifi, WifiOff, Bell, Smartphone, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck, Flag, User } from 'lucide-react';
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { disableMatchPush, enableMatchPush } from '@/lib/pushSettings';
 import { isWebPushSupported } from '@/lib/webPushClient';
@@ -19,6 +19,7 @@ import Sheet from './ui/Sheet';
 interface SettingsViewProps {
     onLogout: () => void;
     playerId: number;
+    playerName?: string;
     onPlayerManagementOpenChange?: (isOpen: boolean) => void;
     onOpenVersion: () => void;
     isVersionOpen: boolean;
@@ -46,6 +47,7 @@ const themeLabels: Record<string, string> = {
 export default function SettingsView({
     onLogout,
     playerId,
+    playerName,
     onPlayerManagementOpenChange,
     onOpenVersion,
     isVersionOpen,
@@ -399,6 +401,12 @@ export default function SettingsView({
 
             {/* Account */}
             <ListSection label="Account">
+                <Row
+                    icon={<User size={16} />}
+                    iconTone="accent"
+                    title={playerName || 'Player'}
+                    subtitle="Signed in on this device"
+                />
                 <Row
                     icon={<LogOut size={16} />}
                     iconTone="no"

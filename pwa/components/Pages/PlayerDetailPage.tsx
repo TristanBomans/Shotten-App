@@ -5,6 +5,7 @@ import { LineChart, Line, ReferenceLine, YAxis } from 'recharts';
 import { Check, HelpCircle, X, Ghost, Flame, Snowflake, Trophy } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { RANKS, type PlayerWithStats, type AttendanceHistoryPoint } from '../StatsView';
+import { formatMatchDate } from '@/lib/dateUtils';
 import FlowPage from '../ui/FlowPage';
 import { ListSection } from '../ui/ListSection';
 import { StatusChip } from '../ui/controls';
@@ -181,7 +182,7 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                                         {result.matchName.replace(/-/g, ' – ')}
                                     </span>
                                     <span className="t-num" style={{ display: 'block', fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', marginTop: 1 }}>
-                                        {result.date.toLocaleDateString()}
+                                        {formatMatchDate(result.date)}
                                     </span>
                                 </span>
                                 <span

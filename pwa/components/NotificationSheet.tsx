@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckCircle2 } from 'lucide-react';
-import { formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
+import { formatMatchDate, formatTimeSafe } from '@/lib/dateUtils';
 import type { MatchReminder } from '@/lib/notifications';
 import { hapticPatterns } from '@/lib/haptic';
 import Sheet from './ui/Sheet';
@@ -107,11 +107,7 @@ export default function NotificationSheet({
                                         className="t-num"
                                         style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', whiteSpace: 'nowrap' }}
                                     >
-                                        {formatDateSafe(reminder.matchDate, {
-                                            weekday: 'short',
-                                            day: 'numeric',
-                                            month: 'short',
-                                        })}{' '}
+                                        {formatMatchDate(reminder.matchDate)}{' '}
                                         · {formatTimeSafe(reminder.matchDate)}
                                     </span>
                                 </span>

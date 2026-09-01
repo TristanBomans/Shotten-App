@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, MapPin, Calendar, MoreHorizontal, ExternalLink, X } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { isSameTeamName } from '@/lib/teamNameMatching';
+import { formatMatchDate, formatTimeSafe } from '@/lib/dateUtils';
 import type { Match } from '@/lib/mockData';
 import type { RosterPlayer, StatusGroup } from '../../MatchBoard/types';
 import { useOpponentTeamData } from './useOpponentTeamData';
@@ -173,7 +174,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                                         marginTop: -1,
                                     }}
                                 >
-                                    {dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} · {dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                    {formatMatchDate(dateObj)} · {formatTimeSafe(dateObj)}
                                     {match.location ? ` · ${match.location}` : ''}
                                 </p>
                             </div>

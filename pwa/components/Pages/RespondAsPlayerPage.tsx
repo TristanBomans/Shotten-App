@@ -7,7 +7,7 @@ import { useAllPlayers, useUpdateAttendance } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
 import type { Player, Match } from '@/lib/mockData';
-import { parseDateToTimestamp } from '@/lib/dateUtils';
+import { parseDateToTimestamp, formatMatchDate, formatTimeSafe } from '@/lib/dateUtils';
 import FlowPage from '../ui/FlowPage';
 import { ListSection, Row } from '../ui/ListSection';
 import { Avatar, EmptyState, ResponseControl, type AttendanceStatus } from '../ui/controls';
@@ -118,14 +118,7 @@ export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayer
     };
 
     const formatDate = (dateStr: string) => {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('en-GB', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
+        return `${formatMatchDate(dateStr)} · ${formatTimeSafe(dateStr)}`;
     };
 
     return (
