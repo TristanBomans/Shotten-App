@@ -805,6 +805,7 @@ export default function Dashboard({
                 >
                     <SettingsView
                         playerId={playerId}
+                        playerName={players.find(p => p.id === playerId)?.name}
                         onLogout={onLogout}
                         onPlayerManagementOpenChange={onPlayerManagementOpenChange}
                         onOpenVersion={onOpenVersion}

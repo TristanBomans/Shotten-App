@@ -5,7 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { useUpdateAttendance } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
-import { parseDate } from '@/lib/dateUtils';
+import { parseDate, formatMatchDate, formatTimeSafe } from '@/lib/dateUtils';
 import type { Match, Player } from '@/lib/mockData';
 import type { AttendanceStatus, RosterPlayer } from './types';
 import Confetti from './Confetti';
@@ -91,10 +91,8 @@ export default function MatchSummary({
     const notPresent = roster.filter(p => p.status === 'NotPresent');
     const unknown = roster.filter(p => p.status === 'Unknown');
 
-    const dateStr = dateObj
-        .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
-        .toUpperCase();
-    const timeStr = dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = formatMatchDate(dateObj);
+    const timeStr = formatTimeSafe(dateObj);
 
     const handleStatusUpdate = async (status: AttendanceStatus) => {
         hapticPatterns.tap();

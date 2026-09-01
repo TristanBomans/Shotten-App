@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { formatDateSafe } from '@/lib/dateUtils';
 
 interface Release {
     date: string;
@@ -89,11 +90,7 @@ export default function VersionHistoryContent() {
     };
 
     const formatDate = (isoString: string) => {
-        const date = new Date(isoString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-        });
+        return formatDateSafe(isoString, { day: 'numeric', month: 'short' });
     };
 
     return (
