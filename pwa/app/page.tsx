@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlayerSelect from '@/components/PlayerSelect';
+import SetupWizard from '@/components/SetupWizard';
 import Dashboard from '@/components/Dashboard';
 import AppNav from '@/components/ui/AppNav';
 
@@ -63,6 +64,7 @@ const getModalIdFromParams = (params: SearchParamsLike | null): string | null =>
 function HomeContent() {
     const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
+    const [needsSetup, setNeedsSetup] = useState(false);
     const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
 
     const [currentView, setCurrentView] = useState<View>(() => {
@@ -106,7 +108,19 @@ function HomeContent() {
         if (stored) {
             setSelectedPlayerId(parseInt(stored, 10));
         }
-        setLoading(false);
+
+        // Check whether the database has been initialized
+        fetch('/api/setup')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((status) => {
+                if (status && (!status.tablesExist || !status.hasTeams)) {
+                    setNeedsSetup(true);
+                }
+            })
+            .catch(() => {
+                // If the check fails, continue with the normal flow
+            })
+            .finally(() => setLoading(false));
     }, []);
 
     // Sync view/modal state from browser history without triggering a Next.js navigation.
@@ -224,7 +238,17 @@ function HomeContent() {
     return (
         <main style={{ overflow: 'hidden' }}>
             <AnimatePresence initial={false} mode="popLayout">
-                {!selectedPlayerId ? (
+                {needsSetup ? (
+                    <motion.div
+                        key="setup"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.35 }}
+                    >
+                        <SetupWizard onComplete={() => setNeedsSetup(false)} />
+                    </motion.div>
+                ) : !selectedPlayerId ? (
                     <motion.div
                         key="player-select"
                         initial={{ opacity: 0 }}
