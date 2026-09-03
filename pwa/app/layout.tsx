@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { DM_Sans } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
+import TeamTitle from '@/components/TeamTitle';
 
 const dmSans = DM_Sans({
     subsets: ['latin'],
@@ -44,7 +45,7 @@ export default function RootLayout({
                             (function() {
                                 let theme = localStorage.getItem('theme');
                                 if (!theme || theme === 'original') {
-                                    theme = 'oled';
+                                    theme = 'white';
                                     localStorage.setItem('theme', theme);
                                 }
                                 document.documentElement.setAttribute('data-theme', theme);
@@ -70,6 +71,9 @@ export default function RootLayout({
             <body>
                 {/* Ambient Background */}
                 <div className="ambient-bg" />
+
+                {/* Tab title from team name */}
+                <TeamTitle />
 
                 {/* Main Content */}
                 {children}

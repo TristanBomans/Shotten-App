@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Check, ChevronRight } from 'lucide-react';
-import { usePlayers } from '@/lib/useData';
+import { usePlayers, useTeams, createPlayer } from '@/lib/useData';
 import type { Player } from '@/lib/mockData';
 import { Avatar, EmptyState } from './ui/controls';
 
@@ -13,12 +13,44 @@ interface PlayerSelectProps {
 
 export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
     const { players, loading, fetchPlayers } = usePlayers();
+    const { teams, fetchTeams } = useTeams();
     const [search, setSearch] = useState('');
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [newPlayerName, setNewPlayerName] = useState('');
+    const [newPlayerTeamIds, setNewPlayerTeamIds] = useState<number[]>([]);
+    const [creating, setCreating] = useState(false);
+    const [createError, setCreateError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchPlayers();
-    }, [fetchPlayers]);
+        fetchTeams();
+    }, [fetchPlayers, fetchTeams]);
+
+    // Default: assign the first player to all teams once teams are loaded
+    useEffect(() => {
+        if (teams.length > 0 && newPlayerTeamIds.length === 0) {
+            setNewPlayerTeamIds(teams.map((t) => t.id));
+        }
+    }, [teams, newPlayerTeamIds.length]);
+
+    const isFirstUser = !loading && players.length === 0;
+
+    const handleCreateFirstPlayer = async () => {
+        const name = newPlayerName.trim();
+        if (!name) {
+            setCreateError('Vul je naam in.');
+            return;
+        }
+        setCreating(true);
+        setCreateError(null);
+        try {
+            const player = await createPlayer(name, newPlayerTeamIds);
+            onSelect(player.id);
+        } catch (e) {
+            setCreateError(e instanceof Error ? e.message : 'Aanmaken mislukt');
+            setCreating(false);
+        }
+    };
 
     const filteredPlayers = useMemo(() => {
         return players.filter(p =>
@@ -124,6 +156,61 @@ export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
                                     <div className="skeleton" style={{ width: `${55 - i * 5}%`, height: 13, borderRadius: 4 }} />
                                 </div>
                             ))}
+                        </div>
+                    ) : isFirstUser ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 8 }}>
+                            <EmptyState
+                                title="Nog geen spelers"
+                                description="Maak het eerste profiel aan om te starten."
+                                compact
+                            />
+                            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 600 }}>Je naam</span>
+                                <input
+                                    type="text"
+                                    value={newPlayerName}
+                                    onChange={(e) => setNewPlayerName(e.target.value)}
+                                    placeholder="bv. Jan Janssens"
+                                    className="field"
+                                    aria-label="Je naam"
+                                />
+                            </label>
+                            {teams.length > 1 && (
+                                <fieldset style={{ display: 'flex', flexDirection: 'column', gap: 8, border: 'none', padding: 0, margin: 0 }}>
+                                    <legend style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, marginBottom: 4 }}>
+                                        Teams
+                                    </legend>
+                                    {teams.map((team) => (
+                                        <label key={team.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-sm)' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={newPlayerTeamIds.includes(team.id)}
+                                                onChange={(e) =>
+                                                    setNewPlayerTeamIds((prev) =>
+                                                        e.target.checked
+                                                            ? [...prev, team.id]
+                                                            : prev.filter((id) => id !== team.id)
+                                                    )
+                                                }
+                                            />
+                                            {team.name}
+                                        </label>
+                                    ))}
+                                </fieldset>
+                            )}
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={handleCreateFirstPlayer}
+                                disabled={creating}
+                            >
+                                {creating ? 'Aanmaken…' : 'Profiel aanmaken'}
+                            </button>
+                            {createError && (
+                                <p style={{ color: 'var(--danger, #e11d48)', fontSize: 'var(--fs-sm)' }}>
+                                    {createError}
+                                </p>
+                            )}
                         </div>
                     ) : filteredPlayers.length === 0 ? (
                         <EmptyState title="No players found" description="Try a different search." compact />

@@ -276,6 +276,17 @@ export async function deleteCorePlayer(id: number): Promise<void> {
     if (error) throw error;
 }
 
+export async function createCoreTeam(name: string, lzvExternalId: number | null = null): Promise<CoreTeam> {
+    const { data, error } = await getSupabaseServiceClient()
+        .from('core_teams')
+        .insert({ name, lzv_external_id: lzvExternalId })
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
 export async function getCoreTeams(): Promise<CoreTeam[]> {
     const { data, error } = await getSupabaseClient()
         .from('core_teams')

@@ -2,7 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   // Separate Worker so the existing Pages project (`shotten-app`) can keep serving
   // shotten.taltiko.com until DNS is switched.
-  "name": "shotten-app-workers",
+  "name": "derodeduiven",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["nodejs_compat"],
@@ -16,7 +16,7 @@
     "enabled": true
   },
   "vars": {
-    "NEXT_PUBLIC_SUPABASE_URL": "https://bvwjoptvnxpttwkstiue.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_YaWg2zCaLJqZrVYv0K-9sQ_vXXYEImm"
+    "NEXT_PUBLIC_SUPABASE_URL": "https://yrneeuvtfyeeoeucrbzp.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_uYPUzMACLAIGxn-JfJ3mug_W2mYGqy5"
   }
 }
