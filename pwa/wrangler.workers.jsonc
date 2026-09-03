@@ -17,6 +17,7 @@
   },
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://yrneeuvtfyeeoeucrbzp.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_uYPUzMACLAIGxn-JfJ3mug_W2mYGqy5"
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_uYPUzMACLAIGxn-JfJ3mug_W2mYGqy5",
+    "NEXT_PUBLIC_APP_ICON_URL": "https://i.postimg.cc/9QwwdMHM/image.png"
   }
 }

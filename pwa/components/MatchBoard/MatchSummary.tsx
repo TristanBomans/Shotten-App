@@ -239,6 +239,24 @@ export default function MatchSummary({
                     />
                 </div>
 
+                {/* Location */}
+                {match.location && (
+                    <p
+                        className="t-num"
+                        style={{
+                            fontSize: 'var(--fs-3xs)',
+                            color: 'var(--text-3)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            marginTop: -5,
+                            marginBottom: 9,
+                        }}
+                    >
+                        {match.location}
+                    </p>
+                )}
+
                 {!showFullNames && (
                     <AvailabilityCounts
                         present={present.length}

@@ -17,6 +17,9 @@ export const metadata: Metadata = {
         statusBarStyle: 'black-translucent',
         title: 'Shotten',
     },
+    ...(process.env.NEXT_PUBLIC_APP_ICON_URL
+        ? { icons: { icon: process.env.NEXT_PUBLIC_APP_ICON_URL, apple: process.env.NEXT_PUBLIC_APP_ICON_URL } }
+        : {}),
 };
 
 export const viewport: Viewport = {
@@ -35,7 +38,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning className={dmSans.variable}>
             <head>
-                <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+                <link rel="apple-touch-icon" href={process.env.NEXT_PUBLIC_APP_ICON_URL || '/icons/icon-192x192.png'} />
                 <meta name="apple-mobile-web-app-capable" content="yes" />
                 <meta name="mobile-web-app-capable" content="yes" />
                 {/* Theme loader - runs before any rendering to prevent flash */}
