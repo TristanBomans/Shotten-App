@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, LogOut, Database, Wifi, WifiOff, Bell, Smartphone, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck, Flag, User } from 'lucide-react';
+import { Check, LogOut, Database, Wifi, WifiOff, Bell, Smartphone, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck, Flag, User, History } from 'lucide-react';
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { disableMatchPush, enableMatchPush } from '@/lib/pushSettings';
 import { isWebPushSupported } from '@/lib/webPushClient';
@@ -74,6 +74,7 @@ export default function SettingsView({
     const [pushSupported, setPushSupported] = useState(true);
     const [hapticFeedback, setHapticFeedback] = useState(true);
     const [showFullNames, setShowFullNames] = useState(true);
+    const [showPastMatches, setShowPastMatches] = useState(true);
     const [defaultLeague, setDefaultLeague] = useState<string>('');
     const [leagues, setLeagues] = useState<string[]>([]);
     const [showLeagueSelector, setShowLeagueSelector] = useState(false);
@@ -94,6 +95,8 @@ export default function SettingsView({
         setHapticFeedback(hapticPref !== 'false');
         const fullNamesPref = localStorage.getItem('showFullNames');
         setShowFullNames(fullNamesPref === null ? true : fullNamesPref === 'true');
+        const pastMatchesPref = localStorage.getItem('showPastMatches');
+        setShowPastMatches(pastMatchesPref === null ? true : pastMatchesPref === 'true');
         const savedLeague = localStorage.getItem('defaultLeague');
         if (savedLeague) setDefaultLeague(savedLeague);
         const savedTheme = localStorage.getItem('theme');
@@ -173,6 +176,14 @@ export default function SettingsView({
 
         // Dispatch custom event to notify other components
         window.dispatchEvent(new CustomEvent('showFullNamesChanged', { detail: newValue }));
+    };
+
+    const handleTogglePastMatches = () => {
+        hapticPatterns.toggle();
+        const newValue = !showPastMatches;
+        setShowPastMatches(newValue);
+        localStorage.setItem('showPastMatches', newValue.toString());
+        window.dispatchEvent(new CustomEvent('showPastMatchesChanged', { detail: newValue }));
     };
 
     const handleSelectLeague = (league: string) => {
@@ -266,6 +277,20 @@ export default function SettingsView({
                             checked={showFullNames}
                             onChange={handleToggleFullNames}
                             aria-label="Show full names"
+                        />
+                    }
+                />
+
+                <Row
+                    icon={<History size={16} />}
+                    iconTone="accent"
+                    title="Show Past Matches"
+                    subtitle={showPastMatches ? 'History on the board, scrolls to next' : 'Upcoming matches only'}
+                    trailing={
+                        <Switch
+                            checked={showPastMatches}
+                            onChange={handleTogglePastMatches}
+                            aria-label="Show past matches"
                         />
                     }
                 />
