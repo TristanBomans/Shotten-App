@@ -86,6 +86,11 @@ export default function Dashboard({
     const [highlightedMatchId, setHighlightedMatchId] = useState<number | null>(null);
     const [recentMatches, setRecentMatches] = useState<RecentMatchesResponse>(EMPTY_RECENT_MATCHES);
     const [loadingRecentMatches, setLoadingRecentMatches] = useState(true);
+    const [showPastMatches, setShowPastMatches] = useState(() => {
+        if (typeof window === 'undefined') return true;
+        const stored = localStorage.getItem('showPastMatches');
+        return stored === null ? true : stored === 'true';
+    });
     const [isHiddenAdminUnlocked, setIsHiddenAdminUnlocked] = useState(
         () => typeof window !== 'undefined' && localStorage.getItem('hiddenAdminUnlocked') === 'true'
     );
@@ -96,6 +101,7 @@ export default function Dashboard({
     const matchCardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const scrollToNextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
     // Sync control refs - simplified approach
     const scrollSourceRef = useRef<'nav' | 'swipe' | null>(null);
@@ -295,6 +301,14 @@ export default function Dashboard({
     }, [fetchMatches]);
 
     useEffect(() => {
+        const handleShowPastMatchesChanged = (event: Event) => {
+            setShowPastMatches((event as CustomEvent<boolean>).detail);
+        };
+        window.addEventListener('showPastMatchesChanged', handleShowPastMatchesChanged);
+        return () => window.removeEventListener('showPastMatchesChanged', handleShowPastMatchesChanged);
+    }, []);
+
+    useEffect(() => {
         const enabled = localStorage.getItem('notificationsEnabled') === 'true';
         void syncMatchPush(playerId, enabled).catch(() => {
             // Keep the toggle as-is; the next Settings visit can retry.
@@ -315,6 +329,9 @@ export default function Dashboard({
             }
             if (focusTimeoutRef.current) {
                 clearTimeout(focusTimeoutRef.current);
+            }
+            if (scrollToNextTimeoutRef.current) {
+                clearTimeout(scrollToNextTimeoutRef.current);
             }
         };
     }, []);
@@ -355,13 +372,21 @@ export default function Dashboard({
         }
     };
 
-    // Split matches
-    const now = Date.now();
-    const threshold = now - 2 * 60 * 60 * 1000;
-
-    const heroMatch = matches.find(m => parseDateToTimestamp(m.date) > threshold);
-    const remainingMatches = matches.filter(m => m.id !== heroMatch?.id);
-    const upcomingMatches = remainingMatches.filter(m => parseDateToTimestamp(m.date) > threshold);
+    // Split matches: chronological board, optional past history above the next kick-off.
+    const matchesByDate = useMemo(
+        () => [...matches].sort((a, b) => parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date)),
+        [matches]
+    );
+    const { pastMatches, heroMatch, boardMatches } = useMemo(() => {
+        const threshold = Date.now() - 2 * 60 * 60 * 1000;
+        const past = matchesByDate.filter(m => parseDateToTimestamp(m.date) <= threshold);
+        const upcoming = matchesByDate.filter(m => parseDateToTimestamp(m.date) > threshold);
+        return {
+            pastMatches: past,
+            heroMatch: upcoming[0],
+            boardMatches: showPastMatches ? matchesByDate : upcoming,
+        };
+    }, [matchesByDate, showPastMatches]);
     const notificationSummary = useMemo(
         () => buildMatchReminders(matches, playerId),
         [matches, playerId]
@@ -520,8 +545,45 @@ export default function Dashboard({
         }, focusDelay);
     }, [currentView, onViewChange]);
 
-    // One ordered availability board: the next match first, then the rest.
-    const boardMatches = heroMatch ? [heroMatch, ...upcomingMatches] : upcomingMatches;
+    // When past matches are shown, land on the next upcoming match after load/toggle.
+    useEffect(() => {
+        if (loading || isRefreshing || currentView !== 'home') return;
+        if (!showPastMatches || !heroMatch || pastMatches.length === 0) return;
+
+        if (scrollToNextTimeoutRef.current) {
+            clearTimeout(scrollToNextTimeoutRef.current);
+        }
+
+        scrollToNextTimeoutRef.current = setTimeout(() => {
+            const targetNode = matchCardRefs.current.get(heroMatch.id);
+            if (!targetNode) {
+                scrollToNextTimeoutRef.current = null;
+                return;
+            }
+
+            targetNode.scrollIntoView({
+                behavior: 'auto',
+                block: 'start',
+                inline: 'nearest',
+            });
+            scrollToNextTimeoutRef.current = null;
+        }, 80);
+
+        return () => {
+            if (scrollToNextTimeoutRef.current) {
+                clearTimeout(scrollToNextTimeoutRef.current);
+                scrollToNextTimeoutRef.current = null;
+            }
+        };
+    }, [
+        loading,
+        isRefreshing,
+        currentView,
+        showPastMatches,
+        heroMatch,
+        pastMatches.length,
+        boardMatches.length,
+    ]);
 
     // Loading state - only show skeleton on initial load when no data yet
     if (loading && matches.length === 0 && !hasEverLoaded.current) {
@@ -634,7 +696,7 @@ export default function Dashboard({
         <div className="screen">
             {boardMatches.length === 0 ? (
                 <EmptyState
-                    title="No upcoming matches"
+                    title={showPastMatches ? 'No matches yet' : 'No upcoming matches'}
                     description="Check back later or contact the admin."
                 />
             ) : (
@@ -645,7 +707,10 @@ export default function Dashboard({
                                 key={match.id}
                                 ref={(node) => setMatchCardRef(match.id, node)}
                                 className={highlightedMatchId === match.id ? 'match-focus-pulse' : undefined}
-                                style={{ borderRadius: 'var(--r-md)' }}
+                                style={{
+                                    borderRadius: 'var(--r-md)',
+                                    scrollMarginTop: 'calc(var(--safe-top) + var(--header-h) + var(--sp-3))',
+                                }}
                                 animate={highlightedMatchId === match.id ? { scale: [1, 1.01, 1] } : { scale: 1 }}
                                 transition={highlightedMatchId === match.id
                                     ? { duration: 0.8, times: [0, 0.35, 1], ease: 'easeOut' }
