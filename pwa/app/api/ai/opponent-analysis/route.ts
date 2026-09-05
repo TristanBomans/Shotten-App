@@ -25,7 +25,7 @@ interface AnalysisRequest {
 
 export async function POST(request: NextRequest) {
     try {
-        const apiKey = process.env.MISTRAL_API_KEY;
+        const apiKey = process.env.OPENROUTER_API_KEY;
 
         if (!apiKey) {
             return NextResponse.json(
@@ -90,20 +90,34 @@ Opponent "${opponent.name}":
 
 Write the analysis directly without introduction. Be concrete and specific.`;
 
-        const { Mistral } = await import('@mistralai/mistralai');
-        const client = new Mistral({ apiKey });
-
-        const response = await client.chat.complete({
-            model: 'mistral-small-latest',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.7,
-            maxTokens: 250,
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://shotten.taltiko.com',
+                'X-Title': 'Shotten opponent analysis',
+            },
+            body: JSON.stringify({
+                model: 'openai/gpt-5.6-luna',
+                messages: [{ role: 'user', content: prompt }],
+                reasoning: { effort: 'low', exclude: true },
+                max_tokens: 500,
+            }),
         });
 
-        const analysis = response.choices?.[0]?.message?.content;
+        if (!response.ok) {
+            const details = (await response.text()).slice(0, 500);
+            throw new Error(`OpenRouter returned ${response.status}: ${details}`);
+        }
+
+        const result = await response.json() as {
+            choices?: { message?: { content?: string } }[];
+        };
+        const analysis = result.choices?.[0]?.message?.content;
 
         if (!analysis) {
-            throw new Error('No response from AI');
+            throw new Error('No response from OpenRouter');
         }
 
         return NextResponse.json({ analysis });

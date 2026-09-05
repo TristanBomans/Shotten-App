@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { formatDateSafe } from '@/lib/dateUtils';
+import { OpenAILogo } from '@/components/ui/OpenAILogo';
 
 interface Release {
     date: string;
@@ -11,28 +12,6 @@ interface Release {
 
 interface VersionInfo {
     releases: Release[];
-}
-
-function MistralLogo({ size = 18 }: { size?: number }) {
-    return (
-        <svg
-            width={size}
-            height={size * (91 / 129)}
-            viewBox="0 0 129 91"
-            style={{ fillRule: 'evenodd', clipRule: 'evenodd' }}
-        >
-            <rect x="18.292" y="0" width="18.293" height="18.123" fill="#ffd800" />
-            <rect x="91.473" y="0" width="18.293" height="18.123" fill="#ffd800" />
-            <rect x="18.292" y="18.121" width="36.586" height="18.123" fill="#ffaf00" />
-            <rect x="73.181" y="18.121" width="36.586" height="18.123" fill="#ffaf00" />
-            <rect x="18.292" y="36.243" width="91.476" height="18.122" fill="#ff8205" />
-            <rect x="18.292" y="54.37" width="18.293" height="18.123" fill="#fa500f" />
-            <rect x="54.883" y="54.37" width="18.293" height="18.123" fill="#fa500f" />
-            <rect x="91.473" y="54.37" width="18.293" height="18.123" fill="#fa500f" />
-            <rect x="0" y="72.504" width="54.89" height="18.123" fill="#e10500" />
-            <rect x="73.181" y="72.504" width="54.89" height="18.123" fill="#e10500" />
-        </svg>
-    );
 }
 
 export default function VersionHistoryContent() {
@@ -187,7 +166,7 @@ export default function VersionHistoryContent() {
             >
                 <span>Release notes powered by</span>
                 <a
-                    href="https://mistral.ai"
+                    href="https://openai.com"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
@@ -199,8 +178,8 @@ export default function VersionHistoryContent() {
                         fontWeight: 500,
                     }}
                 >
-                    <MistralLogo size={18} />
-                    <span>Mistral AI</span>
+                    <OpenAILogo size={18} />
+                    <span>OpenAI</span>
                 </a>
             </motion.div>
         </motion.div>

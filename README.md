@@ -59,7 +59,7 @@ The PWA runs on **Cloudflare Pages** via the OpenNext adapter.
 | [Lucide React](https://lucide.dev/) | Icons |
 | [Recharts](https://recharts.org/) | Charts and analytics |
 | [Supabase](https://supabase.com/) | Database and data access |
-| [Mistral AI](https://mistral.ai/) | Opponent analysis endpoint |
+| [OpenRouter](https://openrouter.ai/) | OpenAI-powered opponent analysis and release notes |
 | [Bun](https://bun.sh/) | Package manager & runtime |
 | [OpenNext](https://opennext.js.org/) | Cloudflare deployment adapter |
 | [Cloudflare Pages](https://pages.cloudflare.com/) | Hosting |
@@ -90,7 +90,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
    - `NEXT_PUBLIC_APP_ICON_URL` — optional custom app icon URL
    - `NEXT_PUBLIC_APP_MASKABLE_ICON_URL` — optional Android-safe maskable icon URL
    - `SUPABASE_SERVICE_KEY` — Supabase service key (server-side writes; falls back to anon if unset)
-   - `MISTRAL_API_KEY` — Mistral API key for the opponent-analysis endpoint
+   - `OPENROUTER_API_KEY` — OpenRouter key for opponent analysis and release-note generation
 
 3. **Start the dev server**:
    ```bash
