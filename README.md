@@ -87,6 +87,8 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 2. **Environment variables** - copy `pwa/.env.example` to `pwa/.env.local` and fill in your values:
    - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon/public key
+   - `NEXT_PUBLIC_APP_ICON_URL` — optional custom app icon URL
+   - `NEXT_PUBLIC_APP_MASKABLE_ICON_URL` — optional Android-safe maskable icon URL
    - `SUPABASE_SERVICE_KEY` — Supabase service key (server-side writes; falls back to anon if unset)
    - `MISTRAL_API_KEY` — Mistral API key for the opponent-analysis endpoint
 

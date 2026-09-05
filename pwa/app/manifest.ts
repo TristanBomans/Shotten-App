@@ -4,13 +4,12 @@ export const dynamic = 'force-static';
 
 export default function manifest(): MetadataRoute.Manifest {
     const iconUrl = process.env.NEXT_PUBLIC_APP_ICON_URL;
+    const maskableIconUrl = process.env.NEXT_PUBLIC_APP_MASKABLE_ICON_URL;
 
     const icons: MetadataRoute.Manifest['icons'] = iconUrl
         ? [
-              { src: iconUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
-              { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'any' },
-              { src: iconUrl, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-              { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+              { src: iconUrl, purpose: 'any' },
+              ...(maskableIconUrl ? [{ src: maskableIconUrl, purpose: 'maskable' as const }] : []),
           ]
         : [
             {

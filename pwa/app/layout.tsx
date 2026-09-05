@@ -18,7 +18,7 @@ export const metadata: Metadata = {
         title: 'Shotten',
     },
     ...(process.env.NEXT_PUBLIC_APP_ICON_URL
-        ? { icons: { icon: process.env.NEXT_PUBLIC_APP_ICON_URL, apple: process.env.NEXT_PUBLIC_APP_ICON_URL } }
+        ? { icons: { icon: process.env.NEXT_PUBLIC_APP_ICON_URL } }
         : {}),
 };
 
@@ -48,7 +48,7 @@ export default function RootLayout({
                             (function() {
                                 let theme = localStorage.getItem('theme');
                                 if (!theme || theme === 'original') {
-                                    theme = 'white';
+                                    theme = 'oled';
                                     localStorage.setItem('theme', theme);
                                 }
                                 document.documentElement.setAttribute('data-theme', theme);
