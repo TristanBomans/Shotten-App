@@ -107,6 +107,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
         aiError,
         fetchAIAnalysis,
     } = useOpponentTeamData({
+        matchId: match.id,
         opponentTeam,
         ownTeam,
         open,

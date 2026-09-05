@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'node:crypto';
+import { getMatchAiAnalysis, upsertMatchAiAnalysis } from '@/lib/supabase';
+
+const OPENROUTER_MODEL = 'openai/gpt-5.6-luna';
 
 interface TeamData {
     name: string;
@@ -17,10 +21,18 @@ interface PlayerData {
 }
 
 interface AnalysisRequest {
+    matchId: number;
+    force?: boolean;
     ownTeam: TeamData;
     opponent: TeamData;
     opponentPlayers: PlayerData[];
     recentForm: ('W' | 'L' | 'D')[];
+}
+
+function getInputHash(input: Omit<AnalysisRequest, 'matchId'>): string {
+    return createHash('sha256')
+        .update(JSON.stringify(input))
+        .digest('hex');
 }
 
 export async function POST(request: NextRequest) {
@@ -35,13 +47,36 @@ export async function POST(request: NextRequest) {
         }
 
         const body: AnalysisRequest = await request.json();
-        const { ownTeam, opponent, opponentPlayers, recentForm } = body;
+        const { matchId, ownTeam, opponent, opponentPlayers, recentForm } = body;
 
-        if (!ownTeam || !opponent) {
+        if (!Number.isInteger(matchId) || matchId <= 0 || !ownTeam || !opponent) {
             return NextResponse.json(
-                { error: 'Missing team data' },
+                { error: 'Missing match or team data' },
                 { status: 400 }
             );
+        }
+
+        const input = { ownTeam, opponent, opponentPlayers, recentForm };
+        const inputHash = getInputHash(input);
+        const force = body.force === true;
+
+        // Analyses are persisted per match. If the source data and model have
+        // not changed, avoid spending another request on the same report.
+        if (!force) {
+            try {
+                const cached = await getMatchAiAnalysis(matchId);
+                if (cached?.input_hash === inputHash && cached.model === OPENROUTER_MODEL) {
+                    return NextResponse.json({
+                        analysis: cached.analysis,
+                        cached: true,
+                        generatedAt: cached.updated_at ?? cached.created_at ?? null,
+                    });
+                }
+            } catch (error) {
+                // Keep the feature usable while an existing deployment is
+                // waiting for the database migration to be applied.
+                console.warn('Could not read persisted AI analysis:', error);
+            }
         }
 
         // Format recent form string
@@ -99,7 +134,7 @@ Write the analysis directly without introduction. Be concrete and specific.`;
                 'X-Title': 'Shotten opponent analysis',
             },
             body: JSON.stringify({
-                model: 'openai/gpt-5.6-luna',
+                model: OPENROUTER_MODEL,
                 messages: [{ role: 'user', content: prompt }],
                 reasoning: { effort: 'low', exclude: true },
                 max_tokens: 500,
@@ -120,7 +155,22 @@ Write the analysis directly without introduction. Be concrete and specific.`;
             throw new Error('No response from OpenRouter');
         }
 
-        return NextResponse.json({ analysis });
+        let persisted = false;
+        try {
+            await upsertMatchAiAnalysis({
+                match_id: matchId,
+                analysis,
+                input_hash: inputHash,
+                model: OPENROUTER_MODEL,
+            });
+            persisted = true;
+        } catch (error) {
+            // Generation should still succeed if the migration has not been
+            // applied yet; the warning makes the missing persistence visible.
+            console.warn('Could not persist AI analysis:', error);
+        }
+
+        return NextResponse.json({ analysis, cached: false, persisted });
     } catch (error) {
         console.error('AI opponent analysis error:', error);
         return NextResponse.json(

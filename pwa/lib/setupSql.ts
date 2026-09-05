@@ -1,6 +1,6 @@
 // ============================================================================
 // INITIAL SETUP SQL
-// Mirrors supabase/schema.sql + supabase/migrations/001 + 002.
+// Mirrors supabase/schema.sql + supabase/migrations/001 + 002 + 003.
 // Verification SELECTs and the hardcoded team UPDATE from migration 002 are
 // intentionally omitted (team linking happens through the setup wizard).
 // Keep this in sync when the schema files change.
@@ -49,6 +49,18 @@ CREATE TABLE IF NOT EXISTS attendances (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(match_id, player_id)
+);
+
+-- Persisted AI opponent scouting report (one current report per match)
+CREATE TABLE IF NOT EXISTS match_ai_analyses (
+    id SERIAL PRIMARY KEY,
+    match_id INTEGER NOT NULL REFERENCES core_matches(id) ON DELETE CASCADE,
+    analysis TEXT NOT NULL,
+    input_hash TEXT NOT NULL,
+    model TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(match_id)
 );
 
 -- LZV Teams
@@ -122,6 +134,7 @@ CREATE TABLE IF NOT EXISTS lzv_player_team_stats (
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_attendances_match_id ON attendances(match_id);
 CREATE INDEX IF NOT EXISTS idx_attendances_player_id ON attendances(player_id);
+CREATE INDEX IF NOT EXISTS idx_match_ai_analyses_match_id ON match_ai_analyses(match_id);
 CREATE INDEX IF NOT EXISTS idx_core_matches_team_id ON core_matches(team_id);
 CREATE INDEX IF NOT EXISTS idx_core_matches_date ON core_matches(date);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_core_teams_lzv_external_id ON core_teams(lzv_external_id) WHERE lzv_external_id IS NOT NULL;
@@ -137,6 +150,7 @@ ALTER TABLE core_teams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE core_players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE core_matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE match_ai_analyses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lzv_teams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lzv_matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lzv_players ENABLE ROW LEVEL SECURITY;
@@ -147,6 +161,7 @@ CREATE POLICY "Public read access" ON core_teams FOR SELECT USING (true);
 CREATE POLICY "Public read access" ON core_players FOR SELECT USING (true);
 CREATE POLICY "Public read access" ON core_matches FOR SELECT USING (true);
 CREATE POLICY "Public read access" ON attendances FOR SELECT USING (true);
+CREATE POLICY "Public read access" ON match_ai_analyses FOR SELECT USING (true);
 CREATE POLICY "Public read access" ON lzv_teams FOR SELECT USING (true);
 CREATE POLICY "Public read access" ON lzv_matches FOR SELECT USING (true);
 CREATE POLICY "Public read access" ON lzv_players FOR SELECT USING (true);
@@ -157,6 +172,7 @@ CREATE POLICY "Service role full access" ON core_teams FOR ALL USING (true) WITH
 CREATE POLICY "Service role full access" ON core_players FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Service role full access" ON core_matches FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Service role full access" ON attendances FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON match_ai_analyses FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Service role full access" ON lzv_teams FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Service role full access" ON lzv_matches FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Service role full access" ON lzv_players FOR ALL USING (true) WITH CHECK (true);
@@ -178,6 +194,8 @@ CREATE TRIGGER update_core_players_updated_at BEFORE UPDATE ON core_players
 CREATE TRIGGER update_core_matches_updated_at BEFORE UPDATE ON core_matches
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_attendances_updated_at BEFORE UPDATE ON attendances
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_match_ai_analyses_updated_at BEFORE UPDATE ON match_ai_analyses
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_lzv_matches_updated_at BEFORE UPDATE ON lzv_matches
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -102,6 +102,16 @@ export interface LzvPlayerTeamStats {
     updated_at?: string;
 }
 
+export interface MatchAiAnalysis {
+    id?: number;
+    match_id: number;
+    analysis: string;
+    input_hash: string;
+    model: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
 // ============================================================================
 // API RESPONSE TYPES (matching original backend format)
 // ============================================================================
@@ -428,6 +438,30 @@ export async function updateAttendance(matchId: number, playerId: number, status
         .select()
         .single();
     
+    if (error) throw error;
+    return data;
+}
+
+export async function getMatchAiAnalysis(matchId: number): Promise<MatchAiAnalysis | null> {
+    const { data, error } = await getSupabaseClient()
+        .from('match_ai_analyses')
+        .select('*')
+        .eq('match_id', matchId)
+        .maybeSingle();
+
+    if (error) throw error;
+    return data;
+}
+
+export async function upsertMatchAiAnalysis(
+    analysis: Omit<MatchAiAnalysis, 'id' | 'created_at' | 'updated_at'>,
+): Promise<MatchAiAnalysis> {
+    const { data, error } = await getSupabaseServiceClient()
+        .from('match_ai_analyses')
+        .upsert(analysis, { onConflict: 'match_id' })
+        .select()
+        .single();
+
     if (error) throw error;
     return data;
 }
