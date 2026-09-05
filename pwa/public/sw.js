@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shotten-v5';
+const CACHE_NAME = 'shotten-v6';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
