@@ -92,6 +92,9 @@ powershell -c "irm bun.sh/install.ps1 | iex"
    - `SUPABASE_SERVICE_KEY` — Supabase service key (server-side writes; falls back to anon if unset)
    - `OPENROUTER_API_KEY` — OpenRouter key for opponent analysis and release-note generation
 
+   The opponent scouting report is persisted per match in Supabase. Existing databases need
+   `pwa/supabase/migrations/003_add_match_ai_analyses.sql` applied once.
+
 3. **Start the dev server**:
    ```bash
    bun dev

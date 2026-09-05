@@ -12,6 +12,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 
 interface UseOpponentTeamDataProps {
+    matchId: number;
     opponentTeam: string | null;
     ownTeam: string | null;
     open: boolean;
@@ -34,6 +35,7 @@ interface UseOpponentTeamDataResult {
 }
 
 export function useOpponentTeamData({
+    matchId,
     opponentTeam,
     ownTeam,
     open,
@@ -202,7 +204,7 @@ export function useOpponentTeamData({
     const fetchAIAnalysis = useCallback(async (force: boolean = false) => {
         if (!opponentData || !ownTeamData) return;
 
-        const cacheKey = `${opponentData.externalId}-${ownTeamData.externalId}`;
+        const cacheKey = `${matchId}-${opponentData.externalId}-${ownTeamData.externalId}`;
 
         // Check cache first (unless forced)
         if (!force) {
@@ -221,6 +223,8 @@ export function useOpponentTeamData({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    matchId,
+                    force,
                     ownTeam: {
                         name: ownTeamData.name,
                         rank: ownTeamData.rank,
@@ -262,14 +266,14 @@ export function useOpponentTeamData({
         } finally {
             setAiLoading(false);
         }
-    }, [opponentData, ownTeamData, opponentPlayers, recentForm]);
+    }, [matchId, opponentData, ownTeamData, opponentPlayers, recentForm]);
 
     // Auto-fetch AI analysis when data is ready
     useEffect(() => {
-        if (opponentData && ownTeamData && !aiAnalysis && !aiLoading && !aiError) {
+        if (opponentData && ownTeamData && !loading && !aiAnalysis && !aiLoading && !aiError) {
             fetchAIAnalysis();
         }
-    }, [opponentData, ownTeamData, aiAnalysis, aiLoading, aiError, fetchAIAnalysis]);
+    }, [opponentData, ownTeamData, loading, aiAnalysis, aiLoading, aiError, fetchAIAnalysis]);
 
     return {
         opponentExternalId,
