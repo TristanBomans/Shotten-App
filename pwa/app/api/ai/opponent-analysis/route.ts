@@ -37,15 +37,6 @@ function getInputHash(input: Omit<AnalysisRequest, 'matchId'>): string {
 
 export async function POST(request: NextRequest) {
     try {
-        const apiKey = process.env.OPENROUTER_API_KEY;
-
-        if (!apiKey) {
-            return NextResponse.json(
-                { error: 'AI service not configured' },
-                { status: 503 }
-            );
-        }
-
         const body: AnalysisRequest = await request.json();
         const { matchId, ownTeam, opponent, opponentPlayers, recentForm } = body;
 
@@ -61,11 +52,12 @@ export async function POST(request: NextRequest) {
         const force = body.force === true;
 
         // Analyses are persisted per match. If the source data and model have
-        // not changed, avoid spending another request on the same report.
+        // already been analyzed, avoid spending another request on the same
+        // report. A force refresh is the only way to replace it.
         if (!force) {
             try {
                 const cached = await getMatchAiAnalysis(matchId);
-                if (cached?.input_hash === inputHash && cached.model === OPENROUTER_MODEL) {
+                if (cached?.analysis) {
                     return NextResponse.json({
                         analysis: cached.analysis,
                         cached: true,
@@ -77,6 +69,15 @@ export async function POST(request: NextRequest) {
                 // waiting for the database migration to be applied.
                 console.warn('Could not read persisted AI analysis:', error);
             }
+        }
+
+        const apiKey = process.env.OPENROUTER_API_KEY;
+
+        if (!apiKey) {
+            return NextResponse.json(
+                { error: 'AI service not configured' },
+                { status: 503 }
+            );
         }
 
         // Format recent form string
