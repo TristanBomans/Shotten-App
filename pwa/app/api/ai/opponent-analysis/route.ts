@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
-import { getMatchAiAnalysis, upsertMatchAiAnalysis } from '@/lib/supabase';
+import { isAiAnalysisStale } from '@/lib/aiAnalysis';
+import { getMatchAiAnalysis, upsertMatchAiAnalysis, type MatchAiAnalysis } from '@/lib/supabase';
 
 const OPENROUTER_MODEL = 'openai/gpt-5.6-luna';
 
@@ -51,49 +52,58 @@ export async function POST(request: NextRequest) {
         const inputHash = getInputHash(input);
         const force = body.force === true;
 
-        // Analyses are persisted per match. If the source data and model have
-        // already been analyzed, avoid spending another request on the same
-        // report. A force refresh is the only way to replace it.
-        if (!force) {
-            try {
-                const cached = await getMatchAiAnalysis(matchId);
-                if (cached?.analysis) {
-                    return NextResponse.json({
-                        analysis: cached.analysis,
-                        cached: true,
-                        generatedAt: cached.updated_at ?? cached.created_at ?? null,
-                    });
-                }
-            } catch (error) {
-                // Keep the feature usable while an existing deployment is
-                // waiting for the database migration to be applied.
-                console.warn('Could not read persisted AI analysis:', error);
-            }
+        let cached: MatchAiAnalysis | null = null;
+        try {
+            cached = await getMatchAiAnalysis(matchId);
+        } catch (error) {
+            // Keep the feature usable while an existing deployment is
+            // waiting for the database migration to be applied.
+            console.warn('Could not read persisted AI analysis:', error);
+        }
+
+        const generatedAt = cached?.updated_at ?? cached?.created_at ?? null;
+        // Fresh reports are reused. A force refresh or a report older than
+        // five days spends another model call so the scout stays current.
+        if (!force && cached?.analysis && !isAiAnalysisStale(generatedAt)) {
+            return NextResponse.json({
+                analysis: cached.analysis,
+                cached: true,
+                generatedAt,
+            });
         }
 
         const apiKey = process.env.OPENROUTER_API_KEY;
 
         if (!apiKey) {
+            if (cached?.analysis) {
+                return NextResponse.json({
+                    analysis: cached.analysis,
+                    cached: true,
+                    generatedAt,
+                    refreshFailed: force || isAiAnalysisStale(generatedAt),
+                });
+            }
             return NextResponse.json(
                 { error: 'AI service not configured' },
                 { status: 503 }
             );
         }
 
-        // Format recent form string
-        const formString = recentForm.length > 0
-            ? recentForm.join('-')
-            : 'unknown';
+        try {
+            // Format recent form string
+            const formString = recentForm.length > 0
+                ? recentForm.join('-')
+                : 'unknown';
 
-        // Format top scorers
-        const topScorersString = opponentPlayers.length > 0
-            ? opponentPlayers
-                .slice(0, 3)
-                .map(p => `${p.name} (${p.goals} goals, ${p.assists} assists)`)
-                .join(', ')
-            : 'no data';
+            // Format top scorers
+            const topScorersString = opponentPlayers.length > 0
+                ? opponentPlayers
+                    .slice(0, 3)
+                    .map(p => `${p.name} (${p.goals} goals, ${p.assists} assists)`)
+                    .join(', ')
+                : 'no data';
 
-        const prompt = `You are a futsal scout. Generate a short analysis (max 120 words, in English).
+            const prompt = `You are a futsal scout. Generate a short analysis (max 120 words, in English).
 
 IMPORTANT:
 - Do NOT use markdown formatting like ** or _
@@ -126,52 +136,72 @@ Opponent "${opponent.name}":
 
 Write the analysis directly without introduction. Be concrete and specific.`;
 
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://shotten.taltiko.com',
-                'X-Title': 'Shotten opponent analysis',
-            },
-            body: JSON.stringify({
-                model: OPENROUTER_MODEL,
-                messages: [{ role: 'user', content: prompt }],
-                reasoning: { effort: 'low', exclude: true },
-                max_tokens: 500,
-            }),
-        });
-
-        if (!response.ok) {
-            const details = (await response.text()).slice(0, 500);
-            throw new Error(`OpenRouter returned ${response.status}: ${details}`);
-        }
-
-        const result = await response.json() as {
-            choices?: { message?: { content?: string } }[];
-        };
-        const analysis = result.choices?.[0]?.message?.content;
-
-        if (!analysis) {
-            throw new Error('No response from OpenRouter');
-        }
-
-        let persisted = false;
-        try {
-            await upsertMatchAiAnalysis({
-                match_id: matchId,
-                analysis,
-                input_hash: inputHash,
-                model: OPENROUTER_MODEL,
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': 'https://shotten.taltiko.com',
+                    'X-Title': 'Shotten opponent analysis',
+                },
+                body: JSON.stringify({
+                    model: OPENROUTER_MODEL,
+                    messages: [{ role: 'user', content: prompt }],
+                    reasoning: { effort: 'low', exclude: true },
+                    max_tokens: 500,
+                }),
             });
-            persisted = true;
-        } catch (error) {
-            // Generation should still succeed if the migration has not been
-            // applied yet; the warning makes the missing persistence visible.
-            console.warn('Could not persist AI analysis:', error);
-        }
 
-        return NextResponse.json({ analysis, cached: false, persisted });
+            if (!response.ok) {
+                const details = (await response.text()).slice(0, 500);
+                throw new Error(`OpenRouter returned ${response.status}: ${details}`);
+            }
+
+            const result = await response.json() as {
+                choices?: { message?: { content?: string } }[];
+            };
+            const analysis = result.choices?.[0]?.message?.content;
+
+            if (!analysis) {
+                throw new Error('No response from OpenRouter');
+            }
+
+            let persisted = false;
+            try {
+                await upsertMatchAiAnalysis({
+                    match_id: matchId,
+                    analysis,
+                    input_hash: inputHash,
+                    model: OPENROUTER_MODEL,
+                });
+                persisted = true;
+            } catch (error) {
+                // Generation should still succeed if the migration has not been
+                // applied yet; the warning makes the missing persistence visible.
+                console.warn('Could not persist AI analysis:', error);
+            }
+
+            return NextResponse.json({
+                analysis,
+                cached: false,
+                persisted,
+                generatedAt: new Date().toISOString(),
+            });
+        } catch (error) {
+            console.error('AI opponent analysis error:', error);
+            if (cached?.analysis) {
+                return NextResponse.json({
+                    analysis: cached.analysis,
+                    cached: true,
+                    generatedAt,
+                    refreshFailed: true,
+                });
+            }
+            return NextResponse.json(
+                { error: 'Failed to generate analysis' },
+                { status: 500 }
+            );
+        }
     } catch (error) {
         console.error('AI opponent analysis error:', error);
         return NextResponse.json(

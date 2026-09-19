@@ -260,6 +260,9 @@ export function useOpponentTeamData({
             const data = await response.json();
             setAiAnalysis(data.analysis);
             aiCacheRef.current.set(cacheKey, data.analysis);
+            if (force && data.refreshFailed) {
+                setAiError('Could not regenerate the report');
+            }
         } catch (error) {
             console.error('AI analysis error:', error);
             setAiError(error instanceof Error ? error.message : 'Failed to generate analysis');

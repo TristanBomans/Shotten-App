@@ -10,6 +10,7 @@ import { formatMatchDate, formatTimeSafe } from '@/lib/dateUtils';
 import type { Match } from '@/lib/mockData';
 import type { RosterPlayer, StatusGroup } from '../../MatchBoard/types';
 import { useOpponentTeamData } from './useOpponentTeamData';
+import { SegmentedControl } from '../../ui/controls';
 import SquadView from './SquadView';
 import OpponentView from './OpponentView';
 
@@ -202,40 +203,27 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                                 width: '100%',
                             }}
                         >
-                            <div className="seg" role="tablist" aria-label="Match views">
-                                {modalTabs.map(tab => {
-                                    const isActive = activeTab === tab;
-                                    const label = tab === 'squad' ? 'Squad' : 'Opponent';
-                                    return (
-                                        <button
-                                            key={tab}
-                                            role="tab"
-                                            aria-selected={isActive}
-                                            className="seg-item"
-                                            onClick={() => {
-                                                hapticPatterns.tap();
-                                                lastTabRef.current = tab;
-                                                setActiveTab(tab);
-                                                scrollToView(tab);
-                                            }}
-                                        >
-                                            {label}
+                            <SegmentedControl
+                                aria-label="Match views"
+                                value={activeTab}
+                                onChange={(tab) => {
+                                    hapticPatterns.tap();
+                                    lastTabRef.current = tab;
+                                    setActiveTab(tab);
+                                    scrollToView(tab);
+                                }}
+                                options={modalTabs.map((tab) => ({
+                                    value: tab,
+                                    label: (
+                                        <>
+                                            {tab === 'squad' ? 'Squad' : 'Opponent'}
                                             {tab === 'squad' && present.length > 0 && (
-                                                <span
-                                                    className="t-num"
-                                                    style={{
-                                                        fontSize: '0.625rem',
-                                                        fontWeight: 800,
-                                                        color: isActive ? 'var(--ok)' : 'var(--text-3)',
-                                                    }}
-                                                >
-                                                    {present.length}
-                                                </span>
+                                                <span className="t-num seg-count">{present.length}</span>
                                             )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                                        </>
+                                    ),
+                                }))}
+                            />
                         </div>
                     </div>
 

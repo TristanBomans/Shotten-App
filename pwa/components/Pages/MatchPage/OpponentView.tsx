@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, UserCircle, Sparkles, AlertCircle, Trophy, Palette } from 'lucide-react';
+import { Loader2, UserCircle, Sparkles, AlertCircle, Trophy, Palette, RefreshCw } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 import { ListSection, Row, MetricRow } from '../../ui/ListSection';
@@ -403,7 +403,45 @@ export default function OpponentView({
 
             {/* AI scouting report */}
             {opponentData && (ownTeamData || loading || aiLoading || aiAnalysis || aiError) && (
-                <ListSection label="AI scouting report">
+                <ListSection
+                    label="AI scouting report"
+                    labelAction={
+                        aiAnalysis ? (
+                            <button
+                                type="button"
+                                className="press"
+                                aria-label="Regenerate scouting report"
+                                disabled={aiLoading}
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    onGenerateAI(true);
+                                }}
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                    margin: 0,
+                                    padding: 0,
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: 'var(--text-2)',
+                                    font: 'inherit',
+                                    textTransform: 'none',
+                                    letterSpacing: 0,
+                                    fontWeight: 600,
+                                    cursor: aiLoading ? 'wait' : 'pointer',
+                                    opacity: aiLoading ? 0.55 : 1,
+                                }}
+                            >
+                                <RefreshCw
+                                    size={11}
+                                    className={aiLoading ? 'animate-spin' : undefined}
+                                />
+                                Regenerate
+                            </button>
+                        ) : null
+                    }
+                >
                     <div className="row row-static" style={{ display: 'block', padding: '14px 16px' }}>
                         {!ownTeamData && loading && (
                             <div className="flex-center" style={{ flexDirection: 'column', gap: 8, padding: 12 }}>
@@ -426,14 +464,14 @@ export default function OpponentView({
                             </button>
                         )}
 
-                        {aiLoading && (
+                        {aiLoading && !aiAnalysis && (
                             <div className="flex-center" style={{ flexDirection: 'column', gap: 8, padding: 12 }}>
                                 <Loader2 className="animate-spin" size={20} style={{ color: 'var(--text-2)' }} />
                                 <span className="t-caption">Analyzing opponent data...</span>
                             </div>
                         )}
 
-                        {aiError && (
+                        {aiError && !aiAnalysis && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                 <InlineNotice tone="error">
                                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -445,7 +483,7 @@ export default function OpponentView({
                                     className="btn btn-quiet press"
                                     onClick={() => {
                                         hapticPatterns.tap();
-                                        onGenerateAI();
+                                        onGenerateAI(true);
                                     }}
                                 >
                                     Try Again
@@ -453,7 +491,7 @@ export default function OpponentView({
                             </div>
                         )}
 
-                        {aiAnalysis && !aiLoading && (
+                        {aiAnalysis && (
                             <motion.p
                                 initial={{ opacity: 0, y: 6 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -462,10 +500,22 @@ export default function OpponentView({
                                     lineHeight: 1.65,
                                     color: 'var(--text-1)',
                                     whiteSpace: 'pre-line',
+                                    opacity: aiLoading ? 0.55 : 1,
                                 }}
                             >
                                 {aiAnalysis}
                             </motion.p>
+                        )}
+
+                        {aiError && aiAnalysis && (
+                            <div style={{ marginTop: 10 }}>
+                                <InlineNotice tone="error">
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                        <AlertCircle size={13} />
+                                        {aiError}
+                                    </span>
+                                </InlineNotice>
+                            </div>
                         )}
 
                         {(aiAnalysis || aiLoading || (!ownTeamData && loading)) && (
