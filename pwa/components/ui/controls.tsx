@@ -34,6 +34,7 @@ interface SegmentedControlProps<T extends string> {
     value: T;
     onChange: (value: T) => void;
     style?: CSSProperties;
+    'aria-label'?: string;
 }
 
 export function SegmentedControl<T extends string>({
@@ -41,9 +42,27 @@ export function SegmentedControl<T extends string>({
     value,
     onChange,
     style,
+    'aria-label': ariaLabel,
 }: SegmentedControlProps<T>) {
+    const selectedIndex = Math.max(
+        0,
+        options.findIndex((option) => option.value === value),
+    );
+
     return (
-        <div className="seg" role="tablist" style={style}>
+        <div
+            className="seg"
+            role="tablist"
+            aria-label={ariaLabel}
+            style={
+                {
+                    ...style,
+                    '--seg-count': options.length,
+                    '--seg-index': selectedIndex,
+                } as CSSProperties
+            }
+        >
+            <span className="seg-thumb" aria-hidden />
             {options.map((option) => (
                 <button
                     key={option.value}

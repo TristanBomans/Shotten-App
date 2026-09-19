@@ -11,7 +11,7 @@ import { fetchScraperPlayers } from '@/lib/useData';
 import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
 import { ListSection, Row, MetricRow } from '../ui/ListSection';
-import { EmptyState } from '../ui/controls';
+import { EmptyState, SegmentedControl } from '../ui/controls';
 
 const teamDetailTabs = ['overview', 'matches', 'squad'] as const;
 type TeamDetailTab = typeof teamDetailTabs[number];
@@ -298,27 +298,20 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                 width: '100%',
                             }}
                         >
-                            <div className="seg" role="tablist" aria-label="Team views">
-                                {([
-                                    { id: 'overview', label: 'Overview' },
-                                    { id: 'matches', label: 'Matches' },
-                                    { id: 'squad', label: 'Squad' },
-                                ] as const).map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        role="tab"
-                                        aria-selected={activeTab === tab.id}
-                                        className="seg-item"
-                                        onClick={() => {
-                                            hapticPatterns.tap();
-                                            setActiveTab(tab.id);
-                                            scrollToView(tab.id);
-                                        }}
-                                    >
-                                        {tab.label}
-                                    </button>
-                                ))}
-                            </div>
+                            <SegmentedControl
+                                aria-label="Team views"
+                                value={activeTab}
+                                onChange={(tab) => {
+                                    hapticPatterns.tap();
+                                    setActiveTab(tab);
+                                    scrollToView(tab);
+                                }}
+                                options={[
+                                    { value: 'overview', label: 'Overview' },
+                                    { value: 'matches', label: 'Matches' },
+                                    { value: 'squad', label: 'Squad' },
+                                ]}
+                            />
                         </div>
                     </div>
 
