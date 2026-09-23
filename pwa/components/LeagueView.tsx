@@ -20,7 +20,9 @@ function isOwnTeam(name: string) {
 }
 
 function gdColor(gd: number) {
-    return gd > 0 ? 'var(--text-2)' : 'var(--text-3)';
+    if (gd > 0) return 'var(--ok)';
+    if (gd < 0) return 'var(--no)';
+    return 'var(--text-3)';
 }
 
 const TABULAR: CSSProperties = { fontVariantNumeric: 'tabular-nums' };
@@ -51,11 +53,14 @@ function TeamMeta({ team }: { team: ScraperTeam }) {
             <span>{played} played</span>
             <span style={{ opacity: 0.5 }} aria-hidden>·</span>
             <span>
-                <span style={{ color: 'var(--text-2)' }}>{w}</span>W
+                <span style={{ fontWeight: 500, color: 'var(--text-2)' }}>{w}</span>
+                <span style={{ fontWeight: 500, color: 'var(--ok)' }}>W</span>
                 {'\u00A0'}
-                <span style={{ color: 'var(--text-2)' }}>{d}</span>D
+                <span style={{ fontWeight: 500, color: 'var(--text-2)' }}>{d}</span>
+                <span style={{ fontWeight: 500 }}>D</span>
                 {'\u00A0'}
-                <span style={{ color: 'var(--text-2)' }}>{l}</span>L
+                <span style={{ fontWeight: 500, color: 'var(--text-2)' }}>{l}</span>
+                <span style={{ fontWeight: 500, color: 'var(--no)' }}>L</span>
             </span>
             <span style={{ opacity: 0.5 }} aria-hidden>·</span>
             <span>

@@ -51,20 +51,13 @@ export default function AvailabilityRoster({
                     <div key={key} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                         <span
                             style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                fontSize: 'var(--fs-2xs)',
+                                fontSize: 'var(--fs-3xs)',
                                 fontWeight: 500,
-                                color: 'var(--text-3)',
-                                width: 52,
+                                color,
+                                width: 38,
                                 flexShrink: 0,
                             }}
                         >
-                            <span
-                                aria-hidden
-                                style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }}
-                            />
                             {label}
                         </span>
                         <span
