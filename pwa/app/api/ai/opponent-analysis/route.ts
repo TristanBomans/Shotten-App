@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { isAiAnalysisStale } from '@/lib/aiAnalysis';
 import { getMatchAiAnalysis, upsertMatchAiAnalysis, type MatchAiAnalysis } from '@/lib/supabase';
 
-const OPENROUTER_MODEL = 'openai/gpt-5.6-luna';
+const OPENROUTER_MODEL = 'openai/gpt-6-luna';
 
 interface TeamData {
     name: string;

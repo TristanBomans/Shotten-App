@@ -3,7 +3,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const MAX_RELEASE_COMMITS = 5;
-const OPENROUTER_MODEL = 'openai/gpt-5.6-luna';
+const OPENROUTER_MODEL = 'openai/gpt-6-luna';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const MAX_AI_ATTEMPTS = 4;
 
