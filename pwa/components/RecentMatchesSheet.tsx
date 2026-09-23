@@ -177,7 +177,7 @@ export default function RecentMatchesSheet({
         <Sheet
             open={open}
             onClose={handleClose}
-            title="Recent Matches"
+            title="Recent matches"
             subtitle={matches.length > 0 ? `${matches.length} result${matches.length === 1 ? '' : 's'}` : undefined}
         >
             {loading ? (

@@ -18,12 +18,6 @@ export default function ForfaitMatchesPage({ isOpen, onClose }: ForfaitMatchesPa
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (isOpen) {
-            fetchMatches();
-        }
-    }, [isOpen]);
-
     const fetchMatches = async () => {
         setLoading(true);
         try {
@@ -38,6 +32,12 @@ export default function ForfaitMatchesPage({ isOpen, onClose }: ForfaitMatchesPa
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchMatches();
+        }
+    }, [isOpen]);
 
     const toggleForfait = async (matchId: number, currentForfait: boolean) => {
         const newForfait = !currentForfait;
@@ -69,7 +69,7 @@ export default function ForfaitMatchesPage({ isOpen, onClose }: ForfaitMatchesPa
     return (
         <FlowPage
             open={isOpen}
-            title="Forfait Matches"
+            title="Forfait matches"
             subtitle="Toggle a match to mark it as forfait"
             onBack={onClose}
         >

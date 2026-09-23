@@ -20,11 +20,23 @@ interface UseOpponentTeamDataProps {
     knownOpponentId?: number | null;
 }
 
+interface OpponentMatch {
+    externalId: number;
+    date: string;
+    homeTeam: string;
+    awayTeam: string;
+    homeScore: number | null;
+    awayScore: number | null;
+    location: string | null;
+    teamId: number;
+    status: string;
+}
+
 interface UseOpponentTeamDataResult {
     opponentExternalId: number | null;
     opponentData: ScraperTeam | null;
     opponentPlayers: ScraperPlayer[];
-    opponentMatches: any[];
+    opponentMatches: OpponentMatch[];
     ownTeamData: ScraperTeam | null;
     loading: boolean;
     recentForm: ('W' | 'L' | 'D')[];
@@ -46,7 +58,7 @@ export function useOpponentTeamData({
     const [lookupDone, setLookupDone] = useState(false);
     const [opponentData, setOpponentData] = useState<ScraperTeam | null>(null);
     const [opponentPlayers, setOpponentPlayers] = useState<ScraperPlayer[]>([]);
-    const [opponentMatches, setOpponentMatches] = useState<any[]>([]);
+    const [opponentMatches, setOpponentMatches] = useState<OpponentMatch[]>([]);
     const [ownTeamData, setOwnTeamData] = useState<ScraperTeam | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -185,14 +197,14 @@ export function useOpponentTeamData({
         if (!opponentData || opponentMatches.length === 0) return [];
 
         const playedMatches = opponentMatches
-            .filter((m: any) => m.status === 'Played')
-            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .filter((m) => m.status === 'Played')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             .slice(0, 5);
 
-        return playedMatches.map((m: any) => {
+        return playedMatches.map((m) => {
             const isHome = isHomeTeamForMatch(opponentData.name, m.homeTeam, m.awayTeam);
-            const teamScore = isHome ? m.homeScore : m.awayScore;
-            const opponentScore = isHome ? m.awayScore : m.homeScore;
+            const teamScore = (isHome ? m.homeScore : m.awayScore) ?? 0;
+            const opponentScore = (isHome ? m.awayScore : m.homeScore) ?? 0;
 
             if (teamScore > opponentScore) return 'W' as const;
             if (teamScore < opponentScore) return 'L' as const;

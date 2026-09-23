@@ -110,7 +110,7 @@ export default function PlayerManagementPage({ isOpen, onClose }: PlayerManageme
     return (
         <FlowPage
             open={isOpen}
-            title="Manage Players"
+            title="Manage players"
             subtitle={teamSubtitle}
             onBack={onClose}
         >

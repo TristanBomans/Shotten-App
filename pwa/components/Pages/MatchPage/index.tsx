@@ -71,8 +71,6 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
         }
     }, [open]);
 
-    if (typeof document === 'undefined') return null;
-
     // Squad data
     const present = roster.filter(p => p.status === 'Present');
     const maybe = roster.filter(p => p.status === 'Maybe');
@@ -115,6 +113,8 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
         enabled: activeTab === 'opponent',
         knownOpponentId: match.opponentLzvId ?? null,
     });
+
+    if (typeof document === 'undefined') return null;
 
     // Details data
     const mapUrl = match.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}` : null;

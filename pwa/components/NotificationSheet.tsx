@@ -36,7 +36,7 @@ export default function NotificationSheet({
         <Sheet
             open={open}
             onClose={handleClose}
-            title="Match Reminders"
+            title="Match reminders"
             subtitle={
                 totalCount > 0
                     ? `${totalCount} pending response${totalCount === 1 ? '' : 's'}`

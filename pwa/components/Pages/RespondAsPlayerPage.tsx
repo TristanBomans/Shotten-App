@@ -124,7 +124,7 @@ export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayer
     return (
         <FlowPage
             open={isOpen}
-            title={step === 'player' ? 'Respond as Player' : selectedPlayer?.name || ''}
+            title={step === 'player' ? 'Respond as player' : selectedPlayer?.name || ''}
             subtitle={step === 'player' ? 'Pick who you are answering for' : 'Upcoming matches'}
             onBack={step === 'matches' ? handleBackToPlayers : onClose}
             onClose={step === 'matches' ? onClose : undefined}

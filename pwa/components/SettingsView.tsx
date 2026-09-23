@@ -254,7 +254,7 @@ export default function SettingsView({
 
                 <Row
                     icon={<Smartphone size={16} />}
-                    title="Haptic Feedback"
+                    title="Haptic feedback"
                     subtitle="Vibration on actions"
                     trailing={
                         <Switch
@@ -267,7 +267,7 @@ export default function SettingsView({
 
                 <Row
                     icon={<Users size={16} />}
-                    title="Show Full Names"
+                    title="Show full names"
                     subtitle={showFullNames ? 'Names visible on cards' : 'Compact attendance on cards'}
                     trailing={
                         <Switch
@@ -280,7 +280,7 @@ export default function SettingsView({
 
                 <Row
                     icon={<History size={16} />}
-                    title="Show Past Matches"
+                    title="Show past matches"
                     subtitle={showPastMatches ? 'History on the board, scrolls to next' : 'Upcoming matches only'}
                     trailing={
                         <Switch
@@ -305,7 +305,7 @@ export default function SettingsView({
                 {leagues.length > 1 && (
                     <Row
                         icon={<Trophy size={16} />}
-                        title="Default League"
+                        title="Default league"
                         subtitle={defaultLeague || 'Auto-select (Mechelen preferred)'}
                         chevron
                         onClick={() => {
@@ -320,7 +320,7 @@ export default function SettingsView({
             <ListSection label="Management">
                 <Row
                     icon={<UserCheck size={16} />}
-                    title="Respond as Player"
+                    title="Respond as player"
                     subtitle="Fill in attendance for someone else"
                     chevron
                     onClick={() => {
@@ -330,7 +330,7 @@ export default function SettingsView({
                 />
                 <Row
                     icon={<UserCog size={16} />}
-                    title="Manage Players"
+                    title="Manage players"
                     subtitle="Add, edit or remove players"
                     chevron
                     onClick={() => {
@@ -340,7 +340,7 @@ export default function SettingsView({
                 />
                 <Row
                     icon={<Flag size={16} />}
-                    title="Forfait Matches"
+                    title="Forfait matches"
                     subtitle="Mark matches as forfait"
                     chevron
                     onClick={() => {
@@ -350,7 +350,7 @@ export default function SettingsView({
                 />
                 <Row
                     icon={<RefreshCw size={16} />}
-                    title="Version History"
+                    title="Version history"
                     subtitle={hasUpdate ? 'New version available' : 'View changelog and updates'}
                     chevron={!hasUpdate}
                     trailing={
@@ -377,7 +377,7 @@ export default function SettingsView({
                 {isHiddenAdminUnlocked && (
                     <Row
                         icon={<Bell size={16} />}
-                        title="Hidden Admin"
+                        title="Hidden admin"
                         subtitle="Worker dashboard for private network"
                         chevron
                         onClick={() => {
@@ -393,7 +393,7 @@ export default function SettingsView({
                 <ListSection label="Developer">
                     <Row
                         icon={useMock ? <Database size={16} /> : <Wifi size={16} />}
-                        title="Data Source"
+                        title="Data source"
                         subtitle={useMock ? 'Mock data' : 'Live backend'}
                         trailing={
                             <Switch
@@ -405,7 +405,7 @@ export default function SettingsView({
                     />
                     <Row
                         icon={useMock ? <WifiOff size={16} /> : <Wifi size={16} />}
-                        title="Backend Status"
+                        title="Backend status"
                         subtitle={useMock ? 'Offline' : 'Connected'}
                     />
                 </ListSection>
@@ -420,7 +420,7 @@ export default function SettingsView({
                 />
                 <Row
                     icon={<LogOut size={16} />}
-                    title="Sign Out"
+                    title="Sign out"
                     subtitle="Switch to a different player"
                     destructive
                     onClick={() => {
@@ -434,7 +434,7 @@ export default function SettingsView({
             <Sheet
                 open={showLeagueSelector}
                 onClose={() => setShowLeagueSelector(false)}
-                title="Default League"
+                title="Default league"
             >
                 <div className="list-section" role="listbox" aria-label="Default league">
                     <button

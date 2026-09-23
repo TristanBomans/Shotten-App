@@ -10,7 +10,7 @@ interface VersionHistoryPageProps {
 
 export default function VersionHistoryPage({ open, onClose }: VersionHistoryPageProps) {
     return (
-        <FlowPage open={open} title="Version History" onBack={onClose}>
+        <FlowPage open={open} title="Version history" onBack={onClose}>
             <VersionHistoryContent />
         </FlowPage>
     );
