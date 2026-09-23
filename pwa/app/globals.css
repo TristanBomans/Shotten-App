@@ -52,7 +52,7 @@
   --tbd-rgb: 142 142 147;
 
   /* Switch */
-  --switch-on: #30d158;
+  --switch-on: var(--primary);
   --switch-off: rgba(255, 255, 255, 0.12);
   --switch-thumb: #ffffff;
 
@@ -98,7 +98,7 @@
   --tbd: #8e8e93;
   --tbd-rgb: 142 142 147;
 
-  --switch-on: #34c759;
+  --switch-on: var(--primary);
   --switch-off: rgba(0, 0, 0, 0.1);
   --switch-thumb: #ffffff;
 
@@ -254,14 +254,14 @@ button {
    -------------------------------------------------------------------------- */
 .t-display {
   font-size: var(--fs-xl);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
 
 .t-title {
   font-size: var(--fs-lg);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.2;
 }
@@ -283,10 +283,8 @@ button {
 }
 
 .t-label {
-  font-size: var(--fs-3xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
+  font-size: var(--fs-xs);
+  font-weight: 500;
   color: var(--text-3);
 }
 
@@ -337,10 +335,8 @@ button {
 }
 
 .section-label {
-  font-size: var(--fs-3xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
+  font-size: var(--fs-xs);
+  font-weight: 500;
   color: var(--text-3);
   padding: 0 var(--sp-1);
   margin-bottom: var(--sp-2);
@@ -377,8 +373,8 @@ button {
   align-items: center;
   gap: var(--sp-3);
   width: 100%;
-  min-height: 52px;
-  padding: var(--sp-3) var(--sp-4);
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-4);
   background: transparent;
   border: none;
   color: var(--text-1);
@@ -433,6 +429,29 @@ button {
     background: var(--bg-subtle-strong);
     color: var(--text-1);
   }
+}
+
+/* Active state: neutral, the count badge carries the signal */
+.icon-action[data-active='true'] {
+  width: auto;
+  gap: 6px;
+  padding: 0 6px 0 10px;
+  color: var(--text-1);
+}
+
+.icon-action-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-full);
+  background: var(--accent);
+  color: #fff;
+  font-size: var(--fs-3xs);
+  font-weight: 600;
+  line-height: 1;
 }
 
 /* Buttons */
@@ -560,7 +579,7 @@ button {
 
 .seg-count {
   font-size: 0.625rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text-3);
 }
 
@@ -600,6 +619,7 @@ button {
 
 .switch[aria-checked='true']::after {
   transform: translateX(18px);
+  background: var(--primary-foreground);
 }
 
 /* Status chip: compact count/status token */
@@ -701,7 +721,7 @@ button {
   border-radius: 50%;
   background: var(--bg-subtle-strong);
   color: var(--text-2);
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   flex-shrink: 0;
 }
@@ -797,9 +817,8 @@ button {
   background: var(--bg-header);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-hairline);
   border-radius: var(--r-full);
-  box-shadow: 0 10px 32px rgb(0 0 0 / 0.35);
   transform: translateX(-50%);
   transition: transform var(--t-base), opacity var(--t-base);
 }
@@ -1167,282 +1186,4 @@ button {
 
 .animate-fade-in {
   animation: fade-in 0.25s ease-out;
-}
-
-/* --------------------------------------------------------------------------
-   9. Legacy compatibility aliases
-   The admin LAN dashboard and any not-yet-migrated surface reference the old
-   token names. Map them onto the new system so they render coherently.
-   -------------------------------------------------------------------------- */
-:root,
-[data-theme='oled'],
-[data-theme='white'] {
-  --color-bg: var(--bg-screen);
-  --color-bg-elevated: var(--bg-panel);
-  --color-surface: var(--bg-panel);
-  --color-surface-hover: var(--bg-panel-raised);
-  --color-border: var(--border-hairline);
-  --color-border-subtle: var(--border-subtle);
-  --color-text-primary: var(--text-1);
-  --color-text-secondary: var(--text-2);
-  --color-text-tertiary: var(--text-3);
-  --color-accent: var(--accent);
-  --color-accent-rgb: var(--accent-rgb);
-  --color-accent-glow: rgb(var(--accent-rgb) / 0.25);
-  --color-success: var(--ok);
-  --color-success-rgb: var(--ok-rgb);
-  --color-success-glow: rgb(var(--ok-rgb) / 0.25);
-  --color-warning: var(--warn);
-  --color-warning-secondary: var(--warn);
-  --color-warning-rgb: var(--warn-rgb);
-  --color-warning-glow: rgb(var(--warn-rgb) / 0.25);
-  --color-danger: var(--no);
-  --color-danger-rgb: var(--no-rgb);
-  --color-danger-glow: rgb(var(--no-rgb) / 0.25);
-  --color-text-tertiary-rgb: var(--tbd-rgb);
-  --color-overlay: var(--bg-backdrop);
-  --color-input-bg: var(--bg-inset);
-  --color-nav-bg: var(--bg-panel);
-  --color-nav-border: var(--border-hairline);
-  --color-nav-active: var(--bg-subtle-strong);
-  --color-glass-heavy: var(--bg-panel);
-  --color-multi-team-bg: rgb(var(--accent-rgb) / 0.12);
-  --color-top3-bg: rgb(var(--warn-rgb) / 0.08);
-  --color-top3-border: rgb(var(--warn-rgb) / 0.2);
-  --glass-edge-highlight: transparent;
-  --glass-edge-shadow: transparent;
-  --glass-saturate: 100%;
-  --response-btn-bg: var(--bg-subtle);
-  --response-btn-border: var(--border-hairline);
-  --response-btn-shadow: none;
-  --response-btn-icon: var(--text-3);
-  --response-btn-selected-shadow: none;
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: var(--shadow-overlay);
-  --shadow-glow: none;
-  --space-xs: var(--sp-1);
-  --space-sm: var(--sp-2);
-  --space-md: var(--sp-4);
-  --space-lg: var(--sp-6);
-  --space-xl: var(--sp-8);
-  --space-2xl: 3rem;
-  --content-x-padding: var(--screen-x);
-  --radius-sm: var(--r-sm);
-  --radius-md: var(--r-md);
-  --radius-lg: var(--r-lg);
-  --radius-xl: var(--r-lg);
-  --radius-full: var(--r-full);
-  --transition-fast: var(--t-fast);
-  --transition-base: var(--t-base);
-  --transition-spring: var(--t-spring);
-  --top-overlay-height: var(--header-h);
-  --top-overlay-offset: calc(var(--safe-top) + var(--header-h) + var(--sp-4));
-}
-
-.glass-panel,
-.glass-panel-heavy {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--r-md);
-}
-
-.glass-input {
-  width: 100%;
-  min-height: 44px;
-  padding: var(--sp-2) var(--sp-4);
-  background: var(--bg-inset);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--r-sm);
-  color: var(--text-1);
-  font-size: var(--fs-sm);
-  outline: none;
-}
-
-.glass-input:focus {
-  border-color: var(--border-strong);
-}
-
-.glass-input::placeholder {
-  color: var(--text-3);
-}
-
-.container {
-  width: 100%;
-  max-width: calc(var(--content-max) + 2 * var(--screen-x));
-  margin: 0 auto;
-  padding: var(--sp-6) var(--screen-x);
-  padding-top: calc(var(--sp-6) + var(--safe-top));
-  padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + var(--sp-8));
-}
-
-.content-under-top-overlay {
-  padding-top: var(--top-overlay-offset) !important;
-}
-
-.text-display {
-  font-size: var(--fs-xl);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
-.text-title {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-}
-
-.text-headline {
-  font-size: var(--fs-base);
-  font-weight: 600;
-}
-
-.text-body {
-  font-size: var(--fs-sm);
-  color: var(--text-2);
-}
-
-.text-caption {
-  font-size: var(--fs-2xs);
-  color: var(--text-3);
-}
-
-.text-label {
-  font-size: var(--fs-3xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--text-3);
-}
-
-.btn-ghost {
-  background: var(--bg-subtle);
-  color: var(--text-1);
-  border: 1px solid var(--border-hairline);
-}
-
-.btn-success {
-  background: var(--ok);
-  color: #000;
-}
-
-.btn-warning {
-  background: var(--warn);
-  color: #000;
-}
-
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--r-full);
-  background: var(--bg-subtle);
-  color: var(--text-2);
-  cursor: pointer;
-  transition: background var(--t-fast), color var(--t-fast);
-}
-
-.icon-btn:active {
-  transform: scale(0.94);
-}
-
-.touch-target {
-  cursor: pointer;
-  transition: transform var(--t-fast), opacity var(--t-fast);
-}
-
-.touch-target:active {
-  transform: scale(0.97);
-}
-
-.touch-target:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--bg-backdrop);
-  z-index: 900;
-}
-
-.modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: calc(100% - 3rem);
-  max-width: 480px;
-  max-height: calc(100dvh - 4rem);
-  overflow-y: auto;
-  z-index: 901;
-  background: var(--bg-panel-raised);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--r-lg);
-}
-
-.status-present {
-  --status-color: var(--ok);
-  --status-glow: transparent;
-}
-
-.status-maybe {
-  --status-color: var(--warn);
-  --status-glow: transparent;
-}
-
-.status-absent {
-  --status-color: var(--no);
-  --status-glow: transparent;
-}
-
-.status-unknown {
-  --status-color: var(--tbd);
-  --status-glow: transparent;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--status-color);
-}
-
-.attendance-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--sp-2);
-}
-
-.attendance-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 48px;
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--r-sm);
-  background: var(--bg-subtle);
-  color: var(--text-3);
-  cursor: pointer;
-  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
-}
-
-.attendance-btn.selected {
-  border-color: var(--status-color);
-  background: var(--status-color);
-  color: #000;
-}
-
-.attendance-btn.selected.status-absent {
-  color: #fff;
-}
-
-.grid-cards {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--sp-3);
 }

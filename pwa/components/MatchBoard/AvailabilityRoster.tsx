@@ -51,12 +51,10 @@ export default function AvailabilityRoster({
                     <div key={key} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                         <span
                             style={{
-                                fontSize: '0.625rem',
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.07em',
+                                fontSize: 'var(--fs-3xs)',
+                                fontWeight: 500,
                                 color,
-                                width: 40,
+                                width: 38,
                                 flexShrink: 0,
                             }}
                         >
@@ -80,7 +78,7 @@ export default function AvailabilityRoster({
                                                 isMe
                                                     ? {
                                                         color: 'var(--text-1)',
-                                                        fontWeight: 700,
+                                                        fontWeight: 600,
                                                         borderBottom: `1.5px solid ${color}`,
                                                     }
                                                     : undefined
@@ -99,8 +97,8 @@ export default function AvailabilityRoster({
                             className="t-num"
                             style={{
                                 fontSize: 'var(--fs-2xs)',
-                                fontWeight: 700,
-                                color,
+                                fontWeight: 500,
+                                color: 'var(--text-3)',
                                 flexShrink: 0,
                                 minWidth: 16,
                                 textAlign: 'right',

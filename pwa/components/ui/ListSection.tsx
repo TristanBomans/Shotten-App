@@ -11,7 +11,7 @@ interface ListSectionProps {
     style?: CSSProperties;
 }
 
-/** Grouped rows inside one quiet panel, with an optional uppercase label. */
+/** Grouped rows inside one quiet panel, with an optional section label. */
 export function ListSection({ label, labelAction, footer, children, style }: ListSectionProps) {
     return (
         <section style={{ marginBottom: 'var(--sp-5)', ...style }}>
@@ -33,7 +33,6 @@ export function ListSection({ label, labelAction, footer, children, style }: Lis
 
 interface RowProps {
     icon?: ReactNode;
-    iconTone?: 'ok' | 'warn' | 'no' | 'accent' | 'neutral';
     title: ReactNode;
     subtitle?: ReactNode;
     trailing?: ReactNode;
@@ -43,18 +42,9 @@ interface RowProps {
     destructive?: boolean;
 }
 
-const toneColors: Record<NonNullable<RowProps['iconTone']>, { bg: string; fg: string }> = {
-    ok: { bg: 'rgb(var(--ok-rgb) / 0.13)', fg: 'var(--ok)' },
-    warn: { bg: 'rgb(var(--warn-rgb) / 0.13)', fg: 'var(--warn)' },
-    no: { bg: 'rgb(var(--no-rgb) / 0.12)', fg: 'var(--no)' },
-    accent: { bg: 'rgb(var(--accent-rgb) / 0.13)', fg: 'var(--accent)' },
-    neutral: { bg: 'var(--bg-subtle)', fg: 'var(--text-2)' },
-};
-
-/** Standard list row: optional leading icon tile, title/subtitle, trailing control. */
+/** Standard list row: optional leading icon, title/subtitle, trailing control. */
 export function Row({
     icon,
-    iconTone = 'neutral',
     title,
     subtitle,
     trailing,
@@ -63,18 +53,15 @@ export function Row({
     disabled = false,
     destructive = false,
 }: RowProps) {
-    const tone = toneColors[iconTone];
     const content = (
         <>
             {icon && (
                 <span
                     className="flex-center"
                     style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: 8,
-                        background: tone.bg,
-                        color: tone.fg,
+                        width: 20,
+                        height: 20,
+                        color: destructive ? 'var(--no)' : 'var(--text-2)',
                         flexShrink: 0,
                     }}
                     aria-hidden
@@ -86,7 +73,7 @@ export function Row({
                 <span
                     style={{
                         display: 'block',
-                        fontWeight: 600,
+                        fontWeight: 500,
                         fontSize: 'var(--fs-sm)',
                         color: destructive ? 'var(--no)' : 'var(--text-1)',
                         overflow: 'hidden',
@@ -138,7 +125,7 @@ export function MetricRow({ label, value }: { label: ReactNode; value: ReactNode
             style={{ minHeight: 44, justifyContent: 'space-between' }}
         >
             <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-2)' }}>{label}</span>
-            <span className="t-num" style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, textAlign: 'right' }}>
+            <span className="t-num" style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, textAlign: 'right' }}>
                 {value}
             </span>
         </div>

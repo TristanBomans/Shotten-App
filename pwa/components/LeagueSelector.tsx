@@ -75,7 +75,7 @@ export default function LeagueSelector({
                     hapticPatterns.tap();
                     setModalOpen(false);
                 }}
-                title="Select League"
+                title="Select league"
             >
                 <div className="list-section" role="listbox" aria-label="Leagues">
                     {leagues.map((league) => {

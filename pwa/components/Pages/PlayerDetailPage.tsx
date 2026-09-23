@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { LineChart, Line, ReferenceLine, YAxis } from 'recharts';
-import { Check, HelpCircle, X, Ghost, Flame, Snowflake, Trophy } from 'lucide-react';
+import { Flame, Snowflake, Trophy } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { RANKS, type PlayerWithStats, type AttendanceHistoryPoint } from '../StatsView';
 import { formatMatchDate } from '@/lib/dateUtils';
@@ -18,10 +18,10 @@ interface PlayerDetailPageProps {
 }
 
 const statusConfig = {
-    present: { icon: Check, color: 'var(--ok)', bg: 'rgb(var(--ok-rgb) / 0.13)', label: 'Present' },
-    maybe: { icon: HelpCircle, color: 'var(--warn)', bg: 'rgb(var(--warn-rgb) / 0.13)', label: 'Maybe' },
-    notPresent: { icon: X, color: 'var(--no)', bg: 'rgb(var(--no-rgb) / 0.12)', label: 'Absent' },
-    ghost: { icon: Ghost, color: 'var(--tbd)', bg: 'rgb(var(--tbd-rgb) / 0.12)', label: 'Ghost' },
+    present: { color: 'var(--ok)', label: 'Present' },
+    maybe: { color: 'var(--warn)', label: 'Maybe' },
+    notPresent: { color: 'var(--no)', label: 'Absent' },
+    ghost: { color: 'var(--tbd)', label: 'Ghost' },
 } as const;
 
 export default function PlayerDetailPage({ open, player, rank, onClose }: PlayerDetailPageProps) {
@@ -44,33 +44,45 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
         <FlowPage
             open={open}
             title={player.name}
-            subtitle={`#${rank} · ${s.rank.name} · ${s.attendancePct}% present`}
+            subtitle={`#${rank} · ${s.rank.name}`}
             onBack={() => {
                 hapticPatterns.tap();
                 onClose();
             }}
         >
             {/* Attendance rate */}
-            <div className="panel" style={{ padding: '18px 14px', textAlign: 'center', marginBottom: 'var(--sp-5)' }}>
-                <div
-                    className="t-num"
-                    style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.02em', color: s.rank.color }}
-                >
-                    {s.attendancePct}%
+            <div className="panel" style={{ padding: 14, marginBottom: 'var(--sp-5)' }}>
+                <div className="flex-between" style={{ alignItems: 'baseline', gap: 12 }}>
+                    <span className="t-num" style={{ fontSize: '1.75rem', fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                        {s.attendancePct}%
+                    </span>
+                    <span className="t-caption t-num">
+                        {s.presentCount} of {s.totalMatches} {s.totalMatches === 1 ? 'match' : 'matches'}
+                    </span>
                 </div>
-                <div className="t-label" style={{ marginTop: 2 }}>Attendance rate</div>
+                <div
+                    aria-hidden
+                    style={{
+                        height: 4,
+                        marginTop: 10,
+                        borderRadius: 'var(--r-full)',
+                        background: 'var(--bg-subtle-strong)',
+                        overflow: 'hidden',
+                    }}
+                >
+                    <div style={{ height: '100%', width: `${s.attendancePct}%`, background: 'var(--text-2)' }} />
+                </div>
 
                 {s.attendanceHistory && s.attendanceHistory.length > 1 && (
                     <div style={{ marginTop: 12 }}>
                         <AttendanceSparkline history={s.attendanceHistory} />
-                        <div className="t-caption" style={{ marginTop: 4 }}>Season trend</div>
                     </div>
                 )}
 
                 {nextRank && neededPresent > 0 && (
-                    <p className="t-caption" style={{ marginTop: 12 }}>
+                    <p className="t-caption" style={{ marginTop: 10 }}>
                         {neededPresent} more present {neededPresent === 1 ? 'match' : 'matches'} to reach{' '}
-                        <span style={{ color: nextRank.color, fontWeight: 700 }}>
+                        <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>
                             {nextRank.name} ({nextRank.minPct}%)
                         </span>
                     </p>
@@ -90,18 +102,16 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                         ['ghost', s.ghostCount],
                     ] as const).map(([key, value]) => {
                         const cfg = statusConfig[key];
-                        const Icon = cfg.icon;
                         const isZero = value === 0;
                         return (
-                            <span key={key} style={{ textAlign: 'center', opacity: isZero ? 0.45 : 1 }}>
-                                <Icon size={13} style={{ color: cfg.color }} aria-hidden />
+                            <span key={key} style={{ textAlign: 'center' }}>
                                 <span
                                     className="t-num"
-                                    style={{ display: 'block', fontSize: 'var(--fs-base)', fontWeight: 800, color: isZero ? 'var(--text-3)' : cfg.color }}
+                                    style={{ display: 'block', fontSize: 'var(--fs-base)', fontWeight: 600, color: isZero ? 'var(--text-3)' : 'var(--text-1)' }}
                                 >
                                     {value}
                                 </span>
-                                <span style={{ display: 'block', fontSize: '0.575rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-3)' }}>
+                                <span style={{ display: 'block', fontSize: 'var(--fs-3xs)', fontWeight: 500, color: isZero ? 'var(--text-3)' : cfg.color }}>
                                     {cfg.label}
                                 </span>
                             </span>
@@ -110,48 +120,17 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                 </div>
 
                 {(s.currentStreakPresent >= 3 || s.currentStreakAbsent >= 2) && (
-                    <div className="row row-static" style={{ gap: 8, minHeight: 44 }}>
-                        <StatusChip tone={streakIsPositive ? 'warn' : 'no'}>
+                    <div className="row row-static" style={{ gap: 8 }}>
+                        <StatusChip>
                             {streakIsPositive ? <Flame size={11} /> : <Snowflake size={11} />}
-                            <span className="t-num" style={{ fontWeight: 800 }}>{streakValue}</span>
+                            <span className="t-num">{streakValue}</span>
                             {streakLabel}
                         </StatusChip>
-                        <StatusChip tone="warn">
+                        <StatusChip>
                             <Trophy size={11} />
-                            <span className="t-num" style={{ fontWeight: 800 }}>{s.bestStreak}</span>
+                            <span className="t-num">{s.bestStreak}</span>
                             best
                         </StatusChip>
-                    </div>
-                )}
-
-                {s.recentForm.length > 0 && (
-                    <div className="row row-static" style={{ display: 'block', paddingTop: 10, paddingBottom: 12 }}>
-                        <span className="t-label" style={{ display: 'block', marginBottom: 8 }}>
-                            Last {s.recentForm.length} matches
-                        </span>
-                        <span style={{ display: 'flex', gap: 4 }}>
-                            {s.recentForm.map((status, j) => {
-                                const cfg = statusConfig[status as keyof typeof statusConfig] || statusConfig.ghost;
-                                const Icon = cfg.icon;
-                                return (
-                                    <span
-                                        key={j}
-                                        className="flex-center"
-                                        style={{
-                                            flex: 1,
-                                            height: 28,
-                                            borderRadius: 6,
-                                            background: cfg.bg,
-                                            color: cfg.color,
-                                            minWidth: 0,
-                                        }}
-                                        aria-label={cfg.label}
-                                    >
-                                        <Icon size={13} strokeWidth={2.5} />
-                                    </span>
-                                );
-                            })}
-                        </span>
                     </div>
                 )}
             </ListSection>
@@ -165,9 +144,8 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                 ) : (
                     s.matchResults.map((result) => {
                         const cfg = statusConfig[result.status];
-                        const Icon = cfg.icon;
                         return (
-                            <div key={result.matchId} className="row row-static" style={{ minHeight: 48 }}>
+                            <div key={result.matchId} className="row row-static">
                                 <span style={{ flex: 1, minWidth: 0 }}>
                                     <span
                                         style={{
@@ -185,19 +163,8 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                                         {formatMatchDate(result.date)}
                                     </span>
                                 </span>
-                                <span
-                                    className="flex-center"
-                                    style={{
-                                        width: 24,
-                                        height: 24,
-                                        borderRadius: 7,
-                                        background: cfg.bg,
-                                        color: cfg.color,
-                                        flexShrink: 0,
-                                    }}
-                                    aria-label={cfg.label}
-                                >
-                                    <Icon size={12} strokeWidth={2.5} />
+                                <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 500, color: cfg.color, flexShrink: 0 }}>
+                                    {cfg.label}
                                 </span>
                             </div>
                         );
@@ -243,8 +210,6 @@ function AttendanceSparkline({ history }: { history: AttendanceHistoryPoint[] })
 
     if (history.length < 2) return null;
 
-    const endPct = history[history.length - 1].attendancePct;
-    const trendColor = endPct >= 50 ? 'var(--ok)' : 'var(--no)';
     const pcts = history.map((point) => point.attendancePct);
     const visualMin = Math.min(...pcts, 0);
     const visualMax = Math.max(...pcts, 100);
@@ -276,8 +241,8 @@ function AttendanceSparkline({ history }: { history: AttendanceHistoryPoint[] })
                     <Line
                         type="monotone"
                         dataKey="attendancePct"
-                        stroke={trendColor}
-                        strokeWidth={2.5}
+                        stroke="var(--text-2)"
+                        strokeWidth={2}
                         dot={false}
                         isAnimationActive={false}
                     />

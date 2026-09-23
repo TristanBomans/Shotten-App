@@ -19,12 +19,6 @@ function isOwnTeam(name: string) {
     return name.toLowerCase().includes('wille ma ni');
 }
 
-function rankColor(rank: number, total: number) {
-    if (rank === 1) return 'var(--warn)';
-    if (rank === total && total > 1) return 'var(--no)';
-    return 'var(--text-3)';
-}
-
 function gdColor(gd: number) {
     if (gd > 0) return 'var(--ok)';
     if (gd < 0) return 'var(--no)';
@@ -59,14 +53,14 @@ function TeamMeta({ team }: { team: ScraperTeam }) {
             <span>{played} played</span>
             <span style={{ opacity: 0.5 }} aria-hidden>·</span>
             <span>
-                <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>{w}</span>
-                <span style={{ color: 'var(--ok)', fontWeight: 600 }}>W</span>
+                <span style={{ fontWeight: 500, color: 'var(--text-2)' }}>{w}</span>
+                <span style={{ fontWeight: 500, color: 'var(--ok)' }}>W</span>
                 {'\u00A0'}
-                <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>{d}</span>
-                <span style={{ fontWeight: 600 }}>D</span>
+                <span style={{ fontWeight: 500, color: 'var(--text-2)' }}>{d}</span>
+                <span style={{ fontWeight: 500 }}>D</span>
                 {'\u00A0'}
-                <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>{l}</span>
-                <span style={{ color: 'var(--no)', fontWeight: 600 }}>L</span>
+                <span style={{ fontWeight: 500, color: 'var(--text-2)' }}>{l}</span>
+                <span style={{ fontWeight: 500, color: 'var(--no)' }}>L</span>
             </span>
             <span style={{ opacity: 0.5 }} aria-hidden>·</span>
             <span>
@@ -171,10 +165,8 @@ export default function LeagueView({
                             gap: 10,
                             padding: '10px 14px 9px',
                             fontSize: '0.6rem',
-                            fontWeight: 700,
+                            fontWeight: 600,
                             color: 'var(--text-3)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.09em',
                         }}
                         aria-hidden
                     >
@@ -200,19 +192,18 @@ export default function LeagueView({
                                     display: 'grid',
                                     gridTemplateColumns: gridTemplate,
                                     gap: 10,
-                                    padding: '13px 14px',
-                                    minHeight: 56,
+                                    padding: '9px 14px',
+                                    minHeight: 48,
                                     alignItems: 'center',
-                                    background: highlighted ? 'rgb(var(--accent-rgb) / 0.08)' : undefined,
-                                    boxShadow: highlighted ? 'inset 3px 0 0 var(--accent)' : undefined,
+                                    background: highlighted ? 'var(--bg-subtle)' : undefined,
                                 }}
                             >
                                 <span
                                     className="t-num"
                                     style={{
-                                        fontWeight: 700,
+                                        fontWeight: 500,
                                         fontSize: 'var(--fs-2xs)',
-                                        color: rankColor(rank, filteredTeams.length),
+                                        color: rank === 1 ? 'var(--text-1)' : 'var(--text-3)',
                                     }}
                                 >
                                     {rank}
@@ -222,7 +213,7 @@ export default function LeagueView({
                                     <span
                                         style={{
                                             display: 'block',
-                                            fontWeight: highlighted ? 700 : 600,
+                                            fontWeight: highlighted ? 600 : 500,
                                             fontSize: 'var(--fs-xs)',
                                             lineHeight: 1.3,
                                             overflow: 'hidden',
@@ -239,7 +230,7 @@ export default function LeagueView({
                                     className="t-num"
                                     style={{
                                         textAlign: 'right',
-                                        fontWeight: 600,
+                                        fontWeight: 500,
                                         fontSize: 'var(--fs-2xs)',
                                         color: gdColor(gd),
                                     }}
@@ -251,7 +242,7 @@ export default function LeagueView({
                                     className="t-num"
                                     style={{
                                         textAlign: 'right',
-                                        fontWeight: 800,
+                                        fontWeight: 600,
                                         fontSize: 'var(--fs-sm)',
                                         letterSpacing: '-0.01em',
                                     }}

@@ -71,8 +71,6 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
         }
     }, [open]);
 
-    if (typeof document === 'undefined') return null;
-
     // Squad data
     const present = roster.filter(p => p.status === 'Present');
     const maybe = roster.filter(p => p.status === 'Maybe');
@@ -82,8 +80,8 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
     const statusGroups: StatusGroup[] = [
         { title: 'Coming', players: present, color: 'var(--ok)' },
         { title: 'Maybe', players: maybe, color: 'var(--warn)' },
-        { title: 'Not Coming', players: absent, color: 'var(--no)' },
-        { title: 'No Response', players: unknown, color: 'var(--tbd)' },
+        { title: 'Not coming', players: absent, color: 'var(--no)' },
+        { title: 'No response', players: unknown, color: 'var(--tbd)' },
     ];
 
     // Current user status for calendar
@@ -115,6 +113,8 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
         enabled: activeTab === 'opponent',
         knownOpponentId: match.opponentLzvId ?? null,
     });
+
+    if (typeof document === 'undefined') return null;
 
     // Details data
     const mapUrl = match.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}` : null;
@@ -158,7 +158,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                                 <h2
                                     style={{
                                         fontSize: 'var(--fs-sm)',
-                                        fontWeight: 700,
+                                        fontWeight: 600,
                                         letterSpacing: '-0.01em',
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',

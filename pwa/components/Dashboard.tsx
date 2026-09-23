@@ -341,7 +341,7 @@ export default function Dashboard({
         try {
             await Promise.all([fetchMatches(), fetchAllPlayers(), fetchRecentMatches()]);
             hapticPatterns.success();
-        } catch (err) {
+        } catch {
             hapticPatterns.error();
         } finally {
             setIsRefreshing(false);

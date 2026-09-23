@@ -133,29 +133,29 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                             borderRadius: 8,
                             background: 'var(--primary)',
                             color: 'var(--primary-foreground)',
-                            fontWeight: 800,
+                            fontWeight: 600,
                             fontSize: '1rem',
                         }}
                         aria-hidden
                     >
                         S
                     </span>
-                    <span style={{ fontWeight: 700, fontSize: 'var(--fs-base)', letterSpacing: '-0.01em' }}>
+                    <span style={{ fontWeight: 600, fontSize: 'var(--fs-base)', letterSpacing: '-0.01em' }}>
                         Shotten
                     </span>
                 </div>
 
-                <h1 style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, marginBottom: 8 }}>
+                <h1 style={{ fontSize: 'var(--fs-xl)', fontWeight: 600, marginBottom: 8 }}>
                     Eerste installatie
                 </h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', marginBottom: 24 }}>
+                <p style={{ color: 'var(--text-2)', fontSize: 'var(--fs-sm)', marginBottom: 24 }}>
                     De database is nog leeg. We richten eerst de tabellen in en koppelen daarna je team.
                 </p>
 
                 {(step === 'checking' || step === 'init-db') && (
                     <div className="flex-center" style={{ padding: 32, flexDirection: 'column', gap: 12 }}>
                         <div className="spinner" />
-                        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)' }}>
+                        <p style={{ color: 'var(--text-2)', fontSize: 'var(--fs-sm)' }}>
                             Database-tabellen worden aangemaakt…
                         </p>
                     </div>
@@ -165,7 +165,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                             <Database size={20} style={{ flexShrink: 0, marginTop: 2 }} />
-                            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
+                            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-2)' }}>
                                 De tabellen moeten eenmalig manueel aangemaakt worden. Voer onderstaande
                                 SQL uit in de Supabase SQL Editor (Dashboard → SQL Editor → New query)
                                 en klik daarna op &quot;Opnieuw controleren&quot;.
@@ -182,9 +182,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                                 fontSize: 11,
                                 padding: 12,
                                 borderRadius: 8,
-                                border: '1px solid var(--border)',
-                                background: 'var(--surface)',
-                                color: 'var(--text)',
+                                border: '1px solid var(--border-hairline)',
+                                background: 'var(--bg-inset)',
+                                color: 'var(--text-1)',
                                 resize: 'vertical',
                             }}
                         />
@@ -210,7 +210,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                             <Users size={20} style={{ flexShrink: 0, marginTop: 2 }} />
-                            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
+                            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-2)' }}>
                                 Tabellen zijn aangemaakt. Voeg nu je team toe. Het LZV team ID vind je
                                 in de URL van je teampagina op lzvcup.be.
                             </p>
@@ -252,14 +252,14 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 {step === 'done' && (
                     <div className="flex-center" style={{ padding: 32, flexDirection: 'column', gap: 12 }}>
                         <Check size={32} style={{ color: 'var(--primary)' }} />
-                        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
+                        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-2)' }}>
                             Installatie voltooid!
                         </p>
                     </div>
                 )}
 
                 {error && (
-                    <p style={{ color: 'var(--danger, #e11d48)', fontSize: 'var(--fs-sm)', marginTop: 16 }}>
+                    <p style={{ color: 'var(--no)', fontSize: 'var(--fs-sm)', marginTop: 16 }}>
                         {error}
                     </p>
                 )}

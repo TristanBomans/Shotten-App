@@ -28,7 +28,7 @@ export default function AvailabilityCounts({
             {items.map(({ key, label, tone }) => (
                 <span key={key} className="chip" data-tone={tone}>
                     <span>{label}</span>
-                    <span className="t-num" style={{ fontWeight: 800 }}>{values[key]}</span>
+                    <span className="t-num" style={{ fontWeight: 600 }}>{values[key]}</span>
                 </span>
             ))}
         </div>

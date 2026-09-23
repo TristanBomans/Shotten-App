@@ -26,8 +26,14 @@ export default function SquadView({ statusGroups, currentPlayerId }: SquadViewPr
                 players.length > 0 && (
                     <section key={title} style={{ marginBottom: 'var(--sp-5)' }}>
                         <div className="section-label">
-                            <span style={{ color }}>{title}</span>
-                            <span className="t-num" style={{ color }}>{players.length}</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <span
+                                    aria-hidden
+                                    style={{ width: 6, height: 6, borderRadius: '50%', background: color }}
+                                />
+                                {title}
+                            </span>
+                            <span className="t-num">{players.length}</span>
                         </div>
                         <div className="list-section">
                             {players.map((player) => {
@@ -37,20 +43,20 @@ export default function SquadView({ statusGroups, currentPlayerId }: SquadViewPr
                                         key={player.id}
                                         className="row row-static"
                                         style={{
-                                            minHeight: 48,
+                                            minHeight: 40,
                                             background: isMe ? 'var(--bg-subtle)' : undefined,
                                         }}
                                     >
                                         <span style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
-                                            <Avatar name={player.name} size="sm" highlight={isMe} />
+                                            <Avatar name={player.name} size="xs" highlight={isMe} />
                                             <span
                                                 aria-hidden
                                                 style={{
                                                     position: 'absolute',
-                                                    bottom: -1,
-                                                    right: -1,
-                                                    width: 9,
-                                                    height: 9,
+                                                    bottom: -2,
+                                                    right: -2,
+                                                    width: 8,
+                                                    height: 8,
                                                     borderRadius: '50%',
                                                     background: color,
                                                     border: '2px solid var(--bg-panel)',
@@ -60,7 +66,7 @@ export default function SquadView({ statusGroups, currentPlayerId }: SquadViewPr
                                         <span
                                             style={{
                                                 fontSize: 'var(--fs-sm)',
-                                                fontWeight: isMe ? 700 : 500,
+                                                fontWeight: isMe ? 600 : 500,
                                                 minWidth: 0,
                                                 overflow: 'hidden',
                                                 textOverflow: 'ellipsis',

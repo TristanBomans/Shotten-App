@@ -66,7 +66,7 @@ export default function Sheet({ open, onClose, title, subtitle, children }: Shee
                                 }}
                             >
                                 <div style={{ minWidth: 0, flex: 1 }}>
-                                    <h2 style={{ fontSize: 'var(--fs-base)', fontWeight: 700, letterSpacing: '-0.01em' }}>
+                                    <h2 style={{ fontSize: 'var(--fs-base)', fontWeight: 600, letterSpacing: '-0.01em' }}>
                                         {title}
                                     </h2>
                                     {subtitle && (

@@ -36,7 +36,7 @@ export default function NotificationSheet({
         <Sheet
             open={open}
             onClose={handleClose}
-            title="Match Reminders"
+            title="Match reminders"
             subtitle={
                 totalCount > 0
                     ? `${totalCount} pending response${totalCount === 1 ? '' : 's'}`
@@ -60,7 +60,7 @@ export default function NotificationSheet({
                         <CheckCircle2 size={17} />
                     </span>
                     <span style={{ minWidth: 0 }}>
-                        <span style={{ display: 'block', fontWeight: 700, fontSize: 'var(--fs-sm)' }}>
+                        <span style={{ display: 'block', fontWeight: 600, fontSize: 'var(--fs-sm)' }}>
                             All up to date
                         </span>
                         <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-3)' }}>
@@ -95,9 +95,7 @@ export default function NotificationSheet({
                                     <span
                                         style={{
                                             fontSize: '0.625rem',
-                                            fontWeight: 800,
-                                            letterSpacing: '0.07em',
-                                            textTransform: 'uppercase',
+                                            fontWeight: 600,
                                             color: urgencyColor(reminder.urgency),
                                         }}
                                     >
@@ -114,7 +112,7 @@ export default function NotificationSheet({
                                 <span
                                     style={{
                                         display: 'block',
-                                        fontWeight: 700,
+                                        fontWeight: 600,
                                         fontSize: 'var(--fs-sm)',
                                         marginBottom: 2,
                                     }}
