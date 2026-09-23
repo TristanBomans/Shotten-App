@@ -76,6 +76,7 @@ export default function MatchSummary({
 
     const dateObj = useMemo(() => parseDate(match.date) || new Date(0), [match.date]);
     const isPast = dateObj.getTime() < now;
+    const isToday = dateObj.toDateString() === new Date(now).toDateString();
 
     const roster: RosterPlayer[] = useMemo(() => {
         const teamPlayers = allPlayers.filter(p => p.teamIds?.includes(match.teamId));
@@ -161,19 +162,18 @@ export default function MatchSummary({
                         {isNext && (
                             <span
                                 style={{
-                                    fontSize: '0.625rem',
-                                    fontWeight: 800,
-                                    letterSpacing: '0.08em',
+                                    fontSize: 'var(--fs-2xs)',
+                                    fontWeight: 500,
                                     color: 'var(--accent)',
                                     flexShrink: 0,
                                 }}
                             >
-                                NEXT
+                                {isToday ? 'Today' : 'Next'}
                             </span>
                         )}
                         <span
                             className="t-num"
-                            style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, flexShrink: 0 }}
+                            style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, flexShrink: 0 }}
                         >
                             {dateStr}
                         </span>
@@ -194,9 +194,7 @@ export default function MatchSummary({
                             <span
                                 style={{
                                     fontSize: '0.625rem',
-                                    fontWeight: 800,
-                                    letterSpacing: '0.06em',
-                                    textTransform: 'uppercase',
+                                    fontWeight: 600,
                                     color: 'var(--no)',
                                     background: 'rgb(var(--no-rgb) / 0.13)',
                                     border: '1px solid rgb(var(--no-rgb) / 0.25)',
@@ -223,7 +221,7 @@ export default function MatchSummary({
                     <h3
                         style={{
                             fontSize: 'var(--fs-sm)',
-                            fontWeight: 700,
+                            fontWeight: 600,
                             letterSpacing: '-0.01em',
                             lineHeight: 1.3,
                             minWidth: 0,

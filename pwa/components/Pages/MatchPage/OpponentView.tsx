@@ -113,12 +113,12 @@ export default function OpponentView({
                 }
             >
                 <div className="row row-static" style={{ minHeight: 36, paddingTop: 8, paddingBottom: 4 }}>
-                    <span style={{ flex: 1, fontSize: 'var(--fs-3xs)', fontWeight: 800, letterSpacing: '0.07em', color: 'var(--ok)' }}>
-                        US
+                    <span style={{ flex: 1, fontSize: 'var(--fs-2xs)', fontWeight: 500, color: 'var(--text-3)' }}>
+                        Us
                     </span>
                     <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-3)' }}>vs</span>
-                    <span style={{ flex: 1, textAlign: 'right', fontSize: 'var(--fs-3xs)', fontWeight: 800, letterSpacing: '0.07em', color: 'var(--no)' }}>
-                        THEM
+                    <span style={{ flex: 1, textAlign: 'right', fontSize: 'var(--fs-2xs)', fontWeight: 500, color: 'var(--text-3)' }}>
+                        Them
                     </span>
                 </div>
                 {comparisons.map((stat) => {
@@ -132,7 +132,7 @@ export default function OpponentView({
                                 style={{
                                     flex: 1,
                                     fontSize: 'var(--fs-sm)',
-                                    fontWeight: 700,
+                                    fontWeight: 600,
                                     color: usAhead ? 'var(--ok)' : 'var(--text-2)',
                                 }}
                             >
@@ -143,8 +143,6 @@ export default function OpponentView({
                                     fontSize: 'var(--fs-3xs)',
                                     fontWeight: 600,
                                     color: 'var(--text-3)',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.06em',
                                 }}
                             >
                                 {stat.label}
@@ -155,7 +153,7 @@ export default function OpponentView({
                                     flex: 1,
                                     textAlign: 'right',
                                     fontSize: 'var(--fs-sm)',
-                                    fontWeight: 700,
+                                    fontWeight: 600,
                                     color: themAhead ? 'var(--no)' : 'var(--text-2)',
                                 }}
                             >
@@ -165,11 +163,11 @@ export default function OpponentView({
                     );
                 })}
                 <div className="row row-static" style={{ minHeight: 40, justifyContent: 'center', gap: 14 }}>
-                    <span className="t-num" style={{ fontWeight: 800, color: usWins >= themWins ? 'var(--ok)' : 'var(--text-2)' }}>
+                    <span className="t-num" style={{ fontWeight: 600, color: usWins >= themWins ? 'var(--ok)' : 'var(--text-2)' }}>
                         {usWins}
                     </span>
                     <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-3)' }}>—</span>
-                    <span className="t-num" style={{ fontWeight: 800, color: themWins > usWins ? 'var(--no)' : 'var(--text-2)' }}>
+                    <span className="t-num" style={{ fontWeight: 600, color: themWins > usWins ? 'var(--no)' : 'var(--text-2)' }}>
                         {themWins}
                     </span>
                 </div>
@@ -211,7 +209,7 @@ export default function OpponentView({
                                 background: 'var(--bg-subtle)',
                                 border: '1px solid var(--border-hairline)',
                                 fontSize: '1.4rem',
-                                fontWeight: 700,
+                                fontWeight: 600,
                                 color: 'var(--text-2)',
                                 flexShrink: 0,
                             }}
@@ -223,7 +221,7 @@ export default function OpponentView({
                         <h3
                             style={{
                                 fontSize: 'var(--fs-base)',
-                                fontWeight: 700,
+                                fontWeight: 600,
                                 letterSpacing: '-0.01em',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
@@ -284,7 +282,7 @@ export default function OpponentView({
                                         height: 32,
                                         borderRadius: 8,
                                         fontSize: 'var(--fs-2xs)',
-                                        fontWeight: 800,
+                                        fontWeight: 600,
                                         color: formColor(result),
                                         background: `rgb(var(--${result === 'W' ? 'ok' : result === 'L' ? 'no' : 'warn'}-rgb) / 0.13)`,
                                         border: `1px solid rgb(var(--${result === 'W' ? 'ok' : result === 'L' ? 'no' : 'warn'}-rgb) / 0.26)`,
@@ -303,7 +301,7 @@ export default function OpponentView({
                     <div className="row row-static" style={{ alignItems: 'center', gap: 14, paddingTop: 12, paddingBottom: 12 }}>
                         <span
                             className="t-num"
-                            style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--ok)', flexShrink: 0 }}
+                            style={{ fontSize: 'var(--fs-xl)', fontWeight: 600, color: 'var(--ok)', flexShrink: 0 }}
                         >
                             {winRate}%
                         </span>
@@ -353,7 +351,7 @@ export default function OpponentView({
                                 style={{
                                     width: 18,
                                     fontSize: 'var(--fs-2xs)',
-                                    fontWeight: 800,
+                                    fontWeight: 600,
                                     color: i === 0 ? 'var(--warn)' : 'var(--text-3)',
                                     flexShrink: 0,
                                 }}
@@ -368,7 +366,7 @@ export default function OpponentView({
                                     borderRadius: '50%',
                                     background: 'var(--bg-subtle)',
                                     fontSize: '0.65rem',
-                                    fontWeight: 700,
+                                    fontWeight: 600,
                                     color: 'var(--text-2)',
                                     flexShrink: 0,
                                 }}
@@ -389,9 +387,9 @@ export default function OpponentView({
                                 {player.name}
                             </span>
                             <span className="t-num" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-2)', flexShrink: 0 }}>
-                                <span style={{ color: 'var(--ok)', fontWeight: 700 }}>{player.goals}</span> G
+                                <span style={{ color: 'var(--ok)', fontWeight: 600 }}>{player.goals}</span> G
                                 {' · '}
-                                <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{player.assists}</span> A
+                                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{player.assists}</span> A
                             </span>
                         </div>
                     ))}

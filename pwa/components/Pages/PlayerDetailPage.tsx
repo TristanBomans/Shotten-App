@@ -54,7 +54,7 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
             <div className="panel" style={{ padding: '18px 14px', textAlign: 'center', marginBottom: 'var(--sp-5)' }}>
                 <div
                     className="t-num"
-                    style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.02em', color: s.rank.color }}
+                    style={{ fontSize: '2rem', fontWeight: 600, letterSpacing: '-0.02em', color: s.rank.color }}
                 >
                     {s.attendancePct}%
                 </div>
@@ -70,7 +70,7 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                 {nextRank && neededPresent > 0 && (
                     <p className="t-caption" style={{ marginTop: 12 }}>
                         {neededPresent} more present {neededPresent === 1 ? 'match' : 'matches'} to reach{' '}
-                        <span style={{ color: nextRank.color, fontWeight: 700 }}>
+                        <span style={{ color: nextRank.color, fontWeight: 600 }}>
                             {nextRank.name} ({nextRank.minPct}%)
                         </span>
                     </p>
@@ -97,11 +97,11 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                                 <Icon size={13} style={{ color: cfg.color }} aria-hidden />
                                 <span
                                     className="t-num"
-                                    style={{ display: 'block', fontSize: 'var(--fs-base)', fontWeight: 800, color: isZero ? 'var(--text-3)' : cfg.color }}
+                                    style={{ display: 'block', fontSize: 'var(--fs-base)', fontWeight: 600, color: isZero ? 'var(--text-3)' : cfg.color }}
                                 >
                                     {value}
                                 </span>
-                                <span style={{ display: 'block', fontSize: '0.575rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-3)' }}>
+                                <span style={{ display: 'block', fontSize: '0.575rem', fontWeight: 600, color: 'var(--text-3)' }}>
                                     {cfg.label}
                                 </span>
                             </span>
@@ -113,12 +113,12 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                     <div className="row row-static" style={{ gap: 8, minHeight: 44 }}>
                         <StatusChip tone={streakIsPositive ? 'warn' : 'no'}>
                             {streakIsPositive ? <Flame size={11} /> : <Snowflake size={11} />}
-                            <span className="t-num" style={{ fontWeight: 800 }}>{streakValue}</span>
+                            <span className="t-num" style={{ fontWeight: 600 }}>{streakValue}</span>
                             {streakLabel}
                         </StatusChip>
                         <StatusChip tone="warn">
                             <Trophy size={11} />
-                            <span className="t-num" style={{ fontWeight: 800 }}>{s.bestStreak}</span>
+                            <span className="t-num" style={{ fontWeight: 600 }}>{s.bestStreak}</span>
                             best
                         </StatusChip>
                     </div>

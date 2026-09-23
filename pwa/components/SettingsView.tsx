@@ -239,7 +239,6 @@ export default function SettingsView({
                 <div style={{ opacity: notificationsBusy || !pushSupported ? 0.6 : 1 }}>
                     <Row
                         icon={<Bell size={16} />}
-                        iconTone="warn"
                         title="Notifications"
                         subtitle={notificationsSubtitle}
                         trailing={
@@ -255,7 +254,6 @@ export default function SettingsView({
 
                 <Row
                     icon={<Smartphone size={16} />}
-                    iconTone="accent"
                     title="Haptic Feedback"
                     subtitle="Vibration on actions"
                     trailing={
@@ -269,7 +267,6 @@ export default function SettingsView({
 
                 <Row
                     icon={<Users size={16} />}
-                    iconTone="accent"
                     title="Show Full Names"
                     subtitle={showFullNames ? 'Names visible on cards' : 'Compact attendance on cards'}
                     trailing={
@@ -283,7 +280,6 @@ export default function SettingsView({
 
                 <Row
                     icon={<History size={16} />}
-                    iconTone="accent"
                     title="Show Past Matches"
                     subtitle={showPastMatches ? 'History on the board, scrolls to next' : 'Upcoming matches only'}
                     trailing={
@@ -297,7 +293,6 @@ export default function SettingsView({
 
                 <Row
                     icon={<Palette size={16} />}
-                    iconTone="accent"
                     title="Appearance"
                     subtitle={themeLabels[theme]}
                     chevron
@@ -310,7 +305,6 @@ export default function SettingsView({
                 {leagues.length > 1 && (
                     <Row
                         icon={<Trophy size={16} />}
-                        iconTone="warn"
                         title="Default League"
                         subtitle={defaultLeague || 'Auto-select (Mechelen preferred)'}
                         chevron
@@ -326,7 +320,6 @@ export default function SettingsView({
             <ListSection label="Management">
                 <Row
                     icon={<UserCheck size={16} />}
-                    iconTone="ok"
                     title="Respond as Player"
                     subtitle="Fill in attendance for someone else"
                     chevron
@@ -337,7 +330,6 @@ export default function SettingsView({
                 />
                 <Row
                     icon={<UserCog size={16} />}
-                    iconTone="ok"
                     title="Manage Players"
                     subtitle="Add, edit or remove players"
                     chevron
@@ -348,7 +340,6 @@ export default function SettingsView({
                 />
                 <Row
                     icon={<Flag size={16} />}
-                    iconTone="no"
                     title="Forfait Matches"
                     subtitle="Mark matches as forfait"
                     chevron
@@ -359,7 +350,6 @@ export default function SettingsView({
                 />
                 <Row
                     icon={<RefreshCw size={16} />}
-                    iconTone="accent"
                     title="Version History"
                     subtitle={hasUpdate ? 'New version available' : 'View changelog and updates'}
                     chevron={!hasUpdate}
@@ -387,7 +377,6 @@ export default function SettingsView({
                 {isHiddenAdminUnlocked && (
                     <Row
                         icon={<Bell size={16} />}
-                        iconTone="accent"
                         title="Hidden Admin"
                         subtitle="Worker dashboard for private network"
                         chevron
@@ -404,7 +393,6 @@ export default function SettingsView({
                 <ListSection label="Developer">
                     <Row
                         icon={useMock ? <Database size={16} /> : <Wifi size={16} />}
-                        iconTone={useMock ? 'warn' : 'ok'}
                         title="Data Source"
                         subtitle={useMock ? 'Mock data' : 'Live backend'}
                         trailing={
@@ -417,7 +405,6 @@ export default function SettingsView({
                     />
                     <Row
                         icon={useMock ? <WifiOff size={16} /> : <Wifi size={16} />}
-                        iconTone={useMock ? 'no' : 'ok'}
                         title="Backend Status"
                         subtitle={useMock ? 'Offline' : 'Connected'}
                     />
@@ -428,13 +415,11 @@ export default function SettingsView({
             <ListSection label="Account">
                 <Row
                     icon={<User size={16} />}
-                    iconTone="accent"
                     title={playerName || 'Player'}
                     subtitle="Signed in on this device"
                 />
                 <Row
                     icon={<LogOut size={16} />}
-                    iconTone="no"
                     title="Sign Out"
                     subtitle="Switch to a different player"
                     destructive

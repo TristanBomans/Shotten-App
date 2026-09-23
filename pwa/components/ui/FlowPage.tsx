@@ -65,7 +65,7 @@ export default function FlowPage({
                                 <h2
                                     style={{
                                         fontSize: 'var(--fs-base)',
-                                        fontWeight: 700,
+                                        fontWeight: 600,
                                         letterSpacing: '-0.01em',
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',

@@ -76,14 +76,14 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
                             borderRadius: 7,
                             background: 'var(--primary)',
                             color: 'var(--primary-foreground)',
-                            fontWeight: 800,
+                            fontWeight: 600,
                             fontSize: '0.85rem',
                         }}
                         aria-hidden
                     >
                         S
                     </span>
-                    <span style={{ fontWeight: 700, fontSize: 'var(--fs-sm)', letterSpacing: '-0.01em' }}>
+                    <span style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', letterSpacing: '-0.01em' }}>
                         Shotten
                     </span>
                 </div>

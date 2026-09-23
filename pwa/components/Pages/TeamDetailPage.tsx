@@ -252,7 +252,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                 <h2
                                     style={{
                                         fontSize: 'var(--fs-sm)',
-                                        fontWeight: 700,
+                                        fontWeight: 600,
                                         letterSpacing: '-0.01em',
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
@@ -407,7 +407,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                                 background: 'var(--bg-subtle)',
                                                 border: '1px solid var(--border-hairline)',
                                                 fontSize: '1.4rem',
-                                                fontWeight: 700,
+                                                fontWeight: 600,
                                                 color: 'var(--text-2)',
                                                 flexShrink: 0,
                                             }}
@@ -419,7 +419,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                         <h3
                                             style={{
                                                 fontSize: 'var(--fs-base)',
-                                                fontWeight: 700,
+                                                fontWeight: 600,
                                                 letterSpacing: '-0.01em',
                                                 whiteSpace: 'nowrap',
                                                 overflow: 'hidden',
@@ -482,7 +482,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                                             height: 32,
                                                             borderRadius: 8,
                                                             fontSize: 'var(--fs-2xs)',
-                                                            fontWeight: 800,
+                                                            fontWeight: 600,
                                                             color: result === 'W' ? 'var(--ok)' : result === 'L' ? 'var(--no)' : 'var(--warn)',
                                                             background: `rgb(var(--${result === 'W' ? 'ok' : result === 'L' ? 'no' : 'warn'}-rgb) / 0.13)`,
                                                             border: `1px solid rgb(var(--${result === 'W' ? 'ok' : result === 'L' ? 'no' : 'warn'}-rgb) / 0.26)`,
@@ -513,7 +513,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                     <div className="row row-static" style={{ alignItems: 'center', gap: 14, paddingTop: 12, paddingBottom: 12 }}>
                                         <span
                                             className="t-num"
-                                            style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--ok)', flexShrink: 0 }}
+                                            style={{ fontSize: 'var(--fs-xl)', fontWeight: 600, color: 'var(--ok)', flexShrink: 0 }}
                                         >
                                             {winRate}%
                                         </span>
@@ -596,7 +596,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                                         background: i < 3 ? 'rgb(var(--warn-rgb) / 0.14)' : 'var(--bg-subtle)',
                                                         color: i < 3 ? 'var(--warn)' : 'var(--text-2)',
                                                         fontSize: '0.7rem',
-                                                        fontWeight: 700,
+                                                        fontWeight: 600,
                                                         flexShrink: 0,
                                                     }}
                                                 >
@@ -620,9 +620,9 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                                     </span>
                                                 </span>
                                                 <span className="t-num" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-2)', flexShrink: 0 }}>
-                                                    <span style={{ color: 'var(--ok)', fontWeight: 700 }}>{player.goals}</span> G
+                                                    <span style={{ color: 'var(--ok)', fontWeight: 600 }}>{player.goals}</span> G
                                                     {' · '}
-                                                    <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{player.assists}</span> A
+                                                    <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{player.assists}</span> A
                                                 </span>
                                             </div>
                                         ))}
@@ -720,7 +720,7 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
                             : `rgb(var(--${resultToken}-rgb) / 0.12)`,
                     color: !isPlayed ? 'var(--accent)' : isForfait ? 'var(--tbd)' : resultColor,
                     fontSize: '0.7rem',
-                    fontWeight: 800,
+                    fontWeight: 600,
                     flexShrink: 0,
                 }}
                 aria-label={!isPlayed ? 'Scheduled' : isForfait ? 'Forfait' : `Result ${result}`}
@@ -767,9 +767,8 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
                     className="t-num"
                     style={{
                         fontSize: isForfait ? 'var(--fs-3xs)' : 'var(--fs-sm)',
-                        fontWeight: 800,
+                        fontWeight: 600,
                         color: isForfait ? 'var(--tbd)' : resultColor,
-                        textTransform: isForfait ? 'uppercase' : 'none',
                         flexShrink: 0,
                     }}
                 >

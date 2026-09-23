@@ -51,7 +51,7 @@ export default function RulesPage({ open, onClose }: RulesPageProps) {
                             <Icon size={14} strokeWidth={2.5} />
                         </span>
                         <span style={{ flex: 1, fontSize: 'var(--fs-sm)', fontWeight: 500 }}>{label}</span>
-                        <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, color }}>{effect}</span>
+                        <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, color }}>{effect}</span>
                     </div>
                 ))}
             </ListSection>

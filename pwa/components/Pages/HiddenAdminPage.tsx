@@ -444,21 +444,21 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
 
     const getLevelColor = (level: string) => {
         switch (level) {
-            case 'error': return 'var(--color-danger)';
-            case 'warn': return 'var(--color-warning)';
-            case 'info': return 'var(--color-accent)';
-            case 'LOG': return 'var(--color-text-secondary)';
-            default: return 'var(--color-text-tertiary)';
+            case 'error': return 'var(--no)';
+            case 'warn': return 'var(--warn)';
+            case 'info': return 'var(--accent)';
+            case 'LOG': return 'var(--text-2)';
+            default: return 'var(--text-3)';
         }
     };
 
     const getLevelBg = (level: string) => {
         switch (level) {
-            case 'error': return 'rgb(var(--color-danger-rgb) / 0.15)';
-            case 'warn': return 'rgb(var(--color-warning-rgb) / 0.15)';
-            case 'info': return 'rgb(var(--color-accent-rgb) / 0.15)';
-            case 'LOG': return 'var(--color-surface)';
-            default: return 'var(--color-surface-hover)';
+            case 'error': return 'rgb(var(--no-rgb) / 0.15)';
+            case 'warn': return 'rgb(var(--warn-rgb) / 0.15)';
+            case 'info': return 'rgb(var(--accent-rgb) / 0.15)';
+            case 'LOG': return 'var(--bg-panel)';
+            default: return 'var(--bg-panel-raised)';
         }
     };
 
@@ -475,7 +475,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                     style={{
                         position: 'fixed',
                         inset: 0,
-                        background: 'var(--color-bg)',
+                        background: 'var(--bg-screen)',
                         zIndex: 10020,
                         display: 'flex',
                         flexDirection: 'column',
@@ -490,7 +490,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                             left: 0,
                             right: 0,
                             height: 'calc(var(--safe-top) + 92px)',
-                            background: 'linear-gradient(to bottom, var(--color-bg) 25%, transparent 100%)',
+                            background: 'linear-gradient(to bottom, var(--bg-screen) 25%, transparent 100%)',
                             pointerEvents: 'none',
                             zIndex: 4,
                         }}
@@ -512,16 +512,16 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                             width: 40,
                             height: 40,
                             borderRadius: '50%',
-                            background: 'var(--color-glass-heavy)',
+                            background: 'var(--bg-panel)',
                             backdropFilter: 'blur(40px) saturate(180%)',
                             WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                            border: '0.5px solid var(--color-border)',
-                            color: 'var(--color-text-primary)',
+                            border: '0.5px solid var(--border-hairline)',
+                            color: 'var(--text-1)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             cursor: 'pointer',
-                            boxShadow: 'var(--shadow-lg)',
+                            boxShadow: 'var(--shadow-overlay)',
                         }}
                     >
                         <ChevronLeft size={22} strokeWidth={2} />
@@ -545,8 +545,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                         <span
                             style={{
                                 fontSize: '1.0625rem',
-                                fontWeight: 700,
-                                color: 'var(--color-text-primary)',
+                                fontWeight: 600,
+                                color: 'var(--text-1)',
                                 letterSpacing: '-0.01em',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
@@ -571,8 +571,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                 {/* Danger Warning */}
                                 <div
                                     style={{
-                                        background: 'rgb(var(--color-danger-rgb) / 0.1)',
-                                        border: '1px solid rgb(var(--color-danger-rgb) / 0.2)',
+                                        background: 'rgb(var(--no-rgb) / 0.1)',
+                                        border: '1px solid rgb(var(--no-rgb) / 0.2)',
                                         borderRadius: 10,
                                         padding: '10px 12px',
                                         display: 'flex',
@@ -580,8 +580,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                         gap: 10,
                                     }}
                                 >
-                                    <AlertTriangle size={16} style={{ color: 'var(--color-danger)', flexShrink: 0 }} />
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                                    <AlertTriangle size={16} style={{ color: 'var(--no)', flexShrink: 0 }} />
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>
                                         Actions here affect live data on the Shotten Scraper Worker.
                                     </div>
                                 </div>
@@ -592,9 +592,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                         style={{
                                             fontSize: '0.75rem',
                                             fontWeight: 600,
-                                            color: 'var(--color-text-tertiary)',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '0.05em',
+                                            color: 'var(--text-3)',
                                             marginBottom: 8,
                                         }}
                                     >
@@ -610,9 +608,9 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                 flex: 1,
                                                 padding: '10px 12px',
                                                 borderRadius: 10,
-                                                border: '1px solid var(--color-border)',
-                                                background: 'var(--color-surface)',
-                                                color: 'var(--color-text-primary)',
+                                                border: '1px solid var(--border-hairline)',
+                                                background: 'var(--bg-panel)',
+                                                color: 'var(--text-1)',
                                                 fontWeight: 500,
                                                 fontSize: '0.85rem',
                                                 cursor: 'pointer',
@@ -639,9 +637,9 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                 flex: 1,
                                                 padding: '10px 12px',
                                                 borderRadius: 10,
-                                                border: '1px solid var(--color-border)',
-                                                background: 'var(--color-surface)',
-                                                color: 'var(--color-text-primary)',
+                                                border: '1px solid var(--border-hairline)',
+                                                background: 'var(--bg-panel)',
+                                                color: 'var(--text-1)',
                                                 fontWeight: 500,
                                                 fontSize: '0.85rem',
                                                 cursor: 'pointer',
@@ -670,9 +668,9 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                             width: '100%',
                                             padding: '10px 12px',
                                             borderRadius: 10,
-                                            border: '1px solid var(--color-border)',
-                                            background: 'var(--color-surface)',
-                                            color: 'var(--color-text-primary)',
+                                            border: '1px solid var(--border-hairline)',
+                                            background: 'var(--bg-panel)',
+                                            color: 'var(--text-1)',
                                             fontWeight: 500,
                                             fontSize: '0.85rem',
                                             cursor: pushTest.status === 'scheduled' || pushTest.status === 'requesting' ? 'default' : 'pointer',
@@ -706,8 +704,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         gap: 6,
                                                         fontSize: '0.8rem',
                                                         color: scrapeMessage.includes('started') || scrapeMessage.includes('success')
-                                                            ? 'var(--color-success)'
-                                                            : 'var(--color-danger)',
+                                                            ? 'var(--ok)'
+                                                            : 'var(--no)',
                                                     }}
                                                 >
                                                     {scrapeMessage.includes('started') || scrapeMessage.includes('success') ? (
@@ -726,8 +724,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         gap: 6,
                                                         fontSize: '0.8rem',
                                                         color: backupMessage.includes('started') || backupMessage.includes('success')
-                                                            ? 'var(--color-success)'
-                                                            : 'var(--color-danger)',
+                                                            ? 'var(--ok)'
+                                                            : 'var(--no)',
                                                     }}
                                                 >
                                                     {backupMessage.includes('started') || backupMessage.includes('success') ? (
@@ -746,10 +744,10 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         gap: 6,
                                                         fontSize: '0.8rem',
                                                         color: pushTest.status === 'error'
-                                                            ? 'var(--color-danger)'
+                                                            ? 'var(--no)'
                                                             : pushTest.status === 'fired'
-                                                                ? 'var(--color-success)'
-                                                                : 'var(--color-text-secondary)',
+                                                                ? 'var(--ok)'
+                                                                : 'var(--text-2)',
                                                     }}
                                                 >
                                                     {pushTest.status === 'error' ? (
@@ -772,9 +770,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                         style={{
                                             fontSize: '0.75rem',
                                             fontWeight: 600,
-                                            color: 'var(--color-text-tertiary)',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '0.05em',
+                                            color: 'var(--text-3)',
                                             marginBottom: 8,
                                         }}
                                     >
@@ -789,7 +785,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                 justifyContent: 'center',
                                                 gap: 8,
                                                 padding: '20px 0',
-                                                color: 'var(--color-text-tertiary)',
+                                                color: 'var(--text-3)',
                                                 fontSize: '0.9rem',
                                             }}
                                         >
@@ -805,7 +801,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                 alignItems: 'center',
                                                 gap: 6,
                                                 fontSize: '0.85rem',
-                                                color: 'var(--color-danger)',
+                                                color: 'var(--no)',
                                                 padding: '8px 0',
                                             }}
                                         >
@@ -820,11 +816,11 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                             animate={{ opacity: 1, y: 0 }}
                                             style={{
                                                 background: backupStatus.latest.isHealthy
-                                                    ? 'linear-gradient(135deg, rgb(var(--color-success-rgb) / 0.1) 0%, var(--color-surface) 100%)'
-                                                    : 'linear-gradient(135deg, rgb(var(--color-danger-rgb) / 0.1) 0%, var(--color-surface) 100%)',
+                                                    ? 'linear-gradient(135deg, rgb(var(--ok-rgb) / 0.1) 0%, var(--bg-panel) 100%)'
+                                                    : 'linear-gradient(135deg, rgb(var(--no-rgb) / 0.1) 0%, var(--bg-panel) 100%)',
                                                 borderRadius: 16,
                                                 padding: 16,
-                                                border: `1px solid ${backupStatus.latest.isHealthy ? 'rgb(var(--color-success-rgb) / 0.25)' : 'rgb(var(--color-danger-rgb) / 0.25)'}`,
+                                                border: `1px solid ${backupStatus.latest.isHealthy ? 'rgb(var(--ok-rgb) / 0.25)' : 'rgb(var(--no-rgb) / 0.25)'}`,
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 gap: 12,
@@ -844,12 +840,12 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         height: 48,
                                                         borderRadius: '50%',
                                                         background: backupStatus.latest.isHealthy
-                                                            ? 'rgb(var(--color-success-rgb) / 0.15)'
-                                                            : 'rgb(var(--color-danger-rgb) / 0.15)',
+                                                            ? 'rgb(var(--ok-rgb) / 0.15)'
+                                                            : 'rgb(var(--no-rgb) / 0.15)',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
-                                                        color: backupStatus.latest.isHealthy ? 'var(--color-success)' : 'var(--color-danger)',
+                                                        color: backupStatus.latest.isHealthy ? 'var(--ok)' : 'var(--no)',
                                                     }}
                                                 >
                                                     {backupStatus.latest.isHealthy ? <Shield size={24} /> : <AlertCircle size={24} />}
@@ -858,8 +854,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                     <div
                                                         style={{
                                                             fontSize: '1.1rem',
-                                                            fontWeight: 700,
-                                                            color: backupStatus.latest.isHealthy ? 'var(--color-success)' : 'var(--color-danger)',
+                                                            fontWeight: 600,
+                                                            color: backupStatus.latest.isHealthy ? 'var(--ok)' : 'var(--no)',
                                                         }}
                                                     >
                                                         {backupStatus.latest.isHealthy ? 'Healthy' : 'Unhealthy'}
@@ -867,7 +863,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                     <div
                                                         style={{
                                                             fontSize: '0.8rem',
-                                                            color: 'var(--color-text-secondary)',
+                                                            color: 'var(--text-2)',
                                                         }}
                                                     >
                                                         Last backup {formatHoursAgo(backupStatus.latest.hoursSince)}
@@ -882,17 +878,15 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                     gridTemplateColumns: 'repeat(3, 1fr)',
                                                     gap: 8,
                                                     padding: '12px 0',
-                                                    borderTop: '1px solid var(--color-border-subtle)',
-                                                    borderBottom: '1px solid var(--color-border-subtle)',
+                                                    borderTop: '1px solid var(--border-subtle)',
+                                                    borderBottom: '1px solid var(--border-subtle)',
                                                 }}
                                             >
                                                 <div style={{ textAlign: 'center' }}>
                                                     <div
                                                         style={{
                                                             fontSize: '0.7rem',
-                                                            color: 'var(--color-text-tertiary)',
-                                                            textTransform: 'uppercase',
-                                                            letterSpacing: '0.05em',
+                                                            color: 'var(--text-3)',
                                                             marginBottom: 4,
                                                         }}
                                                     >
@@ -902,7 +896,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         style={{
                                                             fontSize: '0.9rem',
                                                             fontWeight: 600,
-                                                            color: 'var(--color-text-primary)',
+                                                            color: 'var(--text-1)',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
@@ -917,9 +911,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                     <div
                                                         style={{
                                                             fontSize: '0.7rem',
-                                                            color: 'var(--color-text-tertiary)',
-                                                            textTransform: 'uppercase',
-                                                            letterSpacing: '0.05em',
+                                                            color: 'var(--text-3)',
                                                             marginBottom: 4,
                                                         }}
                                                     >
@@ -929,7 +921,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         style={{
                                                             fontSize: '0.9rem',
                                                             fontWeight: 600,
-                                                            color: 'var(--color-text-primary)',
+                                                            color: 'var(--text-1)',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
@@ -944,9 +936,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                     <div
                                                         style={{
                                                             fontSize: '0.7rem',
-                                                            color: 'var(--color-text-tertiary)',
-                                                            textTransform: 'uppercase',
-                                                            letterSpacing: '0.05em',
+                                                            color: 'var(--text-3)',
                                                             marginBottom: 4,
                                                         }}
                                                     >
@@ -956,7 +946,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         style={{
                                                             fontSize: '0.9rem',
                                                             fontWeight: 600,
-                                                            color: 'var(--color-text-primary)',
+                                                            color: 'var(--text-1)',
                                                         }}
                                                     >
                                                         {backupStatus.totalCount}
@@ -968,7 +958,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                             <div
                                                 style={{
                                                     fontSize: '0.75rem',
-                                                    color: 'var(--color-text-tertiary)',
+                                                    color: 'var(--text-3)',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: 6,
@@ -995,9 +985,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                             style={{
                                                 fontSize: '0.75rem',
                                                 fontWeight: 600,
-                                                color: 'var(--color-text-tertiary)',
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.05em',
+                                                color: 'var(--text-3)',
                                             }}
                                         >
                                             Application Logs
@@ -1015,7 +1003,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                     justifyContent: 'center',
                                                     background: 'transparent',
                                                     border: 'none',
-                                                    color: 'var(--color-text-tertiary)',
+                                                    color: 'var(--text-3)',
                                                     cursor: 'pointer',
                                                     padding: 4,
                                                 }}
@@ -1035,7 +1023,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                     gap: 4,
                                                     background: 'transparent',
                                                     border: 'none',
-                                                    color: 'var(--color-accent)',
+                                                    color: 'var(--accent)',
                                                     fontSize: '0.75rem',
                                                     cursor: 'pointer',
                                                     padding: '4px 8px',
@@ -1085,9 +1073,9 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                             minWidth: 0,
                                                             padding: '12px 14px',
                                                             borderRadius: 12,
-                                                            border: '1px solid var(--color-border)',
-                                                            background: 'var(--color-surface-hover)',
-                                                            color: 'var(--color-text-primary)',
+                                                            border: '1px solid var(--border-hairline)',
+                                                            background: 'var(--bg-panel-raised)',
+                                                            color: 'var(--text-1)',
                                                             fontSize: '0.9rem',
                                                             outline: 'none',
                                                         }}
@@ -1103,9 +1091,9 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                             minWidth: 0,
                                                             padding: '12px 14px',
                                                             borderRadius: 12,
-                                                            border: '1px solid var(--color-border)',
-                                                            background: 'var(--color-surface-hover)',
-                                                            color: 'var(--color-text-primary)',
+                                                            border: '1px solid var(--border-hairline)',
+                                                            background: 'var(--bg-panel-raised)',
+                                                            color: 'var(--text-1)',
                                                             fontSize: '0.9rem',
                                                             cursor: 'pointer',
                                                         }}
@@ -1129,9 +1117,9 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                 width: '100%',
                                                                 padding: '12px 40px 12px 14px',
                                                                 borderRadius: 12,
-                                                                border: '1px solid var(--color-border)',
-                                                                background: 'var(--color-surface-hover)',
-                                                                color: dateFilter ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
+                                                                border: '1px solid var(--border-hairline)',
+                                                                background: 'var(--bg-panel-raised)',
+                                                                color: dateFilter ? 'var(--text-1)' : 'var(--text-3)',
                                                                 fontSize: '0.9rem',
                                                                 minWidth: 0,
                                                             }}
@@ -1154,8 +1142,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                     padding: 0,
                                                                     borderRadius: 999,
                                                                     border: 'none',
-                                                                    background: 'var(--color-surface)',
-                                                                    color: 'var(--color-text-tertiary)',
+                                                                    background: 'var(--bg-panel)',
+                                                                    color: 'var(--text-3)',
                                                                     cursor: 'pointer',
                                                                     display: 'flex',
                                                                     alignItems: 'center',
@@ -1172,7 +1160,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                 <div
                                                     ref={logsContainerRef}
                                                 style={{
-                                                    background: 'var(--color-surface-hover)',
+                                                    background: 'var(--bg-panel-raised)',
                                                     borderRadius: 12,
                                                     padding: 10,
                                                     maxHeight: 320,
@@ -1188,7 +1176,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                 justifyContent: 'center',
                                                                 gap: 8,
                                                                 padding: '20px 0',
-                                                                color: 'var(--color-text-tertiary)',
+                                                                color: 'var(--text-3)',
                                                                 fontSize: '0.9rem',
                                                             }}
                                                         >
@@ -1205,10 +1193,10 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                 justifyContent: 'center',
                                                                 gap: 8,
                                                                 padding: '10px 8px',
-                                                                color: 'var(--color-text-tertiary)',
+                                                                color: 'var(--text-3)',
                                                                 fontSize: '0.85rem',
-                                                                borderBottom: '1px solid var(--color-border-subtle)',
-                                                                background: 'var(--color-surface)',
+                                                                borderBottom: '1px solid var(--border-subtle)',
+                                                                background: 'var(--bg-panel)',
                                                             }}
                                                         >
                                                             <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
@@ -1223,7 +1211,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                 alignItems: 'center',
                                                                 gap: 6,
                                                                 fontSize: '0.85rem',
-                                                                color: 'var(--color-danger)',
+                                                                color: 'var(--no)',
                                                                 padding: '8px 0',
                                                             }}
                                                         >
@@ -1236,7 +1224,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         <div
                                                             style={{
                                                                 fontSize: '0.85rem',
-                                                                color: 'var(--color-text-tertiary)',
+                                                                color: 'var(--text-3)',
                                                                 textAlign: 'center',
                                                                 padding: '16px 0',
                                                             }}
@@ -1252,10 +1240,10 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                 key={log.entryId}
                                                                 onClick={() => toggleLogExpanded(log.entryId)}
                                                                 initial={false}
-                                                                animate={{ backgroundColor: isExpanded ? 'var(--color-surface)' : 'transparent' }}
+                                                                animate={{ backgroundColor: isExpanded ? 'var(--bg-panel)' : 'transparent' }}
                                                                 style={{
                                                                     padding: '6px 8px',
-                                                                    borderBottom: idx < logs.length - 1 ? '1px solid var(--color-border-subtle)' : undefined,
+                                                                    borderBottom: idx < logs.length - 1 ? '1px solid var(--border-subtle)' : undefined,
                                                                     display: 'flex',
                                                                     alignItems: isExpanded ? 'flex-start' : 'center',
                                                                     gap: 8,
@@ -1267,13 +1255,11 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                 <span
                                                                     style={{
                                                                         fontSize: '0.65rem',
-                                                                        fontWeight: 700,
-                                                                        textTransform: 'uppercase',
+                                                                        fontWeight: 600,
                                                                         padding: '2px 6px',
                                                                         borderRadius: 4,
                                                                         background: getLevelBg(log.level),
                                                                         color: getLevelColor(log.level),
-                                                                        letterSpacing: '0.05em',
                                                                         flexShrink: 0,
                                                                         marginTop: isExpanded ? 1 : 0,
                                                                     }}
@@ -1285,13 +1271,11 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                         style={{
                                                                             fontSize: '0.6rem',
                                                                             fontWeight: 600,
-                                                                            textTransform: 'uppercase',
                                                                             padding: '2px 5px',
                                                                             borderRadius: 4,
-                                                                            background: 'var(--color-surface)',
-                                                                            color: 'var(--color-text-tertiary)',
-                                                                            letterSpacing: '0.05em',
-                                                                            border: '1px solid var(--color-border)',
+                                                                            background: 'var(--bg-panel)',
+                                                                            color: 'var(--text-3)',
+                                                                            border: '1px solid var(--border-hairline)',
                                                                             flexShrink: 0,
                                                                             marginTop: isExpanded ? 1 : 0,
                                                                         }}
@@ -1302,7 +1286,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                 <span
                                                                     style={{
                                                                         fontSize: '0.7rem',
-                                                                        color: 'var(--color-text-tertiary)',
+                                                                        color: 'var(--text-3)',
                                                                         fontFamily: 'monospace',
                                                                         flexShrink: 0,
                                                                         marginTop: isExpanded ? 1 : 0,
@@ -1320,7 +1304,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                 <span
                                                                     style={{
                                                                         fontSize: '0.8rem',
-                                                                        color: 'var(--color-text-secondary)',
+                                                                        color: 'var(--text-2)',
                                                                         whiteSpace: isExpanded ? 'normal' : 'nowrap',
                                                                         overflow: isExpanded ? 'visible' : 'hidden',
                                                                         textOverflow: isExpanded ? 'clip' : 'ellipsis',
@@ -1339,9 +1323,9 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                                                             {[0, 1, 2].map((i) => (
                                                                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                                                    <div style={{ width: 36, height: 16, borderRadius: 4, background: 'var(--color-border)' }} />
-                                                                    <div style={{ width: 60, height: 14, borderRadius: 4, background: 'var(--color-border)' }} />
-                                                                    <div style={{ flex: 1, height: 14, borderRadius: 4, background: 'var(--color-border)' }} />
+                                                                    <div style={{ width: 36, height: 16, borderRadius: 4, background: 'var(--border-hairline)' }} />
+                                                                    <div style={{ width: 60, height: 14, borderRadius: 4, background: 'var(--border-hairline)' }} />
+                                                                    <div style={{ flex: 1, height: 14, borderRadius: 4, background: 'var(--border-hairline)' }} />
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -1366,9 +1350,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                             style={{
                                                 fontSize: '0.75rem',
                                                 fontWeight: 600,
-                                                color: 'var(--color-text-tertiary)',
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.05em',
+                                                color: 'var(--text-3)',
                                             }}
                                         >
                                             Backups
@@ -1378,7 +1360,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                 <div
                                                     style={{
                                                         fontSize: '0.75rem',
-                                                        color: 'var(--color-text-tertiary)',
+                                                        color: 'var(--text-3)',
                                                     }}
                                                 >
                                                     {backupCount} total
@@ -1396,7 +1378,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                     gap: 4,
                                                     background: 'transparent',
                                                     border: 'none',
-                                                    color: 'var(--color-accent)',
+                                                    color: 'var(--accent)',
                                                     fontSize: '0.75rem',
                                                     cursor: 'pointer',
                                                     padding: '4px 8px',
@@ -1431,7 +1413,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                 justifyContent: 'center',
                                                 gap: 8,
                                                 padding: '20px 0',
-                                                color: 'var(--color-text-tertiary)',
+                                                color: 'var(--text-3)',
                                                 fontSize: '0.9rem',
                                             }}
                                         >
@@ -1447,7 +1429,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                 alignItems: 'center',
                                                 gap: 6,
                                                 fontSize: '0.85rem',
-                                                color: 'var(--color-danger)',
+                                                color: 'var(--no)',
                                                 padding: '8px 0',
                                             }}
                                         >
@@ -1460,7 +1442,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                         <>
                                             <div
                                                 style={{
-                                                    background: 'var(--color-surface-hover)',
+                                                    background: 'var(--bg-panel-raised)',
                                                     borderRadius: 12,
                                                     padding: 10,
                                                     maxHeight: 220,
@@ -1473,10 +1455,10 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         style={{
                                                             padding: '6px 8px',
                                                             fontSize: '0.85rem',
-                                                            color: 'var(--color-text-secondary)',
+                                                            color: 'var(--text-2)',
                                                             borderBottom:
                                                                 idx < Math.min(backups.length, 10) - 1
-                                                                    ? '1px solid var(--color-border-subtle)'
+                                                                    ? '1px solid var(--border-subtle)'
                                                                     : undefined,
                                                             display: 'flex',
                                                             alignItems: 'center',
@@ -1492,7 +1474,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         style={{
                                                             padding: '6px 8px',
                                                             fontSize: '0.8rem',
-                                                            color: 'var(--color-text-tertiary)',
+                                                            color: 'var(--text-3)',
                                                             textAlign: 'center',
                                                         }}
                                                     >
@@ -1505,7 +1487,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                     style={{
                                                         marginTop: 6,
                                                         fontSize: '0.75rem',
-                                                        color: 'var(--color-text-tertiary)',
+                                                        color: 'var(--text-3)',
                                                     }}
                                                 >
                                                     Location: {backupDir}
@@ -1518,7 +1500,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                         <div
                                             style={{
                                                 fontSize: '0.85rem',
-                                                color: 'var(--color-text-tertiary)',
+                                                color: 'var(--text-3)',
                                                 textAlign: 'center',
                                                 padding: '16px 0',
                                             }}

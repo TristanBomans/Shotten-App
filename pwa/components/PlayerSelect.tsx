@@ -99,14 +99,14 @@ export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
                             borderRadius: 8,
                             background: 'var(--primary)',
                             color: 'var(--primary-foreground)',
-                            fontWeight: 800,
+                            fontWeight: 600,
                             fontSize: '1rem',
                         }}
                         aria-hidden
                     >
                         S
                     </span>
-                    <span style={{ fontWeight: 700, fontSize: 'var(--fs-base)', letterSpacing: '-0.01em' }}>
+                    <span style={{ fontWeight: 600, fontSize: 'var(--fs-base)', letterSpacing: '-0.01em' }}>
                         Shotten
                     </span>
                 </div>
@@ -207,7 +207,7 @@ export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
                                 {creating ? 'Aanmaken…' : 'Profiel aanmaken'}
                             </button>
                             {createError && (
-                                <p style={{ color: 'var(--danger, #e11d48)', fontSize: 'var(--fs-sm)' }}>
+                                <p style={{ color: 'var(--no)', fontSize: 'var(--fs-sm)' }}>
                                     {createError}
                                 </p>
                             )}

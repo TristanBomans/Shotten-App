@@ -225,7 +225,7 @@ export default function RecentMatchesSheet({
                                         background: badgeBg,
                                         color: badgeColor,
                                         fontSize: '0.7rem',
-                                        fontWeight: 800,
+                                        fontWeight: 600,
                                         flexShrink: 0,
                                         position: 'relative',
                                     }}
@@ -330,11 +330,10 @@ export default function RecentMatchesSheet({
                                         className="t-num"
                                         style={{
                                             fontSize: isForfait ? 'var(--fs-3xs)' : 'var(--fs-sm)',
-                                            fontWeight: 800,
+                                            fontWeight: 600,
                                             color: isForfait ? 'var(--no)' : 'var(--text-1)',
                                             letterSpacing: '-0.01em',
                                             flexShrink: 0,
-                                            textTransform: isForfait ? 'uppercase' : 'none',
                                         }}
                                     >
                                         {isForfait ? 'Forfait' : match.scoreline}

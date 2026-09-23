@@ -51,15 +51,20 @@ export default function AvailabilityRoster({
                     <div key={key} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                         <span
                             style={{
-                                fontSize: '0.625rem',
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.07em',
-                                color,
-                                width: 40,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                fontSize: 'var(--fs-2xs)',
+                                fontWeight: 500,
+                                color: 'var(--text-3)',
+                                width: 52,
                                 flexShrink: 0,
                             }}
                         >
+                            <span
+                                aria-hidden
+                                style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }}
+                            />
                             {label}
                         </span>
                         <span
@@ -80,7 +85,7 @@ export default function AvailabilityRoster({
                                                 isMe
                                                     ? {
                                                         color: 'var(--text-1)',
-                                                        fontWeight: 700,
+                                                        fontWeight: 600,
                                                         borderBottom: `1.5px solid ${color}`,
                                                     }
                                                     : undefined
@@ -99,8 +104,8 @@ export default function AvailabilityRoster({
                             className="t-num"
                             style={{
                                 fontSize: 'var(--fs-2xs)',
-                                fontWeight: 700,
-                                color,
+                                fontWeight: 500,
+                                color: 'var(--text-3)',
                                 flexShrink: 0,
                                 minWidth: 16,
                                 textAlign: 'right',

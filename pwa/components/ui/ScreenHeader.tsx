@@ -51,7 +51,7 @@ export default function ScreenHeader({
                 <h1
                     style={{
                         fontSize: 'var(--fs-base)',
-                        fontWeight: 700,
+                        fontWeight: 600,
                         letterSpacing: '-0.01em',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -73,27 +73,11 @@ export default function ScreenHeader({
                                     ? `${recentCount} recent matches in the last three days`
                                     : 'Open recent matches'
                             }
-                            style={
-                                homeControls.hasRecentHighlight
-                                    ? {
-                                        width: 'auto',
-                                        padding: '0 10px',
-                                        gap: 5,
-                                        color: 'var(--warn)',
-                                        background: 'rgb(var(--warn-rgb) / 0.12)',
-                                        borderColor: 'rgb(var(--warn-rgb) / 0.26)',
-                                    }
-                                    : undefined
-                            }
+                            data-active={homeControls.hasRecentHighlight}
                         >
                             <Clock3 size={16} />
                             {homeControls.hasRecentHighlight && recentCount > 0 && (
-                                <span
-                                    className="t-num"
-                                    style={{ fontSize: 'var(--fs-3xs)', fontWeight: 700 }}
-                                >
-                                    {recentDisplayCount}
-                                </span>
+                                <span className="icon-action-badge t-num">{recentDisplayCount}</span>
                             )}
                         </button>
                     )}
@@ -123,7 +107,7 @@ export default function ScreenHeader({
                             <span
                                 style={{
                                     fontSize: 'var(--fs-3xs)',
-                                    fontWeight: 700,
+                                    fontWeight: 500,
                                     maxWidth: 96,
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
@@ -143,24 +127,11 @@ export default function ScreenHeader({
                                 ? `${notificationCount} notifications`
                                 : 'No open notifications'
                         }
-                        style={
-                            notificationCount > 0
-                                ? {
-                                    width: 'auto',
-                                    padding: '0 10px',
-                                    gap: 5,
-                                    color: 'var(--warn)',
-                                    background: 'rgb(var(--warn-rgb) / 0.12)',
-                                    borderColor: 'rgb(var(--warn-rgb) / 0.26)',
-                                }
-                                : undefined
-                        }
+                        data-active={notificationCount > 0}
                     >
                         {notificationCount > 0 ? <BellRing size={16} /> : <Bell size={16} />}
                         {notificationCount > 0 && (
-                            <span className="t-num" style={{ fontSize: 'var(--fs-3xs)', fontWeight: 700 }}>
-                                {displayCount}
-                            </span>
+                            <span className="icon-action-badge t-num">{displayCount}</span>
                         )}
                     </button>
                 </div>

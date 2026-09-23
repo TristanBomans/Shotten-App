@@ -40,7 +40,7 @@ export default function UnlockDialog({ open, onConfirm, onCancel }: UnlockDialog
                         transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                         style={{ zIndex: 10031, textAlign: 'center' }}
                     >
-                        <h2 style={{ fontSize: 'var(--fs-base)', fontWeight: 700, marginBottom: 6 }}>
+                        <h2 style={{ fontSize: 'var(--fs-base)', fontWeight: 600, marginBottom: 6 }}>
                             Hidden Admin Features
                         </h2>
                         <p className="t-body" style={{ marginBottom: 18 }}>

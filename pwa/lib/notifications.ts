@@ -30,9 +30,9 @@ function getUrgency(daysLeft: number): ReminderUrgency {
 }
 
 function getRankLabel(urgency: ReminderUrgency, reason: ReminderReason): string {
-    if (urgency === 'high') return reason === 'maybe' ? 'Still Deciding?' : 'Response Needed';
-    if (urgency === 'medium') return reason === 'maybe' ? 'Pick a Side' : 'Reminder';
-    return reason === 'maybe' ? 'Make a Call' : 'Heads Up';
+    if (urgency === 'high') return reason === 'maybe' ? 'Still deciding?' : 'Response needed';
+    if (urgency === 'medium') return reason === 'maybe' ? 'Pick a side' : 'Reminder';
+    return reason === 'maybe' ? 'Make a call' : 'Heads up';
 }
 
 function getDaysText(daysLeft: number): string {

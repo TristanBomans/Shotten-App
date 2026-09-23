@@ -79,7 +79,7 @@ export default function VersionHistoryContent() {
             transition={{ duration: 0.4 }}
         >
             {loading ? (
-                <div style={{ color: 'var(--color-text-tertiary)', textAlign: 'center', padding: 40 }}>
+                <div style={{ color: 'var(--text-3)', textAlign: 'center', padding: 40 }}>
                     Loading...
                 </div>
             ) : versionInfo?.releases && versionInfo.releases.length > 0 ? (
@@ -101,13 +101,13 @@ export default function VersionHistoryContent() {
                                 <span style={{
                                     fontSize: '1rem',
                                     fontWeight: 600,
-                                    color: 'var(--color-text-primary)',
+                                    color: 'var(--text-1)',
                                 }}>
                                     {formatDate(release.date)}
                                 </span>
                                 <span style={{
                                     fontSize: '0.85rem',
-                                    color: 'var(--color-text-tertiary)',
+                                    color: 'var(--text-3)',
                                     textAlign: 'right',
                                 }}>
                                     {formatRelativeTime(release.date)}
@@ -128,7 +128,7 @@ export default function VersionHistoryContent() {
                                         style={{
                                             fontSize: '0.95rem',
                                             lineHeight: 1.5,
-                                            color: 'var(--color-text-secondary)',
+                                            color: 'var(--text-2)',
                                         }}
                                     >
                                         {change}
@@ -140,10 +140,10 @@ export default function VersionHistoryContent() {
                 </div>
             ) : (
                 <div style={{
-                    color: 'var(--color-text-tertiary)',
+                    color: 'var(--text-3)',
                     textAlign: 'center',
                     padding: 40,
-                    background: 'var(--color-surface)',
+                    background: 'var(--bg-panel)',
                     borderRadius: 20,
                 }}>
                     No changes available
@@ -160,7 +160,7 @@ export default function VersionHistoryContent() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: 4,
-                    color: 'var(--color-text-tertiary)',
+                    color: 'var(--text-3)',
                     fontSize: '0.75rem',
                 }}
             >
@@ -173,7 +173,7 @@ export default function VersionHistoryContent() {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 6,
-                        color: 'var(--color-text-secondary)',
+                        color: 'var(--text-2)',
                         textDecoration: 'none',
                         fontWeight: 500,
                     }}

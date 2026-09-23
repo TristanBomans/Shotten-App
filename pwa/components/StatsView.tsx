@@ -336,7 +336,7 @@ export default function StatsView({
                                         style={{
                                             display: 'block',
                                             fontSize: 'var(--fs-xs)',
-                                            fontWeight: 700,
+                                            fontWeight: 600,
                                             lineHeight: 1.2,
                                             overflow: 'hidden',
                                             textOverflow: 'ellipsis',
@@ -394,9 +394,8 @@ export default function StatsView({
                             }}
                             aria-label={`${player.name}, rank ${i + 1}, ${player.stats.attendancePct} percent attendance`}
                             style={{
-                                minHeight: 58,
-                                background: isMe ? 'rgb(var(--accent-rgb) / 0.08)' : undefined,
-                                boxShadow: isMe ? 'inset 3px 0 0 var(--accent)' : undefined,
+                                minHeight: 48,
+                                background: isMe ? 'var(--bg-subtle)' : undefined,
                             }}
                         >
                             {/* Position */}
@@ -406,29 +405,18 @@ export default function StatsView({
                                     width: 26,
                                     textAlign: 'center',
                                     fontSize: 'var(--fs-2xs)',
-                                    fontWeight: 800,
-                                    color: i === 0
-                                        ? 'var(--warn)'
-                                        : i < 3
-                                            ? 'var(--text-1)'
-                                            : 'var(--text-3)',
+                                    fontWeight: 600,
+                                    color: i < 3 ? 'var(--text-1)' : 'var(--text-3)',
                                     flexShrink: 0,
                                 }}
                             >
                                 {i + 1}
                             </span>
 
-                            {/* Rank icon tile */}
+                            {/* Rank icon */}
                             <span
                                 className="flex-center"
-                                style={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 9,
-                                    background: player.stats.rank.bg,
-                                    color: player.stats.rank.color,
-                                    flexShrink: 0,
-                                }}
+                                style={{ width: 20, height: 20, color: 'var(--text-3)', flexShrink: 0 }}
                                 aria-hidden
                             >
                                 <RankIcon size={16} />
@@ -440,7 +428,7 @@ export default function StatsView({
                                     style={{
                                         display: 'block',
                                         fontSize: 'var(--fs-sm)',
-                                        fontWeight: isMe ? 700 : 600,
+                                        fontWeight: isMe ? 600 : 500,
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
                                         whiteSpace: 'nowrap',
@@ -462,32 +450,39 @@ export default function StatsView({
                                             />
                                         ))}
                                     </span>
-                                    <span style={{ fontSize: '0.625rem', color: player.stats.rank.color, fontWeight: 600 }}>
+                                    <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-3)' }}>
                                         {player.stats.rank.name}
                                     </span>
                                 </span>
                             </span>
 
                             {/* Attendance % */}
-                            <span style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <span style={{ width: 48, textAlign: 'right', flexShrink: 0 }}>
                                 <span
                                     className="t-num"
-                                    style={{
-                                        display: 'block',
-                                        fontSize: 'var(--fs-base)',
-                                        fontWeight: 800,
-                                        letterSpacing: '-0.01em',
-                                        color: player.stats.attendancePct >= 80
-                                            ? 'var(--ok)'
-                                            : player.stats.attendancePct >= 50
-                                                ? 'var(--warn)'
-                                                : 'var(--no)',
-                                    }}
+                                    style={{ display: 'block', fontSize: 'var(--fs-sm)', fontWeight: 500 }}
                                 >
                                     {player.stats.attendancePct}%
                                 </span>
-                                <span style={{ display: 'block', fontSize: '0.625rem', color: 'var(--text-3)', fontWeight: 600 }}>
-                                    present
+                                <span
+                                    aria-hidden
+                                    style={{
+                                        display: 'block',
+                                        height: 3,
+                                        marginTop: 4,
+                                        borderRadius: 'var(--r-full)',
+                                        background: 'var(--bg-subtle-strong)',
+                                        overflow: 'hidden',
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            display: 'block',
+                                            height: '100%',
+                                            width: `${player.stats.attendancePct}%`,
+                                            background: 'var(--text-2)',
+                                        }}
+                                    />
                                 </span>
                             </span>
                         </button>

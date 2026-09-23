@@ -183,8 +183,8 @@ export default function VersionChecker() {
           padding: '6px 12px',
           fontSize: '0.75rem',
           fontWeight: 600,
-          color: 'var(--color-bg)',
-          background: 'var(--color-success)',
+          color: 'var(--bg-screen)',
+          background: 'var(--ok)',
           border: 'none',
           borderRadius: 8,
           cursor: isChecking ? 'wait' : 'pointer',
@@ -195,7 +195,7 @@ export default function VersionChecker() {
       </button>
       <span style={{
         fontSize: '0.7rem',
-        color: 'var(--color-text-tertiary)',
+        color: 'var(--text-3)',
       }}>
         {lastChecked && `Last checked: ${lastChecked.toLocaleTimeString()}`}
       </span>

@@ -128,10 +128,8 @@ export default function PlayerManagementPage({ isOpen, onClose }: PlayerManageme
                             gap: 8,
                             padding: '10px 14px 9px',
                             fontSize: '0.6rem',
-                            fontWeight: 700,
+                            fontWeight: 600,
                             color: 'var(--text-3)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.08em',
                         }}
                     >
                         <div>Name</div>
