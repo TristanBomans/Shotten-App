@@ -200,7 +200,6 @@ export interface ScraperPlayerResponse {
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bvwjoptvnxpttwkstiue.supabase.co';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_YaWg2zCaLJqZrVYv0K-9sQ_vXXYEImm';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
 
 // Client for read operations (uses anon key)
 let anonClient: SupabaseClient | null = null;
@@ -212,15 +211,22 @@ export function getSupabaseClient(): SupabaseClient {
     return anonClient;
 }
 
-// Client for write operations (uses service key)
+// Client for write operations (uses service key). The key is read on first use:
+// on Cloudflare, secrets are only on process.env once a request is running.
 let serviceClient: SupabaseClient | null = null;
 
 export function getSupabaseServiceClient(): SupabaseClient {
     if (!serviceClient) {
-        const key = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
+        const key = process.env.SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
         serviceClient = createClient(SUPABASE_URL, key);
     }
     return serviceClient;
+}
+
+/** Service client without the anon fallback, for tables only the service key may touch. */
+export function requireSupabaseServiceClient(): SupabaseClient {
+    if (!process.env.SUPABASE_SERVICE_KEY) throw new Error('SUPABASE_SERVICE_KEY is not configured');
+    return getSupabaseServiceClient();
 }
 
 // ============================================================================

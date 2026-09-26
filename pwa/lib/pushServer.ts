@@ -1,4 +1,4 @@
-import { getSupabaseServiceClient } from './supabase';
+import { requireSupabaseServiceClient } from './supabase';
 
 // Push endpoints are fetched by shotten-backend-node from the homeserver, so only
 // accept the browser push services; anything else could point it at a LAN host.
@@ -49,14 +49,14 @@ export function readPlayerId(input: unknown): number | undefined {
 export async function saveSubscription(sub: PushSubscriptionInput, playerId?: number): Promise<void> {
     const row: Record<string, unknown> = { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth };
     if (playerId !== undefined) row.player_id = playerId;
-    const { error } = await getSupabaseServiceClient()
+    const { error } = await requireSupabaseServiceClient()
         .from('push_subscriptions')
         .upsert(row, { onConflict: 'endpoint' });
     if (error) throw error;
 }
 
 export async function deleteSubscription(endpoint: string): Promise<void> {
-    const { error } = await getSupabaseServiceClient()
+    const { error } = await requireSupabaseServiceClient()
         .from('push_subscriptions')
         .delete()
         .eq('endpoint', endpoint);
@@ -64,7 +64,7 @@ export async function deleteSubscription(endpoint: string): Promise<void> {
 }
 
 export async function queuePush(endpoint: string, message: { title: string; body: string; url: string; tag: string }, sendAt: Date): Promise<void> {
-    const { error } = await getSupabaseServiceClient()
+    const { error } = await requireSupabaseServiceClient()
         .from('push_outbox')
         .insert({ endpoint, ...message, send_at: sendAt.toISOString() });
     if (error) throw error;
