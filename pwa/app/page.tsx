@@ -6,6 +6,7 @@ import PlayerSelect from '@/components/PlayerSelect';
 import SetupWizard from '@/components/SetupWizard';
 import Dashboard from '@/components/Dashboard';
 import AppNav from '@/components/ui/AppNav';
+import UpdateNotice from '@/components/UpdateNotice';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
 type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
@@ -283,6 +284,10 @@ function HomeContent() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {selectedPlayerId && !needsSetup && (
+                <UpdateNotice suppressed={currentModal !== null} onOpen={handleOpenVersion} />
+            )}
 
             {selectedPlayerId && (
                 <AppNav

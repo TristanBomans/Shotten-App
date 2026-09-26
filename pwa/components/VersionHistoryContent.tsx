@@ -1,72 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { formatDateSafe } from '@/lib/dateUtils';
+import { formatRelativeTime, markReleasesSeen, useWhatsNew } from '@/lib/whatsNew';
 import { OpenAILogo } from '@/components/ui/OpenAILogo';
 
-interface Release {
-    date: string;
-    changes: string[];
-}
-
-interface VersionInfo {
-    releases: Release[];
-}
-
 export default function VersionHistoryContent() {
-    const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { loaded, releases, seenBuild } = useWhatsNew();
 
     useEffect(() => {
-        let cancelled = false;
-
-        fetch(`/version.json?t=${Date.now()}`, {
-            cache: 'no-store',
-            headers: {
-                'Cache-Control': 'no-cache',
-            },
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (cancelled) return;
-                setVersionInfo(data);
-                setLoading(false);
-            })
-            .catch(() => {
-                if (cancelled) return;
-                setLoading(false);
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-
-    const formatRelativeTime = (isoString: string) => {
-        const date = new Date(isoString);
-        const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffMinutes = Math.floor(diffMs / (1000 * 60));
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-        // Use calendar-day diff for accurate day/week/month counts
-        const calendarDaysDiff = Math.floor(
-            (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
-                Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())) /
-                (1000 * 60 * 60 * 24)
-        );
-        const calendarWeeksDiff = Math.floor(calendarDaysDiff / 7);
-        const calendarMonthsDiff = Math.floor(calendarDaysDiff / 30);
-
-        if (diffMinutes < 1) return 'Just now';
-        if (diffMinutes < 60) return `${diffMinutes}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (calendarDaysDiff === 1) return 'Yesterday';
-        if (calendarDaysDiff < 7) return `${calendarDaysDiff}d ago`;
-        if (calendarWeeksDiff <= 4) return `${calendarWeeksDiff}w ago`;
-        return `${Math.max(1, calendarMonthsDiff)}mo ago`;
-    };
+        if (loaded) markReleasesSeen();
+    }, [loaded]);
 
     const formatDate = (isoString: string) => {
         return formatDateSafe(isoString, { day: 'numeric', month: 'short' });
@@ -78,13 +23,13 @@ export default function VersionHistoryContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
         >
-            {loading ? (
+            {!loaded ? (
                 <div style={{ color: 'var(--text-3)', textAlign: 'center', padding: 40 }}>
                     Loading...
                 </div>
-            ) : versionInfo?.releases && versionInfo.releases.length > 0 ? (
+            ) : releases.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-                    {versionInfo.releases.map((release, index) => (
+                    {releases.map((release, index) => (
                         <motion.div
                             key={`${release.date}-${index}`}
                             initial={{ opacity: 0, y: 10 }}
@@ -94,16 +39,27 @@ export default function VersionHistoryContent() {
                             <div style={{
                                 display: 'flex',
                                 justifyContent: 'space-between',
-                                alignItems: 'baseline',
+                                alignItems: 'center',
                                 gap: 12,
                                 marginBottom: 10,
                             }}>
                                 <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 8,
                                     fontSize: 'var(--fs-sm)',
                                     fontWeight: 600,
                                     color: 'var(--text-1)',
                                 }}>
+                                    {(release.build ?? 0) > seenBuild && (
+                                        <span className="unread-dot" aria-label="New" />
+                                    )}
                                     {formatDate(release.date)}
+                                    {release.build !== undefined && (
+                                        <span className="t-caption t-num" style={{ fontWeight: 400 }}>
+                                            v{release.build}
+                                        </span>
+                                    )}
                                 </span>
                                 <span className="t-caption t-num" style={{ textAlign: 'right' }}>
                                     {formatRelativeTime(release.date)}

@@ -454,6 +454,61 @@ button {
   line-height: 1;
 }
 
+/* Unread marker: a quiet accent dot for things the user hasn't seen yet */
+.unread-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.tabbar-item,
+.siderail-item {
+  position: relative;
+}
+
+.tabbar-item .unread-dot {
+  position: absolute;
+  top: calc(50% - 13px);
+  left: calc(50% + 8px);
+  box-shadow: 0 0 0 2px var(--bg-header);
+}
+
+.siderail-item .unread-dot {
+  margin-left: auto;
+}
+
+/* One-time "just updated" notice under the header */
+.update-notice {
+  position: fixed;
+  top: calc(var(--safe-top) + var(--header-h) + var(--sp-3));
+  left: calc(50% + (var(--rail-w) + var(--safe-left)) / 2);
+  z-index: 905;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px 0 10px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-full);
+  background: var(--bg-header);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  color: var(--text-2);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+}
+
+.update-notice strong {
+  color: var(--text-1);
+  font-weight: 600;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;

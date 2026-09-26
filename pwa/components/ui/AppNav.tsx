@@ -3,6 +3,7 @@
 import { useRef, useCallback } from 'react';
 import { Home, BarChart2, Settings, Trophy } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
+import { useWhatsNew } from '@/lib/whatsNew';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
 
@@ -25,6 +26,8 @@ const navItems: { id: View; icon: React.ComponentType<{ size?: number | string }
  */
 export default function AppNav({ currentView, onNavigate, isHidden = false }: AppNavProps) {
     const isNavigatingRef = useRef(false);
+    const { unseenCount } = useWhatsNew();
+    const hasUnread = (view: View) => view === 'settings' && unseenCount > 0;
 
     const handleNavigate = useCallback((view: View) => {
         if (isNavigatingRef.current) return;
@@ -49,11 +52,12 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
                         type="button"
                         className="tabbar-item"
                         aria-current={currentView === id ? 'page' : undefined}
-                        aria-label={label}
+                        aria-label={hasUnread(id) ? `${label}, new release notes` : label}
                         title={label}
                         onClick={() => handleNavigate(id)}
                     >
                         <Icon size={21} />
+                        {hasUnread(id) && <span className="unread-dot" aria-hidden />}
                     </button>
                 ))}
             </nav>
@@ -97,6 +101,7 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
                         >
                             <Icon size={17} />
                             <span>{label}</span>
+                            {hasUnread(id) && <span className="unread-dot" aria-hidden />}
                         </button>
                     ))}
                 </div>
