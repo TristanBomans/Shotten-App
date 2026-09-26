@@ -39,6 +39,18 @@ interface DashboardProps {
 
 // View order for determining slide position
 const viewOrder = ['home', 'stats', 'league', 'settings'] as const;
+
+function getVerticalScrollParent(node: HTMLElement): HTMLElement | null {
+    let current = node.parentElement;
+    while (current) {
+        const { overflowY } = getComputedStyle(current);
+        if ((overflowY === 'auto' || overflowY === 'scroll') && current.scrollHeight > current.clientHeight) {
+            return current;
+        }
+        current = current.parentElement;
+    }
+    return null;
+}
 type ViewType = typeof viewOrder[number];
 const viewTitles: Record<ViewType, string> = {
     home: 'Matches',
@@ -545,28 +557,37 @@ export default function Dashboard({
         }, focusDelay);
     }, [currentView, onViewChange]);
 
-    // When past matches are shown, land on the next upcoming match after load/toggle.
+    // When past matches are shown, land on the next upcoming match after load,
+    // refresh or toggle. Not on view switches: that would fight the swipe.
+    const landedOnNextKeyRef = useRef<string | null>(null);
     useEffect(() => {
-        if (loading || isRefreshing || currentView !== 'home') return;
+        if (isRefreshing) landedOnNextKeyRef.current = null;
+    }, [isRefreshing]);
+
+    useEffect(() => {
+        if (loading || isRefreshing) return;
         if (!showPastMatches || !heroMatch || pastMatches.length === 0) return;
+
+        const landingKey = `${heroMatch.id}-${pastMatches.length}`;
+        if (landedOnNextKeyRef.current === landingKey) return;
 
         if (scrollToNextTimeoutRef.current) {
             clearTimeout(scrollToNextTimeoutRef.current);
         }
 
         scrollToNextTimeoutRef.current = setTimeout(() => {
-            const targetNode = matchCardRefs.current.get(heroMatch.id);
-            if (!targetNode) {
-                scrollToNextTimeoutRef.current = null;
-                return;
-            }
-
-            targetNode.scrollIntoView({
-                behavior: 'auto',
-                block: 'start',
-                inline: 'nearest',
-            });
             scrollToNextTimeoutRef.current = null;
+            const targetNode = matchCardRefs.current.get(heroMatch.id);
+            const scroller = targetNode && getVerticalScrollParent(targetNode);
+            if (!targetNode || !scroller) return;
+
+            // Scroll only the home pane's own scroller; scrollIntoView would also
+            // move the horizontal view pager.
+            const marginTop = parseFloat(getComputedStyle(targetNode).scrollMarginTop) || 0;
+            scroller.scrollTop += targetNode.getBoundingClientRect().top
+                - scroller.getBoundingClientRect().top
+                - marginTop;
+            landedOnNextKeyRef.current = landingKey;
         }, 80);
 
         return () => {
@@ -578,12 +599,15 @@ export default function Dashboard({
     }, [
         loading,
         isRefreshing,
-        currentView,
         showPastMatches,
         heroMatch,
         pastMatches.length,
-        boardMatches.length,
     ]);
+
+    // Toggling past matches off and on again should land on the next match again.
+    useEffect(() => {
+        if (!showPastMatches) landedOnNextKeyRef.current = null;
+    }, [showPastMatches]);
 
     // Loading state - only show skeleton on initial load when no data yet
     if (loading && matches.length === 0 && !hasEverLoaded.current) {
