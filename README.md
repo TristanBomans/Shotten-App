@@ -75,7 +75,7 @@ Pages snapshots secrets per deployment, so redeploy after changing one.
 4. **Replace our values** before your first deploy:
    - `pwa/wrangler.json` → Supabase URL, anon key, VAPID public key
    - `.github/workflows/deploy-pages.yml` → `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and the Pages `--project-name`
-   - `pwa/components/Pages/HiddenAdminPage.tsx` and `pwa/components/Dashboard.tsx` → the backend address (`192.168.129.250:8094`), or leave it; only the hidden admin tools and the backend health check use it
+   - `pwa/components/Pages/HiddenAdminPage.tsx` and `pwa/components/Dashboard.tsx` → the hardcoded backend address, or leave it; only the hidden admin tools and the backend health check use it
 5. **Cloudflare Pages**: create the project, add the secrets from [Hosting & Deployments](#hosting--deployments) and push to `main`.
 6. **Backend**: follow the [backend README](https://github.com/TristanBomans/shotten-backend-node#running-it-for-your-own-team).
 

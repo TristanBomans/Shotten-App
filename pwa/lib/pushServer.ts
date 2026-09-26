@@ -1,7 +1,7 @@
 import { getSupabaseServiceClient } from './supabase';
 
-// Push endpoints are fetched by shotten-backend-node from the homeserver, so only
-// accept the browser push services; anything else could point it at a LAN host.
+// shotten-backend-node sends to these endpoints from its own network, so only
+// accept the browser push services; anything else could point it at an internal host.
 const PUSH_SERVICE_HOSTS = [
     'fcm.googleapis.com',
     'updates.push.services.mozilla.com',
