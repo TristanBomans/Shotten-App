@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { isHomeTeamForMatch } from './teamNameMatching';
 
 // ============================================================================
 // DATABASE TYPES (matching schema.sql)
@@ -145,7 +146,17 @@ export interface MatchResponse {
     forfait: boolean;
     opponentLzvId: number | null;
     lzvMatchExternalId: string | null;
+    /** Final score from the linked LZV match, once it has been played. */
+    result: MatchResultResponse | null;
     attendances: AttendanceResponse[];
+}
+
+export interface MatchResultResponse {
+    homeScore: number;
+    awayScore: number;
+    teamScore: number;
+    opponentScore: number;
+    outcome: 'W' | 'L' | 'D';
 }
 
 export interface ScraperTeamResponse {
@@ -539,6 +550,47 @@ export async function getLzvMatchesForTeams(
     return data || [];
 }
 
+async function getPlayedLzvMatchesByExternalId(externalIds: string[]): Promise<Map<string, LzvMatch>> {
+    if (externalIds.length === 0) return new Map();
+
+    const { data, error } = await getSupabaseClient()
+        .from('lzv_matches')
+        .select('*')
+        .in('external_id', externalIds)
+        .eq('status', 'Played');
+    if (error) throw error;
+    return new Map((data || []).map((m: LzvMatch) => [m.external_id, m]));
+}
+
+function toMatchResult(match: CoreMatch, lzvMatch: LzvMatch | undefined): MatchResultResponse | null {
+    if (!lzvMatch) return null;
+
+    const ownTeam = match.team_name || match.name?.split('-')[0]?.trim() || '';
+    const isHome = isHomeTeamForMatch(ownTeam, lzvMatch.home_team, lzvMatch.away_team);
+    const teamScore = isHome ? lzvMatch.home_score : lzvMatch.away_score;
+    const opponentScore = isHome ? lzvMatch.away_score : lzvMatch.home_score;
+
+    return {
+        homeScore: lzvMatch.home_score,
+        awayScore: lzvMatch.away_score,
+        teamScore,
+        opponentScore,
+        outcome: teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D',
+    };
+}
+
+async function getMatchResults(matches: CoreMatch[]): Promise<Map<number, MatchResultResponse>> {
+    const now = Date.now();
+    const linked = matches.filter(m => m.lzv_match_external_id && new Date(m.date).getTime() < now);
+    const lzvMatches = await getPlayedLzvMatchesByExternalId(linked.map(m => m.lzv_match_external_id!));
+    const results = new Map<number, MatchResultResponse>();
+    for (const match of linked) {
+        const result = toMatchResult(match, lzvMatches.get(match.lzv_match_external_id!));
+        if (result) results.set(match.id, result);
+    }
+    return results;
+}
+
 export async function getLzvPlayers(teamId?: number): Promise<ScraperPlayerResponse[]> {
     // Get all players with their team stats
     const { data: players, error: playersError } = await getSupabaseClient()
@@ -646,8 +698,11 @@ export function toTeamResponse(team: CoreTeam): TeamResponse {
 }
 
 export async function toMatchResponse(match: CoreMatch): Promise<MatchResponse> {
-    const attendances = await getAttendances([match.id]);
-    const players = await getCorePlayers();
+    const [attendances, players, results] = await Promise.all([
+        getAttendances([match.id]),
+        getCorePlayers(),
+        getMatchResults([match]),
+    ]);
     const playerMap = new Map(players.map(p => [p.id, p]));
     
     return {
@@ -660,6 +715,7 @@ export async function toMatchResponse(match: CoreMatch): Promise<MatchResponse> 
         forfait: match.forfait,
         opponentLzvId: match.opponent_lzv_id ?? null,
         lzvMatchExternalId: match.lzv_match_external_id ?? null,
+        result: results.get(match.id) ?? null,
         attendances: attendances.map(a => {
             const player = playerMap.get(a.player_id);
             return {
@@ -676,8 +732,11 @@ export async function toMatchesResponse(matches: CoreMatch[]): Promise<MatchResp
     if (matches.length === 0) return [];
     
     const matchIds = matches.map(m => m.id);
-    const attendances = await getAttendances(matchIds);
-    const players = await getCorePlayers();
+    const [attendances, players, results] = await Promise.all([
+        getAttendances(matchIds),
+        getCorePlayers(),
+        getMatchResults(matches),
+    ]);
     const playerMap = new Map(players.map(p => [p.id, p]));
     
     // Group attendances by match
@@ -699,6 +758,7 @@ export async function toMatchesResponse(matches: CoreMatch[]): Promise<MatchResp
         forfait: match.forfait,
         opponentLzvId: match.opponent_lzv_id ?? null,
         lzvMatchExternalId: match.lzv_match_external_id ?? null,
+        result: results.get(match.id) ?? null,
         attendances: (attendancesByMatch.get(match.id) || []).map(a => {
             const player = playerMap.get(a.player_id);
             return {
