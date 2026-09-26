@@ -13,19 +13,22 @@ import { useOpponentTeamData } from './useOpponentTeamData';
 import { SegmentedControl } from '../../ui/controls';
 import SquadView from './SquadView';
 import OpponentView from './OpponentView';
+import { MatchScoreboard } from '../../MatchBoard/MatchResult';
 
 interface MatchPageProps {
     match: Match;
     dateObj: Date;
     roster: RosterPlayer[];
     currentPlayerId: number;
+    /** Finished matches drop the opponent scouting tab and show the final score. */
+    isFinished?: boolean;
     open: boolean;
     onClose: () => void;
 }
 
 const modalTabs = ['squad', 'opponent'] as const;
 
-export default function MatchPage({ match, dateObj, roster, currentPlayerId, open, onClose }: MatchPageProps) {
+export default function MatchPage({ match, dateObj, roster, currentPlayerId, isFinished = false, open, onClose }: MatchPageProps) {
     const [activeTab, setActiveTab] = useState<'squad' | 'opponent'>('squad');
     const [showImage, setShowImage] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -78,9 +81,9 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
     const unknown = roster.filter(p => p.status === 'Unknown');
 
     const statusGroups: StatusGroup[] = [
-        { title: 'Coming', players: present, color: 'var(--ok)' },
+        { title: isFinished ? 'Present' : 'Coming', players: present, color: 'var(--ok)' },
         { title: 'Maybe', players: maybe, color: 'var(--warn)' },
-        { title: 'Not coming', players: absent, color: 'var(--no)' },
+        { title: isFinished ? 'Absent' : 'Not coming', players: absent, color: 'var(--no)' },
         { title: 'No response', players: unknown, color: 'var(--tbd)' },
     ];
 
@@ -195,36 +198,38 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                         </div>
 
                         {/* Segmented tabs */}
-                        <div
-                            style={{
-                                maxWidth: 'calc(var(--content-max) + 2 * var(--screen-x))',
-                                margin: '0 auto',
-                                padding: '0 var(--screen-x) 10px',
-                                width: '100%',
-                            }}
-                        >
-                            <SegmentedControl
-                                aria-label="Match views"
-                                value={activeTab}
-                                onChange={(tab) => {
-                                    hapticPatterns.tap();
-                                    lastTabRef.current = tab;
-                                    setActiveTab(tab);
-                                    scrollToView(tab);
+                        {!isFinished && (
+                            <div
+                                style={{
+                                    maxWidth: 'calc(var(--content-max) + 2 * var(--screen-x))',
+                                    margin: '0 auto',
+                                    padding: '0 var(--screen-x) 10px',
+                                    width: '100%',
                                 }}
-                                options={modalTabs.map((tab) => ({
-                                    value: tab,
-                                    label: (
-                                        <>
-                                            {tab === 'squad' ? 'Squad' : 'Opponent'}
-                                            {tab === 'squad' && present.length > 0 && (
-                                                <span className="t-num seg-count">{present.length}</span>
-                                            )}
-                                        </>
-                                    ),
-                                }))}
-                            />
-                        </div>
+                            >
+                                <SegmentedControl
+                                    aria-label="Match views"
+                                    value={activeTab}
+                                    onChange={(tab) => {
+                                        hapticPatterns.tap();
+                                        lastTabRef.current = tab;
+                                        setActiveTab(tab);
+                                        scrollToView(tab);
+                                    }}
+                                    options={modalTabs.map((tab) => ({
+                                        value: tab,
+                                        label: (
+                                            <>
+                                                {tab === 'squad' ? 'Squad' : 'Opponent'}
+                                                {tab === 'squad' && present.length > 0 && (
+                                                    <span className="t-num seg-count">{present.length}</span>
+                                                )}
+                                            </>
+                                        ),
+                                    }))}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Scrollable Container */}
@@ -245,28 +250,33 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, ope
                         {/* Squad View */}
                         <div data-view="squad" className="scrollbar-hide" style={paneStyle}>
                             <div className="flow-body-inner">
+                                {isFinished && match.result && teams.length === 2 && (
+                                    <MatchScoreboard result={match.result} homeTeam={teams[0]} awayTeam={teams[1]} />
+                                )}
                                 <SquadView statusGroups={statusGroups} currentPlayerId={currentPlayerId} />
                             </div>
                         </div>
 
                         {/* Opponent View */}
-                        <div data-view="opponent" className="scrollbar-hide" style={paneStyle}>
-                            <div className="flow-body-inner">
-                                <OpponentView
-                                    opponentTeam={opponentTeam}
-                                    opponentData={opponentData}
-                                    opponentPlayers={opponentPlayers}
-                                    ownTeamData={ownTeamData}
-                                    recentForm={recentForm}
-                                    loading={loadingOpponent}
-                                    onImageClick={() => setShowImage(true)}
-                                    aiAnalysis={aiAnalysis}
-                                    aiLoading={aiLoading}
-                                    aiError={aiError}
-                                    onGenerateAI={fetchAIAnalysis}
-                                />
+                        {!isFinished && (
+                            <div data-view="opponent" className="scrollbar-hide" style={paneStyle}>
+                                <div className="flow-body-inner">
+                                    <OpponentView
+                                        opponentTeam={opponentTeam}
+                                        opponentData={opponentData}
+                                        opponentPlayers={opponentPlayers}
+                                        ownTeamData={ownTeamData}
+                                        recentForm={recentForm}
+                                        loading={loadingOpponent}
+                                        onImageClick={() => setShowImage(true)}
+                                        aiAnalysis={aiAnalysis}
+                                        aiLoading={aiLoading}
+                                        aiError={aiError}
+                                        onGenerateAI={fetchAIAnalysis}
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* More menu (Directions / Add to Calendar / View opponent on LZV Cup) */}

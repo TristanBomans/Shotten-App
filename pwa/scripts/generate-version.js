@@ -2,7 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const MAX_RELEASE_COMMITS = 5;
+// Look further back than we show: internal commits (CI, chores) are dropped.
+const MAX_RELEASE_COMMITS = 12;
+const MAX_RELEASES = 6;
+const INTERNAL_COMMIT_PATTERN = /^(ci|chore|build|test|refactor|docs|style)(\(.+\))?!?:|\b(workflow|github actions|trigger (a )?(fresh |new )?(pwa )?build|bump|lockfile|wrangler|cloudflare pages preview)\b/i;
 const OPENROUTER_MODEL = 'openai/gpt-6-luna';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const MAX_AI_ATTEMPTS = 4;
@@ -50,8 +53,8 @@ async function main() {
     execSync('git fetch --unshallow 2>/dev/null', { encoding: 'utf8' });
   } catch {}
 
-  // Get version and commit hash for update checking
-  const version = getVersion();
+  // The build number is the commit count, so it increases on every push.
+  const build = getBuildNumber('HEAD');
   const commitHash = getCommitHash();
 
   // Read the complete history before filtering so redacted commits do not
@@ -67,7 +70,9 @@ async function main() {
 
   if (!apiKey) {
     console.warn('⚠️  OPENROUTER_API_KEY not found - skipping AI changelog');
-    releases = commits.map(createFallbackRelease);
+    releases = commits
+      .filter(c => !INTERNAL_COMMIT_PATTERN.test(getSubject(c.message)))
+      .map(createFallbackRelease);
   } else {
     console.log(`\nGenerating changelog via OpenRouter (${OPENROUTER_MODEL}, low reasoning)...`);
     try {
@@ -76,13 +81,17 @@ async function main() {
       releases.forEach(r => console.log(`  - [${r.date}] ${r.changes.length} bullet(s)`));
     } catch (error) {
       console.warn('⚠️  Failed to generate AI changelog:', error.message);
-      releases = commits.map(createFallbackRelease);
+      releases = commits
+        .filter(c => !INTERNAL_COMMIT_PATTERN.test(getSubject(c.message)))
+        .map(createFallbackRelease);
     }
   }
+  releases = releases.slice(0, MAX_RELEASES);
 
   // Build version info
   const versionInfo = {
-    version,
+    version: String(build),
+    build,
     commitHash,
     releases,
   };
@@ -92,19 +101,22 @@ async function main() {
   fs.writeFileSync(outputPath, JSON.stringify(versionInfo, null, 2));
 
   console.log(`\n✅ Version info generated:`);
-  console.log(`  Version: ${version}`);
+  console.log(`  Build: ${build}`);
   console.log(`  Commit: ${commitHash}`);
   console.log(`  Releases: ${releases.length}`);
   console.log(`  Output: ${outputPath}`);
 }
 
-function getVersion() {
+function getBuildNumber(ref) {
   try {
-    const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
-    return packageJson.version || '0.0.0';
+    return Number(execSync(`git rev-list --count ${ref}`, { encoding: 'utf8' }).trim()) || 0;
   } catch {
-    return '0.0.0';
+    return 0;
   }
+}
+
+function getSubject(message) {
+  return message.split(/\r?\n/, 1)[0].trim();
 }
 
 function getCommitHash() {
@@ -120,15 +132,17 @@ function getRecentCommits(count) {
     // Get full commit message (including body) and ISO date for each commit
     // Use a unique delimiter to separate commits
     const output = execSync(
-      `git log${count ? ` -${count}` : ''} --pretty=format:"%B|||DATEDELIM|||%aI|||COMMITDELIM|||"`,
+      `git log${count ? ` -${count}` : ''} --pretty=format:"%H|||HASHDELIM|||%B|||DATEDELIM|||%aI|||COMMITDELIM|||"`,
       { encoding: 'utf8' }
     );
     return output
       .split('|||COMMITDELIM|||')
       .filter(Boolean)
       .map(entry => {
-        const [message, date] = entry.split('|||DATEDELIM|||');
+        const [hash, rest] = entry.split('|||HASHDELIM|||');
+        const [message, date] = rest.split('|||DATEDELIM|||');
         return {
+          hash: hash.trim(),
           message: message.trim(),
           date: date.trim()
         };
@@ -139,8 +153,9 @@ function getRecentCommits(count) {
 }
 
 function createFallbackRelease(commit) {
-  const subject = commit.message.split(/\r?\n/, 1)[0].trim();
+  const subject = getSubject(commit.message);
   return {
+    build: getBuildNumber(commit.hash),
     date: commit.date,
     changes: [`🛠️ ${subject || 'Includes the latest improvements'}`],
   };
@@ -155,17 +170,18 @@ async function generateChangelog(commits, apiKey) {
 
 Rules:
 - Return exactly one item for every commit index. Never omit an index.
-- For each commit, provide 1-4 bullet points depending on how much content there is
+- Set "userFacing" to false for commits a player of the app would never notice: CI/CD, deploys, build or preview config, dependency bumps, refactors, tests, docs, tooling, "trigger build" commits. Give those an empty "bullets" array.
+- For each user-facing commit, provide 1-4 bullet points depending on how much content there is
 - Start each bullet with an emoji
 - Focus on what the user experiences, not technical details
 - Keep each bullet under 80 characters
 - Don't include commit hashes or technical jargon
 - Use present tense (e.g., "Adds" not "Added")
-- Format: Return a JSON object with a "releases" array. Each item has "index" (0-based) and "bullets" (array of strings)
+- Format: Return a JSON object with a "releases" array. Each item has "index" (0-based), "userFacing" (boolean) and "bullets" (array of strings)
 - Return ONLY valid JSON, no markdown code blocks or extra text
 
 Example output:
-{"releases":[{"index":0,"bullets":["🎨 New design for the home screen","⚡ Faster loading times"]},{"index":1,"bullets":["🐛 Fixes a crash on startup"]}]}
+{"releases":[{"index":0,"userFacing":true,"bullets":["🎨 New design for the home screen","⚡ Faster loading times"]},{"index":1,"userFacing":false,"bullets":[]},{"index":2,"userFacing":true,"bullets":["🐛 Fixes a crash on startup"]}]}
 
 Commits:
 ${commits.map((c, i) => `${i}. ${c.message}`).join('\n')}`;
@@ -211,7 +227,7 @@ ${commits.map((c, i) => `${i}. ${c.message}`).join('\n')}`;
     const parsedItems = Array.isArray(parsed) ? parsed : [];
     const coveredCount = commits.filter((_, index) => {
       const item = parsedItems.find(p => Number(p?.index) === index);
-      return Array.isArray(item?.bullets) && item.bullets.length > 0;
+      return item?.userFacing === false || (Array.isArray(item?.bullets) && item.bullets.length > 0);
     }).length;
 
     if (coveredCount === commits.length) {
@@ -231,15 +247,20 @@ ${commits.map((c, i) => `${i}. ${c.message}`).join('\n')}`;
       const item = Array.isArray(parsed)
         ? parsed.find(p => Number(p?.index) === index)
         : null;
+      if (item?.userFacing === false) return null;
+      if (!item && INTERNAL_COMMIT_PATTERN.test(getSubject(commit.message))) return null;
+
       const bullets = Array.isArray(item?.bullets)
         ? item.bullets.filter(bullet => typeof bullet === 'string' && bullet.trim())
         : [];
 
       return {
+        build: getBuildNumber(commit.hash),
         date: commit.date,
         changes: bullets.length > 0 ? bullets : createFallbackRelease(commit).changes,
       };
-    });
+    })
+    .filter(Boolean);
 
   return releases;
 }
@@ -271,14 +292,14 @@ async function requestOpenRouter(prompt, apiKey) {
                   type: 'object',
                   properties: {
                     index: { type: 'integer' },
+                    userFacing: { type: 'boolean' },
                     bullets: {
                       type: 'array',
                       items: { type: 'string' },
-                      minItems: 1,
                       maxItems: 4,
                     },
                   },
-                  required: ['index', 'bullets'],
+                  required: ['index', 'userFacing', 'bullets'],
                   additionalProperties: false,
                 },
               },

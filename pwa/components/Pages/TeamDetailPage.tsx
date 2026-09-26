@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, UserCircle, Trophy, Calendar, X, MoreHorizontal, ExternalLink, Home, Navigation, Palette } from 'lucide-react';
+import { ChevronLeft, ChevronRight, UserCircle, Trophy, Calendar, X, MoreHorizontal, ExternalLink, Home, Navigation, Palette } from 'lucide-react';
 import { parseDateToTimestamp, formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import { isHomeTeamForMatch } from '@/lib/teamNameMatching';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
@@ -12,6 +12,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
 import { ListSection, Row, MetricRow } from '../ui/ListSection';
 import { EmptyState, SegmentedControl } from '../ui/controls';
+import LzvMatchDetailPage from './LzvMatchDetailPage';
 
 const teamDetailTabs = ['overview', 'matches', 'squad'] as const;
 type TeamDetailTab = typeof teamDetailTabs[number];
@@ -28,6 +29,7 @@ interface ScraperMatch {
     teamId: number;
     status: 'Scheduled' | 'Played' | 'Postponed';
     forfait?: boolean;
+    resultId?: number | null;
 }
 
 interface TeamDetailPageProps {
@@ -49,6 +51,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
     const [loadingMatches, setLoadingMatches] = useState(false);
     const [loadingPlayers, setLoadingPlayers] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [selectedMatch, setSelectedMatch] = useState<ScraperMatch | null>(null);
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -569,7 +572,15 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                         {[...matches]
                                             .sort((a, b) => parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date))
                                             .map(match => (
-                                                <MatchRow key={match.externalId} match={match} teamName={team?.name || ''} />
+                                                <MatchRow
+                                                    key={match.externalId}
+                                                    match={match}
+                                                    teamName={team?.name || ''}
+                                                    onOpen={() => {
+                                                        hapticPatterns.tap();
+                                                        setSelectedMatch(match);
+                                                    }}
+                                                />
                                             ))}
                                     </div>
                                 )}
@@ -675,6 +686,14 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    <LzvMatchDetailPage
+                        open={selectedMatch !== null}
+                        resultId={selectedMatch?.resultId ?? null}
+                        perspectiveTeamId={team.externalId}
+                        fallbackTitle={selectedMatch ? `${selectedMatch.homeTeam} vs ${selectedMatch.awayTeam}` : undefined}
+                        onClose={() => setSelectedMatch(null)}
+                    />
                 </motion.div>
             )}
         </AnimatePresence>,
@@ -682,7 +701,7 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
     );
 }
 
-function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }) {
+function MatchRow({ match, teamName, onOpen }: { match: ScraperMatch; teamName: string; onOpen: () => void }) {
     if (!teamName || !match) {
         return (
             <div className="row row-static" style={{ opacity: 0.5 }}>
@@ -705,8 +724,15 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
     const dateStr = formatDateSafe(match.date, { day: 'numeric', month: 'short' }, 'TBD');
     const timeStr = formatTimeSafe(match.date, { hour: '2-digit', minute: '2-digit' }, 'TBD');
 
+    const hasDetail = isPlayed && !isForfait && typeof match.resultId === 'number';
+    const RowTag = hasDetail ? 'button' : 'div';
+
     return (
-        <div className="row row-static" style={{ minHeight: 52, opacity: isForfait ? 0.6 : 1 }}>
+        <RowTag
+            className={hasDetail ? 'row' : 'row row-static'}
+            style={{ minHeight: 52, opacity: isForfait ? 0.6 : 1 }}
+            {...(hasDetail && { type: 'button' as const, onClick: onOpen })}
+        >
             <span
                 className="flex-center t-num"
                 style={{
@@ -775,6 +801,9 @@ function MatchRow({ match, teamName }: { match: ScraperMatch; teamName: string }
                     {isForfait ? 'Forfait' : `${teamScore} - ${opponentScore}`}
                 </span>
             )}
-        </div>
+            {hasDetail && (
+                <ChevronRight size={15} aria-hidden style={{ color: 'var(--text-3)', flexShrink: 0, marginLeft: -4 }} />
+            )}
+        </RowTag>
     );
 }

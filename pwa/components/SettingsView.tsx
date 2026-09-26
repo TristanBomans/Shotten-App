@@ -6,7 +6,7 @@ import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useD
 import { disableMatchPush, enableMatchPush } from '@/lib/pushSettings';
 import { isWebPushSupported } from '@/lib/webPushClient';
 import { hapticPatterns } from '@/lib/haptic';
-import { useVersionChecker } from './VersionChecker';
+import { formatRelativeTime, useWhatsNew } from '@/lib/whatsNew';
 import PlayerManagementPage from './Pages/PlayerManagementPage';
 import VersionHistoryPage from './Pages/VersionHistoryPage';
 import HiddenAdminPage from './Pages/HiddenAdminPage';
@@ -37,6 +37,15 @@ interface SettingsViewProps {
     isForfaitOpen?: boolean;
     onOpenForfait?: () => void;
     onCloseForfait?: () => void;
+}
+
+function getVersionSubtitle({ build, latestDate, unseenCount }: ReturnType<typeof useWhatsNew>) {
+    if (build === null || !latestDate) return 'View changelog and updates';
+    const updated = `Updated ${formatRelativeTime(latestDate).toLowerCase()}`;
+    if (unseenCount > 0) {
+        return `${updated} · ${unseenCount} new ${unseenCount === 1 ? 'release' : 'releases'}`;
+    }
+    return `Version ${build} · ${updated}`;
 }
 
 const themeLabels: Record<string, string> = {
@@ -80,7 +89,7 @@ export default function SettingsView({
     const [showLeagueSelector, setShowLeagueSelector] = useState(false);
     const [theme, setTheme] = useState<string>('oled');
     const [showThemeSelector, setShowThemeSelector] = useState(false);
-    const { hasUpdate, updateApp, isChecking } = useVersionChecker();
+    const whatsNew = useWhatsNew();
 
     useEffect(() => {
         setUseMock(getUseMockData());
@@ -351,22 +360,11 @@ export default function SettingsView({
                 <Row
                     icon={<RefreshCw size={16} />}
                     title="Version history"
-                    subtitle={hasUpdate ? 'New version available' : 'View changelog and updates'}
-                    chevron={!hasUpdate}
+                    subtitle={getVersionSubtitle(whatsNew)}
+                    chevron
                     trailing={
-                        hasUpdate ? (
-                            <button
-                                className="btn btn-primary press"
-                                style={{ minHeight: 32, padding: '0 12px', fontSize: 'var(--fs-2xs)' }}
-                                disabled={isChecking}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    hapticPatterns.tap();
-                                    updateApp();
-                                }}
-                            >
-                                {isChecking ? 'Updating…' : 'Update'}
-                            </button>
+                        whatsNew.unseenCount > 0 ? (
+                            <span className="chip" data-tone="accent">New</span>
                         ) : undefined
                     }
                     onClick={() => {

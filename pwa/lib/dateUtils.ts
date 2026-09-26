@@ -100,3 +100,11 @@ export function formatTimeSafe(
         return fallback;
     }
 }
+
+/** A match counts as finished two hours after kick-off. */
+export const MATCH_FINISHED_AFTER_MS = 2 * 60 * 60 * 1000;
+
+export function isMatchFinished(dateValue: string | Date, now = Date.now()): boolean {
+    const ts = parseDateToTimestamp(dateValue);
+    return ts > 0 && ts <= now - MATCH_FINISHED_AFTER_MS;
+}

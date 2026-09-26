@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
             awayScore: m.away_score,
             location: m.location,
             teamId: m.team_id,
-            status: m.status
+            status: m.status,
+            resultId: m.lzv_result_id ?? null
         }));
         
         return NextResponse.json(response);

@@ -23,7 +23,18 @@ export interface Match {
     forfait?: boolean;
     opponentLzvId?: number | null;
     lzvMatchExternalId?: string | null;
+    result?: MatchResult | null;
     attendances: Attendance[];
+}
+
+export interface MatchResult {
+    homeScore: number;
+    awayScore: number;
+    teamScore: number;
+    opponentScore: number;
+    outcome: 'W' | 'L' | 'D';
+    resultId?: number | null;
+    teamLzvId?: number;
 }
 
 export interface Team {

@@ -16,6 +16,7 @@ export interface RecentMatchSource {
     location?: string | null;
     team_id: number;
     status: 'Scheduled' | 'Played' | 'Postponed';
+    lzv_result_id?: number | null;
 }
 
 export interface RecentMatchItem {
@@ -32,6 +33,8 @@ export interface RecentMatchItem {
     scoreline: string;
     result: RecentMatchResult;
     isRecent: boolean;
+    /** lzvcup.be result page id, when match details can be shown. */
+    resultId: number | null;
 }
 
 export interface RecentMatchesResponse {
@@ -66,5 +69,6 @@ export function buildRecentMatchItem(
         scoreline: `${teamScore} - ${opponentScore}`,
         result,
         isRecent: matchTs > 0 && matchTs <= nowTs && nowTs - matchTs <= RECENT_MATCH_WINDOW_MS,
+        resultId: match.lzv_result_id ?? null,
     };
 }
