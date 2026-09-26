@@ -196,6 +196,10 @@ export interface MatchResultResponse {
     teamScore: number;
     opponentScore: number;
     outcome: 'W' | 'L' | 'D';
+    /** lzvcup.be result page id, when the match detail page can be shown. */
+    resultId: number | null;
+    /** Our own LZV team id, for the Win/Loss perspective on the detail page. */
+    teamLzvId: number;
 }
 
 export interface ScraperTeamResponse {
@@ -641,6 +645,8 @@ function toMatchResult(match: CoreMatch, lzvMatch: LzvMatch | undefined): MatchR
         teamScore,
         opponentScore,
         outcome: teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D',
+        resultId: lzvMatch.lzv_result_id ?? null,
+        teamLzvId: lzvMatch.team_id,
     };
 }
 

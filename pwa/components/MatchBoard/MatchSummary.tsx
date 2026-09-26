@@ -10,6 +10,7 @@ import type { Match, Player } from '@/lib/mockData';
 import type { AttendanceStatus, RosterPlayer } from './types';
 import Confetti from './Confetti';
 import MatchPage from '../Pages/MatchPage';
+import LzvMatchDetailPage from '../Pages/LzvMatchDetailPage';
 import { ResponseControl } from '../ui/controls';
 import AvailabilityCounts from './AvailabilityCounts';
 import AvailabilityRoster from './AvailabilityRoster';
@@ -78,6 +79,7 @@ export default function MatchSummary({
     const dateObj = useMemo(() => parseDate(match.date) || new Date(0), [match.date]);
     const isPast = dateObj.getTime() < now;
     const isFinished = isMatchFinished(dateObj, now);
+    const lzvResultId = isFinished ? match.result?.resultId ?? null : null;
     const isToday = dateObj.toDateString() === new Date(now).toDateString();
 
     const roster: RosterPlayer[] = useMemo(() => {
@@ -298,15 +300,32 @@ export default function MatchSummary({
                 </div>
             </div>
 
-            <MatchPage
-                match={match}
-                dateObj={dateObj}
-                roster={roster}
-                currentPlayerId={currentPlayerId}
-                isFinished={isFinished}
-                open={!!isModalOpen}
-                onClose={() => onCloseModal?.()}
-            />
+            {lzvResultId !== null ? (
+                // Portal events still bubble through React: keep them off the card.
+                <div
+                    style={{ display: 'contents' }}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                >
+                    <LzvMatchDetailPage
+                        resultId={lzvResultId}
+                        perspectiveTeamId={match.result?.teamLzvId ?? null}
+                        fallbackTitle={match.name.replace(/-/g, ' vs ')}
+                        open={!!isModalOpen}
+                        onClose={() => onCloseModal?.()}
+                    />
+                </div>
+            ) : (
+                <MatchPage
+                    match={match}
+                    dateObj={dateObj}
+                    roster={roster}
+                    currentPlayerId={currentPlayerId}
+                    isFinished={isFinished}
+                    open={!!isModalOpen}
+                    onClose={() => onCloseModal?.()}
+                />
+            )}
         </div>
     );
 }

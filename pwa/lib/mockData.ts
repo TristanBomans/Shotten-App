@@ -33,6 +33,8 @@ export interface MatchResult {
     teamScore: number;
     opponentScore: number;
     outcome: 'W' | 'L' | 'D';
+    resultId?: number | null;
+    teamLzvId?: number;
 }
 
 export interface Team {
