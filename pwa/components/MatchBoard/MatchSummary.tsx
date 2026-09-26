@@ -5,14 +5,16 @@ import { AnimatePresence } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { useUpdateAttendance } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
-import { parseDate, formatMatchDate, formatTimeSafe } from '@/lib/dateUtils';
+import { parseDate, formatMatchDate, formatTimeSafe, isMatchFinished } from '@/lib/dateUtils';
 import type { Match, Player } from '@/lib/mockData';
 import type { AttendanceStatus, RosterPlayer } from './types';
 import Confetti from './Confetti';
 import MatchPage from '../Pages/MatchPage';
+import LzvMatchDetailPage from '../Pages/LzvMatchDetailPage';
 import { ResponseControl } from '../ui/controls';
 import AvailabilityCounts from './AvailabilityCounts';
 import AvailabilityRoster from './AvailabilityRoster';
+import { MatchResultBadge } from './MatchResult';
 
 interface MatchSummaryProps {
     match: Match;
@@ -76,6 +78,8 @@ export default function MatchSummary({
 
     const dateObj = useMemo(() => parseDate(match.date) || new Date(0), [match.date]);
     const isPast = dateObj.getTime() < now;
+    const isFinished = isMatchFinished(dateObj, now);
+    const lzvResultId = isFinished ? match.result?.resultId ?? null : null;
     const isToday = dateObj.toDateString() === new Date(now).toDateString();
 
     const roster: RosterPlayer[] = useMemo(() => {
@@ -129,6 +133,7 @@ export default function MatchSummary({
                 }
             }}
             aria-label={`Match ${match.name.replace(/-/g, ' versus ')}, open details`}
+            data-past={isFinished || undefined}
             style={{
                 position: 'relative',
                 overflow: 'hidden',
@@ -173,7 +178,12 @@ export default function MatchSummary({
                         )}
                         <span
                             className="t-num"
-                            style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, flexShrink: 0 }}
+                            style={{
+                                fontSize: 'var(--fs-2xs)',
+                                fontWeight: 600,
+                                color: isFinished ? 'var(--text-2)' : undefined,
+                                flexShrink: 0,
+                            }}
                         >
                             {dateStr}
                         </span>
@@ -208,12 +218,18 @@ export default function MatchSummary({
                         )}
                     </div>
 
-                    <ResponseControl
-                        status={myStatus}
-                        updating={updating as AttendanceStatus | null}
-                        onSelect={handleStatusUpdate}
-                        size="sm"
-                    />
+                    {!isFinished ? (
+                        <ResponseControl
+                            status={myStatus}
+                            updating={updating as AttendanceStatus | null}
+                            onSelect={handleStatusUpdate}
+                            size="sm"
+                        />
+                    ) : match.result ? (
+                        <MatchResultBadge result={match.result} />
+                    ) : !match.forfait ? (
+                        <span className="t-caption" style={{ flexShrink: 0 }}>No score yet</span>
+                    ) : null}
                 </div>
 
                 {/* Teams */}
@@ -224,6 +240,7 @@ export default function MatchSummary({
                             fontWeight: 600,
                             letterSpacing: '-0.01em',
                             lineHeight: 1.3,
+                            color: isFinished ? 'var(--text-2)' : undefined,
                             minWidth: 0,
                             flex: 1,
                         }}
@@ -255,40 +272,60 @@ export default function MatchSummary({
                     </p>
                 )}
 
-                {!showFullNames && (
-                    <AvailabilityCounts
-                        present={present.length}
-                        maybe={maybe.length}
-                        notPresent={notPresent.length}
-                        unknown={unknown.length}
-                    />
-                )}
-
-                {/* Roster breakdown */}
-                {showFullNames && (
-                    <div
-                        className="hairline-t"
-                        style={{ marginTop: 9, paddingTop: 8 }}
-                    >
-                        <AvailabilityRoster
-                            present={present}
-                            maybe={maybe}
-                            notPresent={notPresent}
-                            unknown={unknown}
-                            currentPlayerId={currentPlayerId}
+                <div className="match-past-dim">
+                    {!showFullNames && (
+                        <AvailabilityCounts
+                            present={present.length}
+                            maybe={maybe.length}
+                            notPresent={notPresent.length}
+                            unknown={unknown.length}
                         />
-                    </div>
-                )}
+                    )}
+
+                    {/* Roster breakdown */}
+                    {showFullNames && (
+                        <div
+                            className="hairline-t"
+                            style={{ marginTop: 9, paddingTop: 8 }}
+                        >
+                            <AvailabilityRoster
+                                present={present}
+                                maybe={maybe}
+                                notPresent={notPresent}
+                                unknown={unknown}
+                                currentPlayerId={currentPlayerId}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
-            <MatchPage
-                match={match}
-                dateObj={dateObj}
-                roster={roster}
-                currentPlayerId={currentPlayerId}
-                open={!!isModalOpen}
-                onClose={() => onCloseModal?.()}
-            />
+            {lzvResultId !== null ? (
+                // Portal events still bubble through React: keep them off the card.
+                <div
+                    style={{ display: 'contents' }}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                >
+                    <LzvMatchDetailPage
+                        resultId={lzvResultId}
+                        perspectiveTeamId={match.result?.teamLzvId ?? null}
+                        fallbackTitle={match.name.replace(/-/g, ' vs ')}
+                        open={!!isModalOpen}
+                        onClose={() => onCloseModal?.()}
+                    />
+                </div>
+            ) : (
+                <MatchPage
+                    match={match}
+                    dateObj={dateObj}
+                    roster={roster}
+                    currentPlayerId={currentPlayerId}
+                    isFinished={isFinished}
+                    open={!!isModalOpen}
+                    onClose={() => onCloseModal?.()}
+                />
+            )}
         </div>
     );
 }
