@@ -99,17 +99,13 @@ export default function VersionHistoryContent() {
                                 marginBottom: 10,
                             }}>
                                 <span style={{
-                                    fontSize: '1rem',
+                                    fontSize: 'var(--fs-sm)',
                                     fontWeight: 600,
                                     color: 'var(--text-1)',
                                 }}>
                                     {formatDate(release.date)}
                                 </span>
-                                <span style={{
-                                    fontSize: '0.85rem',
-                                    color: 'var(--text-3)',
-                                    textAlign: 'right',
-                                }}>
+                                <span className="t-caption t-num" style={{ textAlign: 'right' }}>
                                     {formatRelativeTime(release.date)}
                                 </span>
                             </div>
@@ -125,11 +121,8 @@ export default function VersionHistoryContent() {
                                 {release.changes.map((change, changeIndex) => (
                                     <li
                                         key={`${release.date}-${changeIndex}`}
-                                        style={{
-                                            fontSize: '0.95rem',
-                                            lineHeight: 1.5,
-                                            color: 'var(--text-2)',
-                                        }}
+                                        className="t-body"
+                                        style={{ lineHeight: 1.5 }}
                                     >
                                         {change}
                                     </li>
@@ -161,7 +154,7 @@ export default function VersionHistoryContent() {
                     alignItems: 'center',
                     gap: 4,
                     color: 'var(--text-3)',
-                    fontSize: '0.75rem',
+                    fontSize: 'var(--fs-2xs)',
                 }}
             >
                 <span>Release notes powered by</span>
