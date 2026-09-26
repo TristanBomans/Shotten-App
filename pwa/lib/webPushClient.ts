@@ -2,7 +2,7 @@ export const PUSH_API_URL = '/api/push';
 
 const VAPID_PUBLIC_KEY =
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-    'BEETGiu_J0SHmKQoNgVJrFKJqI6fePz6K1lHXCWJ_BiV4j4buX4pHaL7NF-3iBXEsgGcbrVhJk8Faca1hcnWVKA';
+    'BLzT4mRaUTwDPvMyunVEuxn-5CzY6qi48SOVU5keby-7lpmZMdWlJV2hq4UUNE0LqDccBNYTEOaIg3-MYQNdRIg';
 
 export function isWebPushSupported(): boolean {
     return typeof window !== 'undefined'
