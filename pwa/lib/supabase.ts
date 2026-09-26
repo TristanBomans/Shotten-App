@@ -266,8 +266,9 @@ export function getSupabaseClient(): SupabaseClient {
     return anonClient;
 }
 
-// Client for write operations (uses service key). Read on first use from the
-// Cloudflare bindings, falling back to process.env for local `next dev`.
+// Client for write operations. RLS has no write policies, so this needs the
+// service key; it is read on first use from the Cloudflare bindings, falling
+// back to process.env for local `next dev`.
 let serviceClient: SupabaseClient | null = null;
 
 function readServiceKey(): string {
@@ -282,23 +283,11 @@ function readServiceKey(): string {
 
 export function getSupabaseServiceClient(): SupabaseClient {
     if (!serviceClient) {
-        serviceClient = createClient(SUPABASE_URL, readServiceKey() || SUPABASE_ANON_KEY);
+        const key = readServiceKey();
+        if (!key) throw new Error('SUPABASE_SERVICE_KEY is not configured');
+        serviceClient = createClient(SUPABASE_URL, key);
     }
     return serviceClient;
-}
-
-/** Service client without the anon fallback, for tables only the service key may touch. */
-export function requireSupabaseServiceClient(): SupabaseClient {
-    if (!readServiceKey()) {
-        let hasBinding = false;
-        try {
-            hasBinding = 'SUPABASE_SERVICE_KEY' in (getCloudflareContext().env as object);
-        } catch {
-            // Not running on Cloudflare.
-        }
-        throw new Error(`SUPABASE_SERVICE_KEY is not configured (binding present: ${hasBinding}, process.env present: ${'SUPABASE_SERVICE_KEY' in process.env})`);
-    }
-    return getSupabaseServiceClient();
 }
 
 // ============================================================================

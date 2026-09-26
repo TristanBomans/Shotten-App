@@ -1,6 +1,6 @@
 // ============================================================================
 // INITIAL SETUP SQL
-// Mirrors supabase/schema.sql + supabase/migrations/001 + 002 + 003 + 004 + 005.
+// Mirrors supabase/schema.sql + supabase/migrations/001 + 002 + 003 + 004 + 005 + 006.
 // Verification SELECTs and the hardcoded team UPDATE from migration 002 are
 // intentionally omitted (team linking happens through the setup wizard).
 // Keep this in sync when the schema files change.
@@ -167,16 +167,7 @@ CREATE POLICY "Public read access" ON lzv_matches FOR SELECT USING (true);
 CREATE POLICY "Public read access" ON lzv_players FOR SELECT USING (true);
 CREATE POLICY "Public read access" ON lzv_player_team_stats FOR SELECT USING (true);
 
--- Service role full access
-CREATE POLICY "Service role full access" ON core_teams FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON core_players FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON core_matches FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON attendances FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON match_ai_analyses FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON lzv_teams FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON lzv_matches FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON lzv_players FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON lzv_player_team_stats FOR ALL USING (true) WITH CHECK (true);
+-- No write policies: the service key bypasses RLS, and all writes go through it.
 
 -- Auto-updating timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
