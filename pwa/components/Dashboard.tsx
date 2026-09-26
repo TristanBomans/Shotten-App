@@ -11,7 +11,7 @@ import SettingsView from './SettingsView';
 import LeagueView from './LeagueView';
 import LeagueSelector from './LeagueSelector';
 import PullToRefresh from './PullToRefresh';
-import { parseDateToTimestamp } from '@/lib/dateUtils';
+import { isMatchFinished, parseDateToTimestamp } from '@/lib/dateUtils';
 import ScreenHeader from './ui/ScreenHeader';
 import { EmptyState } from './ui/controls';
 import NotificationSheet from './NotificationSheet';
@@ -378,9 +378,9 @@ export default function Dashboard({
         [matches]
     );
     const { pastMatches, heroMatch, boardMatches } = useMemo(() => {
-        const threshold = Date.now() - 2 * 60 * 60 * 1000;
-        const past = matchesByDate.filter(m => parseDateToTimestamp(m.date) <= threshold);
-        const upcoming = matchesByDate.filter(m => parseDateToTimestamp(m.date) > threshold);
+        const now = Date.now();
+        const past = matchesByDate.filter(m => isMatchFinished(m.date, now));
+        const upcoming = matchesByDate.filter(m => !isMatchFinished(m.date, now));
         return {
             pastMatches: past,
             heroMatch: upcoming[0],
