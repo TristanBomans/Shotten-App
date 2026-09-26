@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isHomeTeamForMatch } from './teamNameMatching';
 
 // ============================================================================
@@ -254,7 +255,6 @@ export interface ScraperPlayerResponse {
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bvwjoptvnxpttwkstiue.supabase.co';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_YaWg2zCaLJqZrVYv0K-9sQ_vXXYEImm';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
 
 // Client for read operations (uses anon key)
 let anonClient: SupabaseClient | null = null;
@@ -266,15 +266,39 @@ export function getSupabaseClient(): SupabaseClient {
     return anonClient;
 }
 
-// Client for write operations (uses service key)
+// Client for write operations (uses service key). Read on first use from the
+// Cloudflare bindings, falling back to process.env for local `next dev`.
 let serviceClient: SupabaseClient | null = null;
+
+function readServiceKey(): string {
+    let bindingKey: unknown;
+    try {
+        bindingKey = (getCloudflareContext().env as Record<string, unknown>).SUPABASE_SERVICE_KEY;
+    } catch {
+        // Not running on Cloudflare.
+    }
+    return (typeof bindingKey === 'string' && bindingKey) || process.env.SUPABASE_SERVICE_KEY || '';
+}
 
 export function getSupabaseServiceClient(): SupabaseClient {
     if (!serviceClient) {
-        const key = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
-        serviceClient = createClient(SUPABASE_URL, key);
+        serviceClient = createClient(SUPABASE_URL, readServiceKey() || SUPABASE_ANON_KEY);
     }
     return serviceClient;
+}
+
+/** Service client without the anon fallback, for tables only the service key may touch. */
+export function requireSupabaseServiceClient(): SupabaseClient {
+    if (!readServiceKey()) {
+        let hasBinding = false;
+        try {
+            hasBinding = 'SUPABASE_SERVICE_KEY' in (getCloudflareContext().env as object);
+        } catch {
+            // Not running on Cloudflare.
+        }
+        throw new Error(`SUPABASE_SERVICE_KEY is not configured (binding present: ${hasBinding}, process.env present: ${'SUPABASE_SERVICE_KEY' in process.env})`);
+    }
+    return getSupabaseServiceClient();
 }
 
 // ============================================================================

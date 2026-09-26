@@ -1,7 +1,8 @@
 import {
-    PUSH_WORKER_URL,
+    PUSH_API_URL,
     ensureServiceWorker,
     isWebPushSupported,
+    matchesVapidKey,
     subscribeWebPush,
 } from './webPushClient';
 
@@ -11,7 +12,7 @@ export type PushSettingsResult = {
 };
 
 async function postSubscription(path: '/subscribe' | '/unsubscribe', subscription: PushSubscription, playerId?: number) {
-    const response = await fetch(`${PUSH_WORKER_URL}${path}`, {
+    const response = await fetch(`${PUSH_API_URL}${path}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -21,7 +22,7 @@ async function postSubscription(path: '/subscribe' | '/unsubscribe', subscriptio
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data?.ok === false) {
-        throw new Error(data?.error || `Push worker returned ${response.status}`);
+        throw new Error(data?.error || `Push API returned ${response.status}`);
     }
 }
 
@@ -86,6 +87,6 @@ export async function syncMatchPush(playerId: number, enabled: boolean): Promise
     if (!enabled || !isWebPushSupported() || Notification.permission !== 'granted') return;
     const registration = await ensureServiceWorker();
     const existing = await registration.pushManager.getSubscription();
-    const subscription = existing ?? await subscribeWebPush(registration);
+    const subscription = existing && matchesVapidKey(existing) ? existing : await subscribeWebPush(registration);
     await postSubscription('/subscribe', subscription, playerId);
 }

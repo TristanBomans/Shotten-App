@@ -1,4 +1,4 @@
-import { PUSH_WORKER_URL, ensureServiceWorker, subscribeWebPush } from './webPushClient';
+import { PUSH_API_URL, ensureServiceWorker, subscribeWebPush } from './webPushClient';
 
 type PushTestStatus = 'idle' | 'requesting' | 'scheduled' | 'fired' | 'error';
 
@@ -68,7 +68,7 @@ async function fireScheduledNotification() {
     emit({
         status: 'fired',
         fireAt: null,
-        message: 'Cloudflare should have delivered the push. Check the notification shade.',
+        message: 'The push should have arrived. Check the notification shade.',
     });
 }
 
@@ -108,7 +108,7 @@ if (restoredFireAt && restoredFireAt > Date.now()) {
     emit({
         status: 'scheduled',
         fireAt: restoredFireAt,
-        message: 'Scheduled via Cloudflare. You can lock the phone.',
+        message: 'Scheduled. You can lock the phone.',
     });
     armTimer(restoredFireAt);
 } else if (restoredFireAt) {
@@ -156,7 +156,7 @@ export async function schedulePushTestInOneMinute(): Promise<PushTestState> {
         const registration = await ensureServiceWorker();
         const subscription = await subscribeWebPush(registration);
 
-        const response = await fetch(`${PUSH_WORKER_URL}/test`, {
+        const response = await fetch(`${PUSH_API_URL}/test`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -166,7 +166,7 @@ export async function schedulePushTestInOneMinute(): Promise<PushTestState> {
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || !data?.ok) {
-            throw new Error(data?.error || `Push worker returned ${response.status}`);
+            throw new Error(data?.error || `Push API returned ${response.status}`);
         }
 
         const fireAt = typeof data.sendAt === 'number' ? data.sendAt : Date.now() + DELAY_MS;
@@ -176,7 +176,7 @@ export async function schedulePushTestInOneMinute(): Promise<PushTestState> {
         const next = {
             status: 'scheduled' as const,
             fireAt,
-            message: data.message || 'Scheduled via Cloudflare. You can lock the phone.',
+            message: data.message || 'Scheduled. You can lock the phone.',
         };
         emit(next);
         return next;

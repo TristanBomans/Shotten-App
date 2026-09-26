@@ -1,9 +1,8 @@
-export const PUSH_WORKER_URL =
-    process.env.NEXT_PUBLIC_PUSH_WORKER_URL || 'https://shotten-push.bomanstristan.workers.dev';
+export const PUSH_API_URL = '/api/push';
 
 const VAPID_PUBLIC_KEY =
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-    'BEETGiu_J0SHmKQoNgVJrFKJqI6fePz6K1lHXCWJ_BiV4j4buX4pHaL7NF-3iBXEsgGcbrVhJk8Faca1hcnWVKA';
+    'BLzT4mRaUTwDPvMyunVEuxn-5CzY6qi48SOVU5keby-7lpmZMdWlJV2hq4UUNE0LqDccBNYTEOaIg3-MYQNdRIg';
 
 export function isWebPushSupported(): boolean {
     return typeof window !== 'undefined'
@@ -44,6 +43,17 @@ export async function ensureServiceWorker(): Promise<ServiceWorkerRegistration> 
     const registration = existing ?? await navigator.serviceWorker.register('/sw.js');
     if (registration.active) return registration;
     return withTimeout(navigator.serviceWorker.ready, 8000, 'Service worker ready');
+}
+
+function bytesEqual(a: ArrayBuffer | null | undefined, b: Uint8Array): boolean {
+    if (!a || a.byteLength !== b.byteLength) return false;
+    const view = new Uint8Array(a);
+    return view.every((byte, index) => byte === b[index]);
+}
+
+/** False when the subscription was made with another VAPID key (e.g. after a key rotation). */
+export function matchesVapidKey(subscription: PushSubscription): boolean {
+    return bytesEqual(subscription.options.applicationServerKey, urlBase64ToUint8Array(VAPID_PUBLIC_KEY));
 }
 
 export async function subscribeWebPush(registration: ServiceWorkerRegistration): Promise<PushSubscription> {
