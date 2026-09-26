@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 // ============================================================================
 // DATABASE TYPES (matching schema.sql)
@@ -211,21 +212,38 @@ export function getSupabaseClient(): SupabaseClient {
     return anonClient;
 }
 
-// Client for write operations (uses service key). The key is read on first use:
-// on Cloudflare, secrets are only on process.env once a request is running.
+// Client for write operations (uses service key). Read on first use from the
+// Cloudflare bindings, falling back to process.env for local `next dev`.
 let serviceClient: SupabaseClient | null = null;
+
+function readServiceKey(): string {
+    let bindingKey: unknown;
+    try {
+        bindingKey = (getCloudflareContext().env as Record<string, unknown>).SUPABASE_SERVICE_KEY;
+    } catch {
+        // Not running on Cloudflare.
+    }
+    return (typeof bindingKey === 'string' && bindingKey) || process.env.SUPABASE_SERVICE_KEY || '';
+}
 
 export function getSupabaseServiceClient(): SupabaseClient {
     if (!serviceClient) {
-        const key = process.env.SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
-        serviceClient = createClient(SUPABASE_URL, key);
+        serviceClient = createClient(SUPABASE_URL, readServiceKey() || SUPABASE_ANON_KEY);
     }
     return serviceClient;
 }
 
 /** Service client without the anon fallback, for tables only the service key may touch. */
 export function requireSupabaseServiceClient(): SupabaseClient {
-    if (!process.env.SUPABASE_SERVICE_KEY) throw new Error('SUPABASE_SERVICE_KEY is not configured');
+    if (!readServiceKey()) {
+        let hasBinding = false;
+        try {
+            hasBinding = 'SUPABASE_SERVICE_KEY' in (getCloudflareContext().env as object);
+        } catch {
+            // Not running on Cloudflare.
+        }
+        throw new Error(`SUPABASE_SERVICE_KEY is not configured (binding present: ${hasBinding}, process.env present: ${'SUPABASE_SERVICE_KEY' in process.env})`);
+    }
     return getSupabaseServiceClient();
 }
 
