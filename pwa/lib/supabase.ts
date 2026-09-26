@@ -81,6 +81,45 @@ export interface LzvMatch {
     home_team_id?: number | null;
     away_team_id?: number | null;
     status: 'Scheduled' | 'Played' | 'Postponed';
+    lzv_result_id?: number | null;
+}
+
+export interface LzvLineupPlayer {
+    playerId: number | null;
+    name: string;
+    number: number | null;
+    captain: boolean;
+    goals: number;
+    assists: number;
+}
+
+export interface LzvMatchDetail {
+    result_id: number;
+    date: string | null;
+    location: string | null;
+    home_team: string;
+    away_team: string;
+    home_team_id: number | null;
+    away_team_id: number | null;
+    home_score: number | null;
+    away_score: number | null;
+    home_lineup: LzvLineupPlayer[];
+    away_lineup: LzvLineupPlayer[];
+    scraped_at?: string;
+}
+
+export interface LzvMatchDetailResponse {
+    resultId: number;
+    date: string | null;
+    location: string | null;
+    homeTeam: string;
+    awayTeam: string;
+    homeTeamId: number | null;
+    awayTeamId: number | null;
+    homeScore: number | null;
+    awayScore: number | null;
+    homeLineup: LzvLineupPlayer[];
+    awayLineup: LzvLineupPlayer[];
 }
 
 export interface LzvPlayer {
@@ -548,6 +587,32 @@ export async function getLzvMatchesForTeams(
     const { data, error } = await query;
     if (error) throw error;
     return data || [];
+}
+
+export async function getLzvMatchDetail(resultId: number): Promise<LzvMatchDetailResponse | null> {
+    const { data, error } = await getSupabaseClient()
+        .from('lzv_match_details')
+        .select('*')
+        .eq('result_id', resultId)
+        .maybeSingle<LzvMatchDetail>();
+    // Table missing (migration 004 not run yet): behave as "no details".
+    if (error?.code === 'PGRST205' || error?.code === '42P01') return null;
+    if (error) throw error;
+    if (!data) return null;
+
+    return {
+        resultId: data.result_id,
+        date: data.date,
+        location: data.location,
+        homeTeam: data.home_team,
+        awayTeam: data.away_team,
+        homeTeamId: data.home_team_id,
+        awayTeamId: data.away_team_id,
+        homeScore: data.home_score,
+        awayScore: data.away_score,
+        homeLineup: data.home_lineup ?? [],
+        awayLineup: data.away_lineup ?? [],
+    };
 }
 
 async function getPlayedLzvMatchesByExternalId(externalIds: string[]): Promise<Map<string, LzvMatch>> {

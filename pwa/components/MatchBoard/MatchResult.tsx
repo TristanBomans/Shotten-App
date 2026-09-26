@@ -25,7 +25,8 @@ export function MatchResultBadge({ result }: { result: MatchResult }) {
 }
 
 interface MatchScoreboardProps {
-    result: MatchResult;
+    /** Without an outcome (no team perspective) the score shows in neutral tones. */
+    result: Pick<MatchResult, 'homeScore' | 'awayScore'> & { outcome?: MatchResult['outcome'] };
     homeTeam: string;
     awayTeam: string;
 }
@@ -41,7 +42,9 @@ export function MatchScoreboard({ result, homeTeam, awayTeam }: MatchScoreboardP
                 {result.awayScore}
             </span>
             <span className="scoreboard-team">{awayTeam}</span>
-            <span className="scoreboard-outcome">{outcomeLabels[result.outcome]}</span>
+            {result.outcome && (
+                <span className="scoreboard-outcome">{outcomeLabels[result.outcome]}</span>
+            )}
         </div>
     );
 }

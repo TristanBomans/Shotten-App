@@ -1,6 +1,7 @@
 'use client';
 
-import { Trophy, Calendar } from 'lucide-react';
+import { useState } from 'react';
+import { Trophy, Calendar, ChevronRight } from 'lucide-react';
 import { parseDate } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
 import type { RecentMatchItem } from '@/lib/recentMatches';
@@ -8,6 +9,7 @@ import { isSameTeamName } from '@/lib/teamNameMatching';
 import type { Match } from '@/lib/mockData';
 import Sheet from './ui/Sheet';
 import { EmptyState } from './ui/controls';
+import LzvMatchDetailPage from './Pages/LzvMatchDetailPage';
 
 interface RecentMatchesSheetProps {
     open: boolean;
@@ -168,182 +170,205 @@ export default function RecentMatchesSheet({
     internalMatches = [],
     onClose,
 }: RecentMatchesSheetProps) {
+    const [selectedMatch, setSelectedMatch] = useState<RecentMatchItem | null>(null);
     const handleClose = () => {
         hapticPatterns.tap();
         onClose();
     };
 
     return (
-        <Sheet
-            open={open}
-            onClose={handleClose}
-            title="Recent matches"
-            subtitle={matches.length > 0 ? `${matches.length} result${matches.length === 1 ? '' : 's'}` : undefined}
-        >
-            {loading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {[...Array(3)].map((_, i) => (
-                        <div key={i} className="skeleton" style={{ height: 52 }} />
-                    ))}
-                </div>
-            ) : matches.length === 0 ? (
-                <EmptyState icon={<Trophy size={18} />} title="No matches yet" compact />
-            ) : (
-                <div className="list-section">
-                    {matches.map((match) => {
-                        const attStatus = getAttendanceStatus(match, internalMatches, playerId);
-                        const attColor = attendanceDotColor(attStatus);
-                        const attLabel = attendanceLabel(attStatus);
-                        const isRecent = isRecentMatch(match.date);
-                        const isForfait = isForfaitMatch(match, internalMatches);
-                        const isUpcoming = isUpcomingMatch(match.date);
+        <>
+            <Sheet
+                open={open}
+                onClose={handleClose}
+                title="Recent matches"
+                subtitle={matches.length > 0 ? `${matches.length} result${matches.length === 1 ? '' : 's'}` : undefined}
+            >
+                {loading ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {[...Array(3)].map((_, i) => (
+                            <div key={i} className="skeleton" style={{ height: 52 }} />
+                        ))}
+                    </div>
+                ) : matches.length === 0 ? (
+                    <EmptyState icon={<Trophy size={18} />} title="No matches yet" compact />
+                ) : (
+                    <div className="list-section">
+                        {matches.map((match) => {
+                            const attStatus = getAttendanceStatus(match, internalMatches, playerId);
+                            const attColor = attendanceDotColor(attStatus);
+                            const attLabel = attendanceLabel(attStatus);
+                            const isRecent = isRecentMatch(match.date);
+                            const isForfait = isForfaitMatch(match, internalMatches);
+                            const isUpcoming = isUpcomingMatch(match.date);
 
-                        const badgeColor = isUpcoming
-                            ? 'var(--accent)'
-                            : isForfait
-                                ? 'var(--no)'
-                                : resultColor(match.result);
-                        const badgeBg = isUpcoming
-                            ? 'rgb(var(--accent-rgb) / 0.12)'
-                            : isForfait
-                                ? 'rgb(var(--no-rgb) / 0.12)'
-                                : resultBg(match.result);
+                            const badgeColor = isUpcoming
+                                ? 'var(--accent)'
+                                : isForfait
+                                    ? 'var(--no)'
+                                    : resultColor(match.result);
+                            const badgeBg = isUpcoming
+                                ? 'rgb(var(--accent-rgb) / 0.12)'
+                                : isForfait
+                                    ? 'rgb(var(--no-rgb) / 0.12)'
+                                    : resultBg(match.result);
 
-                        return (
-                            <div
-                                key={match.externalId}
-                                className="row row-static"
-                                style={{ paddingTop: 10, paddingBottom: 10 }}
-                            >
-                                {/* Result indicator */}
-                                <span
-                                    className="flex-center t-num"
-                                    style={{
-                                        width: 28,
-                                        height: 28,
-                                        borderRadius: 8,
-                                        background: badgeBg,
-                                        color: badgeColor,
-                                        fontSize: '0.7rem',
-                                        fontWeight: 600,
-                                        flexShrink: 0,
-                                        position: 'relative',
-                                    }}
-                                    aria-label={
-                                        isUpcoming ? 'Upcoming' : isForfait ? 'Forfait' : `Result ${match.result}`
-                                    }
+                            const hasDetail = match.resultId !== null && !isUpcoming;
+                            const RowTag = hasDetail ? 'button' : 'div';
+
+                            return (
+                                <RowTag
+                                    key={match.externalId}
+                                    className={hasDetail ? 'row' : 'row row-static'}
+                                    style={{ paddingTop: 10, paddingBottom: 10 }}
+                                    {...(hasDetail && {
+                                        type: 'button' as const,
+                                        onClick: () => {
+                                            hapticPatterns.tap();
+                                            setSelectedMatch(match);
+                                        },
+                                    })}
                                 >
-                                    {isUpcoming ? <Calendar size={13} /> : isForfait ? 'F' : match.result}
-                                    {isRecent && !isUpcoming && (
-                                        <span
-                                            aria-hidden
-                                            style={{
-                                                position: 'absolute',
-                                                top: -2,
-                                                right: -2,
-                                                width: 7,
-                                                height: 7,
-                                                borderRadius: '50%',
-                                                background: isForfait ? 'var(--no)' : 'var(--accent)',
-                                                border: '2px solid var(--bg-sheet)',
-                                            }}
-                                        />
-                                    )}
-                                </span>
-
-                                {/* Match info */}
-                                <span style={{ flex: 1, minWidth: 0 }}>
+                                    {/* Result indicator */}
                                     <span
+                                        className="flex-center t-num"
                                         style={{
-                                            display: 'block',
-                                            fontSize: 'var(--fs-xs)',
+                                            width: 28,
+                                            height: 28,
+                                            borderRadius: 8,
+                                            background: badgeBg,
+                                            color: badgeColor,
+                                            fontSize: '0.7rem',
                                             fontWeight: 600,
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
-                                        }}
-                                    >
-                                        {match.teamName}
-                                        <span style={{ fontWeight: 400, color: 'var(--text-3)' }}> vs </span>
-                                        {match.opponent}
-                                    </span>
-                                    <span
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 6,
-                                            marginTop: 2,
-                                            fontSize: 'var(--fs-3xs)',
-                                            whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                        }}
-                                    >
-                                        <span style={{ color: 'var(--text-2)', flexShrink: 0 }}>
-                                            {formatRelativeTime(match.date)}
-                                        </span>
-                                        {attLabel && !isForfait && (
-                                            <>
-                                                <span style={{ color: 'var(--text-3)', flexShrink: 0 }} aria-hidden>·</span>
-                                                <span
-                                                    style={{
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: 4,
-                                                        color: attColor,
-                                                        fontWeight: 600,
-                                                        flexShrink: 0,
-                                                    }}
-                                                >
-                                                    <span
-                                                        aria-hidden
-                                                        style={{
-                                                            width: 5,
-                                                            height: 5,
-                                                            borderRadius: '50%',
-                                                            background: attColor,
-                                                        }}
-                                                    />
-                                                    {attLabel}
-                                                </span>
-                                            </>
-                                        )}
-                                        {match.location && (
-                                            <>
-                                                <span style={{ color: 'var(--text-3)', flexShrink: 0 }} aria-hidden>·</span>
-                                                <span
-                                                    style={{
-                                                        color: 'var(--text-3)',
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                    }}
-                                                >
-                                                    {match.location}
-                                                </span>
-                                            </>
-                                        )}
-                                    </span>
-                                </span>
-
-                                {/* Score */}
-                                {!isUpcoming && (
-                                    <span
-                                        className="t-num"
-                                        style={{
-                                            fontSize: isForfait ? 'var(--fs-3xs)' : 'var(--fs-sm)',
-                                            fontWeight: 600,
-                                            color: isForfait ? 'var(--no)' : 'var(--text-1)',
-                                            letterSpacing: '-0.01em',
                                             flexShrink: 0,
+                                            position: 'relative',
                                         }}
+                                        aria-label={
+                                            isUpcoming ? 'Upcoming' : isForfait ? 'Forfait' : `Result ${match.result}`
+                                        }
                                     >
-                                        {isForfait ? 'Forfait' : match.scoreline}
+                                        {isUpcoming ? <Calendar size={13} /> : isForfait ? 'F' : match.result}
+                                        {isRecent && !isUpcoming && (
+                                            <span
+                                                aria-hidden
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: -2,
+                                                    right: -2,
+                                                    width: 7,
+                                                    height: 7,
+                                                    borderRadius: '50%',
+                                                    background: isForfait ? 'var(--no)' : 'var(--accent)',
+                                                    border: '2px solid var(--bg-sheet)',
+                                                }}
+                                            />
+                                        )}
                                     </span>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-        </Sheet>
+
+                                    {/* Match info */}
+                                    <span style={{ flex: 1, minWidth: 0 }}>
+                                        <span
+                                            style={{
+                                                display: 'block',
+                                                fontSize: 'var(--fs-xs)',
+                                                fontWeight: 600,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {match.teamName}
+                                            <span style={{ fontWeight: 400, color: 'var(--text-3)' }}> vs </span>
+                                            {match.opponent}
+                                        </span>
+                                        <span
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 6,
+                                                marginTop: 2,
+                                                fontSize: 'var(--fs-3xs)',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                            }}
+                                        >
+                                            <span style={{ color: 'var(--text-2)', flexShrink: 0 }}>
+                                                {formatRelativeTime(match.date)}
+                                            </span>
+                                            {attLabel && !isForfait && (
+                                                <>
+                                                    <span style={{ color: 'var(--text-3)', flexShrink: 0 }} aria-hidden>·</span>
+                                                    <span
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: 4,
+                                                            color: attColor,
+                                                            fontWeight: 600,
+                                                            flexShrink: 0,
+                                                        }}
+                                                    >
+                                                        <span
+                                                            aria-hidden
+                                                            style={{
+                                                                width: 5,
+                                                                height: 5,
+                                                                borderRadius: '50%',
+                                                                background: attColor,
+                                                            }}
+                                                        />
+                                                        {attLabel}
+                                                    </span>
+                                                </>
+                                            )}
+                                            {match.location && (
+                                                <>
+                                                    <span style={{ color: 'var(--text-3)', flexShrink: 0 }} aria-hidden>·</span>
+                                                    <span
+                                                        style={{
+                                                            color: 'var(--text-3)',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                        }}
+                                                    >
+                                                        {match.location}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </span>
+                                    </span>
+
+                                    {/* Score */}
+                                    {!isUpcoming && (
+                                        <span
+                                            className="t-num"
+                                            style={{
+                                                fontSize: isForfait ? 'var(--fs-3xs)' : 'var(--fs-sm)',
+                                                fontWeight: 600,
+                                                color: isForfait ? 'var(--no)' : 'var(--text-1)',
+                                                letterSpacing: '-0.01em',
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            {isForfait ? 'Forfait' : match.scoreline}
+                                        </span>
+                                    )}
+                                    {hasDetail && (
+                                        <ChevronRight size={15} aria-hidden style={{ color: 'var(--text-3)', flexShrink: 0, marginLeft: -4 }} />
+                                    )}
+                                </RowTag>
+                            );
+                        })}
+                    </div>
+                )}
+            </Sheet>
+            <LzvMatchDetailPage
+                open={selectedMatch !== null}
+                resultId={selectedMatch?.resultId ?? null}
+                perspectiveTeamId={selectedMatch?.teamId ?? null}
+                fallbackTitle={selectedMatch ? `${selectedMatch.homeTeam} vs ${selectedMatch.awayTeam}` : undefined}
+                onClose={() => setSelectedMatch(null)}
+            />
+        </>
     );
 }
