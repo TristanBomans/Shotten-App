@@ -770,12 +770,11 @@ button {
 
 /* Finished matches: the card recedes, the result takes the response slot */
 .panel[data-past='true'] {
-  background: transparent;
-  border-color: var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-panel) 45%, transparent);
 }
 
 .panel[data-past='true'] .match-past-dim {
-  opacity: 0.62;
+  opacity: 0.85;
 }
 
 .result-badge {
