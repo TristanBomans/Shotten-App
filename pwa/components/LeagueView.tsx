@@ -13,6 +13,8 @@ interface LeagueViewProps {
     onLeagueDataChange?: (data: { leagues: string[]; teams: ScraperTeam[] }) => void;
     selectedTeamId?: number | null;
     onSelectTeam?: (id: number | null) => void;
+    selectedMatchResultId?: number | null;
+    onSelectMatch?: (resultId: number | null) => void;
 }
 
 function isOwnTeam(name: string) {
@@ -76,6 +78,8 @@ export default function LeagueView({
     onLeagueDataChange,
     selectedTeamId,
     onSelectTeam,
+    selectedMatchResultId = null,
+    onSelectMatch,
 }: LeagueViewProps) {
     const [teams, setTeams] = useState<ScraperTeam[]>([]);
     const [loading, setLoading] = useState(true);
@@ -261,6 +265,8 @@ export default function LeagueView({
                 team={selectedTeam || ({} as ScraperTeam)}
                 open={Boolean(selectedTeam)}
                 onClose={() => onSelectTeam?.(null)}
+                selectedMatchResultId={selectedMatchResultId}
+                onSelectMatch={(resultId) => onSelectMatch?.(resultId)}
             />
         </>
     );
