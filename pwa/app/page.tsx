@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlayerSelect from '@/components/PlayerSelect';
 import SetupWizard from '@/components/SetupWizard';
@@ -62,6 +62,20 @@ const getModalIdFromParams = (params: SearchParamsLike | null): string | null =>
     return params?.get('modalId') || null;
 };
 
+// Nested detail page stacked on top of a modal (e.g. a match inside a team page).
+const getDetailIdFromParams = (params: SearchParamsLike | null): string | null => {
+    if (!params?.get('modal')) return null;
+    return params.get('detail') || null;
+};
+
+// Number of in-app history entries pushed below the current one, so closing can
+// use history.back() instead of leaving the app. Stored in history.state so it
+// survives back/forward swipes.
+const getHistoryDepth = (): number => {
+    const depth = (window.history.state as { appDepth?: unknown } | null)?.appDepth;
+    return typeof depth === 'number' && depth > 0 ? depth : 0;
+};
+
 function HomeContent() {
     const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
@@ -87,20 +101,24 @@ function HomeContent() {
         return null;
     });
 
-    const pushCountRef = useRef(0);
+    const [currentDetailId, setCurrentDetailId] = useState<string | null>(() => {
+        if (typeof window !== 'undefined') {
+            return getDetailIdFromParams(new URLSearchParams(window.location.search));
+        }
+        return null;
+    });
 
     const syncStateFromLocation = useCallback(() => {
         const params = new URLSearchParams(window.location.search);
         const resolvedView = getViewFromParams(params);
         const resolvedModal = getModalFromParams(params);
         const resolvedModalId = getModalIdFromParams(params);
+        const resolvedDetailId = getDetailIdFromParams(params);
 
         setCurrentView((prev) => (prev === resolvedView ? prev : resolvedView));
         setCurrentModal((prev) => (prev === resolvedModal ? prev : resolvedModal));
         setCurrentModalId((prev) => (prev === resolvedModalId ? prev : resolvedModalId));
-        if (!resolvedModal) {
-            pushCountRef.current = 0;
-        }
+        setCurrentDetailId((prev) => (prev === resolvedDetailId ? prev : resolvedDetailId));
     }, []);
 
     // Load selected player from localStorage (once on mount)
@@ -131,7 +149,7 @@ function HomeContent() {
     }, [syncStateFromLocation]);
 
     const buildAppUrl = useCallback(
-        (view: View, modal: Modal, modalId: string | null = null) => {
+        (view: View, modal: Modal, modalId: string | null = null, detailId: string | null = null) => {
             const params = new URLSearchParams(window.location.search);
             const pathname = window.location.pathname;
 
@@ -148,9 +166,15 @@ function HomeContent() {
                 } else {
                     params.delete('modalId');
                 }
+                if (detailId) {
+                    params.set('detail', detailId);
+                } else {
+                    params.delete('detail');
+                }
             } else {
                 params.delete('modal');
                 params.delete('modalId');
+                params.delete('detail');
             }
 
             const query = params.toString();
@@ -170,7 +194,7 @@ function HomeContent() {
         setCurrentView('home');
         setCurrentModal(null);
         setCurrentModalId(null);
-        pushCountRef.current = 0;
+        setCurrentDetailId(null);
 
         window.history.replaceState(null, '', window.location.pathname);
     };
@@ -180,7 +204,7 @@ function HomeContent() {
             setCurrentView(view);
             setCurrentModal(null);
             setCurrentModalId(null);
-            pushCountRef.current = 0;
+            setCurrentDetailId(null);
 
             window.history.replaceState(null, '', buildAppUrl(view, null));
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -190,31 +214,65 @@ function HomeContent() {
 
     const openModal = useCallback(
         (modal: Modal, modalId: string | null = null) => {
-            if (currentModal === modal && currentModalId === modalId) return;
+            if (currentModal === modal && currentModalId === modalId && !currentDetailId) return;
 
             const targetView = modalToView(modal);
             setCurrentView(targetView);
             setCurrentModal(modal);
             setCurrentModalId(modalId);
-            pushCountRef.current += 1;
-            window.history.pushState(null, '', buildAppUrl(targetView, modal, modalId));
+            setCurrentDetailId(null);
+            window.history.pushState(
+                { appDepth: getHistoryDepth() + 1 },
+                '',
+                buildAppUrl(targetView, modal, modalId)
+            );
         },
-        [buildAppUrl, currentModal, currentModalId]
+        [buildAppUrl, currentModal, currentModalId, currentDetailId]
     );
 
     const closeModal = useCallback(() => {
         if (!currentModal) return;
 
+        // Pop the detail entry first if one is stacked on top of the modal.
+        const entriesToPop = currentDetailId ? 2 : 1;
         setCurrentModal(null);
         setCurrentModalId(null);
-        if (pushCountRef.current > 0) {
-            pushCountRef.current -= 1;
-            window.history.back();
+        setCurrentDetailId(null);
+        if (getHistoryDepth() >= entriesToPop) {
+            window.history.go(-entriesToPop);
             return;
         }
 
         window.history.replaceState(null, '', buildAppUrl(currentView, null));
-    }, [buildAppUrl, currentModal, currentView]);
+    }, [buildAppUrl, currentModal, currentDetailId, currentView]);
+
+    const openDetail = useCallback(
+        (detailId: string) => {
+            if (!currentModal || currentDetailId === detailId) return;
+
+            setCurrentDetailId(detailId);
+            const url = buildAppUrl(currentView, currentModal, currentModalId, detailId);
+            if (currentDetailId) {
+                // Swap one detail for another without growing the stack.
+                window.history.replaceState(window.history.state, '', url);
+                return;
+            }
+            window.history.pushState({ appDepth: getHistoryDepth() + 1 }, '', url);
+        },
+        [buildAppUrl, currentModal, currentModalId, currentDetailId, currentView]
+    );
+
+    const closeDetail = useCallback(() => {
+        if (!currentDetailId) return;
+
+        setCurrentDetailId(null);
+        if (getHistoryDepth() > 0) {
+            window.history.back();
+            return;
+        }
+
+        window.history.replaceState(null, '', buildAppUrl(currentView, currentModal, currentModalId));
+    }, [buildAppUrl, currentDetailId, currentModal, currentModalId, currentView]);
 
     const handleOpenVersion = useCallback(() => {
         openModal('version');
@@ -280,6 +338,9 @@ function HomeContent() {
                             currentModalId={currentModalId}
                             onOpenModal={openModal}
                             onCloseModal={closeModal}
+                            currentDetailId={currentDetailId}
+                            onOpenDetail={openDetail}
+                            onCloseDetail={closeDetail}
                         />
                     </motion.div>
                 )}

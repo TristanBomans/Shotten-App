@@ -36,6 +36,9 @@ interface TeamDetailPageProps {
     team: ScraperTeam;
     open: boolean;
     onClose: () => void;
+    /** LZV result id of the match whose detail page is open (kept in the URL). */
+    selectedMatchResultId?: number | null;
+    onSelectMatch: (resultId: number | null) => void;
 }
 
 interface CoreMatchLike {
@@ -43,7 +46,13 @@ interface CoreMatchLike {
     forfait?: boolean;
 }
 
-export default function TeamDetailPage({ team, open, onClose }: TeamDetailPageProps) {
+export default function TeamDetailPage({
+    team,
+    open,
+    onClose,
+    selectedMatchResultId = null,
+    onSelectMatch,
+}: TeamDetailPageProps) {
     const [showImage, setShowImage] = useState(false);
     const [activeTab, setActiveTab] = useState<TeamDetailTab>('overview');
     const [matches, setMatches] = useState<ScraperMatch[]>([]);
@@ -51,7 +60,10 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
     const [loadingMatches, setLoadingMatches] = useState(false);
     const [loadingPlayers, setLoadingPlayers] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
-    const [selectedMatch, setSelectedMatch] = useState<ScraperMatch | null>(null);
+
+    const selectedMatch = selectedMatchResultId !== null
+        ? matches.find((match) => match.resultId === selectedMatchResultId) ?? null
+        : null;
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -578,7 +590,9 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                                                     teamName={team?.name || ''}
                                                     onOpen={() => {
                                                         hapticPatterns.tap();
-                                                        setSelectedMatch(match);
+                                                        if (typeof match.resultId === 'number') {
+                                                            onSelectMatch(match.resultId);
+                                                        }
                                                     }}
                                                 />
                                             ))}
@@ -688,11 +702,11 @@ export default function TeamDetailPage({ team, open, onClose }: TeamDetailPagePr
                     </AnimatePresence>
 
                     <LzvMatchDetailPage
-                        open={selectedMatch !== null}
-                        resultId={selectedMatch?.resultId ?? null}
+                        open={selectedMatchResultId !== null}
+                        resultId={selectedMatchResultId}
                         perspectiveTeamId={team.externalId}
                         fallbackTitle={selectedMatch ? `${selectedMatch.homeTeam} vs ${selectedMatch.awayTeam}` : undefined}
-                        onClose={() => setSelectedMatch(null)}
+                        onClose={() => onSelectMatch(null)}
                     />
                 </motion.div>
             )}

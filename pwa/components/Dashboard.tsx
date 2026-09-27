@@ -35,6 +35,9 @@ interface DashboardProps {
     currentModalId: string | null;
     onOpenModal: (modal: Modal, modalId?: string | null) => void;
     onCloseModal: () => void;
+    currentDetailId: string | null;
+    onOpenDetail: (detailId: string) => void;
+    onCloseDetail: () => void;
 }
 
 // View order for determining slide position
@@ -85,6 +88,9 @@ export default function Dashboard({
     currentModalId,
     onOpenModal,
     onCloseModal,
+    currentDetailId,
+    onOpenDetail,
+    onCloseDetail,
 }: DashboardProps) {
     const { matches, loading, error, fetchMatches, setMatches } = useMatches(playerId);
     const { players, fetchAllPlayers } = useAllPlayers();
@@ -877,6 +883,8 @@ export default function Dashboard({
                         onLeagueDataChange={handleLeagueDataChange}
                         selectedTeamId={currentModal === 'team' ? (currentModalId ? parseInt(currentModalId, 10) : null) : null}
                         onSelectTeam={(id) => id !== null ? onOpenModal('team', id.toString()) : onCloseModal()}
+                        selectedMatchResultId={currentModal === 'team' && currentDetailId ? parseInt(currentDetailId, 10) : null}
+                        onSelectMatch={(resultId) => resultId !== null ? onOpenDetail(resultId.toString()) : onCloseDetail()}
                     />
                 </div>
 
