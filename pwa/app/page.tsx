@@ -9,13 +9,14 @@ import AppNav from '@/components/ui/AppNav';
 import UpdateNotice from '@/components/UpdateNotice';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
-type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
+type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | 'recent' | null;
 
 const views: View[] = ['home', 'stats', 'league', 'settings'];
 
 const modalToView = (modal: Modal): View => {
     switch (modal) {
         case 'match':
+        case 'recent':
             return 'home';
         case 'rules':
         case 'playerDetail':
@@ -54,7 +55,7 @@ const getViewFromParams = (params: SearchParamsLike | null): View => {
 const getModalFromParams = (params: SearchParamsLike | null): Modal => {
     const modalParam = params?.get('modal') as Modal;
     if (!modalParam) return null;
-    const knownModals: Modal[] = ['version', 'match', 'players', 'respond', 'admin', 'team', 'rules', 'playerDetail', 'forfait'];
+    const knownModals: Modal[] = ['version', 'match', 'players', 'respond', 'admin', 'team', 'rules', 'playerDetail', 'forfait', 'recent'];
     return knownModals.includes(modalParam) ? modalParam : null;
 };
 
@@ -62,7 +63,8 @@ const getModalIdFromParams = (params: SearchParamsLike | null): string | null =>
     return params?.get('modalId') || null;
 };
 
-// Nested detail page stacked on top of a modal (e.g. a match inside a team page).
+// Nested detail page stacked on top of a modal (e.g. a match inside a team page
+// or the recent matches sheet).
 const getDetailIdFromParams = (params: SearchParamsLike | null): string | null => {
     if (!params?.get('modal')) return null;
     return params.get('detail') || null;

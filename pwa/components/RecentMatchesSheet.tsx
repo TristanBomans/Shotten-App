@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Trophy, Calendar, ChevronRight } from 'lucide-react';
 import { parseDate } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
@@ -20,6 +19,9 @@ interface RecentMatchesSheetProps {
     playerId: number;
     internalMatches?: Match[];
     onClose: () => void;
+    /** LZV result id of the match whose detail page is open (kept in the URL). */
+    selectedMatchResultId?: number | null;
+    onSelectMatch: (resultId: number | null) => void;
 }
 
 type InternalMatchLike = Match & {
@@ -169,8 +171,12 @@ export default function RecentMatchesSheet({
     playerId,
     internalMatches = [],
     onClose,
+    selectedMatchResultId = null,
+    onSelectMatch,
 }: RecentMatchesSheetProps) {
-    const [selectedMatch, setSelectedMatch] = useState<RecentMatchItem | null>(null);
+    const selectedMatch = selectedMatchResultId !== null
+        ? matches.find((match) => match.resultId === selectedMatchResultId) ?? null
+        : null;
     const handleClose = () => {
         hapticPatterns.tap();
         onClose();
@@ -225,7 +231,7 @@ export default function RecentMatchesSheet({
                                         type: 'button' as const,
                                         onClick: () => {
                                             hapticPatterns.tap();
-                                            setSelectedMatch(match);
+                                            onSelectMatch(match.resultId);
                                         },
                                     })}
                                 >
@@ -363,11 +369,11 @@ export default function RecentMatchesSheet({
                 )}
             </Sheet>
             <LzvMatchDetailPage
-                open={selectedMatch !== null}
-                resultId={selectedMatch?.resultId ?? null}
+                open={selectedMatchResultId !== null}
+                resultId={selectedMatchResultId}
                 perspectiveTeamId={selectedMatch?.teamId ?? null}
                 fallbackTitle={selectedMatch ? `${selectedMatch.homeTeam} vs ${selectedMatch.awayTeam}` : undefined}
-                onClose={() => setSelectedMatch(null)}
+                onClose={() => onSelectMatch(null)}
             />
         </>
     );
