@@ -20,7 +20,7 @@ import UnlockDialog from './UnlockDialog';
 import { buildMatchReminders } from '@/lib/notifications';
 import { syncMatchPush } from '@/lib/pushSettings';
 
-type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | null;
+type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | 'recent' | null;
 
 interface DashboardProps {
     playerId: number;
@@ -96,7 +96,6 @@ export default function Dashboard({
     const { players, fetchAllPlayers } = useAllPlayers();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isNotificationSheetOpen, setIsNotificationSheetOpen] = useState(false);
-    const [isRecentMatchesSheetOpen, setIsRecentMatchesSheetOpen] = useState(false);
     const [selectedLeague, setSelectedLeague] = useState('');
     const [leagueOptions, setLeagueOptions] = useState<string[]>([]);
     const [leagueTeams, setLeagueTeams] = useState<ScraperTeam[]>([]);
@@ -166,9 +165,6 @@ export default function Dashboard({
     useEffect(() => {
         if (currentView !== 'league') {
             setIsLeagueSelectorOpen(false);
-        }
-        if (currentView !== 'home') {
-            setIsRecentMatchesSheetOpen(false);
         }
     }, [currentView]);
 
@@ -461,13 +457,28 @@ export default function Dashboard({
         setIsNotificationSheetOpen(false);
     };
 
+    // The recent matches sheet and its match detail live in the URL so
+    // back-swipes close them instead of leaving the app.
+    const isRecentMatchesSheetOpen = currentModal === 'recent';
+    const selectedRecentMatchResultId = isRecentMatchesSheetOpen && currentDetailId
+        ? parseInt(currentDetailId, 10)
+        : null;
+
     const openRecentMatchesSheet = () => {
         hapticPatterns.tap();
-        setIsRecentMatchesSheetOpen(true);
+        onOpenModal('recent');
     };
 
     const closeRecentMatchesSheet = () => {
-        setIsRecentMatchesSheetOpen(false);
+        onCloseModal();
+    };
+
+    const handleSelectRecentMatch = (resultId: number | null) => {
+        if (resultId !== null) {
+            onOpenDetail(resultId.toString());
+        } else {
+            onCloseDetail();
+        }
     };
 
     const handleLeagueDataChange = useCallback((data: { leagues: string[]; teams: ScraperTeam[] }) => {
@@ -643,6 +654,8 @@ export default function Dashboard({
                     playerId={playerId}
                     internalMatches={matches}
                     onClose={closeRecentMatchesSheet}
+                    selectedMatchResultId={selectedRecentMatchResultId}
+                    onSelectMatch={handleSelectRecentMatch}
                 />
                 <div className="app-frame">
                     <div className="screen">
@@ -685,6 +698,8 @@ export default function Dashboard({
                     playerId={playerId}
                     internalMatches={matches}
                     onClose={closeRecentMatchesSheet}
+                    selectedMatchResultId={selectedRecentMatchResultId}
+                    onSelectMatch={handleSelectRecentMatch}
                 />
                 <div className="app-frame">
                     <div className="screen flex-center" style={{ minHeight: '80dvh' }}>
@@ -790,6 +805,8 @@ export default function Dashboard({
                 playerId={playerId}
                 internalMatches={matches}
                 onClose={closeRecentMatchesSheet}
+                selectedMatchResultId={selectedRecentMatchResultId}
+                onSelectMatch={handleSelectRecentMatch}
             />
             <UnlockDialog
                 open={isUnlockDialogOpen}
