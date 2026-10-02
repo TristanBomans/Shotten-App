@@ -34,6 +34,9 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, isF
     const [showMenu, setShowMenu] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const lastTabRef = useRef<'squad' | 'opponent'>('squad');
+    // Set while a tab tap drives a smooth scroll, so the in-between scroll
+    // positions aren't mistaken for a swipe back to the previous tab.
+    const programmaticScrollRef = useRef<number | null>(null);
 
     const getTabFromScroll = useCallback((): 'squad' | 'opponent' => {
         if (!scrollRef.current) return 'squad';
@@ -48,11 +51,26 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, isF
     const scrollToView = useCallback((view: 'squad' | 'opponent') => {
         if (scrollRef.current) {
             const left = view === 'squad' ? 0 : scrollRef.current.clientWidth;
+            if (Math.abs(scrollRef.current.scrollLeft - left) > 1) {
+                programmaticScrollRef.current = left;
+                // Fallback in case the scroll never lands exactly on target.
+                window.setTimeout(() => {
+                    if (programmaticScrollRef.current === left) programmaticScrollRef.current = null;
+                }, 1000);
+            }
             scrollRef.current.scrollTo({ left, behavior: 'smooth' });
         }
     }, []);
 
     const handleScroll = useCallback(() => {
+        const target = programmaticScrollRef.current;
+        if (target !== null && scrollRef.current) {
+            if (Math.abs(scrollRef.current.scrollLeft - target) <= 1) {
+                programmaticScrollRef.current = null;
+            }
+            return;
+        }
+
         const nextTab = getTabFromScroll();
 
         if (nextTab !== lastTabRef.current) {
@@ -68,6 +86,7 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, isF
             setActiveTab('squad');
             setShowMenu(false);
             lastTabRef.current = 'squad';
+            programmaticScrollRef.current = null;
             if (scrollRef.current) {
                 scrollRef.current.scrollLeft = 0;
             }
@@ -236,6 +255,10 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, isF
                     <div
                         ref={scrollRef}
                         onScroll={handleScroll}
+                        onTouchStart={() => {
+                            // A manual swipe takes over from any tap-driven scroll.
+                            programmaticScrollRef.current = null;
+                        }}
                         className="scrollbar-hide"
                         style={{
                             display: 'flex',

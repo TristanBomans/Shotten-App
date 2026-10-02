@@ -66,6 +66,10 @@ export default function TeamDetailPage({
         : null;
 
     const scrollRef = useRef<HTMLDivElement>(null);
+    const lastTabRef = useRef<TeamDetailTab>('overview');
+    // Set while a tab tap drives a smooth scroll, so the in-between scroll
+    // positions aren't mistaken for a swipe back to the previous tab.
+    const programmaticScrollRef = useRef<number | null>(null);
 
     // Fetch matches for this team (LZV + CoreMatches merged)
     useEffect(() => {
@@ -161,17 +165,33 @@ export default function TeamDetailPage({
     }, []);
 
     const handleScroll = useCallback(() => {
+        const target = programmaticScrollRef.current;
+        if (target !== null && scrollRef.current) {
+            if (Math.abs(scrollRef.current.scrollLeft - target) <= 1) {
+                programmaticScrollRef.current = null;
+            }
+            return;
+        }
+
         const nextTab = getTabFromScroll();
-        if (nextTab !== activeTab) {
+        if (nextTab !== lastTabRef.current) {
             hapticPatterns.swipe();
+            lastTabRef.current = nextTab;
             setActiveTab(nextTab);
         }
-    }, [activeTab, getTabFromScroll]);
+    }, [getTabFromScroll]);
 
     const scrollToView = (view: TeamDetailTab) => {
         if (scrollRef.current) {
             const viewIndex = teamDetailTabs.indexOf(view);
             const left = viewIndex * scrollRef.current.clientWidth;
+            if (Math.abs(scrollRef.current.scrollLeft - left) > 1) {
+                programmaticScrollRef.current = left;
+                // Fallback in case the scroll never lands exactly on target.
+                window.setTimeout(() => {
+                    if (programmaticScrollRef.current === left) programmaticScrollRef.current = null;
+                }, 1000);
+            }
             scrollRef.current.scrollTo({ left, behavior: 'smooth' });
         }
     };
@@ -180,6 +200,8 @@ export default function TeamDetailPage({
     useEffect(() => {
         if (open) {
             setActiveTab('overview');
+            lastTabRef.current = 'overview';
+            programmaticScrollRef.current = null;
             setMenuOpen(false);
             if (scrollRef.current) {
                 scrollRef.current.scrollLeft = 0;
@@ -318,6 +340,7 @@ export default function TeamDetailPage({
                                 value={activeTab}
                                 onChange={(tab) => {
                                     hapticPatterns.tap();
+                                    lastTabRef.current = tab;
                                     setActiveTab(tab);
                                     scrollToView(tab);
                                 }}
@@ -377,6 +400,10 @@ export default function TeamDetailPage({
                     <div
                         ref={scrollRef}
                         onScroll={handleScroll}
+                        onTouchStart={() => {
+                            // A manual swipe takes over from any tap-driven scroll.
+                            programmaticScrollRef.current = null;
+                        }}
                         className="scrollbar-hide"
                         style={{
                             display: 'flex',
