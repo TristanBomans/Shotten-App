@@ -45,10 +45,11 @@ export function readPlayerId(input: unknown): number | undefined {
     return Number.isInteger(id) && id > 0 ? id : undefined;
 }
 
-/** Upsert a subscription; leaves the linked player untouched when playerId is omitted. */
-export async function saveSubscription(sub: PushSubscriptionInput, playerId?: number): Promise<void> {
+/** Upsert a subscription; leaves the linked player and admin flag untouched when omitted. */
+export async function saveSubscription(sub: PushSubscriptionInput, playerId?: number, admin?: boolean): Promise<void> {
     const row: Record<string, unknown> = { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth };
     if (playerId !== undefined) row.player_id = playerId;
+    if (admin !== undefined) row.admin = admin;
     const { error } = await getSupabaseServiceClient()
         .from('push_subscriptions')
         .upsert(row, { onConflict: 'endpoint' });

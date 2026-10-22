@@ -327,7 +327,7 @@ export default function Dashboard({
         void syncMatchPush(playerId, enabled).catch(() => {
             // Keep the toggle as-is; the next Settings visit can retry.
         });
-    }, [playerId]);
+    }, [playerId, isHiddenAdminUnlocked]);
 
     // Cleanup timeouts
     useEffect(() => {
