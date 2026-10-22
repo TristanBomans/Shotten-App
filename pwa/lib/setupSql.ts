@@ -275,6 +275,7 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     p256dh TEXT NOT NULL,
     auth TEXT NOT NULL,
     player_id INTEGER REFERENCES core_players(id) ON DELETE CASCADE,
+    admin BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

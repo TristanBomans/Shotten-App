@@ -11,6 +11,15 @@ export type PushSettingsResult = {
     message: string;
 };
 
+// Devices with the hidden admin page unlocked also get admin pushes (e.g. a scrape started).
+function isHiddenAdminUnlocked(): boolean {
+    try {
+        return localStorage.getItem('hiddenAdminUnlocked') === 'true';
+    } catch {
+        return false;
+    }
+}
+
 async function postSubscription(path: '/subscribe' | '/unsubscribe', subscription: PushSubscription, playerId?: number) {
     const response = await fetch(`${PUSH_API_URL}${path}`, {
         method: 'POST',
@@ -18,6 +27,7 @@ async function postSubscription(path: '/subscribe' | '/unsubscribe', subscriptio
         body: JSON.stringify({
             subscription: subscription.toJSON(),
             playerId,
+            admin: isHiddenAdminUnlocked(),
         }),
     });
     const data = await response.json().catch(() => ({}));
@@ -31,7 +41,7 @@ async function showWelcome(registration: ServiceWorkerRegistration) {
         await registration.showNotification("You're on", {
             body: 'We’ll remind you about attendance and kickoff.',
             icon: '/icons/icon-192x192.png',
-            badge: '/icons/icon-192x192.png',
+            badge: '/icons/badge-96x96.png',
             tag: 'shotten-welcome',
             data: { url: '/?view=settings' },
         });

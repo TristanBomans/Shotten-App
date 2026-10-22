@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shotten-v6';
+const CACHE_NAME = 'shotten-v7';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
@@ -144,7 +144,7 @@ self.addEventListener('message', (event) => {
     const options = data.options || {
         body: 'If you can read this, notifications work on this device.',
         icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-192x192.png',
+        badge: '/icons/badge-96x96.png',
         tag: 'shotten-push-test',
         data: { url: '/' },
         renotify: true,
@@ -169,7 +169,7 @@ self.addEventListener('push', (event) => {
     let options = {
         body: 'New update',
         icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-192x192.png',
+        badge: '/icons/badge-96x96.png',
         data: { url: '/' },
     };
 

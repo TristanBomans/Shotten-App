@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
         const sub = readSubscription(body.subscription);
         if (!sub) return NextResponse.json({ ok: false, error: 'Missing subscription' }, { status: 400 });
 
-        await saveSubscription(sub, readPlayerId(body.playerId));
+        await saveSubscription(sub, readPlayerId(body.playerId), typeof body.admin === 'boolean' ? body.admin : undefined);
         return NextResponse.json({ ok: true });
     } catch (error) {
         console.error('Error saving push subscription:', error);
