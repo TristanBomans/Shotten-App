@@ -31,7 +31,7 @@ async function showWelcome(registration: ServiceWorkerRegistration) {
         await registration.showNotification("You're on", {
             body: 'We’ll remind you about attendance and kickoff.',
             icon: '/icons/icon-192x192.png',
-            badge: '/icons/icon-192x192.png',
+            badge: '/icons/badge-96x96.png',
             tag: 'shotten-welcome',
             data: { url: '/?view=settings' },
         });
