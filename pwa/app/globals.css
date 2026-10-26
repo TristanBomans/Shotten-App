@@ -151,6 +151,7 @@
   --rail-w: 0px;
   --content-max: 660px;
   --screen-x: 14px;
+  --col-w: calc(var(--content-max) + 2 * var(--screen-x));
 }
 
 /* Desktop shell: persistent left rail, wider content */
@@ -159,6 +160,10 @@
     --rail-w: 232px;
     --content-max: 760px;
     --screen-x: 32px;
+    /* Horizontal center of the left-aligned content column */
+    --col-center: calc(
+      var(--rail-w) + var(--safe-left) + min(var(--col-w), 100vw - var(--rail-w) - var(--safe-left)) / 2
+    );
   }
 }
 
@@ -502,6 +507,12 @@ button {
   white-space: nowrap;
   cursor: pointer;
   box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+}
+
+@media (min-width: 1024px) {
+  .update-notice {
+    left: var(--col-center);
+  }
 }
 
 .update-notice strong {
@@ -1118,7 +1129,9 @@ button {
 
 @media (min-width: 1024px) {
   .sheet-root {
-    left: var(--rail-w);
+    left: calc(var(--rail-w) + var(--safe-left));
+    right: auto;
+    width: min(var(--col-w), 100vw - var(--rail-w) - var(--safe-left));
     top: 0;
     bottom: 0;
     justify-content: center;
@@ -1203,6 +1216,19 @@ button {
   }
 }
 
+/* Header "more" menu, anchored under the right-hand header button */
+.flow-menu {
+  top: calc(var(--safe-top) + var(--header-h));
+  right: var(--screen-x);
+  transform-origin: top right;
+}
+
+@media (min-width: 1024px) {
+  .flow-menu {
+    right: calc(max(0px, 100% - var(--col-w)) + var(--screen-x));
+  }
+}
+
 /* Context menu */
 .menu {
   position: absolute;
@@ -1252,6 +1278,12 @@ button {
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-overlay);
   padding: var(--sp-5);
+}
+
+@media (min-width: 1024px) {
+  .dialog {
+    left: var(--col-center);
+  }
 }
 
 /* --------------------------------------------------------------------------

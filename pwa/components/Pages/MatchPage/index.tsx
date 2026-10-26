@@ -308,17 +308,12 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, isF
                                     }}
                                 />
                                 <motion.div
-                                    className="menu"
+                                    className="menu flow-menu"
                                     initial={{ opacity: 0, scale: 0.95, y: -4 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95, y: -4 }}
                                     transition={{ duration: 0.14, ease: 'easeOut' }}
-                                    style={{
-                                        top: 'calc(var(--safe-top) + var(--header-h))',
-                                        right: 'var(--screen-x)',
-                                        zIndex: 10025,
-                                        transformOrigin: 'top right',
-                                    }}
+                                    style={{ zIndex: 10025 }}
                                 >
                                     {match.location && (
                                         <button
