@@ -1176,6 +1176,13 @@ button {
   width: 100%;
 }
 
+.flow-header-tabs {
+  max-width: calc(var(--content-max) + 2 * var(--screen-x));
+  margin: 0 auto;
+  padding: 0 var(--screen-x) 10px;
+  width: 100%;
+}
+
 .flow-body {
   flex: 1;
   overflow-y: auto;
@@ -1190,6 +1197,7 @@ button {
 
 @media (min-width: 1024px) {
   .flow-header-inner,
+  .flow-header-tabs,
   .flow-body-inner {
     margin: 0;
   }

@@ -327,14 +327,7 @@ export default function TeamDetailPage({
                         </div>
 
                         {/* Segmented tabs */}
-                        <div
-                            style={{
-                                maxWidth: 'calc(var(--content-max) + 2 * var(--screen-x))',
-                                margin: '0 auto',
-                                padding: '0 var(--screen-x) 10px',
-                                width: '100%',
-                            }}
-                        >
+                        <div className="flow-header-tabs">
                             <SegmentedControl
                                 aria-label="Team views"
                                 value={activeTab}
