@@ -788,6 +788,30 @@ button {
   opacity: 0.85;
 }
 
+/* Forfait matches: no response needed, the card dims and a clear badge takes the response slot */
+.panel[data-forfait='true'] {
+  background: color-mix(in srgb, var(--bg-panel) 55%, var(--bg-screen));
+}
+
+.panel[data-forfait='true'] .match-past-dim {
+  opacity: 0.7;
+}
+
+.forfait-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  flex-shrink: 0;
+  border: 1px solid rgb(var(--no-rgb) / 0.35);
+  border-radius: var(--r-sm);
+  background: rgb(var(--no-rgb) / 0.13);
+  color: var(--no);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
 .result-badge {
   --tone-rgb: var(--tbd-rgb);
   display: inline-flex;

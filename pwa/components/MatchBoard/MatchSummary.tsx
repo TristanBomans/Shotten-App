@@ -80,6 +80,7 @@ export default function MatchSummary({
     const isPast = dateObj.getTime() < now;
     const isFinished = isMatchFinished(dateObj, now);
     const lzvResultId = isFinished ? match.result?.resultId ?? null : null;
+    const isForfait = match.forfait === true;
     const isToday = dateObj.toDateString() === new Date(now).toDateString();
 
     const roster: RosterPlayer[] = useMemo(() => {
@@ -132,8 +133,9 @@ export default function MatchSummary({
                     onOpenModal?.();
                 }
             }}
-            aria-label={`Match ${match.name.replace(/-/g, ' versus ')}, open details`}
+            aria-label={`Match ${match.name.replace(/-/g, ' versus ')}${isForfait ? ', forfait' : ''}, open details`}
             data-past={isFinished || undefined}
+            data-forfait={isForfait || undefined}
             style={{
                 position: 'relative',
                 overflow: 'hidden',
@@ -200,25 +202,11 @@ export default function MatchSummary({
                                 {formatCountdown(dateObj.getTime() - now)}
                             </span>
                         )}
-                        {match.forfait && (
-                            <span
-                                style={{
-                                    fontSize: '0.625rem',
-                                    fontWeight: 600,
-                                    color: 'var(--no)',
-                                    background: 'rgb(var(--no-rgb) / 0.13)',
-                                    border: '1px solid rgb(var(--no-rgb) / 0.25)',
-                                    borderRadius: 5,
-                                    padding: '1px 5px',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                Forfait
-                            </span>
-                        )}
                     </div>
 
-                    {!isFinished ? (
+                    {isForfait ? (
+                        <span className="forfait-badge">Forfait</span>
+                    ) : !isFinished ? (
                         <ResponseControl
                             status={myStatus}
                             updating={updating as AttendanceStatus | null}
@@ -227,9 +215,9 @@ export default function MatchSummary({
                         />
                     ) : match.result ? (
                         <MatchResultBadge result={match.result} />
-                    ) : !match.forfait ? (
+                    ) : (
                         <span className="t-caption" style={{ flexShrink: 0 }}>No score yet</span>
-                    ) : null}
+                    )}
                 </div>
 
                 {/* Teams */}
