@@ -759,7 +759,7 @@ function MatchRow({ match, teamName, onOpen }: { match: ScraperMatch; teamName: 
     return (
         <RowTag
             className={hasDetail ? 'row' : 'row row-static'}
-            style={{ minHeight: 52, opacity: isForfait ? 0.6 : 1 }}
+            style={{ minHeight: 52, opacity: isForfait ? 0.75 : 1 }}
             {...(hasDetail && { type: 'button' as const, onClick: onOpen })}
         >
             <span
@@ -768,19 +768,19 @@ function MatchRow({ match, teamName, onOpen }: { match: ScraperMatch; teamName: 
                     width: 28,
                     height: 28,
                     borderRadius: 8,
-                    background: !isPlayed
-                        ? 'rgb(var(--accent-rgb) / 0.12)'
-                        : isForfait
-                            ? 'rgb(var(--tbd-rgb) / 0.12)'
+                    background: isForfait
+                        ? 'rgb(var(--no-rgb) / 0.12)'
+                        : !isPlayed
+                            ? 'rgb(var(--accent-rgb) / 0.12)'
                             : `rgb(var(--${resultToken}-rgb) / 0.12)`,
-                    color: !isPlayed ? 'var(--accent)' : isForfait ? 'var(--tbd)' : resultColor,
+                    color: isForfait ? 'var(--no)' : !isPlayed ? 'var(--accent)' : resultColor,
                     fontSize: '0.7rem',
                     fontWeight: 600,
                     flexShrink: 0,
                 }}
-                aria-label={!isPlayed ? 'Scheduled' : isForfait ? 'Forfait' : `Result ${result}`}
+                aria-label={isForfait ? 'Forfait' : !isPlayed ? 'Scheduled' : `Result ${result}`}
             >
-                {!isPlayed ? <Calendar size={13} /> : isForfait ? 'F' : result}
+                {isForfait ? 'F' : !isPlayed ? <Calendar size={13} /> : result}
             </span>
 
             <span style={{ flex: 1, minWidth: 0 }}>
@@ -817,13 +817,13 @@ function MatchRow({ match, teamName, onOpen }: { match: ScraperMatch; teamName: 
                 </span>
             </span>
 
-            {isPlayed && (
+            {(isPlayed || isForfait) && (
                 <span
                     className="t-num"
                     style={{
                         fontSize: isForfait ? 'var(--fs-3xs)' : 'var(--fs-sm)',
                         fontWeight: 600,
-                        color: isForfait ? 'var(--tbd)' : resultColor,
+                        color: isForfait ? 'var(--no)' : resultColor,
                         flexShrink: 0,
                     }}
                 >
