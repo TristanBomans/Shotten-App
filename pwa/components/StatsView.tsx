@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost, Hourglass, CalendarDays, Clock3, Flag } from 'lucide-react';
+import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost, Hourglass, CalendarDays, Clock3 } from 'lucide-react';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
-import { Switch } from './ui/controls';
 import PlayerDetailPage from './Pages/PlayerDetailPage';
 import RulesPage from './Pages/RulesPage';
 
@@ -47,6 +46,7 @@ export interface AttendanceHistoryPoint {
 }
 
 export const INCLUDE_FORFAIT_STORAGE_KEY = 'statsIncludeForfait';
+export const INCLUDE_FORFAIT_EVENT = 'statsIncludeForfaitChanged';
 
 function calculatePlayerStats(player: Player, allMatches: Match[], includeForfait = false) {
     // Filter: player's team's matches, past, and at least 1 person Present.
@@ -206,13 +206,11 @@ export default function StatsView({
             return false;
         }
     });
-    const toggleIncludeForfait = (next: boolean) => {
-        hapticPatterns.toggle();
-        setIncludeForfait(next);
-        try {
-            localStorage.setItem(INCLUDE_FORFAIT_STORAGE_KEY, String(next));
-        } catch { /* storage unavailable */ }
-    };
+    useEffect(() => {
+        const onChange = (e: Event) => setIncludeForfait((e as CustomEvent<boolean>).detail === true);
+        window.addEventListener(INCLUDE_FORFAIT_EVENT, onChange);
+        return () => window.removeEventListener(INCLUDE_FORFAIT_EVENT, onChange);
+    }, []);
 
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {
@@ -232,10 +230,6 @@ export default function StatsView({
         stats: calculatePlayerStats(player, matches, includeForfait),
     })).sort((a, b) => b.stats.attendancePct - a.stats.attendancePct);
 
-    const pastForfaitCount = useMemo(
-        () => matches.filter(m => m.forfait === true && parseDateToTimestamp(m.date) < now).length,
-        [matches, now]
-    );
 
     const hasLeaderboardData = useMemo(
         () => playerStats.some(p => p.stats.totalMatches > 0),
@@ -259,34 +253,6 @@ export default function StatsView({
         ? playerStats.find(p => p.id === selectedPlayerId) || null
         : null;
 
-    const forfaitToggle = pastForfaitCount > 0 ? (
-        <div className="list-section" style={{ marginBottom: 12 }}>
-            <div className="row row-static" style={{ minHeight: 48 }}>
-                <span
-                    className="flex-center"
-                    style={{ width: 20, height: 20, color: 'var(--text-3)', flexShrink: 0 }}
-                    aria-hidden
-                >
-                    <Flag size={16} />
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: 'var(--fs-sm)', fontWeight: 500 }}>
-                        Count forfait matches
-                    </span>
-                    <span style={{ display: 'block', fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', marginTop: 2 }}>
-                        <span className="t-num">{pastForfaitCount}</span> forfait {pastForfaitCount === 1 ? 'match' : 'matches'}
-                        {includeForfait ? ' included in attendance %' : ' left out of attendance %'}
-                    </span>
-                </span>
-                <Switch
-                    checked={includeForfait}
-                    onChange={toggleIncludeForfait}
-                    aria-label="Count forfait matches in attendance percentage"
-                />
-            </div>
-        </div>
-    ) : null;
-
     if (!hasLeaderboardData) {
         const diffMs = nextMatchDate ? nextMatchDate.getTime() - now : null;
         const short = diffMs != null ? formatCountdownShort(diffMs) : null;
@@ -303,8 +269,6 @@ export default function StatsView({
                     <span>Attendance leaderboard</span>
                     <span className="t-num" style={{ opacity: 0.5 }}>{playerStats.length}</span>
                 </div>
-
-                {forfaitToggle}
 
                 <div
                     className="panel"
@@ -434,8 +398,6 @@ export default function StatsView({
 
     return (
         <div className="screen">
-            {forfaitToggle}
-
             <div className="section-label">
                 <span>Attendance leaderboard</span>
                 <span className="t-num">{playerStats.length}</span>

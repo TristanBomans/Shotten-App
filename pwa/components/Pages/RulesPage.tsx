@@ -31,7 +31,7 @@ export default function RulesPage({ open, onClose }: RulesPageProps) {
             <p className="t-body" style={{ marginBottom: 16, padding: '0 4px' }}>
                 Your rank is determined by your attendance rate — the percentage of
                 matches you show up for. Forfait matches are left out, unless you
-                switch on &ldquo;Count forfait matches&rdquo; on the stats page.
+                switch on &ldquo;Count forfait matches&rdquo; in Settings.
             </p>
 
             <ListSection label="Attendance">

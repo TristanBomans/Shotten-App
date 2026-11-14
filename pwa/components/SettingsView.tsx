@@ -12,6 +12,7 @@ import VersionHistoryPage from './Pages/VersionHistoryPage';
 import HiddenAdminPage from './Pages/HiddenAdminPage';
 import RespondAsPlayerPage from './Pages/RespondAsPlayerPage';
 import ForfaitMatchesPage from './Pages/ForfaitMatchesPage';
+import { INCLUDE_FORFAIT_EVENT, INCLUDE_FORFAIT_STORAGE_KEY } from './StatsView';
 import { ListSection, Row } from './ui/ListSection';
 import { Switch } from './ui/controls';
 import Sheet from './ui/Sheet';
@@ -84,6 +85,7 @@ export default function SettingsView({
     const [hapticFeedback, setHapticFeedback] = useState(true);
     const [showFullNames, setShowFullNames] = useState(true);
     const [showPastMatches, setShowPastMatches] = useState(true);
+    const [includeForfait, setIncludeForfait] = useState(false);
     const [defaultLeague, setDefaultLeague] = useState<string>('');
     const [leagues, setLeagues] = useState<string[]>([]);
     const [showLeagueSelector, setShowLeagueSelector] = useState(false);
@@ -106,6 +108,7 @@ export default function SettingsView({
         setShowFullNames(fullNamesPref === null ? true : fullNamesPref === 'true');
         const pastMatchesPref = localStorage.getItem('showPastMatches');
         setShowPastMatches(pastMatchesPref === null ? true : pastMatchesPref === 'true');
+        setIncludeForfait(localStorage.getItem(INCLUDE_FORFAIT_STORAGE_KEY) === 'true');
         const savedLeague = localStorage.getItem('defaultLeague');
         if (savedLeague) setDefaultLeague(savedLeague);
         const savedTheme = localStorage.getItem('theme');
@@ -193,6 +196,14 @@ export default function SettingsView({
         setShowPastMatches(newValue);
         localStorage.setItem('showPastMatches', newValue.toString());
         window.dispatchEvent(new CustomEvent('showPastMatchesChanged', { detail: newValue }));
+    };
+
+    const handleToggleIncludeForfait = () => {
+        hapticPatterns.toggle();
+        const newValue = !includeForfait;
+        setIncludeForfait(newValue);
+        localStorage.setItem(INCLUDE_FORFAIT_STORAGE_KEY, newValue.toString());
+        window.dispatchEvent(new CustomEvent(INCLUDE_FORFAIT_EVENT, { detail: newValue }));
     };
 
     const handleSelectLeague = (league: string) => {
@@ -296,6 +307,19 @@ export default function SettingsView({
                             checked={showPastMatches}
                             onChange={handleTogglePastMatches}
                             aria-label="Show past matches"
+                        />
+                    }
+                />
+
+                <Row
+                    icon={<Flag size={16} />}
+                    title="Count forfait matches"
+                    subtitle={includeForfait ? 'Forfaits count toward attendance %' : 'Forfaits left out of attendance %'}
+                    trailing={
+                        <Switch
+                            checked={includeForfait}
+                            onChange={handleToggleIncludeForfait}
+                            aria-label="Count forfait matches in attendance percentage"
                         />
                     }
                 />
