@@ -47,6 +47,8 @@ interface SegmentedControlProps<T extends string> {
     /**
      * `glass` keeps the quiet pill at rest, but while it moves it becomes a
      * liquid-glass lens that stretches toward the new option and springs in.
+     * Default: `glass` for tab bars, `plain` for choice groups (the tinted
+     * response picker reads as a status, not as navigation).
      */
     appearance?: 'plain' | 'glass';
     disabled?: boolean;
@@ -125,14 +127,14 @@ export function SegmentedControl<T extends string>({
     'aria-label': ariaLabel,
     variant = 'tabs',
     size = 'md',
-    appearance = 'plain',
+    appearance,
     disabled = false,
 }: SegmentedControlProps<T>) {
     const foundIndex = value === null ? -1 : options.findIndex((option) => option.value === value);
     const selectedIndex = Math.max(0, foundIndex);
     const tone = foundIndex >= 0 ? options[foundIndex].tone : undefined;
     const isChoice = variant === 'choice';
-    const isGlass = appearance === 'glass';
+    const isGlass = (appearance ?? (isChoice ? 'plain' : 'glass')) === 'glass';
     const { rootRef, thumbRef, lensRef } = useGlassMotion(isGlass, foundIndex);
 
     return (

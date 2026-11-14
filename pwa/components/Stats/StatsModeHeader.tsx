@@ -60,7 +60,6 @@ export default function StatsModeHeader({ mode, onModeChange, showGoals, onOpenW
             {showGoals && (
                 <SegmentedControl<StatsMode>
                     aria-label="Leaderboard"
-                    appearance="glass"
                     value={mode}
                     onChange={next => {
                         hapticPatterns.toggle();

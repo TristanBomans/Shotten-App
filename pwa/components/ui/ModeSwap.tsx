@@ -11,8 +11,12 @@ interface ModeSwapProps<T extends string> {
     render: (mode: T) => ReactNode;
 }
 
-const DURATION = 300;
-const EXIT_DURATION = 220;
+// Out first, then in: the incoming view stays invisible until the outgoing
+// one is nearly gone (< ~0.15 opacity), so the two never read on top of each
+// other. Total ≈ 340ms.
+const EXIT_DURATION = 150;
+const DURATION = 340;
+const ENTER_HOLD = 0.3; // fraction of DURATION the incoming view waits (~100ms)
 const SHIFT = 28; // px
 const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 
@@ -53,24 +57,27 @@ export default function ModeSwap<T extends string>({ mode, order, render }: Mode
 
         if (reduced) {
             runs.push(
-                incoming.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: 'linear' }),
-                leaving.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: 'linear', fill: 'forwards' }),
+                incoming.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, delay: 60, easing: 'linear', fill: 'backwards' }),
+                leaving.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'linear', fill: 'forwards' }),
             );
         } else {
+            const offscreen = { transform: `translateX(${dir * SHIFT}px) scale(0.985)`, opacity: 0, filter: 'blur(6px)' };
             runs.push(
                 incoming.animate(
                     [
-                        { transform: `translateX(${dir * SHIFT}px) scale(0.985)`, opacity: 0, filter: 'blur(6px)' },
-                        { transform: 'none', opacity: 1, filter: 'blur(0)' },
+                        { offset: 0, ...offscreen },
+                        { offset: ENTER_HOLD, ...offscreen, easing: EASE },
+                        { offset: 1, transform: 'none', opacity: 1, filter: 'blur(0)' },
                     ],
-                    { duration: DURATION, easing: EASE },
+                    { duration: DURATION },
                 ),
                 leaving.animate(
                     [
-                        { transform: 'none', opacity: 1, filter: 'blur(0)' },
-                        { transform: `translateX(${-dir * SHIFT}px) scale(0.985)`, opacity: 0, filter: 'blur(6px)' },
+                        { offset: 0, transform: 'none', opacity: 1, filter: 'blur(0)' },
+                        { offset: 0.65, opacity: 0.15 },
+                        { offset: 1, transform: `translateX(${-dir * SHIFT}px) scale(0.985)`, opacity: 0, filter: 'blur(6px)' },
                     ],
-                    { duration: EXIT_DURATION, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' },
+                    { duration: EXIT_DURATION, easing: 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'forwards' },
                 ),
             );
             const from = leaving.offsetHeight;

@@ -742,6 +742,13 @@ button {
   background: linear-gradient(180deg, var(--glass-sheen), transparent);
 }
 
+.seg[data-size='lg'] .seg-lens {
+  top: 3px;
+  bottom: 3px;
+  width: calc((100% - 6px) / var(--seg-count));
+  left: calc(3px + (100% - 6px) * var(--seg-index) / var(--seg-count));
+}
+
 .seg[data-glass][data-moving] .seg-lens {
   visibility: visible;
   will-change: transform, opacity;
@@ -1459,6 +1466,61 @@ button {
 .menu-item:active,
 .menu-item:hover {
   background: var(--bg-subtle);
+}
+
+/* Liquid glass overflow (⋯) menu. Grows out of the ⋯ button: the origin
+   sits on the button, just above the menu's top-right corner. The surface
+   stays opaque enough to read text over busy content in both themes. */
+.glass-menu {
+  transform-origin: calc(100% - 18px) -20px;
+  background: var(--menu-glass-bg);
+  border: none;
+  border-radius: 18px;
+  box-shadow: var(--menu-glass-edge), var(--shadow-overlay);
+  -webkit-backdrop-filter: blur(22px) saturate(1.8);
+  backdrop-filter: blur(22px) saturate(1.8);
+  padding: 6px;
+}
+
+/* Specular top edge */
+.glass-menu::before {
+  content: '';
+  position: absolute;
+  inset: 0 14px auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--menu-glass-spec), transparent);
+  pointer-events: none;
+}
+
+.glass-menu .menu-item {
+  border-radius: 12px;
+  animation: glass-menu-item 220ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.glass-menu > :nth-child(2) { animation-delay: 30ms; }
+.glass-menu > :nth-child(3) { animation-delay: 55ms; }
+.glass-menu > :nth-child(4) { animation-delay: 80ms; }
+.glass-menu > :nth-child(5) { animation-delay: 100ms; }
+.glass-menu > :nth-child(n + 6) { animation-delay: 120ms; }
+
+@keyframes glass-menu-item {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+:root,
+[data-theme='oled'] {
+  --menu-glass-bg: rgb(30 30 34 / 0.78);
+  --menu-glass-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.1);
+  --menu-glass-spec: rgb(255 255 255 / 0.45);
+}
+
+[data-theme='white'] {
+  --menu-glass-bg: rgb(255 255 255 / 0.78);
+  --menu-glass-edge: inset 0 0 0 0.5px rgb(0 0 0 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.9);
+  --menu-glass-spec: rgb(255 255 255 / 1);
 }
 
 /* Centered dialog */

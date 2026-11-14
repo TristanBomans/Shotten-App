@@ -10,7 +10,7 @@ import MotmLeaderboard from './Motm/MotmLeaderboard';
 import AttendanceLeaderboard from './Stats/AttendanceLeaderboard';
 import GoalsLeaderboard from './Stats/GoalsLeaderboard';
 import StatsModeHeader, { STATS_MODE_ORDER, type StatsMode } from './Stats/StatsModeHeader';
-import ModeSwap from './Stats/ModeSwap';
+import ModeSwap from './ui/ModeSwap';
 import WrappedPage from './Wrapped/WrappedPage';
 import { buildGoalsIndex } from '@/lib/goals';
 import { useGoalsData } from '@/lib/useGoals';
