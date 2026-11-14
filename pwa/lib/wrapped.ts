@@ -82,6 +82,22 @@ function formatBestWin(win: BestWin | null): WrappedStat {
     };
 }
 
+/**
+ * Wrapped only makes sense once the season is done: matches have been played
+ * and nothing (non-forfait) is scheduled any more. When next season's fixtures
+ * arrive there is an upcoming match again and the entry disappears.
+ */
+export function isSeasonOver(matches: Match[], now = Date.now()): boolean {
+    let played = false;
+    for (const m of matches) {
+        if (m.forfait) continue;
+        const ts = parseDateToTimestamp(m.date);
+        if (ts > now) return false;
+        played = true;
+    }
+    return played;
+}
+
 export function seasonLabel(matches: Match[], now = Date.now()): string {
     const years = pastMatches(matches, now)
         .map(m => new Date(parseDateToTimestamp(m.date)).getFullYear())

@@ -13,7 +13,7 @@ import StatsModeHeader, { type StatsMode } from './Stats/StatsModeHeader';
 import WrappedPage from './Wrapped/WrappedPage';
 import { buildGoalsIndex } from '@/lib/goals';
 import { useGoalsData } from '@/lib/useGoals';
-import { buildPlayerWrapped, buildTeamWrapped, type WrappedTarget } from '@/lib/wrapped';
+import { buildPlayerWrapped, buildTeamWrapped, isSeasonOver, type WrappedTarget } from '@/lib/wrapped';
 import { useMotmVotes } from '@/lib/motm';
 import { getMotmVotingState, summarizeMotm } from '@/lib/motmRules';
 
@@ -241,6 +241,7 @@ export default function StatsView({
     const [statsMode, setStatsMode] = useState<StatsMode>('attendance');
     const [wrappedTarget, setWrappedTarget] = useState<WrappedTarget | null>(null);
     const openWrapped = (target: WrappedTarget) => setWrappedTarget(target);
+    const seasonOver = useMemo(() => isSeasonOver(matches, now), [matches, now]);
     // Man of the match awards for the Wrapped card, fetched only while it's open.
     const motmMatches = useMemo(() => matches.filter(m => getMotmVotingState(m, now) !== 'none'), [matches, now]);
     const { votes: motmVotes } = useMotmVotes(motmMatches.map(m => m.id), wrappedTarget != null && motmMatches.length > 0);
@@ -428,7 +429,7 @@ export default function StatsView({
                 mode={statsMode}
                 onModeChange={setStatsMode}
                 showGoals={goalsIndex.hasData}
-                onOpenWrapped={() => openWrapped({ kind: 'team' })}
+                onOpenWrapped={seasonOver ? () => openWrapped({ kind: 'team' }) : undefined}
             />
 
             {statsMode === 'goals' && goalsIndex.hasData ? (
@@ -464,7 +465,7 @@ export default function StatsView({
                 onClose={() => onSelectPlayer?.(null)}
                 goals={selectedPlayer ? goalsIndex.byPlayer.get(selectedPlayer.id) : undefined}
                 showAssists={goalsIndex.hasAssists}
-                onOpenWrapped={selectedPlayer ? () => openWrapped({ kind: 'player', playerId: selectedPlayer.id }) : undefined}
+                onOpenWrapped={seasonOver && selectedPlayer ? () => openWrapped({ kind: 'player', playerId: selectedPlayer.id }) : undefined}
             />
 
             <WrappedPage open={wrappedModel != null} model={wrappedModel} onClose={() => setWrappedTarget(null)} />
