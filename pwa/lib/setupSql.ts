@@ -1,6 +1,6 @@
 // ============================================================================
 // INITIAL SETUP SQL
-// Mirrors supabase/schema.sql + supabase/migrations/001 + 002 + 003 + 004 + 005 + 006.
+// Mirrors supabase/schema.sql + supabase/migrations/001 + 002 + 003 + 004 + 005 + 006 + 008.
 // Verification SELECTs and the hardcoded team UPDATE from migration 002 are
 // intentionally omitted (team linking happens through the setup wizard).
 // Keep this in sync when the schema files change.
@@ -311,4 +311,30 @@ ALTER TABLE push_outbox ENABLE ROW LEVEL SECURITY;
 ALTER TABLE push_sent ENABLE ROW LEVEL SECURITY;
 `;
 
-export const FULL_SETUP_SQL = [SCHEMA_SQL, MIGRATION_001_SQL, MIGRATION_002_SQL, MIGRATION_004_SQL, MIGRATION_005_SQL].join('\n');
+// Migration 008: man of the match votes
+export const MIGRATION_008_SQL = `
+CREATE TABLE IF NOT EXISTS motm_votes (
+    id SERIAL PRIMARY KEY,
+    match_id INTEGER NOT NULL REFERENCES core_matches(id) ON DELETE CASCADE,
+    voter_player_id INTEGER NOT NULL REFERENCES core_players(id) ON DELETE CASCADE,
+    voted_player_id INTEGER NOT NULL REFERENCES core_players(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(match_id, voter_player_id),
+    CHECK (voter_player_id <> voted_player_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_motm_votes_match_id ON motm_votes(match_id);
+CREATE INDEX IF NOT EXISTS idx_motm_votes_voted_player_id ON motm_votes(voted_player_id);
+
+ALTER TABLE motm_votes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read access" ON motm_votes;
+CREATE POLICY "Public read access" ON motm_votes FOR SELECT USING (true);
+
+DROP TRIGGER IF EXISTS update_motm_votes_updated_at ON motm_votes;
+CREATE TRIGGER update_motm_votes_updated_at BEFORE UPDATE ON motm_votes
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+`;
+
+export const FULL_SETUP_SQL = [SCHEMA_SQL, MIGRATION_001_SQL, MIGRATION_002_SQL, MIGRATION_004_SQL, MIGRATION_005_SQL, MIGRATION_008_SQL].join('\n');

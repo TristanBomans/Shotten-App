@@ -15,6 +15,8 @@ import { ResponseControl } from '../ui/controls';
 import AvailabilityCounts from './AvailabilityCounts';
 import AvailabilityRoster from './AvailabilityRoster';
 import { MatchResultBadge } from './MatchResult';
+import MotmCardHint from '../Motm/MotmCardHint';
+import MotmVoteSection from '../Motm/MotmVoteSection';
 
 interface MatchSummaryProps {
     match: Match;
@@ -260,6 +262,8 @@ export default function MatchSummary({
                     </p>
                 )}
 
+                {isFinished && <MotmCardHint match={match} currentPlayerId={currentPlayerId} />}
+
                 <div className="match-past-dim">
                     {!showFullNames && (
                         <AvailabilityCounts
@@ -301,7 +305,9 @@ export default function MatchSummary({
                         fallbackTitle={match.name.replace(/-/g, ' vs ')}
                         open={!!isModalOpen}
                         onClose={() => onCloseModal?.()}
-                    />
+                    >
+                        <MotmVoteSection match={match} roster={roster} currentPlayerId={currentPlayerId} />
+                    </LzvMatchDetailPage>
                 </div>
             ) : (
                 <MatchPage
