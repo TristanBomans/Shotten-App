@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
 import { formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
@@ -19,6 +19,8 @@ interface LzvMatchDetailPageProps {
     perspectiveTeamId?: number | null;
     /** Shown in the header while the details load. */
     fallbackTitle?: string;
+    /** Extra content for our own matches (e.g. the man of the match vote), below the score. */
+    children?: ReactNode;
 }
 
 type LoadState =
@@ -46,6 +48,7 @@ export default function LzvMatchDetailPage({
     onClose,
     perspectiveTeamId = null,
     fallbackTitle = 'Match',
+    children,
 }: LzvMatchDetailPageProps) {
     const [state, setState] = useState<LoadState>({ status: 'loading' });
 
@@ -108,16 +111,21 @@ export default function LzvMatchDetailPage({
                     <div className="spinner" />
                 </div>
             ) : state.status !== 'ready' || !detail ? (
-                <EmptyState
-                    title={state.status === 'missing' ? 'No match details yet' : 'Could not load match details'}
-                    description={
-                        state.status === 'missing'
-                            ? 'Lineups and scorers show up here after the next LZV sync.'
-                            : 'Check your connection and try again.'
-                    }
-                />
+                <>
+                    {children}
+                    <EmptyState
+                        title={state.status === 'missing' ? 'No match details yet' : 'Could not load match details'}
+                        description={
+                            state.status === 'missing'
+                                ? 'Lineups and scorers show up here after the next LZV sync.'
+                                : 'Check your connection and try again.'
+                        }
+                    />
+                </>
             ) : (
-                <MatchDetailBody detail={detail} perspectiveTeamId={perspectiveTeamId} />
+                <MatchDetailBody detail={detail} perspectiveTeamId={perspectiveTeamId}>
+                    {children}
+                </MatchDetailBody>
             )}
         </FlowPage>
     );
@@ -126,9 +134,11 @@ export default function LzvMatchDetailPage({
 function MatchDetailBody({
     detail,
     perspectiveTeamId,
+    children,
 }: {
     detail: LzvMatchDetailResponse;
     perspectiveTeamId: number | null;
+    children?: ReactNode;
 }) {
     const hasScore = detail.homeScore !== null && detail.awayScore !== null;
     let outcome: 'W' | 'L' | 'D' | undefined;
@@ -151,6 +161,7 @@ function MatchDetailBody({
                     awayTeam={detail.awayTeam}
                 />
             )}
+            {children}
             <LineupSection team={detail.homeTeam} lineup={detail.homeLineup} />
             <LineupSection team={detail.awayTeam} lineup={detail.awayLineup} />
         </>

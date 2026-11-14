@@ -143,11 +143,31 @@ export const MOCK_MATCHES: Match[] = [
     },
     // Past matches
     {
+        // Played yesterday: man of the match voting is still open.
+        id: 204,
+        name: 'Shotten FC - Real Rotterdam',
+        date: getRelativeDate(-1, 20, 0),
+        location: 'Sporthal De Wielewaal, Rotterdam',
+        teamId: 1,
+        result: { homeScore: 6, awayScore: 2, teamScore: 6, opponentScore: 2, outcome: 'W' },
+        attendances: [
+            { playerId: 1, status: 'Present' },
+            { playerId: 2, status: 'Present' },
+            { playerId: 3, status: 'Present' },
+            { playerId: 5, status: 'Present' },
+            { playerId: 6, status: 'NotPresent' },
+            { playerId: 8, status: 'Present' },
+            { playerId: 9, status: 'Present' },
+            { playerId: 10, status: 'Present' },
+        ],
+    },
+    {
         id: 201,
         name: 'Ajax Zaal - Shotten FC',
         date: getRelativeDate(-7, 20, 0),
         location: 'Johan Cruijff Arena (Zaal)',
         teamId: 1,
+        result: { homeScore: 3, awayScore: 5, teamScore: 5, opponentScore: 3, outcome: 'W' },
         attendances: [
             { playerId: 1, status: 'Present' },
             { playerId: 2, status: 'Present' },
@@ -167,6 +187,7 @@ export const MOCK_MATCHES: Match[] = [
         date: getRelativeDate(-14, 19, 30),
         location: 'Sporthal De Wielewaal, Rotterdam',
         teamId: 1,
+        result: { homeScore: 4, awayScore: 4, teamScore: 4, opponentScore: 4, outcome: 'D' },
         attendances: [
             { playerId: 1, status: 'Present' },
             { playerId: 2, status: 'NotPresent' },

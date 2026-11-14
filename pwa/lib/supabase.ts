@@ -534,6 +534,68 @@ export async function upsertMatchAiAnalysis(
 }
 
 // ============================================================================
+// MAN OF THE MATCH VOTES
+// ============================================================================
+
+export interface MotmVoteRow {
+    id?: number;
+    match_id: number;
+    voter_player_id: number;
+    voted_player_id: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface MotmVoteResponse {
+    matchId: number;
+    voterPlayerId: number;
+    votedPlayerId: number;
+}
+
+export function toMotmVoteResponse(row: MotmVoteRow): MotmVoteResponse {
+    return {
+        matchId: row.match_id,
+        voterPlayerId: row.voter_player_id,
+        votedPlayerId: row.voted_player_id,
+    };
+}
+
+export async function getMotmVotes(matchIds: number[]): Promise<MotmVoteRow[]> {
+    if (matchIds.length === 0) return [];
+    const { data, error } = await getSupabaseClient()
+        .from('motm_votes')
+        .select('match_id, voter_player_id, voted_player_id')
+        .in('match_id', matchIds);
+
+    if (error) throw error;
+    return data || [];
+}
+
+export async function upsertMotmVote(matchId: number, voterPlayerId: number, votedPlayerId: number): Promise<MotmVoteRow> {
+    const { data, error } = await getSupabaseServiceClient()
+        .from('motm_votes')
+        .upsert(
+            { match_id: matchId, voter_player_id: voterPlayerId, voted_player_id: votedPlayerId },
+            { onConflict: 'match_id,voter_player_id' }
+        )
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteMotmVote(matchId: number, voterPlayerId: number): Promise<void> {
+    const { error } = await getSupabaseServiceClient()
+        .from('motm_votes')
+        .delete()
+        .eq('match_id', matchId)
+        .eq('voter_player_id', voterPlayerId);
+
+    if (error) throw error;
+}
+
+// ============================================================================
 // LZV SCRAPER DATA FUNCTIONS
 // ============================================================================
 

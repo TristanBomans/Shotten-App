@@ -14,6 +14,7 @@ import { SegmentedControl } from '../../ui/controls';
 import SquadView from './SquadView';
 import OpponentView from './OpponentView';
 import { MatchScoreboard } from '../../MatchBoard/MatchResult';
+import MotmVoteSection from '../../Motm/MotmVoteSection';
 
 interface MatchPageProps {
     match: Match;
@@ -268,6 +269,9 @@ export default function MatchPage({ match, dateObj, roster, currentPlayerId, isF
                             <div className="flow-body-inner">
                                 {isFinished && match.result && teams.length === 2 && (
                                     <MatchScoreboard result={match.result} homeTeam={teams[0]} awayTeam={teams[1]} />
+                                )}
+                                {isFinished && (
+                                    <MotmVoteSection match={match} roster={roster} currentPlayerId={currentPlayerId} />
                                 )}
                                 <SquadView statusGroups={statusGroups} currentPlayerId={currentPlayerId} />
                             </div>

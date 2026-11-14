@@ -7,6 +7,7 @@ import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
 import PlayerDetailPage from './Pages/PlayerDetailPage';
 import RulesPage from './Pages/RulesPage';
+import MotmLeaderboard from './Motm/MotmLeaderboard';
 
 interface StatsViewProps {
     matches: Match[];
@@ -511,6 +512,13 @@ export default function StatsView({
                     );
                 })}
             </div>
+
+            <MotmLeaderboard
+                matches={matches}
+                players={players}
+                currentPlayerId={currentPlayerId}
+                onSelectPlayer={(id) => onSelectPlayer?.(id)}
+            />
 
             {/* Rules Page */}
             <RulesPage open={isRulesOpen} onClose={() => setRulesOpen(false)} />

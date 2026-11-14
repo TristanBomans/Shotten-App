@@ -9,6 +9,7 @@ import { formatMatchDate } from '@/lib/dateUtils';
 import FlowPage from '../ui/FlowPage';
 import { ListSection } from '../ui/ListSection';
 import { StatusChip } from '../ui/controls';
+import PlayerMotmSummary from '../Motm/PlayerMotmSummary';
 
 interface PlayerDetailPageProps {
     open: boolean;
@@ -134,6 +135,8 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                     </div>
                 )}
             </ListSection>
+
+            <PlayerMotmSummary playerId={player.id} matches={s.matchResults} />
 
             {/* Match history */}
             <ListSection label="Match history">
