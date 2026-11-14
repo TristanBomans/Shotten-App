@@ -184,7 +184,7 @@ export default function MotmVoteSection({ match, roster, currentPlayerId }: Motm
                 ) : (
                     rows.map(player => {
                         const count = votesFor.get(player.id) ?? 0;
-                        const selected = myVote === player.id;
+                        const selected = canVote && myVote === player.id;
                         const isWinner = winners.includes(player.id);
                         const isMe = player.id === currentPlayerId;
                         const pct = maxVotes > 0 ? (count / maxVotes) * 100 : 0;
@@ -299,10 +299,10 @@ export default function MotmVoteSection({ match, roster, currentPlayerId }: Motm
                     <InlineNotice tone="error">{error}</InlineNotice>
                 </div>
             )}
-            {canVote && myVote !== null && (
+            {myVote !== null && (canVote || !isOpen) && (
                 <p className="t-caption" style={{ padding: '6px 4px 0' }}>
-                    You voted for <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>{nameById.get(myVote)}</span>.
-                    {' '}Tap again to remove your vote.
+                    You voted for <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>{nameById.get(myVote) ?? 'a teammate'}</span>.
+                    {canVote && ' Tap again to remove your vote.'}
                 </p>
             )}
         </section>
