@@ -1,6 +1,7 @@
 'use client';
 
-import type { CSSProperties, ReactNode } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { prefersReducedMotion } from '@/lib/motion';
 import { Check, HelpCircle, X } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -43,7 +44,72 @@ interface SegmentedControlProps<T extends string> {
     variant?: 'tabs' | 'choice';
     /** `lg` is the 44px touch size for primary choices on a page. */
     size?: 'md' | 'lg';
+    /**
+     * `glass` keeps the quiet pill at rest, but while it moves it becomes a
+     * liquid-glass lens that stretches toward the new option and springs in.
+     */
+    appearance?: 'plain' | 'glass';
     disabled?: boolean;
+}
+
+/* Lens motion: stretch along the travel, overshoot a touch, settle.
+   Offsets are in thumb widths (one option = 100%). */
+const GLASS_DURATION = 380;
+
+function glassKeyframes(from: number, overshoot: number, lens: boolean): Keyframe[] {
+    const t = (x: number) => `translateX(${x * 100}%)`;
+    return [
+        { offset: 0, transform: `${t(from)} scale(1, 1)`, opacity: lens ? 0 : 1, easing: 'cubic-bezier(0.3, 0, 0.6, 1)' },
+        { offset: 0.18, transform: `${t(from * 0.86)} scale(1.1, 0.94)`, opacity: 1 },
+        { offset: 0.45, transform: `${t(from * 0.42)} scale(1.24, 0.86)`, opacity: 1, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' },
+        { offset: 0.72, transform: `${t(overshoot)} scale(0.96, 1.05)`, opacity: 1, easing: 'cubic-bezier(0.4, 0, 0.3, 1)' },
+        { offset: 1, transform: `${t(0)} scale(1, 1)`, opacity: lens ? 0 : 1 },
+    ];
+}
+
+function useGlassMotion(enabled: boolean, index: number) {
+    const rootRef = useRef<HTMLDivElement>(null);
+    const thumbRef = useRef<HTMLSpanElement>(null);
+    const lensRef = useRef<HTMLSpanElement>(null);
+    const prevIndex = useRef(index);
+
+    useLayoutEffect(() => {
+        const from = prevIndex.current;
+        prevIndex.current = index;
+        const root = rootRef.current;
+        const thumb = thumbRef.current;
+        const lens = lensRef.current;
+        if (!enabled || from === index || index < 0 || from < 0 || !root || !thumb || !lens) return;
+        if (prefersReducedMotion() || typeof thumb.animate !== 'function') return;
+
+        // The thumb is already at its new `left`; animate from where it was.
+        const delta = from - index;
+        const overshoot = -Math.sign(delta) * 0.07;
+        const timing: KeyframeAnimationOptions = { duration: GLASS_DURATION + 40 * (Math.abs(delta) - 1) };
+        root.dataset.moving = '';
+        const runs = [
+            thumb.animate(glassKeyframes(delta, overshoot, false), timing),
+            lens.animate(glassKeyframes(delta, overshoot, true), timing),
+        ];
+        const label = root.querySelectorAll<HTMLElement>('.seg-item')[index];
+        if (label) {
+            runs.push(label.animate(
+                [
+                    { transform: 'scale(1)' },
+                    { transform: 'scale(1.07)', offset: 0.55 },
+                    { transform: 'scale(1)' },
+                ],
+                { duration: timing.duration, easing: 'cubic-bezier(0.3, 0, 0.3, 1)' },
+            ));
+        }
+        runs[0].onfinish = () => delete root.dataset.moving;
+        return () => {
+            runs.forEach((run) => run.cancel());
+            delete root.dataset.moving;
+        };
+    }, [enabled, index]);
+
+    return { rootRef, thumbRef, lensRef };
 }
 
 /**
@@ -59,15 +125,19 @@ export function SegmentedControl<T extends string>({
     'aria-label': ariaLabel,
     variant = 'tabs',
     size = 'md',
+    appearance = 'plain',
     disabled = false,
 }: SegmentedControlProps<T>) {
     const foundIndex = value === null ? -1 : options.findIndex((option) => option.value === value);
     const selectedIndex = Math.max(0, foundIndex);
     const tone = foundIndex >= 0 ? options[foundIndex].tone : undefined;
     const isChoice = variant === 'choice';
+    const isGlass = appearance === 'glass';
+    const { rootRef, thumbRef, lensRef } = useGlassMotion(isGlass, foundIndex);
 
     return (
         <div
+            ref={rootRef}
             className={['seg', className].filter(Boolean).join(' ')}
             role={isChoice ? 'radiogroup' : 'tablist'}
             aria-label={ariaLabel}
@@ -75,6 +145,7 @@ export function SegmentedControl<T extends string>({
             data-size={size === 'lg' ? 'lg' : undefined}
             data-tone={tone}
             data-empty={foundIndex < 0 || undefined}
+            data-glass={isGlass || undefined}
             style={
                 {
                     ...style,
@@ -83,7 +154,8 @@ export function SegmentedControl<T extends string>({
                 } as CSSProperties
             }
         >
-            <span className="seg-thumb" aria-hidden />
+            <span ref={thumbRef} className="seg-thumb" aria-hidden />
+            {isGlass && <span ref={lensRef} className="seg-lens" aria-hidden />}
             {options.map((option) => {
                 const selected = option.value === value;
                 return (
