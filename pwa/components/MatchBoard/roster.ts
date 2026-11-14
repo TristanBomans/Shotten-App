@@ -7,6 +7,6 @@ export function buildRoster(match: Match, allPlayers: Player[]): RosterPlayer[] 
         .filter(p => p.teamIds?.includes(match.teamId))
         .map(player => {
             const att = match.attendances?.find(a => a.playerId === player.id);
-            return { ...player, status: att?.status || 'Unknown' };
+            return { ...player, status: att?.status || 'Unknown', away: att?.status === 'NotPresent' && att.autoAbsenceId != null };
         });
 }

@@ -18,6 +18,7 @@ import SquadView from './SquadView';
 import OpponentView from './OpponentView';
 import { MatchScoreboard } from '../../MatchBoard/MatchResult';
 import MotmVoteSection from '../../Motm/MotmVoteSection';
+import AwayChip from '../../Absences/AwayChip';
 
 interface MatchPageProps {
     match: Match;
@@ -345,6 +346,7 @@ export default function MatchPage({
                                         updating={respondUpdating}
                                         onSelect={onRespond}
                                         highlight={highlightResponse}
+                                        note={roster.find(p => p.id === currentPlayerId)?.away ? <AwayChip label="Away period" /> : undefined}
                                     />
                                 )}
                                 <SquadView statusGroups={statusGroups} currentPlayerId={currentPlayerId} onOpenPlayer={onOpenPlayer} />

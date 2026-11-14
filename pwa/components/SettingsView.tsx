@@ -12,6 +12,7 @@ import VersionHistoryPage from './Pages/VersionHistoryPage';
 import HiddenAdminPage from './Pages/HiddenAdminPage';
 import RespondAsPlayerPage from './Pages/RespondAsPlayerPage';
 import ForfaitMatchesPage from './Pages/ForfaitMatchesPage';
+import AbsencesSettingsSection from './Absences/AbsencesSettingsSection';
 import { INCLUDE_FORFAIT_EVENT, INCLUDE_FORFAIT_STORAGE_KEY } from './StatsView';
 import { ListSection, Row } from './ui/ListSection';
 import { Switch } from './ui/controls';
@@ -236,6 +237,8 @@ export default function SettingsView({
 
     return (
         <div className="screen">
+            <AbsencesSettingsSection playerId={playerId} />
+
             {/* Preferences */}
             <ListSection label="Preferences">
                 <div style={{ opacity: notificationsBusy || !pushSupported ? 0.6 : 1 }}>

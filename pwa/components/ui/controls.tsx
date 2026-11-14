@@ -286,6 +286,8 @@ interface ResponsePickerProps {
     onSelect: (status: AttendanceStatus) => void;
     /** Pulse once to draw the eye (e.g. opened from a reminder). */
     highlight?: boolean;
+    /** Shown at the right of the label (e.g. the "Away" marker). */
+    note?: ReactNode;
 }
 
 /**
@@ -293,7 +295,7 @@ interface ResponsePickerProps {
  * the player answers; the unanswered state is gently emphasised instead.
  * Match cards keep the compact ResponseControl.
  */
-export function ResponsePicker({ status, updating, onSelect, highlight = false }: ResponsePickerProps) {
+export function ResponsePicker({ status, updating, onSelect, highlight = false, note }: ResponsePickerProps) {
     const value = status === 'Unknown' ? null : status;
     const unanswered = value === null;
 
@@ -302,6 +304,7 @@ export function ResponsePicker({ status, updating, onSelect, highlight = false }
             <div className="section-label">
                 <span>Your response</span>
                 {unanswered && <span style={{ color: 'var(--accent)', fontSize: 'var(--fs-2xs)' }}>Answer needed</span>}
+                {!unanswered && note}
             </div>
             <SegmentedControl
                 variant="choice"

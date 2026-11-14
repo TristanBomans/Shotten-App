@@ -3,6 +3,7 @@
 import React from 'react';
 import type { StatusGroup } from '../../MatchBoard/types';
 import { Avatar } from '../../ui/controls';
+import AwayChip from '../../Absences/AwayChip';
 
 interface SquadViewProps {
     statusGroups: StatusGroup[];
@@ -93,6 +94,11 @@ export default function SquadView({ statusGroups, currentPlayerId, onOpenPlayer 
                                                 </span>
                                             )}
                                         </span>
+                                        {player.away && (
+                                            <span style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                                                <AwayChip label="away" subtle />
+                                            </span>
+                                        )}
                                     </div>
                                 );
                             })}

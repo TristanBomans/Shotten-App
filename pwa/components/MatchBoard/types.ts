@@ -3,6 +3,8 @@ export interface RosterPlayer {
     name: string;
     status: string;
     teamIds?: number[];
+    /** "NotPresent" filled in by an absence period. */
+    away?: boolean;
 }
 
 export interface StatusGroup {
