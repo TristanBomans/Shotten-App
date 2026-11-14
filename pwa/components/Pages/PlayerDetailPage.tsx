@@ -10,12 +10,18 @@ import FlowPage from '../ui/FlowPage';
 import { ListSection } from '../ui/ListSection';
 import { StatusChip } from '../ui/controls';
 import PlayerMotmSummary from '../Motm/PlayerMotmSummary';
+import { MatchGoalsBadge, PlayerGoalsSection, WrappedEntrySection } from '../Stats/PlayerGoalsSection';
+import type { PlayerGoalStats } from '@/lib/goals';
 
 interface PlayerDetailPageProps {
     open: boolean;
     player: PlayerWithStats;
     rank: number;
     onClose: () => void;
+    /** LZV goals for this player; undefined/unlinked hides the section. */
+    goals?: PlayerGoalStats;
+    showAssists?: boolean;
+    onOpenWrapped?: () => void;
 }
 
 const statusConfig = {
@@ -25,7 +31,7 @@ const statusConfig = {
     ghost: { color: 'var(--tbd)', label: 'Ghost' },
 } as const;
 
-export default function PlayerDetailPage({ open, player, rank, onClose }: PlayerDetailPageProps) {
+export default function PlayerDetailPage({ open, player, rank, onClose, goals, showAssists = false, onOpenWrapped }: PlayerDetailPageProps) {
     if (!player?.stats) return null;
 
     const s = player.stats;
@@ -90,6 +96,8 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                 )}
             </div>
 
+            <PlayerGoalsSection playerName={player.name} goals={goals} showAssists={showAssists} />
+
             {/* Activity */}
             <ListSection label="Activity">
                 <div
@@ -138,6 +146,8 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
 
             <PlayerMotmSummary playerId={player.id} matches={s.matchResults} />
 
+            <WrappedEntrySection onOpen={onOpenWrapped} />
+
             {/* Match history */}
             <ListSection label="Match history">
                 {s.matchResults.length === 0 ? (
@@ -166,6 +176,13 @@ export default function PlayerDetailPage({ open, player, rank, onClose }: Player
                                         {formatMatchDate(result.date)}
                                     </span>
                                 </span>
+                                {goals?.byMatch.has(result.matchId) && (
+                                    <MatchGoalsBadge
+                                        goals={goals.byMatch.get(result.matchId)!.goals}
+                                        assists={goals.byMatch.get(result.matchId)!.assists}
+                                        showAssists={showAssists}
+                                    />
+                                )}
                                 <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 500, color: cfg.color, flexShrink: 0 }}>
                                     {cfg.label}
                                 </span>

@@ -4,10 +4,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost, Hourglass, CalendarDays, Clock3 } from 'lucide-react';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
-import { hapticPatterns } from '@/lib/haptic';
 import PlayerDetailPage from './Pages/PlayerDetailPage';
 import RulesPage from './Pages/RulesPage';
 import MotmLeaderboard from './Motm/MotmLeaderboard';
+import AttendanceLeaderboard from './Stats/AttendanceLeaderboard';
+import GoalsLeaderboard from './Stats/GoalsLeaderboard';
+import StatsModeHeader, { type StatsMode } from './Stats/StatsModeHeader';
+import WrappedPage from './Wrapped/WrappedPage';
+import { buildGoalsIndex } from '@/lib/goals';
+import { useGoalsData } from '@/lib/useGoals';
+import { buildPlayerWrapped, buildTeamWrapped, type WrappedTarget } from '@/lib/wrapped';
+import { useMotmVotes } from '@/lib/motm';
+import { getMotmVotingState, summarizeMotm } from '@/lib/motmRules';
 
 interface StatsViewProps {
     matches: Match[];
@@ -33,7 +41,7 @@ function getRank(attendancePct: number) {
     return RANKS.find(r => attendancePct >= r.minPct) || RANKS[RANKS.length - 1];
 }
 
-interface MatchResult {
+export interface MatchResult {
     matchId: number;
     matchName: string;
     date: Date;
@@ -170,13 +178,6 @@ function calculatePlayerStats(player: Player, allMatches: Match[], includeForfai
 
 export type PlayerWithStats = Player & { stats: ReturnType<typeof calculatePlayerStats> };
 
-const formDotColor: Record<MatchResult['status'], string> = {
-    present: 'var(--ok)',
-    maybe: 'var(--warn)',
-    notPresent: 'var(--no)',
-    ghost: 'var(--tbd)',
-};
-
 function formatCountdownShort(diffMs: number): { value: string; label: string } {
     if (diffMs <= 0) return { value: '0', label: 'now' };
     const mins = Math.floor(diffMs / 60_000);
@@ -226,11 +227,35 @@ export default function StatsView({
         onShowRulesChange?.(open);
     };
 
-    const playerStats = players.map(player => ({
+    const playerStats = useMemo(() => players.map(player => ({
         ...player,
         stats: calculatePlayerStats(player, matches, includeForfait),
-    })).sort((a, b) => b.stats.attendancePct - a.stats.attendancePct);
+    })).sort((a, b) => b.stats.attendancePct - a.stats.attendancePct), [players, matches, includeForfait]);
 
+
+    const { data: goalsData } = useGoalsData();
+    const goalsIndex = useMemo(
+        () => buildGoalsIndex(players, matches, goalsData),
+        [players, matches, goalsData]
+    );
+    const [statsMode, setStatsMode] = useState<StatsMode>('attendance');
+    const [wrappedTarget, setWrappedTarget] = useState<WrappedTarget | null>(null);
+    const openWrapped = (target: WrappedTarget) => setWrappedTarget(target);
+    // Man of the match awards for the Wrapped card, fetched only while it's open.
+    const motmMatches = useMemo(() => matches.filter(m => getMotmVotingState(m, now) !== 'none'), [matches, now]);
+    const { votes: motmVotes } = useMotmVotes(motmMatches.map(m => m.id), wrappedTarget != null && motmMatches.length > 0);
+    const motmAwards = useMemo(() => {
+        const awards = new Map<number, number>();
+        for (const [id, entry] of summarizeMotm(motmVotes, motmMatches, now)) awards.set(id, entry.awards);
+        return awards;
+    }, [motmVotes, motmMatches, now]);
+    const wrappedModel = useMemo(() => {
+        if (!wrappedTarget) return null;
+        if (wrappedTarget.kind === 'team') return buildTeamWrapped(playerStats, matches, goalsIndex, motmAwards, now);
+        const index = playerStats.findIndex(p => p.id === wrappedTarget.playerId);
+        if (index < 0) return null;
+        return buildPlayerWrapped(playerStats[index], index + 1, playerStats.length, matches, goalsIndex, motmAwards, now);
+    }, [wrappedTarget, playerStats, matches, goalsIndex, motmAwards, now]);
 
     const hasLeaderboardData = useMemo(
         () => playerStats.some(p => p.stats.totalMatches > 0),
@@ -399,119 +424,27 @@ export default function StatsView({
 
     return (
         <div className="screen">
-            <div className="section-label">
-                <span>Attendance leaderboard</span>
-                <span className="t-num">{playerStats.length}</span>
-            </div>
-            <div className="list-section">
-                {playerStats.map((player, i) => {
-                    const isMe = player.id === currentPlayerId;
-                    const RankIcon = player.stats.rank.icon;
-                    return (
-                        <button
-                            key={player.id}
-                            className="row"
-                            onClick={() => {
-                                hapticPatterns.tap();
-                                onSelectPlayer?.(player.id);
-                            }}
-                            aria-label={`${player.name}, rank ${i + 1}, ${player.stats.attendancePct} percent attendance`}
-                            style={{
-                                minHeight: 48,
-                                background: isMe ? 'var(--bg-subtle)' : undefined,
-                            }}
-                        >
-                            {/* Position */}
-                            <span
-                                className="t-num"
-                                style={{
-                                    width: 26,
-                                    textAlign: 'center',
-                                    fontSize: 'var(--fs-2xs)',
-                                    fontWeight: 600,
-                                    color: i < 3 ? 'var(--text-1)' : 'var(--text-3)',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                {i + 1}
-                            </span>
+            <StatsModeHeader
+                mode={statsMode}
+                onModeChange={setStatsMode}
+                showGoals={goalsIndex.hasData}
+                onOpenWrapped={() => openWrapped({ kind: 'team' })}
+            />
 
-                            {/* Rank icon */}
-                            <span
-                                className="flex-center"
-                                style={{ width: 20, height: 20, color: 'var(--text-3)', flexShrink: 0 }}
-                                aria-hidden
-                            >
-                                <RankIcon size={16} />
-                            </span>
-
-                            {/* Name + form */}
-                            <span style={{ flex: 1, minWidth: 0 }}>
-                                <span
-                                    style={{
-                                        display: 'block',
-                                        fontSize: 'var(--fs-sm)',
-                                        fontWeight: isMe ? 600 : 500,
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                    }}
-                                >
-                                    {player.name}
-                                </span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
-                                    <span style={{ display: 'flex', gap: 3 }} aria-hidden>
-                                        {player.stats.recentForm.map((status, j) => (
-                                            <span
-                                                key={j}
-                                                style={{
-                                                    width: 6,
-                                                    height: 6,
-                                                    borderRadius: '50%',
-                                                    background: formDotColor[status],
-                                                }}
-                                            />
-                                        ))}
-                                    </span>
-                                    <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-3)' }}>
-                                        {player.stats.rank.name}
-                                    </span>
-                                </span>
-                            </span>
-
-                            {/* Attendance % */}
-                            <span style={{ width: 48, textAlign: 'right', flexShrink: 0 }}>
-                                <span
-                                    className="t-num"
-                                    style={{ display: 'block', fontSize: 'var(--fs-sm)', fontWeight: 500 }}
-                                >
-                                    {player.stats.attendancePct}%
-                                </span>
-                                <span
-                                    aria-hidden
-                                    style={{
-                                        display: 'block',
-                                        height: 3,
-                                        marginTop: 4,
-                                        borderRadius: 'var(--r-full)',
-                                        background: 'var(--bg-subtle-strong)',
-                                        overflow: 'hidden',
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            display: 'block',
-                                            height: '100%',
-                                            width: `${player.stats.attendancePct}%`,
-                                            background: 'var(--text-2)',
-                                        }}
-                                    />
-                                </span>
-                            </span>
-                        </button>
-                    );
-                })}
-            </div>
+            {statsMode === 'goals' && goalsIndex.hasData ? (
+                <GoalsLeaderboard
+                    players={playerStats}
+                    goals={goalsIndex}
+                    currentPlayerId={currentPlayerId}
+                    onSelectPlayer={id => onSelectPlayer?.(id)}
+                />
+            ) : (
+                <AttendanceLeaderboard
+                    playerStats={playerStats}
+                    currentPlayerId={currentPlayerId}
+                    onSelectPlayer={id => onSelectPlayer?.(id)}
+                />
+            )}
 
             <MotmLeaderboard
                 matches={matches}
@@ -529,7 +462,12 @@ export default function StatsView({
                 player={selectedPlayer || ({} as PlayerWithStats)}
                 rank={selectedPlayer ? playerStats.findIndex(p => p.id === selectedPlayer.id) + 1 : 0}
                 onClose={() => onSelectPlayer?.(null)}
+                goals={selectedPlayer ? goalsIndex.byPlayer.get(selectedPlayer.id) : undefined}
+                showAssists={goalsIndex.hasAssists}
+                onOpenWrapped={selectedPlayer ? () => openWrapped({ kind: 'player', playerId: selectedPlayer.id }) : undefined}
             />
+
+            <WrappedPage open={wrappedModel != null} model={wrappedModel} onClose={() => setWrappedTarget(null)} />
         </div>
     );
 }

@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS core_players (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     team_ids INTEGER[] DEFAULT '{}',
+    lzv_player_external_id INTEGER,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
