@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, X } from 'lucide-react';
+import { pageZIndex, useNavLevel } from '@/lib/navHistory';
 
 interface FlowPageProps {
     open: boolean;
@@ -32,6 +33,7 @@ export default function FlowPage({
     unpadded = false,
     children,
 }: FlowPageProps) {
+    const level = useNavLevel();
     useEffect(() => {
         if (!open) return;
         const handleKey = (event: KeyboardEvent) => {
@@ -48,6 +50,7 @@ export default function FlowPage({
             {open && (
                 <motion.div
                     className="flow-page"
+                    style={{ zIndex: pageZIndex(level) }}
                     role="dialog"
                     aria-modal="true"
                     aria-label={title}

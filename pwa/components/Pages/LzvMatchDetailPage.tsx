@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ChevronRight, ExternalLink } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
 import { formatDateSafe, formatTimeSafe } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
@@ -21,6 +21,8 @@ interface LzvMatchDetailPageProps {
     fallbackTitle?: string;
     /** Extra content for our own matches (e.g. the man of the match vote), below the score. */
     children?: ReactNode;
+    /** Opens an LZV team's page in-app (adds a link under each lineup). */
+    onOpenTeam?: (lzvTeamId: number) => void;
 }
 
 type LoadState =
@@ -49,6 +51,7 @@ export default function LzvMatchDetailPage({
     perspectiveTeamId = null,
     fallbackTitle = 'Match',
     children,
+    onOpenTeam,
 }: LzvMatchDetailPageProps) {
     const [state, setState] = useState<LoadState>({ status: 'loading' });
 
@@ -123,7 +126,7 @@ export default function LzvMatchDetailPage({
                     />
                 </>
             ) : (
-                <MatchDetailBody detail={detail} perspectiveTeamId={perspectiveTeamId}>
+                <MatchDetailBody detail={detail} perspectiveTeamId={perspectiveTeamId} onOpenTeam={onOpenTeam}>
                     {children}
                 </MatchDetailBody>
             )}
@@ -135,10 +138,12 @@ function MatchDetailBody({
     detail,
     perspectiveTeamId,
     children,
+    onOpenTeam,
 }: {
     detail: LzvMatchDetailResponse;
     perspectiveTeamId: number | null;
     children?: ReactNode;
+    onOpenTeam?: (lzvTeamId: number) => void;
 }) {
     const hasScore = detail.homeScore !== null && detail.awayScore !== null;
     let outcome: 'W' | 'L' | 'D' | undefined;
@@ -162,13 +167,23 @@ function MatchDetailBody({
                 />
             )}
             {children}
-            <LineupSection team={detail.homeTeam} lineup={detail.homeLineup} />
-            <LineupSection team={detail.awayTeam} lineup={detail.awayLineup} />
+            <LineupSection team={detail.homeTeam} lineup={detail.homeLineup} teamId={detail.homeTeamId} onOpenTeam={onOpenTeam} />
+            <LineupSection team={detail.awayTeam} lineup={detail.awayLineup} teamId={detail.awayTeamId} onOpenTeam={onOpenTeam} />
         </>
     );
 }
 
-function LineupSection({ team, lineup }: { team: string; lineup: LzvLineupPlayer[] }) {
+function LineupSection({
+    team,
+    lineup,
+    teamId = null,
+    onOpenTeam,
+}: {
+    team: string;
+    lineup: LzvLineupPlayer[];
+    teamId?: number | null;
+    onOpenTeam?: (lzvTeamId: number) => void;
+}) {
     return (
         <ListSection label={team}>
             {lineup.length === 0 ? (
@@ -227,6 +242,22 @@ function LineupSection({ team, lineup }: { team: string; lineup: LzvLineupPlayer
                         </span>
                     </div>
                 ))
+            )}
+            {onOpenTeam && teamId !== null && (
+                <button
+                    type="button"
+                    className="row"
+                    onClick={() => {
+                        hapticPatterns.tap();
+                        onOpenTeam(teamId);
+                    }}
+                    style={{ minHeight: 44 }}
+                >
+                    <span style={{ flex: 1, fontSize: 'var(--fs-xs)', fontWeight: 500, color: 'var(--accent)', textAlign: 'left' }}>
+                        Team page
+                    </span>
+                    <ChevronRight size={15} aria-hidden style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+                </button>
             )}
         </ListSection>
     );

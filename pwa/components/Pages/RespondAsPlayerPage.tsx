@@ -15,11 +15,16 @@ import { Avatar, EmptyState, ResponseControl, type AttendanceStatus } from '../u
 interface RespondAsPlayerPageProps {
     isOpen: boolean;
     onClose: () => void;
+    /**
+     * Scope the page to one match: list that match's squad with a response
+     * control per player (captain tool from the match menu).
+     */
+    match?: Match | null;
 }
 
 type Step = 'player' | 'matches';
 
-export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayerPageProps) {
+export default function RespondAsPlayerPage({ isOpen, onClose, match: scopedMatch = null }: RespondAsPlayerPageProps) {
     const [step, setStep] = useState<Step>('player');
     const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
     const [localMatches, setLocalMatches] = useState<Match[]>([]);
@@ -120,6 +125,19 @@ export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayer
     const formatDate = (dateStr: string) => {
         return `${formatMatchDate(dateStr)} · ${formatTimeSafe(dateStr)}`;
     };
+
+    if (scopedMatch) {
+        return (
+            <ScopedResponses
+                isOpen={isOpen}
+                onClose={onClose}
+                match={scopedMatch}
+                players={players}
+                playersLoading={playersLoading}
+                subtitle={formatDate(scopedMatch.date)}
+            />
+        );
+    }
 
     return (
         <FlowPage
@@ -231,6 +249,97 @@ export default function RespondAsPlayerPage({ isOpen, onClose }: RespondAsPlayer
                     </motion.div>
                 )}
             </AnimatePresence>
+        </FlowPage>
+    );
+}
+
+function ScopedResponses({
+    isOpen,
+    onClose,
+    match,
+    players,
+    playersLoading,
+    subtitle,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    match: Match;
+    players: Player[];
+    playersLoading: boolean;
+    subtitle: string;
+}) {
+    // Optimistic responses on top of what the match already had.
+    const [overrides, setOverrides] = useState<Record<number, AttendanceStatus>>({});
+    const [updatingPlayerId, setUpdatingPlayerId] = useState<number | null>(null);
+    const { updating, updateAttendance } = useUpdateAttendance();
+
+    const squad = players
+        .filter(p => p.teamIds?.includes(match.teamId))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    const statusOf = (playerId: number): AttendanceStatus | 'Unknown' =>
+        overrides[playerId]
+        ?? (match.attendances?.find(a => a.playerId === playerId)?.status as AttendanceStatus | undefined)
+        ?? 'Unknown';
+
+    const handleResponse = async (playerId: number, status: AttendanceStatus) => {
+        hapticPatterns.tap();
+        setUpdatingPlayerId(playerId);
+        try {
+            await updateAttendance(match.id, playerId, status, () => {
+                hapticPatterns.success();
+                setOverrides(prev => ({ ...prev, [playerId]: status }));
+                window.dispatchEvent(new CustomEvent('attendanceUpdated', { detail: { matchId: match.id, playerId, status } }));
+            });
+        } catch {
+            hapticPatterns.error();
+        } finally {
+            setUpdatingPlayerId(null);
+        }
+    };
+
+    return (
+        <FlowPage
+            open={isOpen}
+            title={`Respond for players`}
+            subtitle={`${match.name.replace(/-/g, ' vs ')} · ${subtitle}`}
+            onBack={onClose}
+        >
+            {playersLoading && squad.length === 0 ? (
+                <div className="flex-center" style={{ gap: 8, padding: '40px 0', color: 'var(--text-3)' }}>
+                    <div className="spinner" />
+                    Loading players...
+                </div>
+            ) : squad.length === 0 ? (
+                <EmptyState title="No players in this team" />
+            ) : (
+                <ListSection label="Squad">
+                    {squad.map(player => (
+                        <div key={player.id} className="row row-static" style={{ minHeight: 52 }}>
+                            <Avatar name={player.name} size="xs" />
+                            <span
+                                style={{
+                                    flex: 1,
+                                    minWidth: 0,
+                                    fontSize: 'var(--fs-sm)',
+                                    fontWeight: 500,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                {player.name}
+                            </span>
+                            <ResponseControl
+                                status={statusOf(player.id)}
+                                updating={updatingPlayerId === player.id ? (updating as AttendanceStatus | null) : null}
+                                onSelect={(status) => handleResponse(player.id, status)}
+                                size="sm"
+                            />
+                        </div>
+                    ))}
+                </ListSection>
+            )}
         </FlowPage>
     );
 }

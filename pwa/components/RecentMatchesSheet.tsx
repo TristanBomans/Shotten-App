@@ -8,7 +8,6 @@ import { isSameTeamName } from '@/lib/teamNameMatching';
 import type { Match } from '@/lib/mockData';
 import Sheet from './ui/Sheet';
 import { EmptyState } from './ui/controls';
-import LzvMatchDetailPage from './Pages/LzvMatchDetailPage';
 
 interface RecentMatchesSheetProps {
     open: boolean;
@@ -19,9 +18,8 @@ interface RecentMatchesSheetProps {
     playerId: number;
     internalMatches?: Match[];
     onClose: () => void;
-    /** LZV result id of the match whose detail page is open (kept in the URL). */
-    selectedMatchResultId?: number | null;
-    onSelectMatch: (resultId: number | null) => void;
+    /** Opens a result on top of the sheet (the caller keeps it in the stack). */
+    onSelectMatch: (match: RecentMatchItem) => void;
 }
 
 type InternalMatchLike = Match & {
@@ -171,12 +169,8 @@ export default function RecentMatchesSheet({
     playerId,
     internalMatches = [],
     onClose,
-    selectedMatchResultId = null,
     onSelectMatch,
 }: RecentMatchesSheetProps) {
-    const selectedMatch = selectedMatchResultId !== null
-        ? matches.find((match) => match.resultId === selectedMatchResultId) ?? null
-        : null;
     const handleClose = () => {
         hapticPatterns.tap();
         onClose();
@@ -187,6 +181,7 @@ export default function RecentMatchesSheet({
             <Sheet
                 open={open}
                 onClose={handleClose}
+                historyManaged
                 title="Recent matches"
                 subtitle={matches.length > 0 ? `${matches.length} result${matches.length === 1 ? '' : 's'}` : undefined}
             >
@@ -231,7 +226,7 @@ export default function RecentMatchesSheet({
                                         type: 'button' as const,
                                         onClick: () => {
                                             hapticPatterns.tap();
-                                            onSelectMatch(match.resultId);
+                                            onSelectMatch(match);
                                         },
                                     })}
                                 >
@@ -368,13 +363,6 @@ export default function RecentMatchesSheet({
                     </div>
                 )}
             </Sheet>
-            <LzvMatchDetailPage
-                open={selectedMatchResultId !== null}
-                resultId={selectedMatchResultId}
-                perspectiveTeamId={selectedMatch?.teamId ?? null}
-                fallbackTitle={selectedMatch ? `${selectedMatch.homeTeam} vs ${selectedMatch.awayTeam}` : undefined}
-                onClose={() => onSelectMatch(null)}
-            />
         </>
     );
 }

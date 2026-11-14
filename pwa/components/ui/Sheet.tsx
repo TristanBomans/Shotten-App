@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useBackClose } from '@/lib/navHistory';
 
 interface SheetProps {
     open: boolean;
@@ -11,13 +12,17 @@ interface SheetProps {
     title: string;
     subtitle?: string;
     children: ReactNode;
+    /** The caller already keeps this sheet in the URL/history (e.g. a stack page). */
+    historyManaged?: boolean;
 }
 
 /**
  * Bottom sheet on mobile, centered panel on desktop (via CSS).
- * Backdrop tap, close button and Escape all dismiss.
+ * Backdrop tap, close button, Escape and the system back gesture all dismiss.
  */
-export default function Sheet({ open, onClose, title, subtitle, children }: SheetProps) {
+export default function Sheet({ open, onClose, title, subtitle, children, historyManaged = false }: SheetProps) {
+    useBackClose(open && !historyManaged, onClose);
+
     useEffect(() => {
         if (!open) return;
         const handleKey = (event: KeyboardEvent) => {

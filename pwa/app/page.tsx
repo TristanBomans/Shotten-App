@@ -1,82 +1,31 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlayerSelect from '@/components/PlayerSelect';
 import SetupWizard from '@/components/SetupWizard';
 import Dashboard from '@/components/Dashboard';
 import AppNav from '@/components/ui/AppNav';
 import UpdateNotice from '@/components/UpdateNotice';
+import { NavContext, type NavApi } from '@/lib/navContext';
+import { navBack, navPush, navReplace } from '@/lib/navHistory';
+import {
+    buildUrl,
+    getViewFromParams,
+    parseStack,
+    sameEntry,
+    sameStack,
+    type NavEntry,
+    type View,
+} from '@/lib/navStack';
 
-type View = 'home' | 'stats' | 'league' | 'settings';
-type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | 'recent' | null;
-
-const views: View[] = ['home', 'stats', 'league', 'settings'];
-
-const modalToView = (modal: Modal): View => {
-    switch (modal) {
-        case 'match':
-        case 'recent':
-            return 'home';
-        case 'rules':
-        case 'playerDetail':
-            return 'stats';
-        case 'team':
-            return 'league';
-        case 'version':
-        case 'players':
-        case 'respond':
-        case 'admin':
-        case 'forfait':
-        default:
-            return 'settings';
-    }
+const readLocation = () => {
+    const params = new URLSearchParams(window.location.search);
+    return { view: getViewFromParams(params), stack: parseStack(params) };
 };
 
-type SearchParamsLike = {
-    get: (name: string) => string | null;
-    toString: () => string;
-};
-
-const getViewFromParams = (params: SearchParamsLike | null): View => {
-    const viewParam = params?.get('view');
-    if (viewParam && views.includes(viewParam as View)) {
-        return viewParam as View;
-    }
-
-    const modalParam = params?.get('modal') as Modal;
-    if (modalParam) {
-        return modalToView(modalParam);
-    }
-
-    return 'home';
-};
-
-const getModalFromParams = (params: SearchParamsLike | null): Modal => {
-    const modalParam = params?.get('modal') as Modal;
-    if (!modalParam) return null;
-    const knownModals: Modal[] = ['version', 'match', 'players', 'respond', 'admin', 'team', 'rules', 'playerDetail', 'forfait', 'recent'];
-    return knownModals.includes(modalParam) ? modalParam : null;
-};
-
-const getModalIdFromParams = (params: SearchParamsLike | null): string | null => {
-    return params?.get('modalId') || null;
-};
-
-// Nested detail page stacked on top of a modal (e.g. a match inside a team page
-// or the recent matches sheet).
-const getDetailIdFromParams = (params: SearchParamsLike | null): string | null => {
-    if (!params?.get('modal')) return null;
-    return params.get('detail') || null;
-};
-
-// Number of in-app history entries pushed below the current one, so closing can
-// use history.back() instead of leaving the app. Stored in history.state so it
-// survives back/forward swipes.
-const getHistoryDepth = (): number => {
-    const depth = (window.history.state as { appDepth?: unknown } | null)?.appDepth;
-    return typeof depth === 'number' && depth > 0 ? depth : 0;
-};
+const urlFor = (view: View, stack: NavEntry[]) =>
+    buildUrl(window.location.pathname, window.location.search, view, stack);
 
 function HomeContent() {
     const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
@@ -84,43 +33,24 @@ function HomeContent() {
     const [needsSetup, setNeedsSetup] = useState(false);
     const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
 
-    const [currentView, setCurrentView] = useState<View>(() => {
-        if (typeof window !== 'undefined') {
-            return getViewFromParams(new URLSearchParams(window.location.search));
-        }
-        return 'home';
-    });
-    const [currentModal, setCurrentModal] = useState<Modal>(() => {
-        if (typeof window !== 'undefined') {
-            return getModalFromParams(new URLSearchParams(window.location.search));
-        }
-        return null;
-    });
-    const [currentModalId, setCurrentModalId] = useState<string | null>(() => {
-        if (typeof window !== 'undefined') {
-            return getModalIdFromParams(new URLSearchParams(window.location.search));
-        }
-        return null;
-    });
+    const [currentView, setCurrentView] = useState<View>(() =>
+        typeof window !== 'undefined' ? readLocation().view : 'home'
+    );
+    const [stack, setStack] = useState<NavEntry[]>(() =>
+        typeof window !== 'undefined' ? readLocation().stack : []
+    );
 
-    const [currentDetailId, setCurrentDetailId] = useState<string | null>(() => {
-        if (typeof window !== 'undefined') {
-            return getDetailIdFromParams(new URLSearchParams(window.location.search));
-        }
-        return null;
-    });
+    // Latest values for the stable callbacks below.
+    const stackRef = useRef(stack);
+    const viewRef = useRef(currentView);
+    useEffect(() => {
+        stackRef.current = stack;
+        viewRef.current = currentView;
+    }, [stack, currentView]);
 
-    const syncStateFromLocation = useCallback(() => {
-        const params = new URLSearchParams(window.location.search);
-        const resolvedView = getViewFromParams(params);
-        const resolvedModal = getModalFromParams(params);
-        const resolvedModalId = getModalIdFromParams(params);
-        const resolvedDetailId = getDetailIdFromParams(params);
-
-        setCurrentView((prev) => (prev === resolvedView ? prev : resolvedView));
-        setCurrentModal((prev) => (prev === resolvedModal ? prev : resolvedModal));
-        setCurrentModalId((prev) => (prev === resolvedModalId ? prev : resolvedModalId));
-        setCurrentDetailId((prev) => (prev === resolvedDetailId ? prev : resolvedDetailId));
+    const applyStack = useCallback((next: NavEntry[]) => {
+        stackRef.current = next;
+        setStack(next);
     }, []);
 
     // Load selected player from localStorage (once on mount)
@@ -144,46 +74,42 @@ function HomeContent() {
             .finally(() => setLoading(false));
     }, []);
 
-    // Sync view/modal state from browser history without triggering a Next.js navigation.
+    // Back / forward: the URL is the source of truth for view and stack.
     useEffect(() => {
-        window.addEventListener('popstate', syncStateFromLocation);
-        return () => window.removeEventListener('popstate', syncStateFromLocation);
-    }, [syncStateFromLocation]);
+        const sync = () => {
+            const { view, stack: next } = readLocation();
+            setCurrentView((prev) => (prev === view ? prev : view));
+            if (!sameStack(stackRef.current, next)) applyStack(next);
+        };
+        window.addEventListener('popstate', sync);
+        return () => window.removeEventListener('popstate', sync);
+    }, [applyStack]);
 
-    const buildAppUrl = useCallback(
-        (view: View, modal: Modal, modalId: string | null = null, detailId: string | null = null) => {
-            const params = new URLSearchParams(window.location.search);
-            const pathname = window.location.pathname;
+    const push = useCallback((entry: NavEntry) => {
+        const current = stackRef.current;
+        if (sameEntry(current[current.length - 1], entry)) return;
+        const next = [...current, entry];
+        applyStack(next);
+        navPush(urlFor(viewRef.current, next));
+    }, [applyStack]);
 
-            if (view === 'home') {
-                params.delete('view');
-            } else {
-                params.set('view', view);
-            }
+    const pop = useCallback(() => {
+        const current = stackRef.current;
+        if (current.length === 0) return;
+        const next = current.slice(0, -1);
+        applyStack(next);
+        navBack(urlFor(viewRef.current, next));
+    }, [applyStack]);
 
-            if (modal) {
-                params.set('modal', modal);
-                if (modalId) {
-                    params.set('modalId', modalId);
-                } else {
-                    params.delete('modalId');
-                }
-                if (detailId) {
-                    params.set('detail', detailId);
-                } else {
-                    params.delete('detail');
-                }
-            } else {
-                params.delete('modal');
-                params.delete('modalId');
-                params.delete('detail');
-            }
+    const replaceTop = useCallback((entry: NavEntry) => {
+        const current = stackRef.current;
+        if (current.length === 0 || sameEntry(current[current.length - 1], entry)) return;
+        const next = [...current.slice(0, -1), entry];
+        applyStack(next);
+        navReplace(urlFor(viewRef.current, next));
+    }, [applyStack]);
 
-            const query = params.toString();
-            return query ? `${pathname}?${query}` : pathname;
-        },
-        []
-    );
+    const nav = useMemo<NavApi>(() => ({ stack, push, pop, replaceTop }), [stack, push, pop, replaceTop]);
 
     const handlePlayerSelect = (id: number) => {
         localStorage.setItem('selectedPlayerId', id.toString());
@@ -194,95 +120,18 @@ function HomeContent() {
         localStorage.removeItem('selectedPlayerId');
         setSelectedPlayerId(null);
         setCurrentView('home');
-        setCurrentModal(null);
-        setCurrentModalId(null);
-        setCurrentDetailId(null);
+        applyStack([]);
 
         window.history.replaceState(null, '', window.location.pathname);
     };
 
-    const handleNavChange = useCallback(
-        (view: View) => {
-            setCurrentView(view);
-            setCurrentModal(null);
-            setCurrentModalId(null);
-            setCurrentDetailId(null);
-
-            window.history.replaceState(null, '', buildAppUrl(view, null));
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        },
-        [buildAppUrl]
-    );
-
-    const openModal = useCallback(
-        (modal: Modal, modalId: string | null = null) => {
-            if (currentModal === modal && currentModalId === modalId && !currentDetailId) return;
-
-            const targetView = modalToView(modal);
-            setCurrentView(targetView);
-            setCurrentModal(modal);
-            setCurrentModalId(modalId);
-            setCurrentDetailId(null);
-            window.history.pushState(
-                { appDepth: getHistoryDepth() + 1 },
-                '',
-                buildAppUrl(targetView, modal, modalId)
-            );
-        },
-        [buildAppUrl, currentModal, currentModalId, currentDetailId]
-    );
-
-    const closeModal = useCallback(() => {
-        if (!currentModal) return;
-
-        // Pop the detail entry first if one is stacked on top of the modal.
-        const entriesToPop = currentDetailId ? 2 : 1;
-        setCurrentModal(null);
-        setCurrentModalId(null);
-        setCurrentDetailId(null);
-        if (getHistoryDepth() >= entriesToPop) {
-            window.history.go(-entriesToPop);
-            return;
-        }
-
-        window.history.replaceState(null, '', buildAppUrl(currentView, null));
-    }, [buildAppUrl, currentModal, currentDetailId, currentView]);
-
-    const openDetail = useCallback(
-        (detailId: string) => {
-            if (!currentModal || currentDetailId === detailId) return;
-
-            setCurrentDetailId(detailId);
-            const url = buildAppUrl(currentView, currentModal, currentModalId, detailId);
-            if (currentDetailId) {
-                // Swap one detail for another without growing the stack.
-                window.history.replaceState(window.history.state, '', url);
-                return;
-            }
-            window.history.pushState({ appDepth: getHistoryDepth() + 1 }, '', url);
-        },
-        [buildAppUrl, currentModal, currentModalId, currentDetailId, currentView]
-    );
-
-    const closeDetail = useCallback(() => {
-        if (!currentDetailId) return;
-
-        setCurrentDetailId(null);
-        if (getHistoryDepth() > 0) {
-            window.history.back();
-            return;
-        }
-
-        window.history.replaceState(null, '', buildAppUrl(currentView, currentModal, currentModalId));
-    }, [buildAppUrl, currentDetailId, currentModal, currentModalId, currentView]);
-
-    const handleOpenVersion = useCallback(() => {
-        openModal('version');
-    }, [openModal]);
-
-    const handleCloseVersion = useCallback(() => {
-        closeModal();
-    }, [closeModal]);
+    // Switching bottom tabs keeps the history position; it is not a step.
+    const handleNavChange = useCallback((view: View) => {
+        viewRef.current = view;
+        setCurrentView(view);
+        navReplace(urlFor(view, stackRef.current));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, []);
 
     useEffect(() => {
         window.scrollTo({ top: 0 });
@@ -297,69 +146,61 @@ function HomeContent() {
     }
 
     return (
-        <main style={{ overflow: 'hidden' }}>
-            <AnimatePresence initial={false} mode="popLayout">
-                {needsSetup ? (
-                    <motion.div
-                        key="setup"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.35 }}
-                    >
-                        <SetupWizard onComplete={() => setNeedsSetup(false)} />
-                    </motion.div>
-                ) : !selectedPlayerId ? (
-                    <motion.div
-                        key="player-select"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
-                        transition={{ duration: 0.35 }}
-                    >
-                        <PlayerSelect onSelect={handlePlayerSelect} />
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="dashboard"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <Dashboard
-                            playerId={selectedPlayerId}
-                            currentView={currentView}
-                            onLogout={handleLogout}
-                            onViewChange={handleNavChange}
-                            onPlayerManagementOpenChange={setIsPlayerManagementOpen}
-                            onOpenVersion={handleOpenVersion}
-                            isVersionOpen={currentModal === 'version'}
-                            onCloseVersion={handleCloseVersion}
-                            currentModal={currentModal}
-                            currentModalId={currentModalId}
-                            onOpenModal={openModal}
-                            onCloseModal={closeModal}
-                            currentDetailId={currentDetailId}
-                            onOpenDetail={openDetail}
-                            onCloseDetail={closeDetail}
-                        />
-                    </motion.div>
+        <NavContext.Provider value={nav}>
+            <main style={{ overflow: 'hidden' }}>
+                <AnimatePresence initial={false} mode="popLayout">
+                    {needsSetup ? (
+                        <motion.div
+                            key="setup"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.35 }}
+                        >
+                            <SetupWizard onComplete={() => setNeedsSetup(false)} />
+                        </motion.div>
+                    ) : !selectedPlayerId ? (
+                        <motion.div
+                            key="player-select"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
+                            transition={{ duration: 0.35 }}
+                        >
+                            <PlayerSelect onSelect={handlePlayerSelect} />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="dashboard"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <Dashboard
+                                playerId={selectedPlayerId}
+                                currentView={currentView}
+                                onLogout={handleLogout}
+                                onViewChange={handleNavChange}
+                                onPlayerManagementOpenChange={setIsPlayerManagementOpen}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {selectedPlayerId && !needsSetup && (
+                    <UpdateNotice suppressed={stack.length > 0} onOpen={() => push({ kind: 'version' })} />
                 )}
-            </AnimatePresence>
 
-            {selectedPlayerId && !needsSetup && (
-                <UpdateNotice suppressed={currentModal !== null} onOpen={handleOpenVersion} />
-            )}
-
-            {selectedPlayerId && (
-                <AppNav
-                    currentView={currentView}
-                    onNavigate={(view) => handleNavChange(view)}
-                    isHidden={isPlayerManagementOpen}
-                />
-            )}
-        </main>
+                {selectedPlayerId && (
+                    <AppNav
+                        currentView={currentView}
+                        onNavigate={(view) => handleNavChange(view)}
+                        isHidden={isPlayerManagementOpen}
+                    />
+                )}
+            </main>
+        </NavContext.Provider>
     );
 }
 

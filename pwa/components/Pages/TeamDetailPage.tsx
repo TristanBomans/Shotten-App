@@ -12,7 +12,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
 import { ListSection, Row, MetricRow } from '../ui/ListSection';
 import { EmptyState, SegmentedControl } from '../ui/controls';
-import LzvMatchDetailPage from './LzvMatchDetailPage';
+import { pageZIndex, useBackClose, useNavLevel } from '@/lib/navHistory';
 
 const teamDetailTabs = ['overview', 'matches', 'squad'] as const;
 type TeamDetailTab = typeof teamDetailTabs[number];
@@ -36,9 +36,8 @@ interface TeamDetailPageProps {
     team: ScraperTeam;
     open: boolean;
     onClose: () => void;
-    /** LZV result id of the match whose detail page is open (kept in the URL). */
-    selectedMatchResultId?: number | null;
-    onSelectMatch: (resultId: number | null) => void;
+    /** Opens an LZV match result on top of this page. */
+    onSelectMatch: (resultId: number) => void;
 }
 
 interface CoreMatchLike {
@@ -50,9 +49,10 @@ export default function TeamDetailPage({
     team,
     open,
     onClose,
-    selectedMatchResultId = null,
     onSelectMatch,
 }: TeamDetailPageProps) {
+    const level = useNavLevel();
+    const zBase = pageZIndex(level);
     const [showImage, setShowImage] = useState(false);
     const [activeTab, setActiveTab] = useState<TeamDetailTab>('overview');
     const [matches, setMatches] = useState<ScraperMatch[]>([]);
@@ -60,10 +60,9 @@ export default function TeamDetailPage({
     const [loadingMatches, setLoadingMatches] = useState(false);
     const [loadingPlayers, setLoadingPlayers] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    useBackClose(open && menuOpen, () => setMenuOpen(false));
+    useBackClose(open && showImage && !!team?.imageBase64, () => setShowImage(false));
 
-    const selectedMatch = selectedMatchResultId !== null
-        ? matches.find((match) => match.resultId === selectedMatchResultId) ?? null
-        : null;
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const lastTabRef = useRef<TeamDetailTab>('overview');
@@ -264,6 +263,7 @@ export default function TeamDetailPage({
             {open && (
                 <motion.div
                     className="flow-page"
+                    style={{ zIndex: zBase }}
                     role="dialog"
                     aria-modal="true"
                     aria-label={team?.name || 'Team detail'}
@@ -355,7 +355,7 @@ export default function TeamDetailPage({
                                         hapticPatterns.tap();
                                         setMenuOpen(false);
                                     }}
-                                    style={{ position: 'fixed', inset: 0, zIndex: 10024 }}
+                                    style={{ position: 'fixed', inset: 0, zIndex: zBase + 4 }}
                                 />
                                 <motion.div
                                     className="menu flow-menu"
@@ -363,7 +363,7 @@ export default function TeamDetailPage({
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95, y: -4 }}
                                     transition={{ duration: 0.14, ease: 'easeOut' }}
-                                    style={{ zIndex: 10025 }}
+                                    style={{ zIndex: zBase + 5 }}
                                 >
                                     <a
                                         className="menu-item"
@@ -686,7 +686,7 @@ export default function TeamDetailPage({
                                     hapticPatterns.tap();
                                     setShowImage(false);
                                 }}
-                                style={{ zIndex: 10026, padding: 20 }}
+                                style={{ zIndex: zBase + 6, padding: 20 }}
                             >
                                 <motion.img
                                     initial={{ scale: 0.9 }}
@@ -715,14 +715,6 @@ export default function TeamDetailPage({
                             </motion.div>
                         )}
                     </AnimatePresence>
-
-                    <LzvMatchDetailPage
-                        open={selectedMatchResultId !== null}
-                        resultId={selectedMatchResultId}
-                        perspectiveTeamId={team.externalId}
-                        fallbackTitle={selectedMatch ? `${selectedMatch.homeTeam} vs ${selectedMatch.awayTeam}` : undefined}
-                        onClose={() => onSelectMatch(null)}
-                    />
                 </motion.div>
             )}
         </AnimatePresence>,

@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { fetchAllScraperTeams, type ScraperTeam } from '@/lib/useData';
 import { Loader2 } from 'lucide-react';
-import TeamDetailPage from './Pages/TeamDetailPage';
 import { hapticPatterns } from '@/lib/haptic';
 import { EmptyState } from './ui/controls';
 
@@ -11,10 +10,7 @@ interface LeagueViewProps {
     selectedLeague: string;
     onSelectedLeagueChange: (league: string) => void;
     onLeagueDataChange?: (data: { leagues: string[]; teams: ScraperTeam[] }) => void;
-    selectedTeamId?: number | null;
-    onSelectTeam?: (id: number | null) => void;
-    selectedMatchResultId?: number | null;
-    onSelectMatch?: (resultId: number | null) => void;
+    onSelectTeam?: (id: number) => void;
 }
 
 function isOwnTeam(name: string) {
@@ -76,10 +72,7 @@ export default function LeagueView({
     selectedLeague,
     onSelectedLeagueChange,
     onLeagueDataChange,
-    selectedTeamId,
     onSelectTeam,
-    selectedMatchResultId = null,
-    onSelectMatch,
 }: LeagueViewProps) {
     const [teams, setTeams] = useState<ScraperTeam[]>([]);
     const [loading, setLoading] = useState(true);
@@ -134,9 +127,6 @@ export default function LeagueView({
             .sort((a, b) => (a.rank || 99) - (b.rank || 99));
     }, [teams, selectedLeague]);
 
-    const selectedTeam = selectedTeamId != null
-        ? teams.find(t => t.externalId === selectedTeamId) || null
-        : null;
 
     const handleTeamClick = (team: ScraperTeam) => {
         hapticPatterns.tap();
@@ -260,14 +250,6 @@ export default function LeagueView({
                     )}
                 </div>
             </div>
-
-            <TeamDetailPage
-                team={selectedTeam || ({} as ScraperTeam)}
-                open={Boolean(selectedTeam)}
-                onClose={() => onSelectTeam?.(null)}
-                selectedMatchResultId={selectedMatchResultId}
-                onSelectMatch={(resultId) => onSelectMatch?.(resultId)}
-            />
         </>
     );
 }

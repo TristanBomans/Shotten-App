@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { hapticPatterns } from '@/lib/haptic';
+import { useBackClose } from '@/lib/navHistory';
 
 interface UnlockDialogProps {
     open: boolean;
@@ -11,6 +12,7 @@ interface UnlockDialogProps {
 }
 
 export default function UnlockDialog({ open, onConfirm, onCancel }: UnlockDialogProps) {
+    useBackClose(open, onCancel);
     if (typeof document === 'undefined') return null;
 
     return createPortal(

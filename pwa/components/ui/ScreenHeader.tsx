@@ -5,7 +5,6 @@ import { Bell, BellRing, Clock3, HelpCircle, Trophy } from 'lucide-react';
 interface LeagueHeaderControls {
     selectedLeague: string;
     hasLeagues: boolean;
-    onCycleLeague: () => void;
     onOpenLeagueSelector: () => void;
 }
 
@@ -95,12 +94,9 @@ export default function ScreenHeader({
                     {showLeagueControl && leagueControls && (
                         <button
                             className="icon-action press"
-                            onClick={leagueControls.onCycleLeague}
-                            onContextMenu={(event) => {
-                                event.preventDefault();
-                                leagueControls.onOpenLeagueSelector();
-                            }}
-                            aria-label={`Selected league ${leagueControls.selectedLeague || 'none'}. Tap to cycle leagues.`}
+                            onClick={leagueControls.onOpenLeagueSelector}
+                            aria-haspopup="dialog"
+                            aria-label={`Selected league ${leagueControls.selectedLeague || 'none'}. Change league.`}
                             style={{ width: 'auto', padding: '0 10px', gap: 6 }}
                         >
                             <Trophy size={14} />

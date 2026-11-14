@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, UserCircle, Sparkles, AlertCircle, Trophy, Palette, RefreshCw } from 'lucide-react';
+import { Loader2, UserCircle, Sparkles, AlertCircle, Trophy, Palette, RefreshCw, ChevronRight } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import type { ScraperTeam, ScraperPlayer } from '@/lib/useData';
 import { ListSection, Row, MetricRow } from '../../ui/ListSection';
@@ -21,6 +21,8 @@ interface OpponentViewProps {
     aiLoading: boolean;
     aiError: string | null;
     onGenerateAI: (force?: boolean) => void;
+    /** Opens the opponent's team page in-app. */
+    onOpenTeam?: () => void;
 }
 
 function formColor(result: 'W' | 'L' | 'D'): string {
@@ -41,6 +43,7 @@ export default function OpponentView({
     aiLoading,
     aiError,
     onGenerateAI,
+    onOpenTeam,
 }: OpponentViewProps) {
     if (!opponentTeam) return null;
 
@@ -237,6 +240,19 @@ export default function OpponentView({
                             </p>
                         )}
                     </div>
+                    {onOpenTeam && (
+                        <button
+                            className="icon-action press"
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                onOpenTeam();
+                            }}
+                            aria-label={`Open ${opponentData.name} team page`}
+                            style={{ flexShrink: 0 }}
+                        >
+                            <ChevronRight size={17} />
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="panel" style={{ padding: 20, textAlign: 'center', marginBottom: 'var(--sp-5)' }}>

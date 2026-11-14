@@ -7,9 +7,11 @@ import { Avatar } from '../../ui/controls';
 interface SquadViewProps {
     statusGroups: StatusGroup[];
     currentPlayerId: number;
+    /** Opens a player's stats page; rows stay static without it. */
+    onOpenPlayer?: (playerId: number) => void;
 }
 
-export default function SquadView({ statusGroups, currentPlayerId }: SquadViewProps) {
+export default function SquadView({ statusGroups, currentPlayerId, onOpenPlayer }: SquadViewProps) {
     const hasAny = statusGroups.some(group => group.players.length > 0);
 
     if (!hasAny) {
@@ -41,7 +43,18 @@ export default function SquadView({ statusGroups, currentPlayerId }: SquadViewPr
                                 return (
                                     <div
                                         key={player.id}
-                                        className="row row-static"
+                                        className={onOpenPlayer ? 'row' : 'row row-static'}
+                                        {...(onOpenPlayer && {
+                                            role: 'button',
+                                            tabIndex: 0,
+                                            onClick: () => onOpenPlayer(player.id),
+                                            onKeyDown: (e: React.KeyboardEvent) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    onOpenPlayer(player.id);
+                                                }
+                                            },
+                                        })}
                                         style={{
                                             minHeight: 40,
                                             background: isMe ? 'var(--bg-subtle)' : undefined,

@@ -19,8 +19,11 @@ import RecentMatchesSheet from './RecentMatchesSheet';
 import UnlockDialog from './UnlockDialog';
 import { buildMatchReminders } from '@/lib/notifications';
 import { syncMatchPush } from '@/lib/pushSettings';
-
-type Modal = 'version' | 'match' | 'players' | 'respond' | 'admin' | 'team' | 'rules' | 'playerDetail' | 'forfait' | 'recent' | null;
+import { useNav } from '@/lib/navContext';
+import { NavLevelContext } from '@/lib/navHistory';
+import { topIndexOf, type NavEntry, type PageKind } from '@/lib/navStack';
+import type { RecentMatchItem } from '@/lib/recentMatches';
+import NavStackHost from './NavStackHost';
 
 interface DashboardProps {
     playerId: number;
@@ -28,16 +31,17 @@ interface DashboardProps {
     onLogout: () => void;
     onViewChange: (view: 'home' | 'stats' | 'league' | 'settings') => void;
     onPlayerManagementOpenChange?: (isOpen: boolean) => void;
-    onOpenVersion: () => void;
-    isVersionOpen: boolean;
-    onCloseVersion: () => void;
-    currentModal: Modal;
-    currentModalId: string | null;
-    onOpenModal: (modal: Modal, modalId?: string | null) => void;
-    onCloseModal: () => void;
-    currentDetailId: string | null;
-    onOpenDetail: (detailId: string) => void;
-    onCloseDetail: () => void;
+}
+
+/** Topmost entry of `kind`, if any. */
+function topEntry(stack: NavEntry[], kind: PageKind): NavEntry | null {
+    const index = topIndexOf(stack, kind);
+    return index >= 0 ? stack[index] : null;
+}
+
+/** Level for tab-owned pages: the topmost of their kinds, so they sit above what opened them. */
+function levelOf(stack: NavEntry[], ...kinds: PageKind[]): number {
+    return Math.max(0, topIndexOf(stack, ...kinds));
 }
 
 // View order for determining slide position
@@ -81,17 +85,8 @@ export default function Dashboard({
     onLogout,
     onViewChange,
     onPlayerManagementOpenChange,
-    onOpenVersion,
-    isVersionOpen,
-    onCloseVersion,
-    currentModal,
-    currentModalId,
-    onOpenModal,
-    onCloseModal,
-    currentDetailId,
-    onOpenDetail,
-    onCloseDetail,
 }: DashboardProps) {
+    const { stack, push, pop } = useNav();
     const { matches, loading, error, fetchMatches, setMatches } = useMatches(playerId);
     const { players, fetchAllPlayers } = useAllPlayers();
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -100,7 +95,7 @@ export default function Dashboard({
     const [leagueOptions, setLeagueOptions] = useState<string[]>([]);
     const [leagueTeams, setLeagueTeams] = useState<ScraperTeam[]>([]);
     const [isLeagueSelectorOpen, setIsLeagueSelectorOpen] = useState(false);
-    const [highlightedMatchId, setHighlightedMatchId] = useState<number | null>(null);
+    const [focusResponseMatchId, setFocusResponseMatchId] = useState<number | null>(null);
     const [recentMatches, setRecentMatches] = useState<RecentMatchesResponse>(EMPTY_RECENT_MATCHES);
     const [loadingRecentMatches, setLoadingRecentMatches] = useState(true);
     const [showPastMatches, setShowPastMatches] = useState(() => {
@@ -116,7 +111,6 @@ export default function Dashboard({
     const upcomingRef = useRef<HTMLElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const matchCardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-    const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const scrollToNextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
@@ -338,9 +332,6 @@ export default function Dashboard({
             if (scrollEndTimeoutRef.current) {
                 clearTimeout(scrollEndTimeoutRef.current);
             }
-            if (highlightTimeoutRef.current) {
-                clearTimeout(highlightTimeoutRef.current);
-            }
             if (focusTimeoutRef.current) {
                 clearTimeout(focusTimeoutRef.current);
             }
@@ -406,6 +397,8 @@ export default function Dashboard({
         [matches, playerId]
     );
     const currentTitle = viewTitles[currentView];
+    const playerEntry = topEntry(stack, 'player');
+    const selectedStatsPlayerId = playerEntry?.id ? parseInt(playerEntry.id, 10) : null;
     const selectedLeagueAlias = useMemo(
         () => (selectedLeague ? getLeagueAlias(selectedLeague) : ''),
         [selectedLeague]
@@ -457,28 +450,22 @@ export default function Dashboard({
         setIsNotificationSheetOpen(false);
     };
 
-    // The recent matches sheet and its match detail live in the URL so
-    // back-swipes close them instead of leaving the app.
-    const isRecentMatchesSheetOpen = currentModal === 'recent';
-    const selectedRecentMatchResultId = isRecentMatchesSheetOpen && currentDetailId
-        ? parseInt(currentDetailId, 10)
-        : null;
+    // The recent matches sheet and the results opened from it live in the
+    // navigation stack, so back-swipes close them instead of leaving the app.
+    const isRecentMatchesSheetOpen = stack.some((entry) => entry.kind === 'recent');
 
     const openRecentMatchesSheet = () => {
         hapticPatterns.tap();
-        onOpenModal('recent');
+        push({ kind: 'recent' });
     };
 
     const closeRecentMatchesSheet = () => {
-        onCloseModal();
+        if (stack[stack.length - 1]?.kind === 'recent') pop();
     };
 
-    const handleSelectRecentMatch = (resultId: number | null) => {
-        if (resultId !== null) {
-            onOpenDetail(resultId.toString());
-        } else {
-            onCloseDetail();
-        }
+    const handleSelectRecentMatch = (match: RecentMatchItem) => {
+        if (match.resultId === null) return;
+        push({ kind: 'result', id: match.resultId.toString(), extra: match.teamId.toString() });
     };
 
     const handleLeagueDataChange = useCallback((data: { leagues: string[]; teams: ScraperTeam[] }) => {
@@ -492,21 +479,6 @@ export default function Dashboard({
         setLeagueTeams(prev => (prev === data.teams ? prev : data.teams));
     }, []);
 
-    const handleCycleLeague = useCallback(() => {
-        if (leagueOptions.length === 0) return;
-
-        hapticPatterns.tap();
-
-        if (!selectedLeague || !leagueOptions.includes(selectedLeague)) {
-            setSelectedLeague(leagueOptions[0]);
-            return;
-        }
-
-        const currentIndex = leagueOptions.indexOf(selectedLeague);
-        const nextIndex = (currentIndex + 1) % leagueOptions.length;
-        setSelectedLeague(leagueOptions[nextIndex]);
-    }, [leagueOptions, selectedLeague]);
-
     const openLeagueSelector = useCallback(() => {
         if (leagueOptions.length === 0) return;
         hapticPatterns.tap();
@@ -515,14 +487,13 @@ export default function Dashboard({
 
     const openStatsRules = useCallback(() => {
         hapticPatterns.tap();
-        onOpenModal('rules');
-    }, [onOpenModal]);
+        push({ kind: 'rules' });
+    }, [push]);
 
     const topLeagueControls = currentView === 'league'
         ? {
             selectedLeague: selectedLeagueAlias,
             hasLeagues: leagueOptions.length > 1,
-            onCycleLeague: handleCycleLeague,
             onOpenLeagueSelector: openLeagueSelector,
         }
         : undefined;
@@ -537,42 +508,18 @@ export default function Dashboard({
         }
         : undefined;
 
+    // A reminder opens its match straight away, with the response control
+    // pulsing at the top. No tab switch: the page stacks over the current tab.
     const handleReminderSelect = useCallback((matchId: number) => {
         setIsNotificationSheetOpen(false);
-
-        if (currentView !== 'home') {
-            onViewChange('home');
-        }
-
-        const focusDelay = currentView === 'home' ? 220 : 520;
-
-        if (focusTimeoutRef.current) {
-            clearTimeout(focusTimeoutRef.current);
-        }
-
+        push({ kind: 'match', id: matchId.toString() });
+        setFocusResponseMatchId(matchId);
+        if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
         focusTimeoutRef.current = setTimeout(() => {
-            const targetNode = matchCardRefs.current.get(matchId);
-            if (!targetNode) return;
-
-            targetNode.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-                inline: 'nearest',
-            });
-
-            setHighlightedMatchId(null);
-            requestAnimationFrame(() => setHighlightedMatchId(matchId));
-
-            if (highlightTimeoutRef.current) {
-                clearTimeout(highlightTimeoutRef.current);
-            }
-            highlightTimeoutRef.current = setTimeout(() => {
-                setHighlightedMatchId(null);
-            }, 1200);
-
+            setFocusResponseMatchId(null);
             focusTimeoutRef.current = null;
-        }, focusDelay);
-    }, [currentView, onViewChange]);
+        }, 1600);
+    }, [push]);
 
     // When past matches are shown, land on the next upcoming match after load,
     // refresh or toggle. Not on view switches: that would fight the swipe.
@@ -654,7 +601,6 @@ export default function Dashboard({
                     playerId={playerId}
                     internalMatches={matches}
                     onClose={closeRecentMatchesSheet}
-                    selectedMatchResultId={selectedRecentMatchResultId}
                     onSelectMatch={handleSelectRecentMatch}
                 />
                 <div className="app-frame">
@@ -698,7 +644,6 @@ export default function Dashboard({
                     playerId={playerId}
                     internalMatches={matches}
                     onClose={closeRecentMatchesSheet}
-                    selectedMatchResultId={selectedRecentMatchResultId}
                     onSelectMatch={handleSelectRecentMatch}
                 />
                 <div className="app-frame">
@@ -751,15 +696,10 @@ export default function Dashboard({
                             <motion.div
                                 key={match.id}
                                 ref={(node) => setMatchCardRef(match.id, node)}
-                                className={highlightedMatchId === match.id ? 'match-focus-pulse' : undefined}
                                 style={{
                                     borderRadius: 'var(--r-md)',
                                     scrollMarginTop: 'calc(var(--safe-top) + var(--header-h) + var(--sp-3))',
                                 }}
-                                animate={highlightedMatchId === match.id ? { scale: [1, 1.01, 1] } : { scale: 1 }}
-                                transition={highlightedMatchId === match.id
-                                    ? { duration: 0.8, times: [0, 0.35, 1], ease: 'easeOut' }
-                                    : { duration: 0.2 }}
                             >
                                 <MatchSummary
                                     match={match}
@@ -767,9 +707,7 @@ export default function Dashboard({
                                     allPlayers={players}
                                     onUpdate={handleUpdate}
                                     isNext={match.id === heroMatch?.id}
-                                    isModalOpen={currentModal === 'match' && currentModalId === match.id.toString()}
-                                    onOpenModal={() => onOpenModal('match', match.id.toString())}
-                                    onCloseModal={onCloseModal}
+                                    onOpenModal={() => push({ kind: 'match', id: match.id.toString() })}
                                 />
                             </motion.div>
                         ))}
@@ -805,8 +743,15 @@ export default function Dashboard({
                 playerId={playerId}
                 internalMatches={matches}
                 onClose={closeRecentMatchesSheet}
-                selectedMatchResultId={selectedRecentMatchResultId}
                 onSelectMatch={handleSelectRecentMatch}
+            />
+            <NavStackHost
+                playerId={playerId}
+                matches={matches}
+                players={players}
+                teams={leagueTeams}
+                onMatchUpdate={handleUpdate}
+                focusResponseMatchId={focusResponseMatchId}
             />
             <UnlockDialog
                 open={isUnlockDialogOpen}
@@ -871,15 +816,17 @@ export default function Dashboard({
                         overflowY: 'auto',
                     }}
                 >
-                    <StatsView
-                        matches={matches}
-                        players={players}
-                        currentPlayerId={playerId}
-                        showRules={currentModal === 'rules'}
-                        onShowRulesChange={(open) => open ? onOpenModal('rules') : onCloseModal()}
-                        selectedPlayerId={currentModal === 'playerDetail' ? (currentModalId ? parseInt(currentModalId, 10) : null) : null}
-                        onSelectPlayer={(id) => id !== null ? onOpenModal('playerDetail', id.toString()) : onCloseModal()}
-                    />
+                    <NavLevelContext.Provider value={levelOf(stack, 'player', 'rules')}>
+                        <StatsView
+                            matches={matches}
+                            players={players}
+                            currentPlayerId={playerId}
+                            showRules={stack.some((entry) => entry.kind === 'rules')}
+                            onShowRulesChange={(open) => open ? push({ kind: 'rules' }) : pop()}
+                            selectedPlayerId={selectedStatsPlayerId}
+                            onSelectPlayer={(id) => id !== null ? push({ kind: 'player', id: id.toString() }) : pop()}
+                        />
+                    </NavLevelContext.Provider>
                 </div>
 
                 {/* League View */}
@@ -898,10 +845,7 @@ export default function Dashboard({
                         selectedLeague={selectedLeague}
                         onSelectedLeagueChange={setSelectedLeague}
                         onLeagueDataChange={handleLeagueDataChange}
-                        selectedTeamId={currentModal === 'team' ? (currentModalId ? parseInt(currentModalId, 10) : null) : null}
-                        onSelectTeam={(id) => id !== null ? onOpenModal('team', id.toString()) : onCloseModal()}
-                        selectedMatchResultId={currentModal === 'team' && currentDetailId ? parseInt(currentDetailId, 10) : null}
-                        onSelectMatch={(resultId) => resultId !== null ? onOpenDetail(resultId.toString()) : onCloseDetail()}
+                        onSelectTeam={(id) => push({ kind: 'team', id: id.toString() })}
                     />
                 </div>
 
@@ -917,28 +861,15 @@ export default function Dashboard({
                         overflowY: 'auto',
                     }}
                 >
-                    <SettingsView
-                        playerId={playerId}
-                        playerName={players.find(p => p.id === playerId)?.name}
-                        onLogout={onLogout}
-                        onPlayerManagementOpenChange={onPlayerManagementOpenChange}
-                        onOpenVersion={onOpenVersion}
-                        isVersionOpen={isVersionOpen}
-                        onCloseVersion={onCloseVersion}
-                        isHiddenAdminUnlocked={isHiddenAdminUnlocked}
-                        isPlayerManagementOpen={currentModal === 'players'}
-                        onOpenPlayerManagement={() => onOpenModal('players')}
-                        onClosePlayerManagement={onCloseModal}
-                        isRespondAsPlayerOpen={currentModal === 'respond'}
-                        onOpenRespondAsPlayer={() => onOpenModal('respond')}
-                        onCloseRespondAsPlayer={onCloseModal}
-                        isHiddenAdminOpen={currentModal === 'admin'}
-                        onOpenHiddenAdmin={() => onOpenModal('admin')}
-                        onCloseHiddenAdmin={onCloseModal}
-                        isForfaitOpen={currentModal === 'forfait'}
-                        onOpenForfait={() => onOpenModal('forfait')}
-                        onCloseForfait={onCloseModal}
-                    />
+                    <NavLevelContext.Provider value={levelOf(stack, 'version', 'players', 'respond', 'admin', 'forfait')}>
+                        <SettingsView
+                            playerId={playerId}
+                            playerName={players.find(p => p.id === playerId)?.name}
+                            onLogout={onLogout}
+                            onPlayerManagementOpenChange={onPlayerManagementOpenChange}
+                            isHiddenAdminUnlocked={isHiddenAdminUnlocked}
+                        />
+                    </NavLevelContext.Provider>
                 </div>
             </div>
             </div>
