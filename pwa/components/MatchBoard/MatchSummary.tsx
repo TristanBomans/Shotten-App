@@ -9,14 +9,12 @@ import { parseDate, formatMatchDate, formatTimeSafe, isMatchFinished } from '@/l
 import type { Match, Player } from '@/lib/mockData';
 import type { AttendanceStatus, RosterPlayer } from './types';
 import Confetti from './Confetti';
-import MatchPage from '../Pages/MatchPage';
-import LzvMatchDetailPage from '../Pages/LzvMatchDetailPage';
+import { buildRoster } from './roster';
 import { ResponseControl } from '../ui/controls';
 import AvailabilityCounts from './AvailabilityCounts';
 import AvailabilityRoster from './AvailabilityRoster';
 import { MatchResultBadge } from './MatchResult';
 import MotmCardHint from '../Motm/MotmCardHint';
-import MotmVoteSection from '../Motm/MotmVoteSection';
 
 interface MatchSummaryProps {
     match: Match;
@@ -25,9 +23,8 @@ interface MatchSummaryProps {
     onUpdate: (matchId: number, newStatus: AttendanceStatus) => void;
     /** Marks the next upcoming match with a quiet emphasis treatment. */
     isNext?: boolean;
-    isModalOpen?: boolean;
+    /** Opens the match page (the caller pushes it on the navigation stack). */
     onOpenModal?: () => void;
-    onCloseModal?: () => void;
 }
 
 function formatCountdown(diffMs: number): string {
@@ -51,9 +48,7 @@ export default function MatchSummary({
     allPlayers,
     onUpdate,
     isNext = false,
-    isModalOpen,
     onOpenModal,
-    onCloseModal,
 }: MatchSummaryProps) {
     const { updating, updateAttendance } = useUpdateAttendance();
     const [showConfetti, setShowConfetti] = useState(false);
@@ -81,17 +76,10 @@ export default function MatchSummary({
     const dateObj = useMemo(() => parseDate(match.date) || new Date(0), [match.date]);
     const isPast = dateObj.getTime() < now;
     const isFinished = isMatchFinished(dateObj, now);
-    const lzvResultId = isFinished ? match.result?.resultId ?? null : null;
     const isForfait = match.forfait === true;
     const isToday = dateObj.toDateString() === new Date(now).toDateString();
 
-    const roster: RosterPlayer[] = useMemo(() => {
-        const teamPlayers = allPlayers.filter(p => p.teamIds?.includes(match.teamId));
-        return teamPlayers.map(player => {
-            const att = match.attendances?.find(a => a.playerId === player.id);
-            return { ...player, status: att?.status || 'Unknown' };
-        });
-    }, [allPlayers, match.teamId, match.attendances]);
+    const roster: RosterPlayer[] = useMemo(() => buildRoster(match, allPlayers), [match, allPlayers]);
 
     const myStatus = (roster.find(p => p.id === currentPlayerId)?.status || 'Unknown') as AttendanceStatus | 'Unknown';
     const present = roster.filter(p => p.status === 'Present');
@@ -291,35 +279,6 @@ export default function MatchSummary({
                     )}
                 </div>
             </div>
-
-            {lzvResultId !== null ? (
-                // Portal events still bubble through React: keep them off the card.
-                <div
-                    style={{ display: 'contents' }}
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                >
-                    <LzvMatchDetailPage
-                        resultId={lzvResultId}
-                        perspectiveTeamId={match.result?.teamLzvId ?? null}
-                        fallbackTitle={match.name.replace(/-/g, ' vs ')}
-                        open={!!isModalOpen}
-                        onClose={() => onCloseModal?.()}
-                    >
-                        <MotmVoteSection match={match} roster={roster} currentPlayerId={currentPlayerId} />
-                    </LzvMatchDetailPage>
-                </div>
-            ) : (
-                <MatchPage
-                    match={match}
-                    dateObj={dateObj}
-                    roster={roster}
-                    currentPlayerId={currentPlayerId}
-                    isFinished={isFinished}
-                    open={!!isModalOpen}
-                    onClose={() => onCloseModal?.()}
-                />
-            )}
         </div>
     );
 }

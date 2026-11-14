@@ -29,31 +29,52 @@ export function Switch({ checked, onChange, disabled, ...rest }: SwitchProps) {
 /* ------------------------------------------------------------------ */
 /* Segmented control                                                   */
 /* ------------------------------------------------------------------ */
+export type SegmentTone = 'ok' | 'warn' | 'no';
+
 interface SegmentedControlProps<T extends string> {
-    options: { value: T; label: ReactNode }[];
-    value: T;
+    options: { value: T; label: ReactNode; tone?: SegmentTone; 'aria-label'?: string }[];
+    /** `null` shows no pill (nothing chosen yet). */
+    value: T | null;
     onChange: (value: T) => void;
     style?: CSSProperties;
+    className?: string;
     'aria-label'?: string;
+    /** `tabs` (default) switches views; `choice` is a single-choice radio group. */
+    variant?: 'tabs' | 'choice';
+    /** `lg` is the 44px touch size for primary choices on a page. */
+    size?: 'md' | 'lg';
+    disabled?: boolean;
 }
 
+/**
+ * T3 Code style sliding pill. The pill takes the selected option's tone
+ * (ok / warn / no) when it has one.
+ */
 export function SegmentedControl<T extends string>({
     options,
     value,
     onChange,
     style,
+    className,
     'aria-label': ariaLabel,
+    variant = 'tabs',
+    size = 'md',
+    disabled = false,
 }: SegmentedControlProps<T>) {
-    const selectedIndex = Math.max(
-        0,
-        options.findIndex((option) => option.value === value),
-    );
+    const foundIndex = value === null ? -1 : options.findIndex((option) => option.value === value);
+    const selectedIndex = Math.max(0, foundIndex);
+    const tone = foundIndex >= 0 ? options[foundIndex].tone : undefined;
+    const isChoice = variant === 'choice';
 
     return (
         <div
-            className="seg"
-            role="tablist"
+            className={['seg', className].filter(Boolean).join(' ')}
+            role={isChoice ? 'radiogroup' : 'tablist'}
             aria-label={ariaLabel}
+            aria-disabled={disabled || undefined}
+            data-size={size === 'lg' ? 'lg' : undefined}
+            data-tone={tone}
+            data-empty={foundIndex < 0 || undefined}
             style={
                 {
                     ...style,
@@ -63,17 +84,24 @@ export function SegmentedControl<T extends string>({
             }
         >
             <span className="seg-thumb" aria-hidden />
-            {options.map((option) => (
-                <button
-                    key={option.value}
-                    role="tab"
-                    aria-selected={option.value === value}
-                    className="seg-item"
-                    onClick={() => onChange(option.value)}
-                >
-                    {option.label}
-                </button>
-            ))}
+            {options.map((option) => {
+                const selected = option.value === value;
+                return (
+                    <button
+                        key={option.value}
+                        type="button"
+                        role={isChoice ? 'radio' : 'tab'}
+                        {...(isChoice ? { 'aria-checked': selected } : { 'aria-selected': selected })}
+                        aria-label={option['aria-label']}
+                        data-tone={option.tone}
+                        className="seg-item"
+                        disabled={disabled}
+                        onClick={() => onChange(option.value)}
+                    >
+                        {option.label}
+                    </button>
+                );
+            })}
         </div>
     );
 }
@@ -166,6 +194,68 @@ export function ResponseControl({ status, updating, onSelect, size = 'md' }: Res
                 );
             })}
         </div>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/* Response picker: the page-sized version of ResponseControl          */
+/* ------------------------------------------------------------------ */
+const pickerOptions: { status: AttendanceStatus; label: string; aria: string; tone: SegmentTone; icon: typeof Check }[] = [
+    { status: 'Present', label: 'Coming', aria: 'Coming', tone: 'ok', icon: Check },
+    { status: 'Maybe', label: 'Maybe', aria: 'Maybe', tone: 'warn', icon: HelpCircle },
+    { status: 'NotPresent', label: "Can't", aria: "Can't make it", tone: 'no', icon: X },
+];
+
+interface ResponsePickerProps {
+    status: AttendanceStatus | 'Unknown';
+    updating: AttendanceStatus | null;
+    onSelect: (status: AttendanceStatus) => void;
+    /** Pulse once to draw the eye (e.g. opened from a reminder). */
+    highlight?: boolean;
+}
+
+/**
+ * Full-width sliding-pill attendance choice for match pages. No pill until
+ * the player answers; the unanswered state is gently emphasised instead.
+ * Match cards keep the compact ResponseControl.
+ */
+export function ResponsePicker({ status, updating, onSelect, highlight = false }: ResponsePickerProps) {
+    const value = status === 'Unknown' ? null : status;
+    const unanswered = value === null;
+
+    return (
+        <section style={{ marginBottom: 'var(--sp-5)' }}>
+            <div className="section-label">
+                <span>Your response</span>
+                {unanswered && <span style={{ color: 'var(--accent)', fontSize: 'var(--fs-2xs)' }}>Answer needed</span>}
+            </div>
+            <SegmentedControl
+                variant="choice"
+                size="lg"
+                aria-label="Your response"
+                className={['resp-picker', highlight ? 'match-focus-pulse' : ''].filter(Boolean).join(' ')}
+                value={value}
+                disabled={updating !== null}
+                onChange={(next) => {
+                    if (next !== status) onSelect(next);
+                }}
+                options={pickerOptions.map(({ status: s, label, aria, tone, icon: Icon }) => ({
+                    value: s,
+                    tone,
+                    'aria-label': aria,
+                    label: (
+                        <>
+                            {updating === s ? (
+                                <span className="seg-spinner animate-spin" aria-hidden />
+                            ) : (
+                                <Icon size={15} strokeWidth={2.25} aria-hidden />
+                            )}
+                            {label}
+                        </>
+                    ),
+                }))}
+            />
+        </section>
     );
 }
 

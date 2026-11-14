@@ -326,6 +326,22 @@ export function useUpdateAttendance() {
     return { updating, updateAttendance };
 }
 
+/** Mark or unmark a match as forfait (captain tool). */
+export async function setMatchForfait(matchId: number, forfait: boolean): Promise<void> {
+    if (getUseMockData()) {
+        await new Promise(r => setTimeout(r, 200));
+        const match = MOCK_MATCHES.find(m => m.id === matchId);
+        if (match) match.forfait = forfait;
+        return;
+    }
+    const res = await fetch(`${API_BASE_URL}/api/Matches/${matchId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forfait }),
+    });
+    if (!res.ok) throw new Error('Failed to update forfait');
+}
+
 /**
  * Hook to fetch teams
  */

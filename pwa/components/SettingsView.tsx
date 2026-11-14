@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, LogOut, Database, Wifi, WifiOff, Bell, Smartphone, RefreshCw, Users, UserCog, Trophy, Palette, UserCheck, Flag, User, History } from 'lucide-react';
+import { Check, LogOut, Database, Wifi, WifiOff, Bell, Smartphone, RefreshCw, Users, UserCog, Trophy, Palette, Flag, User, History } from 'lucide-react';
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { disableMatchPush, enableMatchPush } from '@/lib/pushSettings';
 import { isWebPushSupported } from '@/lib/webPushClient';
@@ -16,29 +16,20 @@ import { INCLUDE_FORFAIT_EVENT, INCLUDE_FORFAIT_STORAGE_KEY } from './StatsView'
 import { ListSection, Row } from './ui/ListSection';
 import { Switch } from './ui/controls';
 import Sheet from './ui/Sheet';
+import { useNav } from '@/lib/navContext';
+import type { NavEntry, PageKind } from '@/lib/navStack';
 
 interface SettingsViewProps {
     onLogout: () => void;
     playerId: number;
     playerName?: string;
     onPlayerManagementOpenChange?: (isOpen: boolean) => void;
-    onOpenVersion: () => void;
-    isVersionOpen: boolean;
-    onCloseVersion: () => void;
     isHiddenAdminUnlocked?: boolean;
-    isPlayerManagementOpen?: boolean;
-    onOpenPlayerManagement?: () => void;
-    onClosePlayerManagement?: () => void;
-    isRespondAsPlayerOpen?: boolean;
-    onOpenRespondAsPlayer?: () => void;
-    onCloseRespondAsPlayer?: () => void;
-    isHiddenAdminOpen?: boolean;
-    onOpenHiddenAdmin?: () => void;
-    onCloseHiddenAdmin?: () => void;
-    isForfaitOpen?: boolean;
-    onOpenForfait?: () => void;
-    onCloseForfait?: () => void;
 }
+
+/** Settings-owned pages: open when anywhere in the stack (legacy `respond` without a match id only). */
+const isOpenIn = (stack: NavEntry[], kind: PageKind) =>
+    stack.some((entry) => entry.kind === kind && (kind !== 'respond' || !entry.id));
 
 function getVersionSubtitle({ build, latestDate, unseenCount }: ReturnType<typeof useWhatsNew>) {
     if (build === null || !latestDate) return 'View changelog and updates';
@@ -59,23 +50,14 @@ export default function SettingsView({
     playerId,
     playerName,
     onPlayerManagementOpenChange,
-    onOpenVersion,
-    isVersionOpen,
-    onCloseVersion,
     isHiddenAdminUnlocked = false,
-    isPlayerManagementOpen = false,
-    onOpenPlayerManagement,
-    onClosePlayerManagement,
-    isRespondAsPlayerOpen = false,
-    onOpenRespondAsPlayer,
-    onCloseRespondAsPlayer,
-    isHiddenAdminOpen = false,
-    onOpenHiddenAdmin,
-    onCloseHiddenAdmin,
-    isForfaitOpen = false,
-    onOpenForfait,
-    onCloseForfait,
 }: SettingsViewProps) {
+    const { stack, push, pop } = useNav();
+    const isPlayerManagementOpen = isOpenIn(stack, 'players');
+    const isVersionOpen = isOpenIn(stack, 'version');
+    const isHiddenAdminOpen = isOpenIn(stack, 'admin');
+    const isRespondAsPlayerOpen = isOpenIn(stack, 'respond');
+    const isForfaitOpen = isOpenIn(stack, 'forfait');
     const [useMock, setUseMock] = useState(true);
     const [isLocalhost, setIsLocalhost] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -349,18 +331,8 @@ export default function SettingsView({
                 )}
             </ListSection>
 
-            {/* Management */}
-            <ListSection label="Management">
-                <Row
-                    icon={<UserCheck size={16} />}
-                    title="Respond as player"
-                    subtitle="Fill in attendance for someone else"
-                    chevron
-                    onClick={() => {
-                        hapticPatterns.tap();
-                        onOpenRespondAsPlayer?.();
-                    }}
-                />
+            {/* Team: per-match captain tools live in each match's ⋯ menu */}
+            <ListSection label="Team">
                 <Row
                     icon={<UserCog size={16} />}
                     title="Manage players"
@@ -368,19 +340,13 @@ export default function SettingsView({
                     chevron
                     onClick={() => {
                         hapticPatterns.tap();
-                        onOpenPlayerManagement?.();
+                        push({ kind: 'players' });
                     }}
                 />
-                <Row
-                    icon={<Flag size={16} />}
-                    title="Forfait matches"
-                    subtitle="Mark matches as forfait"
-                    chevron
-                    onClick={() => {
-                        hapticPatterns.tap();
-                        onOpenForfait?.();
-                    }}
-                />
+            </ListSection>
+
+            {/* App */}
+            <ListSection label="App">
                 <Row
                     icon={<RefreshCw size={16} />}
                     title="Version history"
@@ -393,7 +359,7 @@ export default function SettingsView({
                     }
                     onClick={() => {
                         hapticPatterns.tap();
-                        onOpenVersion();
+                        push({ kind: 'version' });
                     }}
                 />
                 {isHiddenAdminUnlocked && (
@@ -404,7 +370,7 @@ export default function SettingsView({
                         chevron
                         onClick={() => {
                             hapticPatterns.tap();
-                            onOpenHiddenAdmin?.();
+                            push({ kind: 'admin' });
                         }}
                     />
                 )}
@@ -538,22 +504,22 @@ export default function SettingsView({
                 </div>
             </Sheet>
 
-            {/* Forfait Matches Page */}
+            {/* Legacy deep links (?modal=forfait / ?modal=respond) still land here. */}
             <ForfaitMatchesPage
                 isOpen={isForfaitOpen}
-                onClose={() => onCloseForfait?.()}
+                onClose={pop}
             />
 
             {/* Player Management Page */}
             <PlayerManagementPage
                 isOpen={isPlayerManagementOpen}
-                onClose={() => onClosePlayerManagement?.()}
+                onClose={pop}
             />
-            <VersionHistoryPage open={isVersionOpen} onClose={onCloseVersion} />
-            <HiddenAdminPage open={isHiddenAdminOpen} onClose={() => onCloseHiddenAdmin?.()} />
+            <VersionHistoryPage open={isVersionOpen} onClose={pop} />
+            <HiddenAdminPage open={isHiddenAdminOpen} onClose={pop} />
             <RespondAsPlayerPage
                 isOpen={isRespondAsPlayerOpen}
-                onClose={() => onCloseRespondAsPlayer?.()}
+                onClose={pop}
             />
         </div>
     );
