@@ -6,6 +6,9 @@ import { SegmentedControl } from '../ui/controls';
 
 export type StatsMode = 'attendance' | 'goals';
 
+/** Left-to-right order of the switch; drives the content transition direction. */
+export const STATS_MODE_ORDER: readonly StatsMode[] = ['attendance', 'goals'];
+
 interface StatsModeHeaderProps {
     mode: StatsMode;
     onModeChange: (mode: StatsMode) => void;

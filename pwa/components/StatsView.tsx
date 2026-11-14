@@ -9,7 +9,8 @@ import RulesPage from './Pages/RulesPage';
 import MotmLeaderboard from './Motm/MotmLeaderboard';
 import AttendanceLeaderboard from './Stats/AttendanceLeaderboard';
 import GoalsLeaderboard from './Stats/GoalsLeaderboard';
-import StatsModeHeader, { type StatsMode } from './Stats/StatsModeHeader';
+import StatsModeHeader, { STATS_MODE_ORDER, type StatsMode } from './Stats/StatsModeHeader';
+import ModeSwap from './ui/ModeSwap';
 import WrappedPage from './Wrapped/WrappedPage';
 import { buildGoalsIndex } from '@/lib/goals';
 import { useGoalsData } from '@/lib/useGoals';
@@ -432,20 +433,24 @@ export default function StatsView({
                 onOpenWrapped={seasonOver ? () => openWrapped({ kind: 'team' }) : undefined}
             />
 
-            {statsMode === 'goals' && goalsIndex.hasData ? (
-                <GoalsLeaderboard
-                    players={playerStats}
-                    goals={goalsIndex}
-                    currentPlayerId={currentPlayerId}
-                    onSelectPlayer={id => onSelectPlayer?.(id)}
-                />
-            ) : (
-                <AttendanceLeaderboard
-                    playerStats={playerStats}
-                    currentPlayerId={currentPlayerId}
-                    onSelectPlayer={id => onSelectPlayer?.(id)}
-                />
-            )}
+            <ModeSwap<StatsMode>
+                mode={statsMode === 'goals' && goalsIndex.hasData ? 'goals' : 'attendance'}
+                order={STATS_MODE_ORDER}
+                render={mode => mode === 'goals' ? (
+                    <GoalsLeaderboard
+                        players={playerStats}
+                        goals={goalsIndex}
+                        currentPlayerId={currentPlayerId}
+                        onSelectPlayer={id => onSelectPlayer?.(id)}
+                    />
+                ) : (
+                    <AttendanceLeaderboard
+                        playerStats={playerStats}
+                        currentPlayerId={currentPlayerId}
+                        onSelectPlayer={id => onSelectPlayer?.(id)}
+                    />
+                )}
+            />
 
             <MotmLeaderboard
                 matches={matches}

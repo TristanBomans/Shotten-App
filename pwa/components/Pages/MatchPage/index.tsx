@@ -11,6 +11,7 @@ import type { Match } from '@/lib/mockData';
 import type { RosterPlayer, StatusGroup } from '../../MatchBoard/types';
 import { useOpponentTeamData } from './useOpponentTeamData';
 import { ResponsePicker, SegmentedControl } from '../../ui/controls';
+import GlassMenu from '../../ui/GlassMenu';
 import { pageZIndex, useBackClose, useNavLevel } from '@/lib/navHistory';
 import type { AttendanceStatus } from '../../MatchBoard/types';
 import SquadView from './SquadView';
@@ -374,118 +375,97 @@ export default function MatchPage({
                     </div>
 
                     {/* More menu (Directions / Add to Calendar / View opponent on LZV Cup) */}
-                    <AnimatePresence>
-                        {showMenu && (
+                    <GlassMenu open={showMenu} zIndex={zBase + 4} onDismiss={() => setShowMenu(false)}>
+                        {match.location && (
+                            <button
+                                className="menu-item"
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    window.open(mapUrl!, '_blank');
+                                    setShowMenu(false);
+                                }}
+                            >
+                                <MapPin size={16} style={{ color: 'var(--text-2)' }} />
+                                Directions
+                            </button>
+                        )}
+                        <button
+                            className="menu-item"
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                window.open(calendarUrl, '_blank');
+                                setShowMenu(false);
+                            }}
+                        >
+                            <Calendar size={16} style={{ color: 'var(--text-2)' }} />
+                            Add to Calendar
+                        </button>
+                        {openOpponentTeam && (
+                            <button
+                                className="menu-item"
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    setShowMenu(false);
+                                    openOpponentTeam();
+                                }}
+                            >
+                                <Shield size={16} style={{ color: 'var(--text-2)' }} />
+                                Opponent team page
+                            </button>
+                        )}
+                        {opponentExternalId && (
+                            <button
+                                className="menu-item"
+                                onClick={() => {
+                                    hapticPatterns.tap();
+                                    window.open(`https://www.lzvcup.be/teams/detail/${opponentExternalId}`, '_blank');
+                                    setShowMenu(false);
+                                }}
+                            >
+                                <ExternalLink size={16} style={{ color: 'var(--text-2)' }} />
+                                View opponent on LZV Cup
+                            </button>
+                        )}
+                        {captainActions && (
                             <>
                                 <div
-                                    onClick={() => setShowMenu(false)}
+                                    className="t-caption"
+                                    role="presentation"
                                     style={{
-                                        position: 'fixed',
-                                        inset: 0,
-                                        zIndex: zBase + 4,
+                                        padding: '8px var(--sp-3) 4px',
+                                        borderTop: '1px solid var(--separator)',
+                                        marginTop: 4,
                                     }}
-                                />
-                                <motion.div
-                                    className="menu flow-menu"
-                                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                                    transition={{ duration: 0.14, ease: 'easeOut' }}
-                                    style={{ zIndex: zBase + 5 }}
                                 >
-                                    {match.location && (
-                                        <button
-                                            className="menu-item"
-                                            onClick={() => {
-                                                hapticPatterns.tap();
-                                                window.open(mapUrl!, '_blank');
-                                                setShowMenu(false);
-                                            }}
-                                        >
-                                            <MapPin size={16} style={{ color: 'var(--text-2)' }} />
-                                            Directions
-                                        </button>
-                                    )}
-                                    <button
-                                        className="menu-item"
-                                        onClick={() => {
-                                            hapticPatterns.tap();
-                                            window.open(calendarUrl, '_blank');
-                                            setShowMenu(false);
-                                        }}
-                                    >
-                                        <Calendar size={16} style={{ color: 'var(--text-2)' }} />
-                                        Add to Calendar
-                                    </button>
-                                    {openOpponentTeam && (
-                                        <button
-                                            className="menu-item"
-                                            onClick={() => {
-                                                hapticPatterns.tap();
-                                                setShowMenu(false);
-                                                openOpponentTeam();
-                                            }}
-                                        >
-                                            <Shield size={16} style={{ color: 'var(--text-2)' }} />
-                                            Opponent team page
-                                        </button>
-                                    )}
-                                    {opponentExternalId && (
-                                        <button
-                                            className="menu-item"
-                                            onClick={() => {
-                                                hapticPatterns.tap();
-                                                window.open(`https://www.lzvcup.be/teams/detail/${opponentExternalId}`, '_blank');
-                                                setShowMenu(false);
-                                            }}
-                                        >
-                                            <ExternalLink size={16} style={{ color: 'var(--text-2)' }} />
-                                            View opponent on LZV Cup
-                                        </button>
-                                    )}
-                                    {captainActions && (
-                                        <>
-                                            <div
-                                                className="t-caption"
-                                                role="presentation"
-                                                style={{
-                                                    padding: '8px var(--sp-3) 4px',
-                                                    borderTop: '1px solid var(--separator)',
-                                                    marginTop: 4,
-                                                }}
-                                            >
-                                                Captain
-                                            </div>
-                                            <button
-                                                className="menu-item"
-                                                onClick={() => {
-                                                    hapticPatterns.tap();
-                                                    setShowMenu(false);
-                                                    captainActions.onRespondForPlayers();
-                                                }}
-                                            >
-                                                <UserCheck size={16} style={{ color: 'var(--text-2)' }} />
-                                                Respond for players
-                                            </button>
-                                            <button
-                                                className="menu-item"
-                                                disabled={captainActions.forfaitBusy}
-                                                onClick={() => {
-                                                    hapticPatterns.tap();
-                                                    setShowMenu(false);
-                                                    captainActions.onToggleForfait();
-                                                }}
-                                                style={match.forfait ? undefined : { color: 'var(--no)' }}
-                                            >
-                                                <Flag size={16} style={{ color: match.forfait ? 'var(--text-2)' : 'var(--no)' }} />
-                                                {match.forfait ? 'Undo forfait' : 'Mark as forfait'}
-                                            </button>
-                                        </>
-                                    )}
-                                </motion.div>
+                                    Captain
+                                </div>
+                                <button
+                                    className="menu-item"
+                                    onClick={() => {
+                                        hapticPatterns.tap();
+                                        setShowMenu(false);
+                                        captainActions.onRespondForPlayers();
+                                    }}
+                                >
+                                    <UserCheck size={16} style={{ color: 'var(--text-2)' }} />
+                                    Respond for players
+                                </button>
+                                <button
+                                    className="menu-item"
+                                    disabled={captainActions.forfaitBusy}
+                                    onClick={() => {
+                                        hapticPatterns.tap();
+                                        setShowMenu(false);
+                                        captainActions.onToggleForfait();
+                                    }}
+                                    style={match.forfait ? undefined : { color: 'var(--no)' }}
+                                >
+                                    <Flag size={16} style={{ color: match.forfait ? 'var(--text-2)' : 'var(--no)' }} />
+                                    {match.forfait ? 'Undo forfait' : 'Mark as forfait'}
+                                </button>
                             </>
                         )}
-                    </AnimatePresence>
+                    </GlassMenu>
 
                     {/* Full Screen Image Overlay */}
                     <AnimatePresence>

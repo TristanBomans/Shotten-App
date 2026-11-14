@@ -703,6 +703,107 @@ button {
   color: var(--no);
 }
 
+/* Liquid glass appearance (opt-in, e.g. the stats Attendance/Goals switch).
+   At rest it is the same quiet pill. While it moves (JS sets data-moving)
+   a small glass lens rides over the labels: translucent, backdrop blur and
+   saturation, a specular top edge. Motion itself is WAAPI transforms only. */
+.seg[data-glass] {
+  overflow: visible;
+  isolation: isolate;
+}
+
+.seg[data-glass] .seg-thumb {
+  transition: background var(--t-fast);
+  transform-origin: center;
+}
+
+.seg-lens {
+  position: absolute;
+  z-index: 2;
+  top: 2px;
+  bottom: 2px;
+  width: calc((100% - 4px) / var(--seg-count));
+  left: calc(2px + (100% - 4px) * var(--seg-index) / var(--seg-count));
+  border-radius: var(--r-full);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform-origin: center;
+  background: var(--glass-fill);
+  box-shadow: var(--glass-edge);
+}
+
+/* Specular sheen: a soft highlight across the upper half */
+.seg-lens::before {
+  content: '';
+  position: absolute;
+  inset: 1px 10% 45% 10%;
+  border-radius: var(--r-full);
+  background: linear-gradient(180deg, var(--glass-sheen), transparent);
+}
+
+.seg[data-size='lg'] .seg-lens {
+  top: 3px;
+  bottom: 3px;
+  width: calc((100% - 6px) / var(--seg-count));
+  left: calc(3px + (100% - 6px) * var(--seg-index) / var(--seg-count));
+}
+
+.seg[data-glass][data-moving] .seg-lens {
+  visibility: visible;
+  will-change: transform, opacity;
+  -webkit-backdrop-filter: blur(0.6px) saturate(1.8) brightness(var(--glass-brightness));
+  backdrop-filter: blur(0.6px) saturate(1.8) brightness(var(--glass-brightness));
+}
+
+.seg[data-glass][data-moving] .seg-thumb {
+  will-change: transform;
+}
+
+.seg[data-glass] .seg-item {
+  transform-origin: center;
+}
+
+:root,
+[data-theme='oled'] {
+  --glass-fill: linear-gradient(180deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.02));
+  --glass-edge: inset 0 0.5px 0 rgb(255 255 255 / 0.5), inset 0 0 0 0.5px rgb(255 255 255 / 0.16),
+    inset 0 -1px 1px rgb(255 255 255 / 0.06), 0 4px 14px rgb(0 0 0 / 0.45);
+  --glass-sheen: rgb(255 255 255 / 0.22);
+  --glass-brightness: 1.15;
+}
+
+[data-theme='white'] {
+  --glass-fill: linear-gradient(180deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.15));
+  --glass-edge: inset 0 0.5px 0 rgb(255 255 255 / 0.95), inset 0 0 0 0.5px rgb(0 0 0 / 0.08),
+    inset 0 -1px 1px rgb(0 0 0 / 0.04), 0 4px 14px rgb(0 0 0 / 0.14);
+  --glass-sheen: rgb(255 255 255 / 0.9);
+  --glass-brightness: 1.04;
+}
+
+/* Directional content swap (StatsView Attendance ↔ Goals) */
+.mode-swap {
+  display: grid;
+}
+
+.mode-swap > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.mode-swap-pane {
+  align-self: start;
+}
+
+.mode-swap[data-animating] {
+  overflow: clip;
+  overflow-clip-margin: var(--screen-x, 16px);
+}
+
+.mode-swap[data-animating] .mode-swap-pane {
+  will-change: transform, opacity, filter;
+}
+
 /* Unanswered: a quiet accent ring so it reads as "answer needed" */
 .resp-picker[data-empty] {
   box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / 0.35);
@@ -1365,6 +1466,61 @@ button {
 .menu-item:active,
 .menu-item:hover {
   background: var(--bg-subtle);
+}
+
+/* Liquid glass overflow (⋯) menu. Grows out of the ⋯ button: the origin
+   sits on the button, just above the menu's top-right corner. The surface
+   stays opaque enough to read text over busy content in both themes. */
+.glass-menu {
+  transform-origin: calc(100% - 18px) -20px;
+  background: var(--menu-glass-bg);
+  border: none;
+  border-radius: 18px;
+  box-shadow: var(--menu-glass-edge), var(--shadow-overlay);
+  -webkit-backdrop-filter: blur(22px) saturate(1.8);
+  backdrop-filter: blur(22px) saturate(1.8);
+  padding: 6px;
+}
+
+/* Specular top edge */
+.glass-menu::before {
+  content: '';
+  position: absolute;
+  inset: 0 14px auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--menu-glass-spec), transparent);
+  pointer-events: none;
+}
+
+.glass-menu .menu-item {
+  border-radius: 12px;
+  animation: glass-menu-item 220ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.glass-menu > :nth-child(2) { animation-delay: 30ms; }
+.glass-menu > :nth-child(3) { animation-delay: 55ms; }
+.glass-menu > :nth-child(4) { animation-delay: 80ms; }
+.glass-menu > :nth-child(5) { animation-delay: 100ms; }
+.glass-menu > :nth-child(n + 6) { animation-delay: 120ms; }
+
+@keyframes glass-menu-item {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+:root,
+[data-theme='oled'] {
+  --menu-glass-bg: rgb(30 30 34 / 0.78);
+  --menu-glass-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.1);
+  --menu-glass-spec: rgb(255 255 255 / 0.45);
+}
+
+[data-theme='white'] {
+  --menu-glass-bg: rgb(255 255 255 / 0.78);
+  --menu-glass-edge: inset 0 0 0 0.5px rgb(0 0 0 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.9);
+  --menu-glass-spec: rgb(255 255 255 / 1);
 }
 
 /* Centered dialog */

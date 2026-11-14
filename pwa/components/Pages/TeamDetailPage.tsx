@@ -12,6 +12,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { hapticPatterns } from '@/lib/haptic';
 import { ListSection, Row, MetricRow } from '../ui/ListSection';
 import { EmptyState, SegmentedControl } from '../ui/controls';
+import GlassMenu from '../ui/GlassMenu';
 import { pageZIndex, useBackClose, useNavLevel } from '@/lib/navHistory';
 
 const teamDetailTabs = ['overview', 'matches', 'squad'] as const;
@@ -347,42 +348,25 @@ export default function TeamDetailPage({
                     </div>
 
                     {/* Dropdown menu */}
-                    <AnimatePresence>
-                        {menuOpen && (
-                            <>
-                                <div
-                                    onClick={() => {
-                                        hapticPatterns.tap();
-                                        setMenuOpen(false);
-                                    }}
-                                    style={{ position: 'fixed', inset: 0, zIndex: zBase + 4 }}
-                                />
-                                <motion.div
-                                    className="menu flow-menu"
-                                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                                    transition={{ duration: 0.14, ease: 'easeOut' }}
-                                    style={{ zIndex: zBase + 5 }}
-                                >
-                                    <a
-                                        className="menu-item"
-                                        href={`https://www.lzvcup.be/teams/detail/${team?.externalId || ''}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={() => {
-                                            hapticPatterns.tap();
-                                            setMenuOpen(false);
-                                        }}
-                                        style={{ textDecoration: 'none' }}
-                                    >
-                                        <ExternalLink size={16} style={{ color: 'var(--text-2)' }} />
-                                        View on LZV Cup
-                                    </a>
-                                </motion.div>
-                            </>
-                        )}
-                    </AnimatePresence>
+                    <GlassMenu open={menuOpen} zIndex={zBase + 4} onDismiss={() => {
+                        hapticPatterns.tap();
+                        setMenuOpen(false);
+                    }}>
+                        <a
+                            className="menu-item"
+                            href={`https://www.lzvcup.be/teams/detail/${team?.externalId || ''}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setMenuOpen(false);
+                            }}
+                            style={{ textDecoration: 'none' }}
+                        >
+                            <ExternalLink size={16} style={{ color: 'var(--text-2)' }} />
+                            View on LZV Cup
+                        </a>
+                    </GlassMenu>
 
                     {/* Scrollable Tab Content */}
                     <div
