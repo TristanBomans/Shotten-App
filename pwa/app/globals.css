@@ -643,6 +643,84 @@ button {
   box-shadow: none;
 }
 
+.seg-item[aria-checked='true'] {
+  color: var(--text-1);
+  font-weight: 500;
+}
+
+.seg-item:disabled {
+  cursor: wait;
+}
+
+/* Large single-choice variant (e.g. the match page response picker) */
+.seg[data-size='lg'] {
+  height: 44px;
+  padding: 3px;
+}
+
+.seg[data-size='lg'] .seg-thumb {
+  top: 3px;
+  bottom: 3px;
+  width: calc((100% - 6px) / var(--seg-count));
+  left: calc(3px + (100% - 6px) * var(--seg-index) / var(--seg-count));
+}
+
+.seg[data-size='lg'] .seg-item {
+  gap: 6px;
+  font-size: var(--fs-xs);
+}
+
+.seg[data-empty] .seg-thumb {
+  opacity: 0;
+}
+
+/* Status tint: the pill and its label take the selected option's tone */
+.seg[data-tone] .seg-thumb {
+  transition: left 200ms cubic-bezier(0.33, 1, 0.68, 1), background var(--t-fast);
+}
+
+.seg[data-tone='ok'] .seg-thumb {
+  background: rgb(var(--ok-rgb) / 0.16);
+}
+
+.seg[data-tone='warn'] .seg-thumb {
+  background: rgb(var(--warn-rgb) / 0.16);
+}
+
+.seg[data-tone='no'] .seg-thumb {
+  background: rgb(var(--no-rgb) / 0.16);
+}
+
+.seg-item[data-tone='ok'][aria-checked='true'] {
+  color: var(--ok);
+}
+
+.seg-item[data-tone='warn'][aria-checked='true'] {
+  color: var(--warn);
+}
+
+.seg-item[data-tone='no'][aria-checked='true'] {
+  color: var(--no);
+}
+
+/* Unanswered: a quiet accent ring so it reads as "answer needed" */
+.resp-picker[data-empty] {
+  box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / 0.35);
+}
+
+.resp-picker[data-empty] .seg-item {
+  color: var(--text-1);
+}
+
+.seg-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--border-hairline);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  display: inline-block;
+}
+
 .seg-count {
   font-size: 0.625rem;
   font-weight: 600;

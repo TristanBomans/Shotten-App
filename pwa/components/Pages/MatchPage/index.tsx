@@ -10,7 +10,7 @@ import { formatMatchDate, formatTimeSafe } from '@/lib/dateUtils';
 import type { Match } from '@/lib/mockData';
 import type { RosterPlayer, StatusGroup } from '../../MatchBoard/types';
 import { useOpponentTeamData } from './useOpponentTeamData';
-import { ResponseControl, SegmentedControl } from '../../ui/controls';
+import { ResponsePicker, SegmentedControl } from '../../ui/controls';
 import { pageZIndex, useBackClose, useNavLevel } from '@/lib/navHistory';
 import type { AttendanceStatus } from '../../MatchBoard/types';
 import SquadView from './SquadView';
@@ -339,18 +339,12 @@ export default function MatchPage({
                                         <span className="t-caption">This match will not be played.</span>
                                     </div>
                                 ) : onRespond && !isFinished && (
-                                    <div
-                                        className={`panel${highlightResponse ? ' match-focus-pulse' : ''}`}
-                                        style={{ padding: '12px 14px', marginBottom: 'var(--sp-5)', display: 'flex', alignItems: 'center', gap: 12 }}
-                                    >
-                                        <span style={{ flex: 1, minWidth: 0 }}>
-                                            <span style={{ display: 'block', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>Your response</span>
-                                            <span className="t-caption">
-                                                {myResponse === 'Present' ? 'Coming' : myResponse === 'Maybe' ? 'Maybe' : myResponse === 'NotPresent' ? 'Not coming' : 'Not answered yet'}
-                                            </span>
-                                        </span>
-                                        <ResponseControl status={myResponse} updating={respondUpdating} onSelect={onRespond} />
-                                    </div>
+                                    <ResponsePicker
+                                        status={myResponse}
+                                        updating={respondUpdating}
+                                        onSelect={onRespond}
+                                        highlight={highlightResponse}
+                                    />
                                 )}
                                 <SquadView statusGroups={statusGroups} currentPlayerId={currentPlayerId} onOpenPlayer={onOpenPlayer} />
                             </div>
