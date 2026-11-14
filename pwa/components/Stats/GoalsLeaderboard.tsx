@@ -144,19 +144,22 @@ export default function GoalsLeaderboard({ players, goals, currentPlayerId, onSe
                                 >
                                     {player.name}
                                 </span>
-                                <span className="t-num" style={{ display: 'block', fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', marginTop: 2 }}>
+                                <span
+                                    className="t-num"
+                                    style={{
+                                        display: 'block',
+                                        fontSize: 'var(--fs-3xs)',
+                                        color: 'var(--text-3)',
+                                        marginTop: 3,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
                                     {g.gamesPlayed} {g.gamesPlayed === 1 ? 'match' : 'matches'}
-                                    {' · '}{formatGoalsPerMatch(g.goalsPerMatch)} per match
+                                    {goals.hasAssists && <>{' · '}{g.assists} {g.assists === 1 ? 'assist' : 'assists'}</>}
                                 </span>
                             </span>
-                            {goals.hasAssists && (
-                                <span style={{ width: 40, textAlign: 'right', flexShrink: 0 }}>
-                                    <span className="t-num" style={{ display: 'block', fontSize: 'var(--fs-sm)', fontWeight: 500, color: g.assists ? 'var(--text-2)' : 'var(--text-3)' }}>
-                                        {g.assists}
-                                    </span>
-                                    <span style={{ display: 'block', fontSize: 'var(--fs-3xs)', color: 'var(--text-3)' }}>ast</span>
-                                </span>
-                            )}
                             <span style={{ width: 48, textAlign: 'right', flexShrink: 0 }}>
                                 <span className="t-num" style={{ display: 'block', fontSize: 'var(--fs-sm)', fontWeight: 600, color: g.goals ? 'var(--text-1)' : 'var(--text-3)' }}>
                                     {g.goals}
