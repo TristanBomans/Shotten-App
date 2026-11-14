@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isHomeTeamForMatch } from './teamNameMatching';
+import type { GoalsData, GoalsLineup, GoalsLzvPlayer } from './goals';
 
 // ============================================================================
 // DATABASE TYPES (matching schema.sql)
@@ -18,6 +19,8 @@ export interface CorePlayer {
     id: number;
     name: string;
     team_ids: number[];
+    /** lzv_players.external_id; null = name-match fallback (migration 009). */
+    lzv_player_external_id?: number | null;
     created_at?: string;
     updated_at?: string;
 }
@@ -821,6 +824,152 @@ export async function getLzvPlayers(teamId?: number): Promise<ScraperPlayerRespo
     result.sort((a, b) => b.goals - a.goals);
     
     return result;
+}
+
+// ============================================================================
+// GOALS (core player <-> LZV player link, see lib/goals.ts)
+// ============================================================================
+
+const isMissingRelation = (code?: string) => code === 'PGRST205' || code === '42P01';
+const isMissingColumn = (code?: string) => code === '42703' || code === 'PGRST204';
+
+/**
+ * Everything the stats page needs for goals: LZV players of our own teams,
+ * explicit admin links, and our side of every scraped lineup.
+ */
+export async function getGoalsData(): Promise<GoalsData> {
+    const client = getSupabaseClient();
+
+    const { data: teamRows, error: teamsError } = await client
+        .from('core_teams')
+        .select('id, lzv_external_id')
+        .not('lzv_external_id', 'is', null);
+    if (teamsError) throw teamsError;
+    const teams = (teamRows || []).map(t => ({ teamId: t.id as number, lzvTeamId: t.lzv_external_id as number }));
+    const lzvTeamIds = [...new Set(teams.map(t => t.lzvTeamId))];
+
+    const [statsRes, linksRes, detailsRes] = await Promise.all([
+        lzvTeamIds.length === 0
+            ? Promise.resolve({ data: [], error: null })
+            : client
+                .from('lzv_player_team_stats')
+                .select('team_id, jersey_number, games_played, goals, assists, lzv_players(external_id, name)')
+                .in('team_id', lzvTeamIds),
+        client
+            .from('core_players')
+            .select('id, lzv_player_external_id')
+            .not('lzv_player_external_id', 'is', null),
+        lzvTeamIds.length === 0
+            ? Promise.resolve({ data: [], error: null })
+            : client
+                .from('lzv_match_details')
+                .select('result_id, home_team_id, away_team_id, home_lineup, away_lineup')
+                .or(`home_team_id.in.(${lzvTeamIds.join(',')}),away_team_id.in.(${lzvTeamIds.join(',')})`),
+    ]);
+
+    if (statsRes.error) throw statsRes.error;
+
+    const lzvPlayers = new Map<number, GoalsLzvPlayer>();
+    type StatsRow = {
+        team_id: number;
+        jersey_number: number | null;
+        games_played: number;
+        goals: number;
+        assists: number;
+        lzv_players: { external_id: number; name: string } | { external_id: number; name: string }[] | null;
+    };
+    for (const row of (statsRes.data || []) as StatsRow[]) {
+        const lzv = Array.isArray(row.lzv_players) ? row.lzv_players[0] : row.lzv_players;
+        if (!lzv) continue;
+        const entry = lzvPlayers.get(lzv.external_id) ?? { externalId: lzv.external_id, name: lzv.name, teams: [] };
+        entry.teams.push({
+            lzvTeamId: row.team_id,
+            number: row.jersey_number,
+            gamesPlayed: row.games_played ?? 0,
+            goals: row.goals ?? 0,
+            assists: row.assists ?? 0,
+        });
+        lzvPlayers.set(lzv.external_id, entry);
+    }
+
+    let linkColumnMissing = false;
+    let links: GoalsData['links'] = [];
+    if (linksRes.error) {
+        if (!isMissingColumn(linksRes.error.code)) throw linksRes.error;
+        linkColumnMissing = true;
+    } else {
+        links = (linksRes.data || []).map(r => ({
+            playerId: r.id as number,
+            lzvPlayerExternalId: r.lzv_player_external_id as number,
+        }));
+    }
+
+    const lineups: GoalsLineup[] = [];
+    if (detailsRes.error && !isMissingRelation(detailsRes.error.code)) throw detailsRes.error;
+    const own = new Set(lzvTeamIds);
+    type DetailRow = Pick<LzvMatchDetail, 'result_id' | 'home_team_id' | 'away_team_id' | 'home_lineup' | 'away_lineup'>;
+    for (const row of (detailsRes.data || []) as DetailRow[]) {
+        const sides: [number | null, LzvLineupPlayer[]][] = [
+            [row.home_team_id, row.home_lineup ?? []],
+            [row.away_team_id, row.away_lineup ?? []],
+        ];
+        for (const [teamId, lineup] of sides) {
+            if (teamId == null || !own.has(teamId)) continue;
+            lineups.push({
+                resultId: row.result_id,
+                lzvTeamId: teamId,
+                players: lineup.map(p => ({
+                    lzvPlayerExternalId: p.playerId,
+                    name: p.name,
+                    goals: p.goals ?? 0,
+                    assists: p.assists ?? 0,
+                })),
+            });
+            // A lineup scraped without a playerId still names the player, so
+            // make sure the LZV player list covers lineup-only scorers too.
+            for (const p of lineup) {
+                if (p.playerId == null || lzvPlayers.has(p.playerId)) continue;
+                lzvPlayers.set(p.playerId, { externalId: p.playerId, name: p.name, teams: [] });
+            }
+        }
+    }
+
+    return {
+        teams,
+        lzvPlayers: [...lzvPlayers.values()].sort((a, b) => a.name.localeCompare(b.name)),
+        links,
+        lineups,
+        ...(linkColumnMissing ? { linkColumnMissing } : {}),
+    };
+}
+
+export class MissingMigrationError extends Error {}
+
+/** Set (or clear with null) the explicit LZV link for one app player. */
+export async function setCorePlayerLzvLink(playerId: number, lzvPlayerExternalId: number | null): Promise<void> {
+    const client = getSupabaseServiceClient();
+
+    // One LZV player belongs to one app player: release it from anyone else.
+    if (lzvPlayerExternalId != null) {
+        const { error: releaseError } = await client
+            .from('core_players')
+            .update({ lzv_player_external_id: null })
+            .eq('lzv_player_external_id', lzvPlayerExternalId)
+            .neq('id', playerId);
+        if (releaseError) {
+            if (isMissingColumn(releaseError.code)) throw new MissingMigrationError('Run migration 009 first');
+            throw releaseError;
+        }
+    }
+
+    const { error } = await client
+        .from('core_players')
+        .update({ lzv_player_external_id: lzvPlayerExternalId })
+        .eq('id', playerId);
+    if (error) {
+        if (isMissingColumn(error.code)) throw new MissingMigrationError('Run migration 009 first');
+        throw error;
+    }
 }
 
 // ============================================================================

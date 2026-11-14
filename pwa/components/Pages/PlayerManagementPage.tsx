@@ -6,6 +6,7 @@ import { usePlayerManagement } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
 import type { Player } from '@/lib/mockData';
 import FlowPage from '../ui/FlowPage';
+import LzvLinksSection from './LzvLinksSection';
 
 interface PlayerManagementPageProps {
     isOpen: boolean;
@@ -369,6 +370,8 @@ export default function PlayerManagementPage({ isOpen, onClose }: PlayerManageme
                     </div>
                 </div>
             )}
+
+            {!loading && isOpen && <LzvLinksSection players={players} />}
         </FlowPage>
     );
 }

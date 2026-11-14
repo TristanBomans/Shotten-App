@@ -1,6 +1,6 @@
 // ============================================================================
 // INITIAL SETUP SQL
-// Mirrors supabase/schema.sql + supabase/migrations/001 + 002 + 003 + 004 + 005 + 006 + 008.
+// Mirrors supabase/schema.sql + supabase/migrations/001 + 002 + 003 + 004 + 005 + 006 + 007 + 008 + 009.
 // Verification SELECTs and the hardcoded team UPDATE from migration 002 are
 // intentionally omitted (team linking happens through the setup wizard).
 // Keep this in sync when the schema files change.
@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS core_players (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     team_ids INTEGER[] DEFAULT '{}',
+    lzv_player_external_id INTEGER,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -337,4 +338,14 @@ CREATE TRIGGER update_motm_votes_updated_at BEFORE UPDATE ON motm_votes
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 `;
 
-export const FULL_SETUP_SQL = [SCHEMA_SQL, MIGRATION_001_SQL, MIGRATION_002_SQL, MIGRATION_004_SQL, MIGRATION_005_SQL, MIGRATION_008_SQL].join('\n');
+// Migration 009: link app players to LZV players (goals, assists)
+export const MIGRATION_009_SQL = `
+ALTER TABLE core_players
+ADD COLUMN IF NOT EXISTS lzv_player_external_id INTEGER;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_core_players_lzv_player_external_id
+ON core_players(lzv_player_external_id)
+WHERE lzv_player_external_id IS NOT NULL;
+`;
+
+export const FULL_SETUP_SQL = [SCHEMA_SQL, MIGRATION_001_SQL, MIGRATION_002_SQL, MIGRATION_004_SQL, MIGRATION_005_SQL, MIGRATION_008_SQL, MIGRATION_009_SQL].join('\n');
