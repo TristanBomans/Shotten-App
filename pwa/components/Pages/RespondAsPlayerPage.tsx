@@ -9,6 +9,8 @@ import { hapticPatterns } from '@/lib/haptic';
 import type { Player, Match } from '@/lib/mockData';
 import { parseDateToTimestamp, formatMatchDate, formatTimeSafe } from '@/lib/dateUtils';
 import FlowPage from '../ui/FlowPage';
+import AwayChip from '../Absences/AwayChip';
+import { isAutoDeclined } from '@/lib/absences';
 import { ListSection, Row } from '../ui/ListSection';
 import { Avatar, EmptyState, ResponseControl, type AttendanceStatus } from '../ui/controls';
 
@@ -99,7 +101,7 @@ export default function RespondAsPlayerPage({ isOpen, onClose, match: scopedMatc
                         const updatedAttendances = match.attendances ? [...match.attendances] : [];
                         const existingIdx = updatedAttendances.findIndex(a => a.playerId === selectedPlayer.id);
                         if (existingIdx >= 0) {
-                            updatedAttendances[existingIdx] = { ...updatedAttendances[existingIdx], status };
+                            updatedAttendances[existingIdx] = { ...updatedAttendances[existingIdx], status, autoAbsenceId: null };
                         } else {
                             updatedAttendances.push({ playerId: selectedPlayer.id, status });
                         }
@@ -218,6 +220,7 @@ export default function RespondAsPlayerPage({ isOpen, onClose, match: scopedMatc
                                                     >
                                                         <Calendar size={11} />
                                                         {formatDate(match.date)}
+                                                        {selectedPlayer && isAutoDeclined(match, selectedPlayer.id) && <AwayChip />}
                                                     </p>
                                                     {match.location && (
                                                         <p
@@ -282,6 +285,10 @@ function ScopedResponses({
         ?? (match.attendances?.find(a => a.playerId === playerId)?.status as AttendanceStatus | undefined)
         ?? 'Unknown';
 
+    const isAway = (playerId: number) =>
+        overrides[playerId] === undefined
+        && match.attendances?.some(a => a.playerId === playerId && a.status === 'NotPresent' && a.autoAbsenceId != null);
+
     const handleResponse = async (playerId: number, status: AttendanceStatus) => {
         hapticPatterns.tap();
         setUpdatingPlayerId(playerId);
@@ -330,6 +337,7 @@ function ScopedResponses({
                             >
                                 {player.name}
                             </span>
+                            {isAway(player.id) && <AwayChip />}
                             <ResponseControl
                                 status={statusOf(player.id)}
                                 updating={updatingPlayerId === player.id ? (updating as AttendanceStatus | null) : null}

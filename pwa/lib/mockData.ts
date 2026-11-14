@@ -13,6 +13,8 @@ export interface Player {
 export interface Attendance {
     playerId: number;
     status: 'Present' | 'NotPresent' | 'Maybe';
+    /** Set when an absence period answered this match (shows "Away"). */
+    autoAbsenceId?: number | null;
 }
 
 export interface Match {
@@ -90,6 +92,25 @@ function mockResult(homeScore: number, awayScore: number, weAreHome: boolean, re
     };
 }
 
+export interface MockAbsence {
+    id: number;
+    playerId: number;
+    startDate: string;
+    endDate: string;
+    note: string | null;
+}
+
+// Brussels calendar day of a relative date (YYYY-MM-DD).
+const relativeDay = (daysFromNow: number): string =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(new Date(getRelativeDate(daysFromNow)));
+
+// Absence periods (player_absences). Their auto-declines are seeded on the
+// matches below (autoAbsenceId).
+export const MOCK_ABSENCES: MockAbsence[] = [
+    { id: 1, playerId: 1, startDate: relativeDay(15), endDate: relativeDay(19), note: 'Summer holiday' },
+    { id: 2, playerId: 4, startDate: relativeDay(9), endDate: relativeDay(11), note: null },
+];
+
 // Matches with realistic future and past dates
 export const MOCK_MATCHES: Match[] = [
     // Upcoming matches
@@ -118,7 +139,7 @@ export const MOCK_MATCHES: Match[] = [
         teamName: 'Shotten FC',
         attendances: [
             { playerId: 1, status: 'Present' },
-            { playerId: 4, status: 'Maybe' },
+            { playerId: 4, status: 'NotPresent', autoAbsenceId: 2 },
             { playerId: 7, status: 'Present' },
         ],
     },
@@ -130,6 +151,7 @@ export const MOCK_MATCHES: Match[] = [
         teamId: 1,
         teamName: 'Shotten FC',
         attendances: [
+            { playerId: 1, status: 'NotPresent', autoAbsenceId: 1 },
             { playerId: 2, status: 'Present' },
         ],
     },

@@ -302,6 +302,8 @@ export function useUpdateAttendance() {
                     const existingIdx = match.attendances.findIndex(a => a.playerId === playerId);
                     if (existingIdx >= 0) {
                         match.attendances[existingIdx].status = status;
+                        // A manual answer is no longer an absence auto-decline.
+                        match.attendances[existingIdx].autoAbsenceId = null;
                     } else {
                         match.attendances.push({ playerId, status });
                     }

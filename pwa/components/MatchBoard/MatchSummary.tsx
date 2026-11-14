@@ -15,6 +15,7 @@ import AvailabilityCounts from './AvailabilityCounts';
 import AvailabilityRoster from './AvailabilityRoster';
 import { MatchResultBadge } from './MatchResult';
 import MotmCardHint from '../Motm/MotmCardHint';
+import AwayChip from '../Absences/AwayChip';
 
 interface MatchSummaryProps {
     match: Match;
@@ -82,6 +83,7 @@ export default function MatchSummary({
     const roster: RosterPlayer[] = useMemo(() => buildRoster(match, allPlayers), [match, allPlayers]);
 
     const myStatus = (roster.find(p => p.id === currentPlayerId)?.status || 'Unknown') as AttendanceStatus | 'Unknown';
+    const myAway = roster.find(p => p.id === currentPlayerId)?.away === true;
     const present = roster.filter(p => p.status === 'Present');
     const maybe = roster.filter(p => p.status === 'Maybe');
     const notPresent = roster.filter(p => p.status === 'NotPresent');
@@ -197,12 +199,15 @@ export default function MatchSummary({
                     {isForfait ? (
                         <span className="forfait-badge">Forfait</span>
                     ) : !isFinished ? (
-                        <ResponseControl
-                            status={myStatus}
-                            updating={updating as AttendanceStatus | null}
-                            onSelect={handleStatusUpdate}
-                            size="sm"
-                        />
+                        <>
+                            {myAway && <AwayChip />}
+                            <ResponseControl
+                                status={myStatus}
+                                updating={updating as AttendanceStatus | null}
+                                onSelect={handleStatusUpdate}
+                                size="sm"
+                            />
+                        </>
                     ) : match.result ? (
                         <MatchResultBadge result={match.result} />
                     ) : (

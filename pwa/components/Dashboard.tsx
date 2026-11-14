@@ -362,7 +362,7 @@ export default function Dashboard({
                         const existingIndex = updatedAttendances.findIndex(att => att.playerId === playerId);
 
                         if (existingIndex >= 0) {
-                            updatedAttendances[existingIndex] = { ...updatedAttendances[existingIndex], status: newStatus };
+                            updatedAttendances[existingIndex] = { ...updatedAttendances[existingIndex], status: newStatus, autoAbsenceId: null };
                         } else {
                             updatedAttendances.push({ playerId, status: newStatus });
                         }

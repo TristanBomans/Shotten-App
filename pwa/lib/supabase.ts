@@ -44,6 +44,8 @@ export interface Attendance {
     match_id: number;
     player_id: number;
     status: 'Present' | 'NotPresent' | 'Maybe';
+    /** Set when an absence period filled this answer in (migration 010). */
+    auto_absence_id?: number | null;
     created_at?: string;
     updated_at?: string;
 }
@@ -177,6 +179,8 @@ export interface AttendanceResponse {
     playerId: number;
     player: PlayerResponse | null;
     status: 'Present' | 'NotPresent' | 'Maybe';
+    /** The absence that auto-declined this match; null for a normal answer. */
+    autoAbsenceId: number | null;
 }
 
 export interface MatchResponse {
@@ -453,9 +457,10 @@ export async function createCoreMatch(match: Omit<CoreMatch, 'id' | 'created_at'
             player_id: p.id,
             status: 'NotPresent' as const
         }));
+        // Absent players may already have an auto-decline (migration 010 trigger).
         await getSupabaseServiceClient()
             .from('attendances')
-            .insert(attendances);
+            .upsert(attendances, { onConflict: 'match_id,player_id', ignoreDuplicates: true });
     }
     
     return data;
@@ -1017,7 +1022,8 @@ export async function toMatchResponse(match: CoreMatch): Promise<MatchResponse> 
                 matchId: a.match_id,
                 playerId: a.player_id,
                 player: player ? toPlayerResponse(player) : null,
-                status: a.status
+                status: a.status,
+                autoAbsenceId: a.auto_absence_id ?? null
             };
         })
     };
@@ -1060,7 +1066,8 @@ export async function toMatchesResponse(matches: CoreMatch[]): Promise<MatchResp
                 matchId: a.match_id,
                 playerId: a.player_id,
                 player: player ? toPlayerResponse(player) : null,
-                status: a.status
+                status: a.status,
+                autoAbsenceId: a.auto_absence_id ?? null
             };
         })
     }));

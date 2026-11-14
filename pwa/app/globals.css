@@ -1633,3 +1633,46 @@ button {
 .animate-fade-in {
   animation: fade-in 0.25s ease-out;
 }
+
+/* Native date inputs (absence periods): match the field style and theme */
+.date-field {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-3);
+  text-align: left;
+}
+
+.date-field::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+[data-theme='oled'] .date-field {
+  color-scheme: dark;
+}
+
+[data-theme='white'] .date-field {
+  color-scheme: light;
+}
+
+/* "Away" marker: an answer an absence period filled in */
+.away-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--r-full);
+  background: rgb(var(--no-rgb) / 0.1);
+  color: var(--no);
+  font-size: var(--fs-3xs);
+  font-weight: 500;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.away-chip[data-subtle] {
+  background: var(--bg-subtle);
+  color: var(--text-3);
+}
