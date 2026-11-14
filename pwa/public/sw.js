@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shotten-v7';
+const CACHE_NAME = 'shotten-v8';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
@@ -183,6 +183,13 @@ self.addEventListener('push', (event) => {
                 tag: payload.tag || 'shotten',
                 data: payload.data || options.data,
             };
+            // Action buttons (e.g. RSVP). Platforms without support (iOS) ignore
+            // them and the normal tap still opens data.url.
+            if (Array.isArray(payload.actions) && payload.actions.length > 0) {
+                options.actions = payload.actions
+                    .filter((a) => a && typeof a.action === 'string' && typeof a.title === 'string')
+                    .map(({ action, title }) => ({ action, title }));
+            }
         }
     } catch {
         if (event.data) {
@@ -193,27 +200,92 @@ self.addEventListener('push', (event) => {
     event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    const targetUrl = event.notification.data?.url || '/';
-    const origin = self.location.origin;
-    const absoluteUrl = new URL(targetUrl, origin).href;
+const RSVP_ACTIONS = {
+    'rsvp-present': { status: 'Present', ok: '✅ Genoteerd: je komt' },
+    'rsvp-absent': { status: 'NotPresent', ok: 'Genoteerd: je komt niet' },
+};
 
-    event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windowClients) => {
-            for (const client of windowClients) {
-                if ('focus' in client) {
-                    await client.focus();
-                    if ('navigate' in client) {
-                        return client.navigate(absoluteUrl);
-                    }
-                    client.postMessage({ type: 'NOTIFICATION_NAVIGATE', url: absoluteUrl });
-                    return client;
+const NOTIFICATION_ICON = '/icons/icon-192x192.png';
+const NOTIFICATION_BADGE = '/icons/badge-96x96.png';
+
+async function notifyClientsAttendanceUpdated(detail) {
+    try {
+        const windowClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        for (const client of windowClients) {
+            client.postMessage({ type: 'ATTENDANCE_UPDATED', ...detail });
+        }
+    } catch (error) {
+        console.warn('Failed to notify clients of attendance update:', error);
+    }
+}
+
+async function handleRsvpAction(notification, rsvp) {
+    const data = notification.data || {};
+    const matchId = Number(data.matchId);
+    const playerId = Number(data.playerId);
+    const tag = notification.tag || 'shotten';
+    const fallbackUrl = data.url || '/';
+
+    try {
+        const res = await fetch(
+            `/api/Matches/${matchId}/players/${playerId}/attendance?status=${rsvp.status}`,
+            { method: 'PUT', headers: { 'Content-Type': 'application/json' } }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        await self.registration.showNotification(rsvp.ok, {
+            body: notification.title || '',
+            icon: NOTIFICATION_ICON,
+            badge: NOTIFICATION_BADGE,
+            tag,
+            silent: true,
+            data: { url: fallbackUrl, kind: data.kind, matchId, playerId },
+        });
+        await notifyClientsAttendanceUpdated({ matchId, playerId, status: rsvp.status });
+    } catch (error) {
+        console.warn('RSVP from notification failed:', error);
+        await self.registration.showNotification('Antwoorden mislukt', {
+            body: 'Tik om de match te openen en zelf te antwoorden.',
+            icon: NOTIFICATION_ICON,
+            badge: NOTIFICATION_BADGE,
+            tag,
+            renotify: true,
+            data: { url: fallbackUrl },
+        });
+    }
+}
+
+function openTargetUrl(targetUrl) {
+    const absoluteUrl = new URL(targetUrl || '/', self.location.origin).href;
+    return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windowClients) => {
+        for (const client of windowClients) {
+            if ('focus' in client) {
+                await client.focus();
+                if ('navigate' in client) {
+                    return client.navigate(absoluteUrl);
                 }
+                client.postMessage({ type: 'NOTIFICATION_NAVIGATE', url: absoluteUrl });
+                return client;
             }
-            if (self.clients.openWindow) {
-                return self.clients.openWindow(absoluteUrl);
-            }
-        })
-    );
+        }
+        if (self.clients.openWindow) {
+            return self.clients.openWindow(absoluteUrl);
+        }
+    });
+}
+
+self.addEventListener('notificationclick', (event) => {
+    const notification = event.notification;
+    notification.close();
+
+    const data = notification.data || {};
+    const rsvp = RSVP_ACTIONS[event.action];
+    if (rsvp && Number.isFinite(Number(data.matchId)) && Number.isFinite(Number(data.playerId))
+        && data.matchId != null && data.playerId != null) {
+        // Respond in the background; don't open a window.
+        event.waitUntil(handleRsvpAction(notification, rsvp));
+        return;
+    }
+
+    event.waitUntil(openTargetUrl(data.url));
 });
