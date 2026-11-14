@@ -201,8 +201,8 @@ self.addEventListener('push', (event) => {
 });
 
 const RSVP_ACTIONS = {
-    'rsvp-present': { status: 'Present', ok: '✅ Genoteerd: je komt' },
-    'rsvp-absent': { status: 'NotPresent', ok: 'Genoteerd: je komt niet' },
+    'rsvp-present': { status: 'Present', ok: "✅ You're in" },
+    'rsvp-absent': { status: 'NotPresent', ok: "Got it — you can't make it" },
 };
 
 const NOTIFICATION_ICON = '/icons/icon-192x192.png';
@@ -244,8 +244,8 @@ async function handleRsvpAction(notification, rsvp) {
         await notifyClientsAttendanceUpdated({ matchId, playerId, status: rsvp.status });
     } catch (error) {
         console.warn('RSVP from notification failed:', error);
-        await self.registration.showNotification('Antwoorden mislukt', {
-            body: 'Tik om de match te openen en zelf te antwoorden.',
+        await self.registration.showNotification("Couldn't save your answer", {
+            body: 'Tap to open the match and respond.',
             icon: NOTIFICATION_ICON,
             badge: NOTIFICATION_BADGE,
             tag,
