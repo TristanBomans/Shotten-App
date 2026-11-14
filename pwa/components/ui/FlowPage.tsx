@@ -4,7 +4,7 @@ import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, X } from 'lucide-react';
-import { pageZIndex, useNavLevel } from '@/lib/navHistory';
+import { pageZIndex, useBackClose, useNavLevel } from '@/lib/navHistory';
 
 interface FlowPageProps {
     open: boolean;
@@ -16,6 +16,11 @@ interface FlowPageProps {
     headerActions?: ReactNode;
     /** Disable the default body scroller when the flow manages its own scrolling. */
     unpadded?: boolean;
+    /**
+     * Give the page its own history entry so system back closes it. For pages
+     * opened from local state; stack pages are already in the URL.
+     */
+    backClose?: boolean;
     children: ReactNode;
 }
 
@@ -31,9 +36,11 @@ export default function FlowPage({
     onClose,
     headerActions,
     unpadded = false,
+    backClose = false,
     children,
 }: FlowPageProps) {
     const level = useNavLevel();
+    useBackClose(open && backClose, onBack);
     useEffect(() => {
         if (!open) return;
         const handleKey = (event: KeyboardEvent) => {

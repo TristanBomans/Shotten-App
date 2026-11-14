@@ -96,6 +96,7 @@ export default function WrappedPage({ open, model, onClose }: WrappedPageProps) 
 
     return (
         <FlowPage
+            backClose
             open={open}
             title="Season Wrapped"
             subtitle={model ? `${model.title} · ${model.season}` : undefined}
