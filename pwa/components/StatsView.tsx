@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost, Hourglass, CalendarDays, Clock3 } from 'lucide-react';
+import { Trophy, Megaphone, Sparkles, Armchair, Beer, Ghost, Hourglass, CalendarDays, Clock3, Flag } from 'lucide-react';
 import type { Match, Player } from '@/lib/mockData';
 import { parseDate, parseDateToTimestamp } from '@/lib/dateUtils';
 import { hapticPatterns } from '@/lib/haptic';
+import { Switch } from './ui/controls';
 import PlayerDetailPage from './Pages/PlayerDetailPage';
 import RulesPage from './Pages/RulesPage';
 
@@ -45,15 +46,21 @@ export interface AttendanceHistoryPoint {
     matchName: string;
 }
 
-function calculatePlayerStats(player: Player, allMatches: Match[]) {
-    // Filter: player's team's matches, past, and at least 1 person Present
+export const INCLUDE_FORFAIT_STORAGE_KEY = 'statsIncludeForfait';
+
+function calculatePlayerStats(player: Player, allMatches: Match[], includeForfait = false) {
+    // Filter: player's team's matches, past, and at least 1 person Present.
+    // Forfait matches are skipped by default; when opted in they count as long
+    // as anyone responded (nobody may be "Present" when the team forfeited).
     const now = Date.now();
     const relevantMatches = allMatches.filter(m => {
         const isPast = parseDateToTimestamp(m.date) < now;
         const isPlayerTeam = player.teamIds.includes(m.teamId);
-        const hasAttendees = m.attendances?.some(a => a.status === 'Present');
-        const isForfait = m.forfait === true;
-        return isPast && isPlayerTeam && hasAttendees && !isForfait;
+        if (!isPast || !isPlayerTeam) return false;
+        if (m.forfait === true) {
+            return includeForfait && (m.attendances?.length ?? 0) > 0;
+        }
+        return m.attendances?.some(a => a.status === 'Present') ?? false;
     });
 
     const sortedMatches = [...relevantMatches].sort((a, b) =>
@@ -191,6 +198,22 @@ export default function StatsView({
     const [internalShowRules, setInternalShowRules] = useState(false);
     const isRulesOpen = showRules ?? internalShowRules;
 
+    const [includeForfait, setIncludeForfait] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        try {
+            return localStorage.getItem(INCLUDE_FORFAIT_STORAGE_KEY) === 'true';
+        } catch {
+            return false;
+        }
+    });
+    const toggleIncludeForfait = (next: boolean) => {
+        hapticPatterns.toggle();
+        setIncludeForfait(next);
+        try {
+            localStorage.setItem(INCLUDE_FORFAIT_STORAGE_KEY, String(next));
+        } catch { /* storage unavailable */ }
+    };
+
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {
         const interval = setInterval(() => setNow(Date.now()), 30_000);
@@ -206,8 +229,13 @@ export default function StatsView({
 
     const playerStats = players.map(player => ({
         ...player,
-        stats: calculatePlayerStats(player, matches),
+        stats: calculatePlayerStats(player, matches, includeForfait),
     })).sort((a, b) => b.stats.attendancePct - a.stats.attendancePct);
+
+    const pastForfaitCount = useMemo(
+        () => matches.filter(m => m.forfait === true && parseDateToTimestamp(m.date) < now).length,
+        [matches, now]
+    );
 
     const hasLeaderboardData = useMemo(
         () => playerStats.some(p => p.stats.totalMatches > 0),
@@ -231,6 +259,34 @@ export default function StatsView({
         ? playerStats.find(p => p.id === selectedPlayerId) || null
         : null;
 
+    const forfaitToggle = pastForfaitCount > 0 ? (
+        <div className="list-section" style={{ marginBottom: 12 }}>
+            <div className="row row-static" style={{ minHeight: 48 }}>
+                <span
+                    className="flex-center"
+                    style={{ width: 20, height: 20, color: 'var(--text-3)', flexShrink: 0 }}
+                    aria-hidden
+                >
+                    <Flag size={16} />
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: 'var(--fs-sm)', fontWeight: 500 }}>
+                        Count forfait matches
+                    </span>
+                    <span style={{ display: 'block', fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', marginTop: 2 }}>
+                        <span className="t-num">{pastForfaitCount}</span> forfait {pastForfaitCount === 1 ? 'match' : 'matches'}
+                        {includeForfait ? ' included in attendance %' : ' left out of attendance %'}
+                    </span>
+                </span>
+                <Switch
+                    checked={includeForfait}
+                    onChange={toggleIncludeForfait}
+                    aria-label="Count forfait matches in attendance percentage"
+                />
+            </div>
+        </div>
+    ) : null;
+
     if (!hasLeaderboardData) {
         const diffMs = nextMatchDate ? nextMatchDate.getTime() - now : null;
         const short = diffMs != null ? formatCountdownShort(diffMs) : null;
@@ -247,6 +303,8 @@ export default function StatsView({
                     <span>Attendance leaderboard</span>
                     <span className="t-num" style={{ opacity: 0.5 }}>{playerStats.length}</span>
                 </div>
+
+                {forfaitToggle}
 
                 <div
                     className="panel"
@@ -376,6 +434,8 @@ export default function StatsView({
 
     return (
         <div className="screen">
+            {forfaitToggle}
+
             <div className="section-label">
                 <span>Attendance leaderboard</span>
                 <span className="t-num">{playerStats.length}</span>
