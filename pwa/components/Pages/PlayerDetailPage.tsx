@@ -12,6 +12,8 @@ import { StatusChip } from '../ui/controls';
 import PlayerMotmSummary from '../Motm/PlayerMotmSummary';
 import { MatchGoalsBadge, PlayerGoalsSection, WrappedEntrySection } from '../Stats/PlayerGoalsSection';
 import type { PlayerGoalStats } from '@/lib/goals';
+import type { BadgeId, PlayerBadge } from '@/lib/badges';
+import PlayerBadgesSection from '../Badges/PlayerBadgesSection';
 
 interface PlayerDetailPageProps {
     open: boolean;
@@ -22,6 +24,9 @@ interface PlayerDetailPageProps {
     goals?: PlayerGoalStats;
     showAssists?: boolean;
     onOpenWrapped?: () => void;
+    /** Achievement badges (lib/badges.ts); undefined hides the section. */
+    badges?: PlayerBadge[];
+    freshBadges?: BadgeId[];
 }
 
 const statusConfig = {
@@ -31,7 +36,7 @@ const statusConfig = {
     ghost: { color: 'var(--tbd)', label: 'Ghost' },
 } as const;
 
-export default function PlayerDetailPage({ open, player, rank, onClose, goals, showAssists = false, onOpenWrapped }: PlayerDetailPageProps) {
+export default function PlayerDetailPage({ open, player, rank, onClose, goals, showAssists = false, onOpenWrapped, badges, freshBadges }: PlayerDetailPageProps) {
     if (!player?.stats) return null;
 
     const s = player.stats;
@@ -95,6 +100,8 @@ export default function PlayerDetailPage({ open, player, rank, onClose, goals, s
                     </p>
                 )}
             </div>
+
+            <PlayerBadgesSection badges={badges} highlight={freshBadges} />
 
             <PlayerGoalsSection playerName={player.name} goals={goals} showAssists={showAssists} />
 

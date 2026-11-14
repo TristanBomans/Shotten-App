@@ -1,0 +1,215 @@
+/* Achievement badges: tile grid on the player page, detail sheet, toast. */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 10px 8px;
+}
+
+@media (min-width: 520px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 4px 8px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-1);
+  text-align: center;
+}
+
+.tile:active {
+  background: var(--bg-subtle);
+}
+
+@media (hover: hover) {
+  .tile:hover {
+    background: var(--bg-subtle);
+  }
+}
+
+.name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 100%;
+  font-size: var(--fs-3xs);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+
+.tile:not([data-earned]) .name {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.count {
+  position: absolute;
+  top: -5px;
+  right: -9px;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-full);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  box-shadow: 0 0 0 2px var(--bg-panel);
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  max-width: 76px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.track {
+  flex: 1;
+  height: 3px;
+  border-radius: var(--r-full);
+  background: var(--bg-subtle-strong);
+  overflow: hidden;
+}
+
+.track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--text-2);
+}
+
+/* Unseen badge: a soft ring that fades after a few pulses. */
+.tile[data-fresh] {
+  animation: badge-fresh 1.6s ease-out 3;
+}
+
+@keyframes badge-fresh {
+  0% {
+    box-shadow: inset 0 0 0 1.5px rgb(var(--warn-rgb) / 0.7);
+    background: rgb(var(--warn-rgb) / 0.08);
+  }
+  100% {
+    box-shadow: inset 0 0 0 1.5px rgb(var(--warn-rgb) / 0);
+    background: transparent;
+  }
+}
+
+/* Detail sheet */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 4px 0 16px;
+}
+
+.heroName {
+  font-size: var(--fs-lg);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.rule {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  max-width: 300px;
+}
+
+.bigTrack {
+  width: 100%;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--bg-subtle-strong);
+  overflow: hidden;
+}
+
+.bigTrack > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--text-2);
+}
+
+/* "New badge!" toast */
+.toastWrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: calc(var(--safe-top) + 10px);
+  z-index: 9000;
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--screen-x);
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 10px 10px 12px;
+  border-radius: var(--r-lg);
+  border: 1px solid rgb(var(--warn-rgb) / 0.3);
+  background: var(--bg-sheet);
+  box-shadow: var(--shadow-overlay);
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+}
+
+.toastKicker {
+  display: block;
+  font-size: var(--fs-3xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--warn);
+}
+
+.toastTitle {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toastSub {
+  display: block;
+  font-size: var(--fs-3xs);
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile[data-fresh] {
+    animation: none;
+    box-shadow: inset 0 0 0 1.5px rgb(var(--warn-rgb) / 0.5);
+  }
+}

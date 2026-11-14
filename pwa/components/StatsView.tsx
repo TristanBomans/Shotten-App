@@ -17,6 +17,9 @@ import { useGoalsData } from '@/lib/useGoals';
 import { buildPlayerWrapped, buildTeamWrapped, isSeasonOver, type WrappedTarget } from '@/lib/wrapped';
 import { useMotmVotes } from '@/lib/motm';
 import { getMotmVotingState, summarizeMotm } from '@/lib/motmRules';
+import type { BadgeId } from '@/lib/badges';
+import { useBadgeIndex } from './Badges/useBadgeIndex';
+import NewBadgeToast from './Badges/NewBadgeToast';
 
 interface StatsViewProps {
     matches: Match[];
@@ -234,11 +237,19 @@ export default function StatsView({
     })).sort((a, b) => b.stats.attendancePct - a.stats.attendancePct), [players, matches, includeForfait]);
 
 
-    const { data: goalsData } = useGoalsData();
+    const { data: goalsData, loading: goalsLoading } = useGoalsData();
     const goalsIndex = useMemo(
         () => buildGoalsIndex(players, matches, goalsData),
         [players, matches, goalsData]
     );
+    const badgeIndex = useBadgeIndex(playerStats, matches, goalsIndex, goalsData, goalsLoading, now);
+    const badgeCounts = useMemo(() => {
+        const counts = new Map<number, number>();
+        for (const [id, badges] of badgeIndex.byPlayer) counts.set(id, badges.filter(b => b.earned).length);
+        return counts;
+    }, [badgeIndex.byPlayer]);
+    // Badges the "New badge!" toast just announced; highlighted on the player page.
+    const [freshBadges, setFreshBadges] = useState<BadgeId[]>([]);
     const [statsMode, setStatsMode] = useState<StatsMode>('attendance');
     const [wrappedTarget, setWrappedTarget] = useState<WrappedTarget | null>(null);
     const openWrapped = (target: WrappedTarget) => setWrappedTarget(target);
@@ -447,6 +458,7 @@ export default function StatsView({
                     <AttendanceLeaderboard
                         playerStats={playerStats}
                         currentPlayerId={currentPlayerId}
+                        badgeCounts={badgeCounts}
                         onSelectPlayer={id => onSelectPlayer?.(id)}
                     />
                 )}
@@ -471,6 +483,18 @@ export default function StatsView({
                 goals={selectedPlayer ? goalsIndex.byPlayer.get(selectedPlayer.id) : undefined}
                 showAssists={goalsIndex.hasAssists}
                 onOpenWrapped={seasonOver && selectedPlayer ? () => openWrapped({ kind: 'player', playerId: selectedPlayer.id }) : undefined}
+                badges={selectedPlayer ? badgeIndex.byPlayer.get(selectedPlayer.id) : undefined}
+                freshBadges={selectedPlayer?.id === currentPlayerId ? freshBadges : undefined}
+            />
+
+            <NewBadgeToast
+                playerId={currentPlayerId}
+                badges={badgeIndex.byPlayer.get(currentPlayerId)}
+                ready={badgeIndex.ready}
+                onOpen={ids => {
+                    setFreshBadges(ids);
+                    onSelectPlayer?.(currentPlayerId);
+                }}
             />
 
             <WrappedPage open={wrappedModel != null} model={wrappedModel} onClose={() => setWrappedTarget(null)} />

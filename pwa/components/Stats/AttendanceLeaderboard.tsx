@@ -1,5 +1,6 @@
 'use client';
 
+import { Medal } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import type { MatchResult, PlayerWithStats } from '../StatsView';
 
@@ -7,6 +8,8 @@ interface AttendanceLeaderboardProps {
     playerStats: PlayerWithStats[];
     currentPlayerId: number;
     onSelectPlayer?: (id: number) => void;
+    /** Earned badge count per player; 0/missing shows nothing. */
+    badgeCounts?: Map<number, number>;
 }
 
 const formDotColor: Record<MatchResult['status'], string> = {
@@ -17,7 +20,7 @@ const formDotColor: Record<MatchResult['status'], string> = {
 };
 
 /** Primary stats view: players ranked by attendance %. */
-export default function AttendanceLeaderboard({ playerStats, currentPlayerId, onSelectPlayer }: AttendanceLeaderboardProps) {
+export default function AttendanceLeaderboard({ playerStats, currentPlayerId, onSelectPlayer, badgeCounts }: AttendanceLeaderboardProps) {
     return (
         <>
             <div className="section-label">
@@ -28,6 +31,7 @@ export default function AttendanceLeaderboard({ playerStats, currentPlayerId, on
                 {playerStats.map((player, i) => {
                     const isMe = player.id === currentPlayerId;
                     const RankIcon = player.stats.rank.icon;
+                    const badgeCount = badgeCounts?.get(player.id) ?? 0;
                     return (
                         <button
                             key={player.id}
@@ -36,7 +40,7 @@ export default function AttendanceLeaderboard({ playerStats, currentPlayerId, on
                                 hapticPatterns.tap();
                                 onSelectPlayer?.(player.id);
                             }}
-                            aria-label={`${player.name}, rank ${i + 1}, ${player.stats.attendancePct} percent attendance`}
+                            aria-label={`${player.name}, rank ${i + 1}, ${player.stats.attendancePct} percent attendance${badgeCount > 0 ? `, ${badgeCount} ${badgeCount === 1 ? 'badge' : 'badges'}` : ''}`}
                             style={{
                                 minHeight: 48,
                                 background: isMe ? 'var(--bg-subtle)' : undefined,
@@ -94,9 +98,35 @@ export default function AttendanceLeaderboard({ playerStats, currentPlayerId, on
                                             />
                                         ))}
                                     </span>
-                                    <span style={{ fontSize: 'var(--fs-3xs)', color: 'var(--text-3)' }}>
+                                    <span
+                                        style={{
+                                            fontSize: 'var(--fs-3xs)',
+                                            color: 'var(--text-3)',
+                                            minWidth: 0,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
                                         {player.stats.rank.name}
                                     </span>
+                                    {badgeCount > 0 && (
+                                        <span
+                                            className="t-num"
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 2,
+                                                flexShrink: 0,
+                                                fontSize: 'var(--fs-3xs)',
+                                                fontWeight: 600,
+                                                color: 'var(--text-3)',
+                                            }}
+                                        >
+                                            <Medal size={10} strokeWidth={2.25} aria-hidden />
+                                            {badgeCount}
+                                        </span>
+                                    )}
                                 </span>
                             </span>
 

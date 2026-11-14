@@ -23,7 +23,8 @@
     "deploy": "bun run build:cf && wrangler deploy",
     "build:workers": "bun install && bun scripts/generate-version.js && bunx next build && bash scripts/build-opennext.sh",
     "preview:workers": "bun run build:workers && wrangler dev --config wrangler.workers.jsonc",
-    "deploy:workers": "bun run build:workers && wrangler deploy --config wrangler.workers.jsonc"
+    "deploy:workers": "bun run build:workers && wrangler deploy --config wrangler.workers.jsonc",
+    "check:badges": "bun scripts/check-badges.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
