@@ -1,9 +1,10 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, type CSSProperties } from 'react';
 import { Home, BarChart2, Settings, Trophy } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { useWhatsNew } from '@/lib/whatsNew';
+import { useGlassMotion } from './controls';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
 
@@ -32,6 +33,10 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
     const isNavigatingRef = useRef(false);
     const { unseenCount } = useWhatsNew();
     const hasUnread = (view: View) => view === 'settings' && unseenCount > 0;
+    const activeIndex = navItems.findIndex(item => item.id === currentView);
+    // Same liquid-glass lens as the tab bars: the active pill stretches
+    // toward the new tab and springs in.
+    const { rootRef, thumbRef, lensRef } = useGlassMotion<HTMLElement>(true, activeIndex, '.tabbar-item');
 
     const handleNavigate = useCallback((view: View) => {
         if (isNavigatingRef.current) return;
@@ -53,7 +58,15 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
     return (
         <>
             {/* Mobile: floating capsule dock */}
-            <nav className="tabbar" data-hidden={isHidden} aria-label="Primary">
+            <nav
+                ref={rootRef}
+                className="tabbar"
+                data-hidden={isHidden}
+                aria-label="Primary"
+                style={{ '--tab-count': navItems.length, '--tab-index': Math.max(0, activeIndex) } as CSSProperties}
+            >
+                <span ref={thumbRef} className="tabbar-thumb" aria-hidden />
+                <span ref={lensRef} className="seg-lens tabbar-lens" aria-hidden />
                 {navItems.map(({ id, icon: Icon, label }) => (
                     <button
                         key={id}

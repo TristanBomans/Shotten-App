@@ -55,11 +55,11 @@ interface SegmentedControlProps<T extends string> {
 }
 
 /* Lens motion: stretch along the travel, overshoot a touch, settle.
-   Offsets are in thumb widths (one option = 100%). */
+   Offsets are in px (the thumb already sits at its new spot). */
 const GLASS_DURATION = 380;
 
 function glassKeyframes(from: number, overshoot: number, lens: boolean): Keyframe[] {
-    const t = (x: number) => `translateX(${x * 100}%)`;
+    const t = (x: number) => `translateX(${x}px)`;
     return [
         { offset: 0, transform: `${t(from)} scale(1, 1)`, opacity: lens ? 0 : 1, easing: 'cubic-bezier(0.3, 0, 0.6, 1)' },
         { offset: 0.18, transform: `${t(from * 0.86)} scale(1.1, 0.94)`, opacity: 1 },
@@ -69,8 +69,17 @@ function glassKeyframes(from: number, overshoot: number, lens: boolean): Keyfram
     ];
 }
 
-function useGlassMotion(enabled: boolean, index: number) {
-    const rootRef = useRef<HTMLDivElement>(null);
+/**
+ * Liquid-glass thumb motion shared by segmented controls and the tab bar.
+ * `itemSelector` finds the options inside the root (used to measure travel
+ * and to give the newly selected option a small pop).
+ */
+export function useGlassMotion<R extends HTMLElement = HTMLDivElement>(
+    enabled: boolean,
+    index: number,
+    itemSelector = '.seg-item',
+) {
+    const rootRef = useRef<R>(null);
     const thumbRef = useRef<HTMLSpanElement>(null);
     const lensRef = useRef<HTMLSpanElement>(null);
     const prevIndex = useRef(index);
@@ -86,14 +95,18 @@ function useGlassMotion(enabled: boolean, index: number) {
 
         // The thumb is already at its new `left`; animate from where it was.
         const delta = from - index;
-        const overshoot = -Math.sign(delta) * 0.07;
+        const items = root.querySelectorAll<HTMLElement>(itemSelector);
+        const travel = items[from] && items[index]
+            ? items[from].offsetLeft - items[index].offsetLeft
+            : delta * thumb.offsetWidth;
+        const overshoot = -Math.sign(delta) * 0.07 * thumb.offsetWidth;
         const timing: KeyframeAnimationOptions = { duration: GLASS_DURATION + 40 * (Math.abs(delta) - 1) };
         root.dataset.moving = '';
         const runs = [
-            thumb.animate(glassKeyframes(delta, overshoot, false), timing),
-            lens.animate(glassKeyframes(delta, overshoot, true), timing),
+            thumb.animate(glassKeyframes(travel, overshoot, false), timing),
+            lens.animate(glassKeyframes(travel, overshoot, true), timing),
         ];
-        const label = root.querySelectorAll<HTMLElement>('.seg-item')[index];
+        const label = items[index];
         if (label) {
             runs.push(label.animate(
                 [
@@ -109,7 +122,7 @@ function useGlassMotion(enabled: boolean, index: number) {
             runs.forEach((run) => run.cancel());
             delete root.dataset.moving;
         };
-    }, [enabled, index]);
+    }, [enabled, index, itemSelector]);
 
     return { rootRef, thumbRef, lensRef };
 }
