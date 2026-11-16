@@ -205,6 +205,8 @@ export default function MatchPage({
     const mapUrl = match.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}` : null;
     const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${dateObj.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${new Date(dateObj.getTime() + 2 * 60 * 60 * 1000).toISOString().replace(/[-:]/g, '').split('.')[0]}Z&location=${encodeURIComponent(match.location || '')}`;
 
+    const showResponseDock = Boolean(onRespond) && !isFinished && !match.forfait;
+
     const paneStyle: React.CSSProperties = {
         minWidth: '100%',
         scrollSnapAlign: 'center',
@@ -217,6 +219,7 @@ export default function MatchPage({
             {open && (
                 <motion.div
                     className="flow-page"
+                    data-has-dock={showResponseDock || undefined}
                     style={{ zIndex: zBase }}
                     initial={{ x: '100%' }}
                     animate={{ x: 0 }}
@@ -341,15 +344,7 @@ export default function MatchPage({
                                         <span className="forfait-badge">Forfait</span>
                                         <span className="t-caption">This match will not be played.</span>
                                     </div>
-                                ) : onRespond && !isFinished && (
-                                    <ResponsePicker
-                                        status={myResponse}
-                                        updating={respondUpdating}
-                                        onSelect={onRespond}
-                                        highlight={highlightResponse}
-                                        note={roster.find(p => p.id === currentPlayerId)?.away ? <AwayChip label="Away period" /> : undefined}
-                                    />
-                                )}
+                                ) : null}
                                 <SquadView statusGroups={statusGroups} currentPlayerId={currentPlayerId} onOpenPlayer={onOpenPlayer} />
                             </div>
                         </div>
@@ -376,6 +371,17 @@ export default function MatchPage({
                             </div>
                         )}
                     </div>
+
+                    {/* Your response: docked at the bottom, in thumb reach on both tabs */}
+                    {showResponseDock && onRespond && (
+                        <ResponsePicker
+                            status={myResponse}
+                            updating={respondUpdating}
+                            onSelect={onRespond}
+                            highlight={highlightResponse}
+                            note={roster.find(p => p.id === currentPlayerId)?.away ? <AwayChip label="Away period" /> : undefined}
+                        />
+                    )}
 
                     {/* More menu (Directions / Add to Calendar / View opponent on LZV Cup) */}
                     <GlassMenu open={showMenu} zIndex={zBase + 4} onDismiss={() => setShowMenu(false)}>

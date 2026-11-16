@@ -447,8 +447,10 @@ interface ResponsePickerProps {
 }
 
 /**
- * Full-width sliding-pill attendance choice for match pages. No pill until
- * the player answers; the unanswered state is gently emphasised instead.
+ * Attendance choice for match pages, docked at the bottom of the page in
+ * thumb reach (a glass panel floating over the content, like the stats
+ * switch). The pill moves with the liquid-glass lens. No pill until the
+ * player answers; the unanswered state is gently emphasised instead.
  * Match cards keep the compact ResponseControl.
  */
 export function ResponsePicker({ status, updating, onSelect, highlight = false, note }: ResponsePickerProps) {
@@ -456,15 +458,17 @@ export function ResponsePicker({ status, updating, onSelect, highlight = false, 
     const unanswered = value === null;
 
     return (
-        <section style={{ marginBottom: 'var(--sp-5)' }}>
-            <div className="section-label">
+        <section className="resp-dock" aria-label="Your response">
+            <div className="resp-dock-panel">
+            <div className="resp-dock-label">
                 <span>Your response</span>
-                {unanswered && <span style={{ color: 'var(--accent)', fontSize: 'var(--fs-2xs)' }}>Answer needed</span>}
+                {unanswered && <span style={{ color: 'var(--accent)' }}>Answer needed</span>}
                 {!unanswered && note}
             </div>
             <SegmentedControl
                 variant="choice"
                 size="lg"
+                appearance="glass"
                 aria-label="Your response"
                 className={['resp-picker', highlight ? 'match-focus-pulse' : ''].filter(Boolean).join(' ')}
                 value={value}
@@ -488,6 +492,7 @@ export function ResponsePicker({ status, updating, onSelect, highlight = false, 
                     ),
                 }))}
             />
+            </div>
         </section>
     );
 }

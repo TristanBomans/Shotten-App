@@ -830,6 +830,46 @@ button {
   will-change: transform, opacity, filter;
 }
 
+/* Match page response picker, docked over the bottom of the page (thumb
+   reach). The panes get extra bottom padding so nothing hides under it. */
+.resp-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  padding: 0 var(--screen-x) calc(var(--safe-bottom) + var(--sp-3));
+  pointer-events: none;
+}
+
+.resp-dock-panel {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 6px;
+  border-radius: 28px;
+  background: var(--bg-header);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--border-hairline);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.22);
+  pointer-events: auto;
+}
+
+.resp-dock-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 2px 12px 6px;
+  font-size: var(--fs-3xs);
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.flow-page[data-has-dock] .flow-body-inner {
+  padding-bottom: calc(var(--safe-bottom) + var(--sp-8) + 92px);
+}
+
 /* Unanswered: a quiet accent ring so it reads as "answer needed" */
 .resp-picker[data-empty] {
   box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / 0.35);
