@@ -1211,9 +1211,55 @@ button {
 }
 
 .tabbar-item[aria-current='page'] {
-  background: var(--bg-subtle-strong);
   color: var(--text-1);
+}
+
+/* Active pill: one thumb that slides between the four slots (5px padding,
+   4px gaps). While it moves, the shared glass lens (.seg-lens) rides over
+   the icons, same motion as the segmented tab bars (useGlassMotion). */
+.tabbar {
+  --tab-count: 4;
+  --tab-index: 0;
+  --tab-w: calc((100% - 10px - (var(--tab-count) - 1) * 4px) / var(--tab-count));
+  isolation: isolate;
+}
+
+.tabbar-thumb,
+.tabbar-lens {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  width: var(--tab-w);
+  left: calc(5px + var(--tab-index) * (var(--tab-w) + 4px));
+  border-radius: var(--r-full);
+  pointer-events: none;
+  transform-origin: center;
+}
+
+.tabbar-thumb {
+  z-index: 0;
+  background: var(--bg-subtle-strong);
   box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+
+.tabbar-item {
+  position: relative;
+  z-index: 1;
+}
+
+.tabbar-lens {
+  z-index: 2;
+}
+
+.tabbar[data-moving] .tabbar-lens {
+  visibility: visible;
+  will-change: transform, opacity;
+  -webkit-backdrop-filter: blur(0.6px) saturate(1.8) brightness(var(--glass-brightness));
+  backdrop-filter: blur(0.6px) saturate(1.8) brightness(var(--glass-brightness));
+}
+
+.tabbar[data-moving] .tabbar-thumb {
+  will-change: transform;
 }
 
 .tabbar-item[aria-current='page'] svg {
@@ -1234,6 +1280,57 @@ button {
 @media (min-width: 1024px) {
   .tabbar {
     display: none;
+  }
+}
+
+/* Stats: Attendance/Goals switch docked above the tab bar (thumb reach).
+   The screen is a full-height column so the dock sits at the bottom even
+   when the list is short; it is sticky (not fixed) so it travels with the
+   stats page when you swipe between tabs. Its resting spot is exactly the
+   screen's bottom padding, so it never jumps when you scroll to the end. */
+.stats-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.stats-screen-body {
+  flex: 1 0 auto;
+}
+
+.stats-mode-dock {
+  position: sticky;
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + var(--sp-6));
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  margin-top: var(--sp-4);
+  pointer-events: none;
+}
+
+.stats-mode-dock .seg {
+  width: min(calc(100% - 96px), 240px);
+  height: 40px;
+  padding: 3px;
+  background: var(--bg-header);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--border-hairline);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  pointer-events: auto;
+}
+
+.stats-mode-dock .seg-thumb,
+.stats-mode-dock .seg-lens {
+  top: 3px;
+  bottom: 3px;
+  width: calc((100% - 6px) / var(--seg-count));
+  left: calc(3px + (100% - 6px) * var(--seg-index) / var(--seg-count));
+}
+
+@media (min-width: 1024px) {
+  .stats-mode-dock {
+    bottom: var(--sp-8);
   }
 }
 

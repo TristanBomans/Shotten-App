@@ -10,6 +10,8 @@ import MotmLeaderboard from './Motm/MotmLeaderboard';
 import AttendanceLeaderboard from './Stats/AttendanceLeaderboard';
 import GoalsLeaderboard from './Stats/GoalsLeaderboard';
 import StatsModeHeader, { STATS_MODE_ORDER, type StatsMode } from './Stats/StatsModeHeader';
+import StatsModeDock from './Stats/StatsModeDock';
+import { NAV_RESELECT_EVENT, type NavReselectDetail } from './ui/AppNav';
 import ModeSwap from './ui/ModeSwap';
 import WrappedPage from './Wrapped/WrappedPage';
 import { buildGoalsIndex } from '@/lib/goals';
@@ -240,6 +242,17 @@ export default function StatsView({
         [players, matches, goalsData]
     );
     const [statsMode, setStatsMode] = useState<StatsMode>('attendance');
+    // Tapping the Stats tab again while on Stats flips Attendance/Goals.
+    const hasGoals = goalsIndex.hasData;
+    useEffect(() => {
+        if (!hasGoals) return;
+        const onReselect = (event: Event) => {
+            if ((event as CustomEvent<NavReselectDetail>).detail?.view !== 'stats') return;
+            setStatsMode(mode => (mode === 'goals' ? 'attendance' : 'goals'));
+        };
+        window.addEventListener(NAV_RESELECT_EVENT, onReselect);
+        return () => window.removeEventListener(NAV_RESELECT_EVENT, onReselect);
+    }, [hasGoals]);
     const [wrappedTarget, setWrappedTarget] = useState<WrappedTarget | null>(null);
     const openWrapped = (target: WrappedTarget) => setWrappedTarget(target);
     const seasonOver = useMemo(() => isSeasonOver(matches, now), [matches, now]);
@@ -425,11 +438,9 @@ export default function StatsView({
     }
 
     return (
-        <div className="screen">
+        <div className="screen stats-screen">
+            <div className="stats-screen-body">
             <StatsModeHeader
-                mode={statsMode}
-                onModeChange={setStatsMode}
-                showGoals={goalsIndex.hasData}
                 onOpenWrapped={seasonOver ? () => openWrapped({ kind: 'team' }) : undefined}
             />
 
@@ -474,6 +485,9 @@ export default function StatsView({
             />
 
             <WrappedPage open={wrappedModel != null} model={wrappedModel} onClose={() => setWrappedTarget(null)} />
+            </div>
+
+            {hasGoals && <StatsModeDock mode={statsMode} onModeChange={setStatsMode} />}
         </div>
     );
 }
