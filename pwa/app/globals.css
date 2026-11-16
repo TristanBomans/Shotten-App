@@ -1262,6 +1262,27 @@ button {
   will-change: transform;
 }
 
+/* Live swipe: the pill follows the page position, the glass lens is on and
+   stretches with swipe speed (AppNav sets --tab-pos / --tab-stretch). */
+.tabbar-lens {
+  transition: opacity 180ms ease, visibility 0s linear 180ms;
+}
+
+.tabbar[data-tracking] .tabbar-thumb,
+.tabbar[data-tracking] .tabbar-lens {
+  left: calc(5px + var(--tab-pos) * (var(--tab-w) + 4px));
+  transform: scale(calc(1 + var(--tab-stretch, 0)), calc(1 - var(--tab-stretch, 0) * 0.5));
+}
+
+.tabbar[data-tracking] .tabbar-lens {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 120ms ease;
+  will-change: left, transform;
+  -webkit-backdrop-filter: blur(0.6px) saturate(1.8) brightness(var(--glass-brightness));
+  backdrop-filter: blur(0.6px) saturate(1.8) brightness(var(--glass-brightness));
+}
+
 .tabbar-item[aria-current='page'] svg {
   transform: scale(1.06);
 }

@@ -92,6 +92,8 @@ export function useGlassMotion<R extends HTMLElement = HTMLDivElement>(
         const lens = lensRef.current;
         if (!enabled || from === index || index < 0 || from < 0 || !root || !thumb || !lens) return;
         if (prefersReducedMotion() || typeof thumb.animate !== 'function') return;
+        // Something else is driving the thumb live (e.g. a page swipe).
+        if (root.dataset.tracking !== undefined) return;
 
         // The thumb is already at its new `left`; animate from where it was.
         const delta = from - index;

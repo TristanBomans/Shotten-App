@@ -24,6 +24,7 @@ import { NavLevelContext } from '@/lib/navHistory';
 import { topIndexOf, type NavEntry, type PageKind } from '@/lib/navStack';
 import type { RecentMatchItem } from '@/lib/recentMatches';
 import NavStackHost from './NavStackHost';
+import { publishPagerProgress } from '@/lib/pagerProgress';
 
 interface DashboardProps {
     playerId: number;
@@ -239,6 +240,13 @@ export default function Dashboard({
             clearTimeout(scrollEndTimeoutRef.current);
         }
         
+        // A user swipe drives the tab bar pill live (nav taps animate it themselves).
+        const container = scrollContainerRef.current;
+        const pagerPosition = container.scrollLeft / (container.clientWidth || window.innerWidth);
+        if (scrollSourceRef.current !== 'nav') {
+            publishPagerProgress(pagerPosition, true);
+        }
+
         // If this scroll was triggered by nav click, ignore updates
         if (scrollSourceRef.current === 'nav') {
             // Reset after scroll settles
@@ -271,6 +279,11 @@ export default function Dashboard({
                 lastViewRef.current = finalView;
                 onViewChange(finalView);
             }
+            // Only release the pill once the page has really landed (not while
+            // a finger is resting mid-swipe); snapping fires more scrolls.
+            const container = scrollContainerRef.current;
+            const settledAt = container ? container.scrollLeft / (container.clientWidth || window.innerWidth) : finalViewIndex;
+            if (Math.abs(settledAt - finalViewIndex) < 0.02) publishPagerProgress(finalViewIndex, false);
             
             scrollSourceRef.current = null;
         }, 150);

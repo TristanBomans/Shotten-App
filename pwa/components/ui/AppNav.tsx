@@ -1,10 +1,12 @@
 'use client';
 
-import { useRef, useCallback, type CSSProperties } from 'react';
+import { useRef, useCallback, useEffect, useLayoutEffect, useState, type CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
 import { Home, BarChart2, Settings, Trophy } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { useWhatsNew } from '@/lib/whatsNew';
 import { useGlassMotion } from './controls';
+import { subscribePagerProgress } from '@/lib/pagerProgress';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
 
@@ -33,10 +35,79 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
     const isNavigatingRef = useRef(false);
     const { unseenCount } = useWhatsNew();
     const hasUnread = (view: View) => view === 'settings' && unseenCount > 0;
-    const activeIndex = navItems.findIndex(item => item.id === currentView);
+    // A tap moves the pill right away (optimistic), before the heavy page
+    // render that the view change triggers. Dropped once currentView moves.
+    const [optimistic, setOptimistic] = useState<View | null>(null);
+    const [seenView, setSeenView] = useState(currentView);
+    if (seenView !== currentView) {
+        setSeenView(currentView);
+        setOptimistic(null);
+    }
+    const activeView = optimistic ?? currentView;
+    const activeIndex = navItems.findIndex(item => item.id === activeView);
     // Same liquid-glass lens as the tab bars: the active pill stretches
     // toward the new tab and springs in.
     const { rootRef, thumbRef, lensRef } = useGlassMotion<HTMLElement>(true, activeIndex, '.tabbar-item');
+
+    // While the user swipes between pages the pill follows the finger
+    // (no React render per frame), with the glass lens on and a stretch
+    // that grows with swipe speed. On release it hands back to activeIndex
+    // once that matches where the swipe landed, so nothing jumps.
+    const activeIndexRef = useRef(activeIndex);
+    const releaseRef = useRef<{ index: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+    const endTracking = useCallback(() => {
+        const root = rootRef.current;
+        if (releaseRef.current) clearTimeout(releaseRef.current.timer);
+        releaseRef.current = null;
+        if (!root) return;
+        delete root.dataset.tracking;
+        root.style.removeProperty('--tab-pos');
+        root.style.removeProperty('--tab-stretch');
+    }, [rootRef]);
+
+    useLayoutEffect(() => {
+        activeIndexRef.current = activeIndex;
+        if (releaseRef.current && releaseRef.current.index === activeIndex) endTracking();
+    }, [activeIndex, endTracking]);
+
+    useEffect(() => {
+        let last = { pos: 0, t: 0 };
+        let stretch = 0;
+        const unsubscribe = subscribePagerProgress((pos, tracking) => {
+            const root = rootRef.current;
+            if (!root) return;
+            const now = performance.now();
+            if (tracking) {
+                if (releaseRef.current) {
+                    clearTimeout(releaseRef.current.timer);
+                    releaseRef.current = null;
+                }
+                const fresh = root.dataset.tracking === undefined;
+                const dt = Math.max(1, now - last.t);
+                const speed = fresh ? 0 : Math.abs(pos - last.pos) / (dt / 1000); // tabs per second
+                stretch = stretch * 0.6 + Math.min(0.22, speed * 0.05) * 0.4;
+                last = { pos, t: now };
+                root.dataset.tracking = '';
+                root.style.setProperty('--tab-pos', pos.toFixed(4));
+                root.style.setProperty('--tab-stretch', stretch.toFixed(3));
+                return;
+            }
+            stretch = 0;
+            root.style.setProperty('--tab-pos', String(pos));
+            root.style.setProperty('--tab-stretch', '0');
+            if (activeIndexRef.current === pos) {
+                endTracking();
+                return;
+            }
+            // Wait for the view change to land, but never get stuck.
+            if (releaseRef.current) clearTimeout(releaseRef.current.timer);
+            releaseRef.current = { index: pos, timer: setTimeout(endTracking, 400) };
+        });
+        return () => {
+            unsubscribe();
+            if (releaseRef.current) clearTimeout(releaseRef.current.timer);
+        };
+    }, [rootRef, endTracking]);
 
     const handleNavigate = useCallback((view: View) => {
         if (isNavigatingRef.current) return;
@@ -48,7 +119,9 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
 
         isNavigatingRef.current = true;
         hapticPatterns.navigate();
-        onNavigate(view);
+        // Start the pill now; switch the page after this frame is painted.
+        flushSync(() => setOptimistic(view));
+        requestAnimationFrame(() => setTimeout(() => onNavigate(view), 0));
 
         setTimeout(() => {
             isNavigatingRef.current = false;
@@ -72,7 +145,7 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
                         key={id}
                         type="button"
                         className="tabbar-item"
-                        aria-current={currentView === id ? 'page' : undefined}
+                        aria-current={activeView === id ? 'page' : undefined}
                         aria-label={hasUnread(id) ? `${label}, new release notes` : label}
                         title={label}
                         onClick={() => handleNavigate(id)}
@@ -117,7 +190,7 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
                         <button
                             key={id}
                             className="siderail-item"
-                            aria-current={currentView === id ? 'page' : undefined}
+                            aria-current={activeView === id ? 'page' : undefined}
                             onClick={() => handleNavigate(id)}
                         >
                             <Icon size={17} />
