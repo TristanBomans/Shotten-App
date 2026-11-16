@@ -284,6 +284,7 @@ export default function MatchPage({
                         {!isFinished && (
                             <div className="flow-header-tabs">
                                 <SegmentedControl
+                                    pagerRef={scrollRef}
                                     aria-label="Match views"
                                     value={activeTab}
                                     onChange={(tab) => {

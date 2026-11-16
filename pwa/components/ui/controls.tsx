@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { prefersReducedMotion } from '@/lib/motion';
 import { Check, HelpCircle, X } from 'lucide-react';
 
@@ -52,6 +52,11 @@ interface SegmentedControlProps<T extends string> {
      */
     appearance?: 'plain' | 'glass';
     disabled?: boolean;
+    /**
+     * The horizontal snap pager these tabs switch. When given, a finger
+     * swipe on it drives the (glass) pill live instead of jumping halfway.
+     */
+    pagerRef?: RefObject<HTMLElement | null>;
 }
 
 /* Lens motion: stretch along the travel, overshoot a touch, settle.
@@ -130,6 +135,139 @@ export function useGlassMotion<R extends HTMLElement = HTMLDivElement>(
 }
 
 /**
+ * Lets a swipe drive the thumb live: `track(pos)` pins it to a fractional
+ * slot (0 = first option) with the glass lens on and a stretch that grows
+ * with swipe speed; `release(index)` hands back to the selected index once
+ * the swipe has landed, waiting for `index` to catch up so nothing jumps.
+ * Declare it after useGlassMotion so a landing never replays the keyframes.
+ */
+export function useLiveThumb(rootRef: RefObject<HTMLElement | null>, index: number) {
+    const indexRef = useRef(index);
+    const live = useRef({
+        last: { pos: 0, t: 0 },
+        stretch: 0,
+        release: null as null | { index: number; timer: ReturnType<typeof setTimeout> },
+    });
+
+    const end = useCallback(() => {
+        const state = live.current;
+        if (state.release) clearTimeout(state.release.timer);
+        state.release = null;
+        state.stretch = 0;
+        const root = rootRef.current;
+        if (!root) return;
+        delete root.dataset.tracking;
+        root.style.removeProperty('--live-pos');
+        root.style.removeProperty('--live-stretch');
+    }, [rootRef]);
+
+    useLayoutEffect(() => {
+        indexRef.current = index;
+        if (live.current.release?.index === index) end();
+    }, [index, end]);
+
+    useEffect(() => () => {
+        if (live.current.release) clearTimeout(live.current.release.timer);
+    }, []);
+
+    const track = useCallback((pos: number) => {
+        const root = rootRef.current;
+        if (!root || prefersReducedMotion()) return;
+        const state = live.current;
+        if (state.release) {
+            clearTimeout(state.release.timer);
+            state.release = null;
+        }
+        const now = performance.now();
+        const fresh = root.dataset.tracking === undefined;
+        const speed = fresh ? 0 : Math.abs(pos - state.last.pos) / (Math.max(1, now - state.last.t) / 1000);
+        state.stretch = state.stretch * 0.6 + Math.min(0.22, speed * 0.05) * 0.4;
+        state.last = { pos, t: now };
+        root.dataset.tracking = '';
+        root.style.setProperty('--live-pos', pos.toFixed(4));
+        root.style.setProperty('--live-stretch', state.stretch.toFixed(3));
+    }, [rootRef]);
+
+    const release = useCallback((landed: number) => {
+        const root = rootRef.current;
+        if (!root || root.dataset.tracking === undefined) return;
+        const state = live.current;
+        state.stretch = 0;
+        root.style.setProperty('--live-pos', String(landed));
+        root.style.setProperty('--live-stretch', '0');
+        if (indexRef.current === landed) {
+            end();
+            return;
+        }
+        if (state.release) clearTimeout(state.release.timer);
+        state.release = { index: landed, timer: setTimeout(end, 400) };
+    }, [rootRef, end]);
+
+    return { track, release };
+}
+
+/**
+ * Follows a horizontal snap pager (the swipeable panes under a tab bar):
+ * while a finger drives it, the thumb tracks the pane position. Tab taps
+ * scroll the pager programmatically and keep their keyframe animation.
+ */
+function usePagerFollow(
+    pagerRef: RefObject<HTMLElement | null> | undefined,
+    track: (pos: number) => void,
+    release: (index: number) => void,
+) {
+    useEffect(() => {
+        if (!pagerRef) return;
+        let touching = false;
+        let following = false;
+        let settle: ReturnType<typeof setTimeout> | undefined;
+        const position = (el: HTMLElement) => el.scrollLeft / (el.clientWidth || 1);
+        const land = () => {
+            following = false;
+            const el = pagerRef.current;
+            release(el ? Math.round(position(el)) : 0);
+        };
+        const check = () => {
+            const el = pagerRef.current;
+            if (!el || touching || !following) return;
+            const pos = position(el);
+            // Snapping is still on its way: wait, but never get stuck.
+            settle = setTimeout(land, Math.abs(pos - Math.round(pos)) < 0.02 ? 0 : 500);
+        };
+        const onTouchStart = (event: TouchEvent) => {
+            const el = pagerRef.current;
+            if (el && event.target instanceof Node && el.contains(event.target)) touching = true;
+        };
+        const onTouchEnd = () => {
+            if (!touching) return;
+            touching = false;
+            clearTimeout(settle);
+            settle = setTimeout(check, 120);
+        };
+        const onScroll = (event: Event) => {
+            const el = pagerRef.current;
+            if (!el || event.target !== el || (!touching && !following)) return;
+            following = true;
+            track(position(el));
+            clearTimeout(settle);
+            settle = setTimeout(check, 120);
+        };
+        const opts = { capture: true, passive: true } as const;
+        document.addEventListener('touchstart', onTouchStart, opts);
+        document.addEventListener('touchend', onTouchEnd, opts);
+        document.addEventListener('touchcancel', onTouchEnd, opts);
+        document.addEventListener('scroll', onScroll, opts);
+        return () => {
+            clearTimeout(settle);
+            document.removeEventListener('touchstart', onTouchStart, opts);
+            document.removeEventListener('touchend', onTouchEnd, opts);
+            document.removeEventListener('touchcancel', onTouchEnd, opts);
+            document.removeEventListener('scroll', onScroll, opts);
+        };
+    }, [pagerRef, track, release]);
+}
+
+/**
  * T3 Code style sliding pill. The pill takes the selected option's tone
  * (ok / warn / no) when it has one.
  */
@@ -144,6 +282,7 @@ export function SegmentedControl<T extends string>({
     size = 'md',
     appearance,
     disabled = false,
+    pagerRef,
 }: SegmentedControlProps<T>) {
     const foundIndex = value === null ? -1 : options.findIndex((option) => option.value === value);
     const selectedIndex = Math.max(0, foundIndex);
@@ -151,6 +290,8 @@ export function SegmentedControl<T extends string>({
     const isChoice = variant === 'choice';
     const isGlass = (appearance ?? (isChoice ? 'plain' : 'glass')) === 'glass';
     const { rootRef, thumbRef, lensRef } = useGlassMotion(isGlass, foundIndex);
+    const { track, release } = useLiveThumb(rootRef, foundIndex);
+    usePagerFollow(isGlass ? pagerRef : undefined, track, release);
 
     return (
         <div
