@@ -330,6 +330,7 @@ export default function TeamDetailPage({
                         {/* Segmented tabs */}
                         <div className="flow-header-tabs">
                             <SegmentedControl
+                                pagerRef={scrollRef}
                                 aria-label="Team views"
                                 value={activeTab}
                                 onChange={(tab) => {
