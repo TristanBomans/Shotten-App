@@ -7,6 +7,10 @@ import { useWhatsNew } from '@/lib/whatsNew';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
 
+/** Fired on window when the already-active tab is tapped again. */
+export const NAV_RESELECT_EVENT = 'appnav:reselect';
+export type NavReselectDetail = { view: View };
+
 interface AppNavProps {
     currentView: View;
     onNavigate: (view: View) => void;
@@ -31,7 +35,11 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
 
     const handleNavigate = useCallback((view: View) => {
         if (isNavigatingRef.current) return;
-        if (view === currentView) return;
+        if (view === currentView) {
+            hapticPatterns.tap();
+            window.dispatchEvent(new CustomEvent<NavReselectDetail>(NAV_RESELECT_EVENT, { detail: { view } }));
+            return;
+        }
 
         isNavigatingRef.current = true;
         hapticPatterns.navigate();
