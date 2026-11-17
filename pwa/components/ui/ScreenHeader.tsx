@@ -5,10 +5,10 @@ import { Bell, BellRing, Clock3, HelpCircle, Trophy } from 'lucide-react';
 
 // Same glass morph as the rest of the app: elements blur in/out while they
 // fade and scale, so the header changes with the tab instead of snapping.
-// Paced like ModeSwap: the old element fades out first, the new one eases in
-// after a short hold, and the bell glides over on a soft spring.
+// The new element starts easing in right away while the old one fades out,
+// and the bell glides over on a soft spring.
 const glassEase = [0.2, 0.8, 0.2, 1] as const;
-const glassIn: Transition = { duration: 0.42, delay: 0.1, ease: glassEase };
+const glassIn: Transition = { duration: 0.42, ease: glassEase };
 const glassFade: Transition = { duration: 0.22, ease: [0.4, 0, 0.6, 1] };
 const glassSlide: Transition = { type: 'spring', stiffness: 220, damping: 28 };
 
