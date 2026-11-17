@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, Flag } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
+import { useNow } from '@/lib/useNow';
 import { API_BASE_URL } from '@/lib/config';
 import type { Match } from '@/lib/mockData';
 import { parseDate, formatMatchDate } from '@/lib/dateUtils';
@@ -16,32 +17,40 @@ interface ForfaitMatchesPageProps {
 
 export default function ForfaitMatchesPage({ isOpen, onClose }: ForfaitMatchesPageProps) {
     const [matches, setMatches] = useState<Match[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(isOpen);
     const [showPast, setShowPast] = useState(false);
+    const now = useNow();
 
-    const fetchMatches = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/Matches`);
-            if (!res.ok) throw new Error('Failed to fetch matches');
-            const data: Match[] = await res.json();
-            data.sort((a, b) => matchTime(a) - matchTime(b));
-            setMatches(data);
-        } catch (e) {
-            console.error('Failed to fetch matches for forfait:', e);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Show the spinner again each time the page opens.
+    const [wasOpen, setWasOpen] = useState(isOpen);
+    if (isOpen !== wasOpen) {
+        setWasOpen(isOpen);
+        if (isOpen) setLoading(true);
+    }
 
     useEffect(() => {
-        if (isOpen) {
-            fetchMatches();
-        }
+        if (!isOpen) return;
+        let cancelled = false;
+        fetch(`${API_BASE_URL}/api/Matches`)
+            .then((res) => {
+                if (!res.ok) throw new Error('Failed to fetch matches');
+                return res.json() as Promise<Match[]>;
+            })
+            .then((data) => {
+                if (cancelled) return;
+                data.sort((a, b) => matchTime(a) - matchTime(b));
+                setMatches(data);
+            })
+            .catch((e) => console.error('Failed to fetch matches for forfait:', e))
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [isOpen]);
 
     // Upcoming: soonest first. Past: most recent first, collapsed by default.
-    const now = Date.now();
     const upcoming = matches.filter(m => matchTime(m) > now);
     const past = matches.filter(m => matchTime(m) <= now).reverse();
 

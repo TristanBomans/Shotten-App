@@ -5,6 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { useUpdateAttendance } from '@/lib/useData';
 import { hapticPatterns } from '@/lib/haptic';
+import { useNow } from '@/lib/useNow';
 import { parseDate, formatMatchDate, formatTimeSafe, isMatchFinished } from '@/lib/dateUtils';
 import type { Match, Player } from '@/lib/mockData';
 import type { AttendanceStatus, RosterPlayer } from './types';
@@ -53,13 +54,15 @@ export default function MatchSummary({
 }: MatchSummaryProps) {
     const { updating, updateAttendance } = useUpdateAttendance();
     const [showConfetti, setShowConfetti] = useState(false);
-    const [showFullNames, setShowFullNames] = useState(true);
-    const [now, setNow] = useState(() => Date.now());
+    const [showFullNames, setShowFullNames] = useState(() => {
+        if (typeof window === 'undefined') return true;
+        const stored = localStorage.getItem('showFullNames');
+        return stored === null ? true : stored === 'true';
+    });
+    // Minute-level countdown; no per-second ticking in the list.
+    const now = useNow(30_000);
 
     useEffect(() => {
-        const stored = localStorage.getItem('showFullNames');
-        setShowFullNames(stored === null ? true : stored === 'true');
-
         const handleShowFullNamesChanged = (event: Event) => {
             setShowFullNames((event as CustomEvent<boolean>).detail);
         };
@@ -68,11 +71,6 @@ export default function MatchSummary({
         return () => window.removeEventListener('showFullNamesChanged', handleShowFullNamesChanged);
     }, []);
 
-    // Minute-level countdown; no per-second ticking in the list.
-    useEffect(() => {
-        const interval = setInterval(() => setNow(Date.now()), 30_000);
-        return () => clearInterval(interval);
-    }, []);
 
     const dateObj = useMemo(() => parseDate(match.date) || new Date(0), [match.date]);
     const isPast = dateObj.getTime() < now;

@@ -28,7 +28,12 @@ const urlFor = (view: View, stack: NavEntry[]) =>
     buildUrl(window.location.pathname, window.location.search, view, stack);
 
 function HomeContent() {
-    const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
+    // Read once on mount. Safe for hydration: nothing renders from it while `loading` is true.
+    const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(() => {
+        if (typeof window === 'undefined') return null;
+        const stored = localStorage.getItem('selectedPlayerId');
+        return stored ? parseInt(stored, 10) : null;
+    });
     const [loading, setLoading] = useState(true);
     const [needsSetup, setNeedsSetup] = useState(false);
     const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
@@ -53,14 +58,8 @@ function HomeContent() {
         setStack(next);
     }, []);
 
-    // Load selected player from localStorage (once on mount)
+    // Check whether the database has been initialized
     useEffect(() => {
-        const stored = localStorage.getItem('selectedPlayerId');
-        if (stored) {
-            setSelectedPlayerId(parseInt(stored, 10));
-        }
-
-        // Check whether the database has been initialized
         fetch('/api/setup')
             .then((res) => (res.ok ? res.json() : null))
             .then((status) => {

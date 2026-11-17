@@ -311,21 +311,23 @@ function ActionsSection({ onBackupStarted }: { onBackupStarted: () => void }) {
     const [running, setRunning] = useState<'scrape' | 'backup' | null>(null);
     const [notice, setNotice] = useState<Notice>(null);
     const [pushTest, setPushTest] = useState<PushTestState>({ status: 'idle', fireAt: null, message: null });
-    const [remaining, setRemaining] = useState<number | null>(null);
+    const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => subscribePushTest(setPushTest), []);
 
+    const counting = pushTest.status === 'scheduled' && !!pushTest.fireAt;
     useEffect(() => {
-        if (pushTest.status !== 'scheduled' || !pushTest.fireAt) {
-            setRemaining(null);
-            return;
-        }
-        const fireAt = pushTest.fireAt;
-        const tick = () => setRemaining(Math.max(0, Math.ceil((fireAt - Date.now()) / 1000)));
-        tick();
+        if (!counting) return;
+        const tick = () => setNow(Date.now());
+        const frame = window.requestAnimationFrame(tick);
         const interval = window.setInterval(tick, 250);
-        return () => window.clearInterval(interval);
-    }, [pushTest.status, pushTest.fireAt]);
+        return () => {
+            window.cancelAnimationFrame(frame);
+            window.clearInterval(interval);
+        };
+    }, [counting]);
+
+    const remaining = counting ? Math.max(0, Math.min(60, Math.ceil((pushTest.fireAt! - now) / 1000))) : null;
 
     const run = async (kind: 'scrape' | 'backup') => {
         hapticPatterns.tap();
@@ -407,63 +409,80 @@ function ActionsSection({ onBackupStarted }: { onBackupStarted: () => void }) {
 /* ------------------------------------------------------------------ */
 /* Backups                                                             */
 /* ------------------------------------------------------------------ */
+async function fetchBackups() {
+    const [list, status] = await Promise.all([
+        workerFetch<{ backups: string[]; items?: BackupItem[]; backupDir?: string; retentionDays?: number }>('/api/backup/list'),
+        workerFetch<BackupStatus>('/api/backup/status').catch(() => null),
+    ]);
+    // Older workers only return names; fall back to the filename's timestamp.
+    const items: BackupItem[] =
+        list.items ??
+        list.backups.map((fileName) => ({
+            fileName,
+            size: null,
+            sizeBytes: null,
+            createdAt: backupDateFromName(fileName)?.toISOString() ?? null,
+        }));
+    return { items, status, backupDir: list.backupDir ?? null, retentionDays: list.retentionDays ?? null };
+}
+
 function useBackups(open: boolean) {
-    const [items, setItems] = useState<BackupItem[] | null>(null);
-    const [status, setStatus] = useState<BackupStatus | null>(null);
-    const [backupDir, setBackupDir] = useState<string | null>(null);
-    const [retentionDays, setRetentionDays] = useState<number | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [data, setData] = useState<Awaited<ReturnType<typeof fetchBackups>> | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // Each refresh bumps the nonce; we're loading until that request has answered.
+    const [nonce, setNonce] = useState(0);
+    const [loadedNonce, setLoadedNonce] = useState(-1);
     const timers = useRef<number[]>([]);
 
-    const refresh = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const [list, statusData] = await Promise.all([
-                workerFetch<{ backups: string[]; items?: BackupItem[]; backupDir?: string; retentionDays?: number }>('/api/backup/list'),
-                workerFetch<BackupStatus>('/api/backup/status').catch(() => null),
-            ]);
-            // Older workers only return names; fall back to the filename's timestamp.
-            setItems(
-                list.items ??
-                    list.backups.map((fileName) => ({
-                        fileName,
-                        size: null,
-                        sizeBytes: null,
-                        createdAt: backupDateFromName(fileName)?.toISOString() ?? null,
-                    })),
-            );
-            setBackupDir(list.backupDir ?? null);
-            setRetentionDays(list.retentionDays ?? null);
-            setStatus(statusData);
-        } catch (err) {
-            setError((err as Error).message);
-        } finally {
-            setLoading(false);
-        }
+    useEffect(() => {
+        if (!open) return;
+        let cancelled = false;
+        fetchBackups()
+            .then((next) => {
+                if (cancelled) return;
+                setData(next);
+                setError(null);
+            })
+            .catch((err: Error) => {
+                if (!cancelled) setError(err.message);
+            })
+            .finally(() => {
+                if (!cancelled) setLoadedNonce(nonce);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [open, nonce]);
+
+    useEffect(() => {
+        const pending = timers.current;
+        return () => pending.forEach((id) => window.clearTimeout(id));
     }, []);
+
+    const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
     // A manual backup runs in the background on the worker; check back a few times.
     const refreshSoon = useCallback(() => {
         for (const delay of [8_000, 30_000, 90_000]) {
-            timers.current.push(window.setTimeout(() => void refresh(), delay));
+            timers.current.push(window.setTimeout(refresh, delay));
         }
     }, [refresh]);
 
     const removeLocally = useCallback((fileName: string) => {
-        setItems((prev) => prev?.filter((item) => item.fileName !== fileName) ?? prev);
+        setData((prev) => prev && { ...prev, items: prev.items.filter((item) => item.fileName !== fileName) });
     }, []);
 
-    useEffect(() => {
-        if (open) void refresh();
-        return () => {
-            timers.current.forEach((id) => window.clearTimeout(id));
-            timers.current = [];
-        };
-    }, [open, refresh]);
-
-    return { items, status, backupDir, retentionDays, loading, error, refresh, refreshSoon, removeLocally };
+    return {
+        items: data?.items ?? null,
+        status: data?.status ?? null,
+        backupDir: data?.backupDir ?? null,
+        retentionDays: data?.retentionDays ?? null,
+        loading: open && loadedNonce !== nonce,
+        error,
+        refresh,
+        refreshSoon,
+        removeLocally,
+    };
 }
 
 function BackupsSection({
@@ -561,56 +580,65 @@ function BackupsSection({
     );
 }
 
-function BackupDetailSheet({
-    fileName,
-    latestFileName,
-    zIndex,
-    onClose,
-    onDeleted,
-}: {
+interface BackupDetailSheetProps {
     fileName: string | null;
     latestFileName: string | null;
     zIndex: number;
     onClose: () => void;
     onDeleted: (fileName: string) => void;
-}) {
+}
+
+function BackupDetailSheet(props: BackupDetailSheetProps) {
+    const { fileName } = props;
+    // Keep showing the last backup while the sheet animates out, and start a
+    // fresh session (new key = fresh state) every time a backup is opened.
+    const [prevFileName, setPrevFileName] = useState(fileName);
+    const [shownName, setShownName] = useState(fileName);
+    const [session, setSession] = useState(0);
+    if (fileName !== prevFileName) {
+        setPrevFileName(fileName);
+        if (fileName) {
+            setShownName(fileName);
+            setSession((s) => s + 1);
+        }
+    }
+
+    if (!shownName) return null;
+    return <BackupDetailContent key={`${shownName}-${session}`} {...props} shownName={shownName} />;
+}
+
+function BackupDetailContent({
+    fileName,
+    shownName,
+    latestFileName,
+    zIndex,
+    onClose,
+    onDeleted,
+}: BackupDetailSheetProps & { shownName: string }) {
     const [details, setDetails] = useState<BackupDetails | null>(null);
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [confirming, setConfirming] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [tablesOpen, setTablesOpen] = useState(false);
-    // Keep showing the last backup while the sheet animates out.
-    const [shownName, setShownName] = useState<string | null>(fileName);
     const { copied, copy } = useCopy();
+    const loading = details === null && error === null;
 
     useEffect(() => {
-        if (!fileName) return;
-        setShownName(fileName);
-        setDetails(null);
-        setError(null);
-        setConfirming(false);
-        setTablesOpen(false);
-        setLoading(true);
         let cancelled = false;
-        workerFetch<{ backup: BackupDetails }>(`/api/backup/files/${encodeURIComponent(fileName)}`)
+        workerFetch<{ backup: BackupDetails }>(`/api/backup/files/${encodeURIComponent(shownName)}`)
             .then((data) => {
                 if (!cancelled) setDetails(data.backup);
             })
             .catch((err: Error) => {
                 if (cancelled) return;
                 setError(err.message.endsWith('404') ? 'This worker version has no backup details endpoint yet.' : err.message);
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
             });
         return () => {
             cancelled = true;
         };
-    }, [fileName]);
+    }, [shownName]);
 
     const handleDelete = async () => {
-        if (!shownName) return;
         if (!confirming) {
             hapticPatterns.tap();
             setConfirming(true);
@@ -768,11 +796,31 @@ function BackupDetailSheet({
 /* ------------------------------------------------------------------ */
 /* Logs                                                                */
 /* ------------------------------------------------------------------ */
+type LogFilters = { day: string; level: LevelFilter; search: string };
+
+async function fetchLogPage(pageNum: number, filters: LogFilters): Promise<{ entries: LogEntry[]; total: number | null }> {
+    const params = new URLSearchParams({ page: String(pageNum), limit: String(LOGS_LIMIT) });
+    if (filters.day) params.set('date', filters.day);
+    if (filters.level !== 'all') params.set('level', filters.level);
+    if (filters.search) params.set('search', filters.search);
+    const data = await workerFetch<{
+        logs: { timestamp: string; level: string; message: string; legacy?: boolean }[];
+        total?: number;
+    }>(`/api/logs?${params}`);
+    const entries = (data.logs || []).map((raw, index) => ({
+        id: `${pageNum}-${index}-${raw.timestamp}`,
+        date: parseLogTimestamp(raw.timestamp),
+        level: normalizeLevel(raw.level),
+        message: raw.message,
+        legacy: !!raw.legacy,
+    }));
+    return { entries, total: typeof data.total === 'number' ? data.total : null };
+}
+
 function LogsSection({ open }: { open: boolean }) {
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [total, setTotal] = useState<number | null>(null);
     const [page, setPage] = useState(1);
-    const [loading, setLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
@@ -780,54 +828,68 @@ function LogsSection({ open }: { open: boolean }) {
     const [level, setLevel] = useState<LevelFilter>('all');
     const [day, setDay] = useState(''); // '' = all days
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
-    const requestId = useRef(0);
+    const [nonce, setNonce] = useState(0);
+    // The first page is loading until the response for the current filters is in.
+    const requestKey = `${day}|${level}|${debouncedSearch}|${nonce}`;
+    const [loadedKey, setLoadedKey] = useState<string | null>(null);
+    const loading = open && loadedKey !== requestKey;
+    const requestKeyRef = useRef(requestKey);
     const sentinelRef = useRef<HTMLDivElement>(null);
     const { copied, copy } = useCopy();
+
+    useEffect(() => {
+        requestKeyRef.current = requestKey;
+    }, [requestKey]);
 
     useEffect(() => {
         const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 350);
         return () => window.clearTimeout(timeout);
     }, [search]);
 
-    const load = useCallback(async (pageNum: number) => {
-        const id = ++requestId.current;
-        if (pageNum === 1) setLoading(true);
-        else setLoadingMore(true);
-        setError(null);
-        try {
-            const params = new URLSearchParams({ page: String(pageNum), limit: String(LOGS_LIMIT) });
-            if (day) params.set('date', day);
-            if (level !== 'all') params.set('level', level);
-            if (debouncedSearch) params.set('search', debouncedSearch);
-            const data = await workerFetch<{
-                logs: { timestamp: string; level: string; message: string; legacy?: boolean }[];
-                total?: number;
-            }>(`/api/logs?${params}`);
-            if (id !== requestId.current) return;
-            const entries: LogEntry[] = (data.logs || []).map((raw, index) => ({
-                id: `${pageNum}-${index}-${raw.timestamp}`,
-                date: parseLogTimestamp(raw.timestamp),
-                level: normalizeLevel(raw.level),
-                message: raw.message,
-                legacy: !!raw.legacy,
-            }));
-            setLogs((prev) => (pageNum === 1 ? entries : [...prev, ...entries]));
-            setTotal(typeof data.total === 'number' ? data.total : null);
-            setPage(pageNum);
-            if (pageNum === 1) setExpanded(new Set());
-        } catch (err) {
-            if (id === requestId.current) setError((err as Error).message);
-        } finally {
-            if (id === requestId.current) {
-                setLoading(false);
-                setLoadingMore(false);
-            }
-        }
-    }, [day, level, debouncedSearch]);
-
+    // First page: refetch whenever the filters change or a refresh is asked for.
     useEffect(() => {
-        if (open) void load(1);
-    }, [open, load]);
+        if (!open) return;
+        let cancelled = false;
+        fetchLogPage(1, { day, level, search: debouncedSearch })
+            .then(({ entries, total: nextTotal }) => {
+                if (cancelled) return;
+                setLogs(entries);
+                setTotal(nextTotal);
+                setPage(1);
+                setExpanded(new Set());
+                setError(null);
+            })
+            .catch((err: Error) => {
+                if (!cancelled) setError(err.message);
+            })
+            .finally(() => {
+                if (!cancelled) setLoadedKey(requestKey);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [open, requestKey, day, level, debouncedSearch]);
+
+    const reload = useCallback(() => {
+        setError(null);
+        setNonce((n) => n + 1);
+    }, []);
+
+    const loadMore = useCallback(() => {
+        const key = requestKeyRef.current;
+        setLoadingMore(true);
+        fetchLogPage(page + 1, { day, level, search: debouncedSearch })
+            .then(({ entries, total: nextTotal }) => {
+                if (requestKeyRef.current !== key) return;
+                setLogs((prev) => [...prev, ...entries]);
+                setTotal(nextTotal);
+                setPage(page + 1);
+            })
+            .catch((err: Error) => {
+                if (requestKeyRef.current === key) setError(err.message);
+            })
+            .finally(() => setLoadingMore(false));
+    }, [page, day, level, debouncedSearch]);
 
     const hasMore = total !== null ? logs.length < total : logs.length === page * LOGS_LIMIT;
 
@@ -836,11 +898,11 @@ function LogsSection({ open }: { open: boolean }) {
         const node = sentinelRef.current;
         if (!node || !hasMore || loading || loadingMore || error) return;
         const observer = new IntersectionObserver((entries) => {
-            if (entries.some((entry) => entry.isIntersecting)) void load(page + 1);
+            if (entries.some((entry) => entry.isIntersecting)) loadMore();
         }, { rootMargin: '200px' });
         observer.observe(node);
         return () => observer.disconnect();
-    }, [hasMore, loading, loadingMore, error, load, page]);
+    }, [hasMore, loading, loadingMore, error, loadMore]);
 
     const groups = useMemo(() => {
         const result: { key: string; label: string; entries: LogEntry[] }[] = [];
@@ -878,7 +940,7 @@ function LogsSection({ open }: { open: boolean }) {
                 <span>
                     Logs{total !== null ? ` · ${total.toLocaleString('en-GB')}${filtersActive ? ' matching' : ''}` : ''}
                 </span>
-                <IconButton label="Refresh logs" onClick={() => void load(1)} disabled={loading}>
+                <IconButton label="Refresh logs" onClick={reload} disabled={loading}>
                     <RefreshCw size={13} style={loading ? spin : undefined} />
                 </IconButton>
             </div>
@@ -955,7 +1017,7 @@ function LogsSection({ open }: { open: boolean }) {
                     <div style={{ padding: 'var(--sp-3)' }}>
                         <InlineNotice
                             tone="error"
-                            action={<button className="press" onClick={() => void load(1)} style={{ color: 'inherit', fontWeight: 600 }}>Retry</button>}
+                            action={<button className="press" onClick={reload} style={{ color: 'inherit', fontWeight: 600 }}>Retry</button>}
                         >
                             {error}
                         </InlineNotice>
@@ -1013,7 +1075,7 @@ function LogsSection({ open }: { open: boolean }) {
                         {loadingMore ? (
                             <SmallSpinner />
                         ) : hasMore ? (
-                            <button className="press" onClick={() => void load(page + 1)} style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 'var(--fs-xs)' }}>
+                            <button className="press" onClick={loadMore} style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 'var(--fs-xs)' }}>
                                 Load older lines
                             </button>
                         ) : (
