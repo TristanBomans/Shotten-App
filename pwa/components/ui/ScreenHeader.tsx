@@ -107,7 +107,9 @@ export default function ScreenHeader({
                 </div>
 
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-                    <AnimatePresence initial={false} mode="popLayout">
+                    {/* Anchor exiting actions to the right: the group is right-aligned, so a
+                        left anchor makes them drift as the group resizes. */}
+                    <AnimatePresence initial={false} mode="popLayout" anchorX="right">
                     {homeControls && (
                         <motion.button
                             key="recent"
