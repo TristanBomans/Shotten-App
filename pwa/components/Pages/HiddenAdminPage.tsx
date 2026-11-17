@@ -792,12 +792,12 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                         alignItems: 'center',
                                                         gap: 6,
                                                         fontSize: '0.8rem',
-                                                        color: backupMessage.includes('started') || backupMessage.includes('success')
+                                                        color: /started|success|deleted/i.test(backupMessage)
                                                             ? 'var(--ok)'
                                                             : 'var(--no)',
                                                     }}
                                                 >
-                                                    {backupMessage.includes('started') || backupMessage.includes('success') ? (
+                                                    {/started|success|deleted/i.test(backupMessage) ? (
                                                         <CheckCircle2 size={12} />
                                                     ) : (
                                                         <AlertCircle size={12} />
