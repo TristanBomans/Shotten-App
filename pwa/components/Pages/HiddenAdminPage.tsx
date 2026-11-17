@@ -3,13 +3,22 @@
 import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp, Save, RefreshCw, Bell } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp, Save, RefreshCw, Bell, Trash2 } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { schedulePushTestInOneMinute, subscribePushTest, type PushTestState } from '@/lib/pushTest';
+
+const WORKER_BASE = 'http://192.168.129.250:8094';
 
 interface HiddenAdminPageProps {
     open: boolean;
     onClose: () => void;
+}
+
+interface BackupFile {
+    fileName: string;
+    fileSize: string;
+    fileSizeBytes: number;
+    createdAt: string;
 }
 
 interface BackupStatus {
@@ -92,12 +101,16 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
     const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
     const [backupLoading, setBackupLoading] = useState(false);
     const [backupMessage, setBackupMessage] = useState<string | null>(null);
-    const [backups, setBackups] = useState<string[] | null>(null);
+    const [backups, setBackups] = useState<BackupFile[] | null>(null);
     const [backupCount, setBackupCount] = useState<number | null>(null);
     const [backupDir, setBackupDir] = useState<string | null>(null);
     const [backupsLoading, setBackupsLoading] = useState(false);
     const [backupsError, setBackupsError] = useState<string | null>(null);
     const [backupsExpanded, setBackupsExpanded] = useState(false);
+    const [showAllBackups, setShowAllBackups] = useState(false);
+    const [expandedBackupNames, setExpandedBackupNames] = useState<Set<string>>(new Set());
+    const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
+    const [deletingNames, setDeletingNames] = useState<Set<string>>(new Set());
 
     // Backup status state
     const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
@@ -209,6 +222,10 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
             setBackupCount(null);
             setBackupDir(null);
             setBackupsError(null);
+            setShowAllBackups(false);
+            setExpandedBackupNames(new Set());
+            setConfirmDeleteName(null);
+            setDeletingNames(new Set());
             return;
         }
 
@@ -217,7 +234,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
             setBackupsLoading(true);
             setBackupsError(null);
             try {
-                const res = await fetch('http://192.168.129.250:8094/api/backup/list');
+                const res = await fetch(`${WORKER_BASE}/api/backup/list`);
                 const data = await res.json();
                 if (data && data.success && Array.isArray(data.backups)) {
                     setBackups(data.backups);
@@ -238,7 +255,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
             setBackupStatusLoading(true);
             setBackupStatusError(null);
             try {
-                const res = await fetch('http://192.168.129.250:8094/api/backup/status');
+                const res = await fetch(`${WORKER_BASE}/api/backup/status`);
                 const data = await res.json();
                 if (data && data.success) {
                     setBackupStatus(data);
@@ -262,7 +279,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                 params.set('page', '1');
                 params.set('limit', LOGS_LIMIT.toString());
 
-            const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
+            const res = await fetch(`${WORKER_BASE}/api/logs?${params}`);
             const data = await res.json();
             if (data && data.success) {
                 setLogs(withEntryIds(data.logs || []));
@@ -312,7 +329,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
         setScrapeLoading(true);
         setScrapeMessage(null);
         try {
-            const res = await fetch('http://192.168.129.250:8094/api/lzv/scrape/trigger');
+            const res = await fetch(`${WORKER_BASE}/api/lzv/scrape/trigger`);
             const data = await res.json();
             if (data && data.success) {
                 setScrapeMessage(data.message || 'Scrape job started.');
@@ -331,7 +348,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
         setBackupLoading(true);
         setBackupMessage(null);
         try {
-            const res = await fetch('http://192.168.129.250:8094/api/backup/trigger', { method: 'POST' });
+            const res = await fetch(`${WORKER_BASE}/api/backup/trigger`, { method: 'POST' });
             const data = await res.json();
             if (data && data.success) {
                 setBackupMessage(data.message || 'Backup job started.');
@@ -342,6 +359,66 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
             setBackupMessage('Failed to connect to worker.');
         } finally {
             setBackupLoading(false);
+        }
+    };
+
+    const refreshBackups = useCallback(async () => {
+        try {
+            const res = await fetch(`${WORKER_BASE}/api/backup/list`);
+            const data = await res.json();
+            if (data && data.success && Array.isArray(data.backups)) {
+                setBackups(data.backups);
+                setBackupCount(data.count ?? data.backups.length);
+                setBackupDir(data.backupDir ?? null);
+            } else {
+                setBackupsError(data.error || 'Failed to load backups.');
+            }
+        } catch {
+            setBackupsError('Failed to connect to worker.');
+        }
+    }, []);
+
+    const toggleBackupDetails = (fileName: string) => {
+        hapticPatterns.tap();
+        setConfirmDeleteName(null);
+        setExpandedBackupNames(prev => {
+            const next = new Set(prev);
+            if (next.has(fileName)) {
+                next.delete(fileName);
+            } else {
+                next.add(fileName);
+            }
+            return next;
+        });
+    };
+
+    const handleDeleteBackup = async (fileName: string) => {
+        hapticPatterns.tap();
+        setDeletingNames(prev => new Set(prev).add(fileName));
+        setBackupMessage(null);
+        try {
+            const res = await fetch(`${WORKER_BASE}/api/backup/${encodeURIComponent(fileName)}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => null);
+            if (data && data.success) {
+                setBackupMessage(`Backup deleted: ${formatBackupName(fileName)}`);
+                setExpandedBackupNames(prev => {
+                    const next = new Set(prev);
+                    next.delete(fileName);
+                    return next;
+                });
+                setConfirmDeleteName(null);
+                await refreshBackups();
+            } else {
+                setBackupMessage(data?.error || 'Failed to delete backup.');
+            }
+        } catch {
+            setBackupMessage('Failed to connect to worker.');
+        } finally {
+            setDeletingNames(prev => {
+                const next = new Set(prev);
+                next.delete(fileName);
+                return next;
+            });
         }
     };
 
@@ -372,7 +449,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
             if (levelFilter !== 'all') params.set('level', levelFilter);
             if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
-            const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
+            const res = await fetch(`${WORKER_BASE}/api/logs?${params}`);
             const data = await res.json();
             if (data && data.success) {
                 const nextEntries = withEntryIds(data.logs || []);
@@ -1227,6 +1304,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
 
                                                     {logs.slice().reverse().map((log, idx) => {
                                                         const isExpanded = expandedLogKeys.has(log.entryId);
+                                                        const ts = new Date(log.timestamp.endsWith('Z') ? log.timestamp : `${log.timestamp}Z`);
+                                                        const isValidTs = !isNaN(ts.getTime());
                                                         return (
                                                             <motion.div
                                                                 key={log.entryId}
@@ -1234,79 +1313,127 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                                 initial={false}
                                                                 animate={{ backgroundColor: isExpanded ? 'var(--bg-panel)' : 'transparent' }}
                                                                 style={{
-                                                                    padding: '6px 8px',
+                                                                    padding: '8px 10px',
                                                                     borderBottom: idx < logs.length - 1 ? '1px solid var(--border-subtle)' : undefined,
-                                                                    display: 'flex',
-                                                                    alignItems: isExpanded ? 'flex-start' : 'center',
-                                                                    gap: 8,
-                                                                    minWidth: 0,
                                                                     cursor: 'pointer',
-                                                                    borderRadius: 6,
+                                                                    borderRadius: 8,
+                                                                    minWidth: 0,
                                                                 }}
                                                             >
-                                                                <span
+                                                                <div
                                                                     style={{
-                                                                        fontSize: '0.65rem',
-                                                                        fontWeight: 600,
-                                                                        padding: '2px 6px',
-                                                                        borderRadius: 4,
-                                                                        background: getLevelBg(log.level),
-                                                                        color: getLevelColor(log.level),
-                                                                        flexShrink: 0,
-                                                                        marginTop: isExpanded ? 1 : 0,
+                                                                        display: 'flex',
+                                                                        alignItems: 'flex-start',
+                                                                        gap: 8,
+                                                                        minWidth: 0,
                                                                     }}
                                                                 >
-                                                                    {log.level}
-                                                                </span>
-                                                                {log.legacy && (
+                                                                    <span
+                                                                        aria-hidden
+                                                                        style={{
+                                                                            width: 8,
+                                                                            height: 8,
+                                                                            borderRadius: 999,
+                                                                            background: getLevelColor(log.level),
+                                                                            flexShrink: 0,
+                                                                            marginTop: 6,
+                                                                        }}
+                                                                    />
                                                                     <span
                                                                         style={{
-                                                                            fontSize: '0.6rem',
-                                                                            fontWeight: 600,
-                                                                            padding: '2px 5px',
-                                                                            borderRadius: 4,
-                                                                            background: 'var(--bg-panel)',
-                                                                            color: 'var(--text-3)',
-                                                                            border: '1px solid var(--border-hairline)',
-                                                                            flexShrink: 0,
-                                                                            marginTop: isExpanded ? 1 : 0,
+                                                                            flex: 1,
+                                                                            minWidth: 0,
+                                                                            fontSize: isExpanded ? '0.78rem' : '0.8rem',
+                                                                            color: isExpanded ? 'var(--text-1)' : 'var(--text-2)',
+                                                                            lineHeight: 1.4,
+                                                                            wordBreak: 'break-word',
+                                                                            ...(isExpanded
+                                                                                ? { whiteSpace: 'pre-wrap' as const, fontFamily: 'monospace' }
+                                                                                : {
+                                                                                    display: '-webkit-box',
+                                                                                    WebkitLineClamp: 2,
+                                                                                    WebkitBoxOrient: 'vertical' as const,
+                                                                                    overflow: 'hidden',
+                                                                                }),
                                                                         }}
                                                                     >
-                                                                        legacy
+                                                                        {log.message}
                                                                     </span>
+                                                                    <span
+                                                                        style={{
+                                                                            fontSize: '0.65rem',
+                                                                            color: 'var(--text-3)',
+                                                                            fontFamily: 'monospace',
+                                                                            flexShrink: 0,
+                                                                            marginTop: 2,
+                                                                            textAlign: 'right',
+                                                                            lineHeight: 1.3,
+                                                                        }}
+                                                                    >
+                                                                        {isValidTs
+                                                                            ? ts.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                                                                            : '––:––'}
+                                                                    </span>
+                                                                </div>
+
+                                                                {isExpanded && (
+                                                                    <div
+                                                                        style={{
+                                                                            marginTop: 6,
+                                                                            paddingLeft: 16,
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 6,
+                                                                            flexWrap: 'wrap',
+                                                                        }}
+                                                                    >
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: '0.6rem',
+                                                                                fontWeight: 600,
+                                                                                padding: '2px 6px',
+                                                                                borderRadius: 4,
+                                                                                background: getLevelBg(log.level),
+                                                                                color: getLevelColor(log.level),
+                                                                            }}
+                                                                        >
+                                                                            {log.level}
+                                                                        </span>
+                                                                        {log.legacy && (
+                                                                            <span
+                                                                                style={{
+                                                                                    fontSize: '0.6rem',
+                                                                                    fontWeight: 600,
+                                                                                    padding: '2px 5px',
+                                                                                    borderRadius: 4,
+                                                                                    background: 'var(--bg-panel)',
+                                                                                    color: 'var(--text-3)',
+                                                                                    border: '1px solid var(--border-hairline)',
+                                                                                }}
+                                                                            >
+                                                                                legacy
+                                                                            </span>
+                                                                        )}
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: '0.65rem',
+                                                                                color: 'var(--text-3)',
+                                                                                fontFamily: 'monospace',
+                                                                            }}
+                                                                        >
+                                                                            {isValidTs
+                                                                                ? ts.toLocaleString('en-GB', {
+                                                                                    day: '2-digit',
+                                                                                    month: 'short',
+                                                                                    year: 'numeric',
+                                                                                    hour: '2-digit',
+                                                                                    minute: '2-digit',
+                                                                                    second: '2-digit',
+                                                                                })
+                                                                                : log.timestamp}
+                                                                        </span>
+                                                                    </div>
                                                                 )}
-                                                                <span
-                                                                    style={{
-                                                                        fontSize: '0.7rem',
-                                                                        color: 'var(--text-3)',
-                                                                        fontFamily: 'monospace',
-                                                                        flexShrink: 0,
-                                                                        marginTop: isExpanded ? 1 : 0,
-                                                                    }}
-                                                                >
-                                                                    {new Date(log.timestamp.endsWith('Z') ? log.timestamp : `${log.timestamp}Z`).toLocaleDateString('en-GB', {
-                                                                        day: '2-digit',
-                                                                        month: 'short',
-                                                                    })} {' '}
-                                                                    {new Date(log.timestamp.endsWith('Z') ? log.timestamp : `${log.timestamp}Z`).toLocaleTimeString('en-GB', {
-                                                                        hour: '2-digit',
-                                                                        minute: '2-digit',
-                                                                    })}
-                                                                </span>
-                                                                <span
-                                                                    style={{
-                                                                        fontSize: '0.8rem',
-                                                                        color: 'var(--text-2)',
-                                                                        whiteSpace: isExpanded ? 'normal' : 'nowrap',
-                                                                        overflow: isExpanded ? 'visible' : 'hidden',
-                                                                        textOverflow: isExpanded ? 'clip' : 'ellipsis',
-                                                                        wordBreak: isExpanded ? 'break-word' : 'normal',
-                                                                        minWidth: 0,
-                                                                        lineHeight: isExpanded ? 1.4 : 1.2,
-                                                                    }}
-                                                                >
-                                                                    {log.message}
-                                                                </span>
                                                             </motion.div>
                                                         );
                                                     })}
@@ -1436,42 +1563,276 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                                                 style={{
                                                     background: 'var(--bg-panel-raised)',
                                                     borderRadius: 12,
-                                                    padding: 10,
-                                                    maxHeight: 220,
+                                                    padding: 6,
+                                                    maxHeight: 320,
                                                     overflowY: 'auto',
                                                 }}
                                             >
-                                                {backups.slice(0, 10).map((name, idx) => (
-                                                    <div
-                                                        key={idx}
+                                                {(showAllBackups ? backups : backups.slice(0, 5)).map((backup, idx, arr) => {
+                                                    const isDetailsOpen = expandedBackupNames.has(backup.fileName);
+                                                    const isConfirmingDelete = confirmDeleteName === backup.fileName;
+                                                    const isDeleting = deletingNames.has(backup.fileName);
+                                                    return (
+                                                        <div
+                                                            key={backup.fileName}
+                                                            style={{
+                                                                borderBottom:
+                                                                    idx < arr.length - 1
+                                                                        ? '1px solid var(--border-subtle)'
+                                                                        : undefined,
+                                                            }}
+                                                        >
+                                                            <motion.button
+                                                                whileTap={{ scale: 0.99 }}
+                                                                onClick={() => toggleBackupDetails(backup.fileName)}
+                                                                style={{
+                                                                    width: '100%',
+                                                                    padding: '10px 8px',
+                                                                    background: 'transparent',
+                                                                    border: 'none',
+                                                                    color: 'inherit',
+                                                                    textAlign: 'left',
+                                                                    cursor: 'pointer',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 10,
+                                                                    borderRadius: 8,
+                                                                }}
+                                                            >
+                                                                <Database
+                                                                    size={14}
+                                                                    style={{ opacity: 0.6, flexShrink: 0 }}
+                                                                />
+                                                                <span
+                                                                    style={{
+                                                                        flex: 1,
+                                                                        minWidth: 0,
+                                                                        fontSize: '0.85rem',
+                                                                        color: 'var(--text-1)',
+                                                                        whiteSpace: 'nowrap',
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                    }}
+                                                                >
+                                                                    {formatBackupName(backup.fileName)}
+                                                                </span>
+                                                                <span
+                                                                    style={{
+                                                                        fontSize: '0.75rem',
+                                                                        color: 'var(--text-3)',
+                                                                        flexShrink: 0,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 4,
+                                                                    }}
+                                                                >
+                                                                    <HardDrive size={11} />
+                                                                    {backup.fileSize}
+                                                                </span>
+                                                                <ChevronDown
+                                                                    size={14}
+                                                                    style={{
+                                                                        color: 'var(--text-3)',
+                                                                        flexShrink: 0,
+                                                                        transform: isDetailsOpen ? 'rotate(180deg)' : undefined,
+                                                                        transition: 'transform 0.2s ease',
+                                                                    }}
+                                                                />
+                                                            </motion.button>
+
+                                                            <AnimatePresence initial={false}>
+                                                                {isDetailsOpen && (
+                                                                    <motion.div
+                                                                        initial={{ opacity: 0, height: 0 }}
+                                                                        animate={{ opacity: 1, height: 'auto' }}
+                                                                        exit={{ opacity: 0, height: 0 }}
+                                                                        transition={{ duration: 0.18 }}
+                                                                        style={{ overflow: 'hidden' }}
+                                                                    >
+                                                                        <div
+                                                                            style={{
+                                                                                margin: '0 8px 10px 32px',
+                                                                                padding: '10px 12px',
+                                                                                background: 'var(--bg-panel)',
+                                                                                borderRadius: 10,
+                                                                                display: 'flex',
+                                                                                flexDirection: 'column',
+                                                                                gap: 6,
+                                                                            }}
+                                                                        >
+                                                            <div
+                                                                style={{
+                                                                    fontSize: '0.75rem',
+                                                                    color: 'var(--text-2)',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 6,
+                                                                }}
+                                                            >
+                                                                <Clock size={12} style={{ flexShrink: 0 }} />
+                                                                {backup.createdAt
+                                                                    ? new Date(backup.createdAt).toLocaleString('en-GB', {
+                                                                        day: 'numeric',
+                                                                        month: 'short',
+                                                                        year: 'numeric',
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit',
+                                                                    })
+                                                                    : 'Unknown date'}
+                                                            </div>
+                                                            <div
+                                                                style={{
+                                                                    fontSize: '0.75rem',
+                                                                    color: 'var(--text-2)',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 6,
+                                                                }}
+                                                            >
+                                                                <HardDrive size={12} style={{ flexShrink: 0 }} />
+                                                                {backup.fileSize}
+                                                            </div>
+                                                            <div
+                                                                style={{
+                                                                    fontSize: '0.65rem',
+                                                                    color: 'var(--text-3)',
+                                                                    fontFamily: 'monospace',
+                                                                    wordBreak: 'break-all',
+                                                                }}
+                                                            >
+                                                                {backup.fileName}
+                                                            </div>
+
+                                                            {isConfirmingDelete ? (
+                                                                <div
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        gap: 8,
+                                                                        marginTop: 4,
+                                                                    }}
+                                                                >
+                                                                    <motion.button
+                                                                        whileTap={{ scale: 0.97 }}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleDeleteBackup(backup.fileName);
+                                                                        }}
+                                                                        disabled={isDeleting}
+                                                                        style={{
+                                                                            flex: 1,
+                                                                            padding: '8px 10px',
+                                                                            borderRadius: 8,
+                                                                            border: 'none',
+                                                                            background: 'var(--no)',
+                                                                            color: '#fff',
+                                                                            fontWeight: 600,
+                                                                            fontSize: '0.8rem',
+                                                                            cursor: 'pointer',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            gap: 6,
+                                                                            opacity: isDeleting ? 0.6 : 1,
+                                                                        }}
+                                                                    >
+                                                                        {isDeleting ? (
+                                                                            <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                                                                        ) : (
+                                                                            <Trash2 size={13} />
+                                                                        )}
+                                                                        Delete
+                                                                    </motion.button>
+                                                                    <motion.button
+                                                                        whileTap={{ scale: 0.97 }}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            hapticPatterns.tap();
+                                                                            setConfirmDeleteName(null);
+                                                                        }}
+                                                                        style={{
+                                                                            flex: 1,
+                                                                            padding: '8px 10px',
+                                                                            borderRadius: 8,
+                                                                            border: '1px solid var(--border-hairline)',
+                                                                            background: 'transparent',
+                                                                            color: 'var(--text-1)',
+                                                                            fontWeight: 500,
+                                                                            fontSize: '0.8rem',
+                                                                            cursor: 'pointer',
+                                                                        }}
+                                                                    >
+                                                                        Cancel
+                                                                    </motion.button>
+                                                                </div>
+                                                            ) : (
+                                                                <motion.button
+                                                                    whileTap={{ scale: 0.97 }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        hapticPatterns.tap();
+                                                                        setConfirmDeleteName(backup.fileName);
+                                                                    }}
+                                                                    style={{
+                                                                        marginTop: 4,
+                                                                        padding: '8px 10px',
+                                                                        borderRadius: 8,
+                                                                        border: '1px solid rgb(var(--no-rgb) / 0.3)',
+                                                                        background: 'rgb(var(--no-rgb) / 0.08)',
+                                                                        color: 'var(--no)',
+                                                                        fontWeight: 500,
+                                                                        fontSize: '0.8rem',
+                                                                        cursor: 'pointer',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        gap: 6,
+                                                                    }}
+                                                                >
+                                                                    <Trash2 size={13} />
+                                                                    Delete backup
+                                                                </motion.button>
+                                                            )}
+                                                                        </div>
+                                                                    </motion.div>
+                                                                )}
+                                                            </AnimatePresence>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {backups.length > 5 && (
+                                                    <motion.button
+                                                        whileTap={{ scale: 0.98 }}
+                                                        onClick={() => {
+                                                            hapticPatterns.tap();
+                                                            setShowAllBackups(!showAllBackups);
+                                                        }}
                                                         style={{
-                                                            padding: '6px 8px',
-                                                            fontSize: '0.85rem',
-                                                            color: 'var(--text-2)',
-                                                            borderBottom:
-                                                                idx < Math.min(backups.length, 10) - 1
-                                                                    ? '1px solid var(--border-subtle)'
-                                                                    : undefined,
+                                                            width: '100%',
+                                                            padding: '10px 8px',
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            color: 'var(--accent)',
+                                                            fontSize: '0.8rem',
+                                                            fontWeight: 500,
+                                                            cursor: 'pointer',
+                                                            textAlign: 'center',
                                                             display: 'flex',
                                                             alignItems: 'center',
-                                                            gap: 8,
+                                                            justifyContent: 'center',
+                                                            gap: 4,
                                                         }}
                                                     >
-                                                        <Database size={12} style={{ opacity: 0.6 }} />
-                                                        {formatBackupName(name)}
-                                                    </div>
-                                                ))}
-                                                {backups.length > 10 && (
-                                                    <div
-                                                        style={{
-                                                            padding: '6px 8px',
-                                                            fontSize: '0.8rem',
-                                                            color: 'var(--text-3)',
-                                                            textAlign: 'center',
-                                                        }}
-                                                    >
-                                                        + {backups.length - 10} more backups
-                                                    </div>
+                                                        {showAllBackups ? (
+                                                            <>
+                                                                Show less <ChevronUp size={14} />
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                More ({backups.length - 5}) <ChevronDown size={14} />
+                                                            </>
+                                                        )}
+                                                    </motion.button>
                                                 )}
                                             </div>
                                             {backupDir && (
