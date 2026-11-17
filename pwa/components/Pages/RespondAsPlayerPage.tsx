@@ -26,6 +26,13 @@ interface RespondAsPlayerPageProps {
 
 type Step = 'player' | 'matches';
 
+/** Only upcoming matches (future + 2 hours buffer). Called from event handlers. */
+function filterUpcoming(matches: Match[]): Match[] {
+    const now = Date.now();
+    const buffer = 2 * 60 * 60 * 1000;
+    return matches.filter((m) => parseDateToTimestamp(m.date) > now - buffer);
+}
+
 export default function RespondAsPlayerPage({ isOpen, onClose, match: scopedMatch = null }: RespondAsPlayerPageProps) {
     const [step, setStep] = useState<Step>('player');
     const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -36,18 +43,22 @@ export default function RespondAsPlayerPage({ isOpen, onClose, match: scopedMatc
     const { players, loading: playersLoading, fetchAllPlayers } = useAllPlayers();
     const { updating, updateAttendance } = useUpdateAttendance();
 
-    // Load players when dialog opens
-    useEffect(() => {
-        if (isOpen) {
-            fetchAllPlayers();
-        } else {
-            // Reset state when closing
+    // Reset state when closing (adjusted during render)
+    const [wasOpen, setWasOpen] = useState(isOpen);
+    if (isOpen !== wasOpen) {
+        setWasOpen(isOpen);
+        if (!isOpen) {
             setStep('player');
             setSelectedPlayer(null);
             setLocalMatches([]);
             setMatchesLoading(false);
             setUpdatingMatchId(null);
         }
+    }
+
+    // Load players when dialog opens
+    useEffect(() => {
+        if (isOpen) fetchAllPlayers();
     }, [isOpen, fetchAllPlayers]);
 
     const fetchMatchesForPlayer = async (playerId: number) => {
@@ -59,11 +70,7 @@ export default function RespondAsPlayerPage({ isOpen, onClose, match: scopedMatc
             data.sort((a: Match, b: Match) =>
                 parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date)
             );
-            // Filter to only upcoming matches (future + 2 hours buffer)
-            const now = Date.now();
-            const buffer = 2 * 60 * 60 * 1000;
-            const upcoming = data.filter((m: Match) => parseDateToTimestamp(m.date) > now - buffer);
-            setLocalMatches(upcoming);
+            setLocalMatches(filterUpcoming(data));
         } catch {
             setLocalMatches([]);
         } finally {

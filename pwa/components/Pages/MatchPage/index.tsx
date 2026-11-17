@@ -132,11 +132,20 @@ export default function MatchPage({
     }, [getTabFromScroll, selectTab]);
 
     // Reset tab state when the page opens so indicator and content stay aligned.
-    // Deliberately keyed on `open` only: later tab changes come from the user.
-    useEffect(() => {
+    // Adjusted during render on the closed -> open transition; later tab
+    // changes come from the user.
+    const [wasOpen, setWasOpen] = useState(open);
+    if (open !== wasOpen) {
+        setWasOpen(open);
         if (open) {
             setActiveTab(startTab);
             setShowMenu(false);
+        }
+    }
+
+    // Matching ref/DOM reset. Deliberately keyed on `open` only.
+    useEffect(() => {
+        if (open) {
             lastTabRef.current = startTab;
             programmaticScrollRef.current = null;
             const el = scrollRef.current;

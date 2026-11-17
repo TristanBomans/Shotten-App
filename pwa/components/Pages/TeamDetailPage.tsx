@@ -197,12 +197,20 @@ export default function TeamDetailPage({
     };
 
     // Reset tab state when modal opens so indicator and content stay aligned
-    useEffect(() => {
+    // (state adjusted during render, refs/DOM in the effect below)
+    const [wasOpen, setWasOpen] = useState(open);
+    if (open !== wasOpen) {
+        setWasOpen(open);
         if (open) {
             setActiveTab('overview');
+            setMenuOpen(false);
+        }
+    }
+
+    useEffect(() => {
+        if (open) {
             lastTabRef.current = 'overview';
             programmaticScrollRef.current = null;
-            setMenuOpen(false);
             if (scrollRef.current) {
                 scrollRef.current.scrollLeft = 0;
             }
@@ -212,15 +220,16 @@ export default function TeamDetailPage({
     const hasTeam = !!team?.externalId;
 
     // Calculate recent form from matches - memoized to prevent unnecessary re-renders
+    const teamName = team?.name;
     const recentForm = useMemo(() => {
-        if (!hasTeam || !team?.name || matches.length === 0) return [];
+        if (!hasTeam || !teamName || matches.length === 0) return [];
         const playedMatches = matches
             .filter(m => m.status === 'Played')
             .sort((a, b) => parseDateToTimestamp(b.date) - parseDateToTimestamp(a.date))
             .slice(0, 5);
 
         return playedMatches.map(m => {
-            const isHome = isHomeTeamForMatch(team.name, m.homeTeam, m.awayTeam);
+            const isHome = isHomeTeamForMatch(teamName, m.homeTeam, m.awayTeam);
             const teamScore = isHome ? m.homeScore : m.awayScore;
             const opponentScore = isHome ? m.awayScore : m.homeScore;
 
@@ -228,7 +237,7 @@ export default function TeamDetailPage({
             if (teamScore < opponentScore) return 'L';
             return 'D';
         });
-    }, [hasTeam, team?.name, matches]);
+    }, [hasTeam, teamName, matches]);
 
     if (typeof document === 'undefined') return null;
 

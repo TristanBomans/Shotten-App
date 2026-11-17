@@ -27,11 +27,10 @@ export default function PlayerSelect({ onSelect }: PlayerSelectProps) {
     }, [fetchPlayers, fetchTeams]);
 
     // Default: assign the first player to all teams once teams are loaded
-    useEffect(() => {
-        if (teams.length > 0 && newPlayerTeamIds.length === 0) {
-            setNewPlayerTeamIds(teams.map((t) => t.id));
-        }
-    }, [teams, newPlayerTeamIds.length]);
+    // (adjusted during render; settles once the selection is non-empty)
+    if (teams.length > 0 && newPlayerTeamIds.length === 0) {
+        setNewPlayerTeamIds(teams.map((t) => t.id));
+    }
 
     const isFirstUser = !loading && players.length === 0;
 
