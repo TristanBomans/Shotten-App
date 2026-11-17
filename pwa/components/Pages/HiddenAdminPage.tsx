@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-    AlertCircle,
     Bell,
     Check,
     ChevronDown,
@@ -148,11 +147,6 @@ function formatDateTime(date: Date | null, withSeconds = false): string {
     });
 }
 
-function formatTime(date: Date | null): string {
-    if (!date) return '--:--:--';
-    return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
 function formatRelative(date: Date | null): string {
     if (!date) return '';
     const minutes = Math.round((Date.now() - date.getTime()) / 60_000);
@@ -222,7 +216,7 @@ const LEVEL_STYLE: Record<LogLevel, { label: string; color: string; tint: string
     error: { label: 'Error', color: 'var(--no)', tint: 'rgb(var(--no-rgb) / 0.07)' },
     warn: { label: 'Warning', color: 'var(--warn)', tint: 'rgb(var(--warn-rgb) / 0.06)' },
     info: { label: 'Info', color: 'var(--accent)', tint: 'transparent' },
-    log: { label: 'Log', color: 'var(--text-3)', tint: 'transparent' },
+    log: { label: 'Log', color: 'color-mix(in srgb, var(--text-3) 70%, transparent)', tint: 'transparent' },
 };
 
 const spin = { animation: 'spin 1s linear infinite' } as const;
@@ -1124,20 +1118,25 @@ function LogRow({
             style={{
                 display: 'flex',
                 gap: 'var(--sp-3)',
-                padding: '8px var(--sp-4) 8px calc(var(--sp-4) - 3px)',
-                borderLeft: `3px solid ${entry.level === 'log' ? 'transparent' : style.color}`,
+                padding: '9px var(--sp-4)',
                 borderTop: '1px solid var(--separator)',
                 background: expanded ? 'var(--bg-subtle)' : style.tint,
                 cursor: 'pointer',
                 minWidth: 0,
             }}
         >
+            {/* Level dot: the only marker on a collapsed line; the time shows when expanded. */}
             <span
-                className="t-num"
-                style={{ fontFamily: MONO, fontSize: 'var(--fs-3xs)', color: 'var(--text-3)', paddingTop: 2, flexShrink: 0 }}
-            >
-                {formatTime(entry.date)}
-            </span>
+                aria-label={style.label}
+                style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: style.color,
+                    flexShrink: 0,
+                    marginTop: 5,
+                }}
+            />
             <div style={{ minWidth: 0, flex: 1 }}>
                 {expanded ? (
                     <>
@@ -1184,9 +1183,6 @@ function LogRow({
                             overflowWrap: 'anywhere',
                         }}
                     >
-                        {entry.level === 'warn' && (
-                            <AlertCircle size={11} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4, color: style.color }} />
-                        )}
                         {entry.message}
                     </span>
                 )}
