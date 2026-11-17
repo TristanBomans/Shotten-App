@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
     Bell,
     Check,
@@ -23,6 +23,7 @@ import { ListSection, MetricRow, Row } from '../ui/ListSection';
 import { EmptyState, InlineNotice, SegmentedControl, StatusChip } from '../ui/controls';
 import { hapticPatterns } from '@/lib/haptic';
 import { pageZIndex, useNavLevel } from '@/lib/navHistory';
+import { useNow } from '@/lib/useNow';
 import { schedulePushTestInOneMinute, subscribePushTest, type PushTestState } from '@/lib/pushTest';
 
 const WORKER_URL = 'http://192.168.129.250:8094';
@@ -262,10 +263,70 @@ function useCopy() {
 /* ------------------------------------------------------------------ */
 /* Page                                                                */
 /* ------------------------------------------------------------------ */
+const ADMIN_TABS = ['overview', 'backups', 'logs'] as const;
+type AdminTab = (typeof ADMIN_TABS)[number];
+
+const paneStyle: CSSProperties = {
+    minWidth: '100%',
+    scrollSnapAlign: 'center',
+    scrollSnapStop: 'always',
+    overflowY: 'auto',
+};
+
 export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps) {
     const zBase = pageZIndex(useNavLevel());
     const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
+    const [tab, setTab] = useState<AdminTab>('overview');
+    const [logLevel, setLogLevel] = useState<LevelFilter>('all');
     const backups = useBackups(open);
+    const health = useWorkerHealth(open);
+    const pagerRef = useRef<HTMLDivElement>(null);
+    const programmaticScroll = useRef<number | null>(null);
+    const lastTab = useRef<AdminTab>('overview');
+
+    // Every open starts on the overview (the panes remount, so they start at the top).
+    const [wasOpen, setWasOpen] = useState(open);
+    if (open !== wasOpen) {
+        setWasOpen(open);
+        if (open) {
+            setTab('overview');
+            setLogLevel('all');
+        }
+    }
+    useEffect(() => {
+        if (open) lastTab.current = 'overview';
+    }, [open]);
+
+    const goTo = useCallback((next: AdminTab) => {
+        lastTab.current = next;
+        setTab(next);
+        const pager = pagerRef.current;
+        if (!pager) return;
+        const left = ADMIN_TABS.indexOf(next) * pager.clientWidth;
+        if (Math.abs(pager.scrollLeft - left) > 1) {
+            programmaticScroll.current = left;
+            window.setTimeout(() => {
+                if (programmaticScroll.current === left) programmaticScroll.current = null;
+            }, 1000);
+        }
+        pager.scrollTo({ left, behavior: 'smooth' });
+    }, []);
+
+    const handlePagerScroll = useCallback(() => {
+        const pager = pagerRef.current;
+        if (!pager) return;
+        const target = programmaticScroll.current;
+        if (target !== null) {
+            if (Math.abs(pager.scrollLeft - target) <= 1) programmaticScroll.current = null;
+            return;
+        }
+        const next = ADMIN_TABS[Math.round(pager.scrollLeft / (pager.clientWidth || 1))] ?? 'overview';
+        if (next !== lastTab.current) {
+            hapticPatterns.swipe();
+            lastTab.current = next;
+            setTab(next);
+        }
+    }, []);
 
     // With the backup sheet open, Escape closes only the sheet (it has its own handler).
     const handleBack = useCallback(() => {
@@ -274,14 +335,69 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
     }, [selectedBackup, onClose]);
 
     return (
-        <FlowPage open={open} title="Worker Dashboard" subtitle="Shotten scraper worker" onBack={handleBack}>
-            <div style={{ marginBottom: 'var(--sp-5)' }}>
-                <InlineNotice tone="warn">Actions here affect live data on the worker.</InlineNotice>
+        <FlowPage
+            open={open}
+            title="Worker Dashboard"
+            subtitle={health.online === false ? 'Worker unreachable' : 'Shotten scraper worker'}
+            onBack={handleBack}
+            unpadded
+            headerExtra={
+                <SegmentedControl<AdminTab>
+                    pagerRef={pagerRef}
+                    aria-label="Dashboard sections"
+                    value={tab}
+                    onChange={(next) => {
+                        hapticPatterns.tap();
+                        goTo(next);
+                    }}
+                    options={[
+                        { value: 'overview', label: 'Overview' },
+                        { value: 'backups', label: 'Backups' },
+                        { value: 'logs', label: 'Logs' },
+                    ]}
+                />
+            }
+        >
+            <div
+                ref={pagerRef}
+                onScroll={handlePagerScroll}
+                onTouchStart={() => {
+                    programmaticScroll.current = null;
+                }}
+                className="scrollbar-hide"
+                style={{
+                    display: 'flex',
+                    width: '100%',
+                    flex: 1,
+                    minHeight: 0,
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    scrollSnapType: 'x mandatory',
+                    scrollBehavior: 'smooth',
+                }}
+            >
+                <div className="scrollbar-hide" style={paneStyle} aria-hidden={tab !== 'overview'}>
+                    <div className="flow-body-inner">
+                        <OverviewPane
+                            health={health}
+                            backups={backups}
+                            onOpenBackups={() => goTo('backups')}
+                            onOpenErrors={() => {
+                                setLogLevel('error');
+                                goTo('logs');
+                            }}
+                        />
+                    </div>
+                </div>
+                <div className="scrollbar-hide" style={paneStyle} aria-hidden={tab !== 'backups'}>
+                    <div className="flow-body-inner">
+                        <BackupsSection backups={backups} onSelect={setSelectedBackup} />
+                    </div>
+                </div>
+                <div className="scrollbar-hide" style={paneStyle} aria-hidden={tab !== 'logs'}>
+                    <LogsSection open={open} level={logLevel} onLevelChange={setLogLevel} />
+                </div>
             </div>
-
-            <ActionsSection onBackupStarted={backups.refreshSoon} />
-            <BackupsSection backups={backups} onSelect={setSelectedBackup} />
-            <LogsSection open={open} />
 
             <BackupDetailSheet
                 fileName={selectedBackup}
@@ -295,6 +411,167 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                 }}
             />
         </FlowPage>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/* Overview                                                            */
+/* ------------------------------------------------------------------ */
+interface WorkerHealth {
+    online: boolean | null; // null = still checking
+    features: Record<string, boolean> | null;
+    lastError: { date: Date | null; message: string } | null;
+    errorTotal: number | null;
+}
+
+function useWorkerHealth(open: boolean): WorkerHealth {
+    const [health, setHealth] = useState<WorkerHealth>({ online: null, features: null, lastError: null, errorTotal: null });
+
+    useEffect(() => {
+        if (!open) return;
+        let cancelled = false;
+        const healthCheck = fetch(`${WORKER_URL}/health`)
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+            .then((data: { features?: Record<string, boolean> }) => ({ online: true, features: data.features ?? null }))
+            .catch(() => ({ online: false, features: null }));
+        const errors = workerFetch<{ logs: { timestamp: string; message: string }[]; total?: number }>('/api/logs?level=error&limit=1')
+            .then((data) => ({
+                errorTotal: data.total ?? null,
+                lastError: data.logs[0] ? { date: parseLogTimestamp(data.logs[0].timestamp), message: data.logs[0].message } : null,
+            }))
+            .catch(() => ({ errorTotal: null, lastError: null }));
+        Promise.all([healthCheck, errors]).then(([h, e]) => {
+            if (!cancelled) setHealth({ ...h, ...e });
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [open]);
+
+    return health;
+}
+
+function StatTile({
+    label,
+    value,
+    detail,
+    tone = 'neutral',
+    onClick,
+    wide = false,
+}: {
+    label: string;
+    value: ReactNode;
+    detail?: ReactNode;
+    tone?: 'ok' | 'no' | 'warn' | 'neutral';
+    onClick?: () => void;
+    wide?: boolean;
+}) {
+    const dot = { ok: 'var(--ok)', no: 'var(--no)', warn: 'var(--warn)', neutral: 'var(--text-3)' }[tone];
+    const content = (
+        <>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-3xs)', fontWeight: 500, color: 'var(--text-3)' }}>
+                <span aria-hidden style={{ width: 7, height: 7, borderRadius: '50%', background: dot }} />
+                {label}
+                {onClick && <ChevronRight size={13} style={{ marginLeft: 'auto' }} />}
+            </span>
+            <span style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--text-1)' }}>{value}</span>
+            {detail && (
+                <span
+                    style={{
+                        fontSize: 'var(--fs-3xs)',
+                        color: 'var(--text-3)',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        overflowWrap: 'anywhere',
+                    }}
+                >
+                    {detail}
+                </span>
+            )}
+        </>
+    );
+    const style: CSSProperties = {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+        padding: 'var(--sp-3) var(--sp-4)',
+        textAlign: 'left',
+        gridColumn: wide ? '1 / -1' : undefined,
+        minWidth: 0,
+        color: 'inherit',
+    };
+    return onClick ? (
+        <button
+            className="panel press"
+            style={style}
+            onClick={() => {
+                hapticPatterns.tap();
+                onClick();
+            }}
+        >
+            {content}
+        </button>
+    ) : (
+        <div className="panel" style={style}>{content}</div>
+    );
+}
+
+function OverviewPane({
+    health,
+    backups,
+    onOpenBackups,
+    onOpenErrors,
+}: {
+    health: WorkerHealth;
+    backups: ReturnType<typeof useBackups>;
+    onOpenBackups: () => void;
+    onOpenErrors: () => void;
+}) {
+    const latest = backups.status?.latest;
+    const enabledFeatures = health.features ? Object.values(health.features).filter(Boolean).length : null;
+    const now = useNow();
+    const errorAge = health.lastError?.date ? now - health.lastError.date.getTime() : null;
+    const recentError = errorAge !== null && errorAge < 24 * 3_600_000;
+
+    return (
+        <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-2)', marginBottom: 'var(--sp-5)' }}>
+                <StatTile
+                    label="Worker"
+                    tone={health.online === null ? 'neutral' : health.online ? 'ok' : 'no'}
+                    value={health.online === null ? '…' : health.online ? 'Online' : 'Offline'}
+                    detail={
+                        health.online === false
+                            ? 'Not reachable from this network'
+                            : health.features && enabledFeatures !== null
+                                ? `${enabledFeatures}/${Object.keys(health.features).length} jobs enabled`
+                                : undefined
+                    }
+                />
+                <StatTile
+                    label="Last backup"
+                    tone={!latest ? 'neutral' : latest.isHealthy ? 'ok' : 'no'}
+                    value={latest ? formatRelative(parseDate(latest.createdAt)) : backups.loading ? '…' : '—'}
+                    detail={latest ? `${latest.fileSize} · ${backups.items?.length ?? backups.status?.totalCount} kept` : undefined}
+                    onClick={onOpenBackups}
+                />
+                <StatTile
+                    wide
+                    label="Last error"
+                    tone={!health.lastError ? 'neutral' : recentError ? 'no' : 'warn'}
+                    value={health.lastError ? formatRelative(health.lastError.date) : health.errorTotal === 0 ? 'None' : '…'}
+                    detail={health.lastError?.message}
+                    onClick={onOpenErrors}
+                />
+            </div>
+
+            <ActionsSection onBackupStarted={backups.refreshSoon} />
+            <p className="t-caption" style={{ padding: '0 var(--sp-1)', marginTop: 'calc(-1 * var(--sp-3))' }}>
+                These run on the live worker and change real data.
+            </p>
+        </>
     );
 }
 
@@ -498,7 +775,7 @@ function BackupsSection({
 
     return (
         <ListSection
-            label={items ? `Backups · ${items.length}` : 'Backups'}
+            label={items ? `${items.length} ${items.length === 1 ? 'backup' : 'backups'}` : 'Backups'}
             labelAction={
                 <IconButton label="Refresh backups" onClick={() => void refresh()} disabled={loading}>
                     <RefreshCw size={13} style={loading ? spin : undefined} />
@@ -811,7 +1088,15 @@ async function fetchLogPage(pageNum: number, filters: LogFilters): Promise<{ ent
     return { entries, total: typeof data.total === 'number' ? data.total : null };
 }
 
-function LogsSection({ open }: { open: boolean }) {
+function LogsSection({
+    open,
+    level,
+    onLevelChange,
+}: {
+    open: boolean;
+    level: LevelFilter;
+    onLevelChange: (level: LevelFilter) => void;
+}) {
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [total, setTotal] = useState<number | null>(null);
     const [page, setPage] = useState(1);
@@ -819,7 +1104,6 @@ function LogsSection({ open }: { open: boolean }) {
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [level, setLevel] = useState<LevelFilter>('all');
     const [day, setDay] = useState(''); // '' = all days
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
     const [nonce, setNonce] = useState(0);
@@ -921,7 +1205,7 @@ function LogsSection({ open }: { open: boolean }) {
 
     const clearFilters = () => {
         setSearch('');
-        setLevel('all');
+        onLevelChange('all');
         setDay('');
     };
 
@@ -929,156 +1213,172 @@ function LogsSection({ open }: { open: boolean }) {
     const filtersActive = level !== 'all' || !!day || !!debouncedSearch;
 
     return (
-        <section style={{ marginBottom: 'var(--sp-5)' }}>
-            <div className="section-label">
-                <span>
-                    Logs{total !== null ? ` · ${total.toLocaleString('en-GB')}${filtersActive ? ' matching' : ''}` : ''}
-                </span>
-                <IconButton label="Refresh logs" onClick={reload} disabled={loading}>
-                    <RefreshCw size={13} style={loading ? spin : undefined} />
-                </IconButton>
-            </div>
+        <>
+            {/* Filters stay pinned while the lines scroll underneath. */}
+            <div
+                style={{
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 2,
+                    background: 'color-mix(in srgb, var(--bg-screen) 88%, transparent)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    borderBottom: '1px solid var(--separator)',
+                }}
+            >
+                <div className="flow-body-inner" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', paddingTop: 'var(--sp-3)', paddingBottom: 'var(--sp-3)' }}>
+                    <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+                            <Search
+                                size={15}
+                                style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }}
+                            />
+                            <input
+                                className="field"
+                                type="text"
+                                inputMode="search"
+                                enterKeyHint="search"
+                                placeholder={total !== null && !filtersActive ? `Search ${total.toLocaleString('en-GB')} lines` : 'Search messages'}
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                style={{ paddingLeft: 36, paddingRight: 36 }}
+                            />
+                            {search && (
+                                <button
+                                    className="press"
+                                    aria-label="Clear search"
+                                    onClick={() => setSearch('')}
+                                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', display: 'flex' }}
+                                >
+                                    <X size={15} />
+                                </button>
+                            )}
+                        </div>
+                        <IconButton label="Refresh logs" onClick={reload} disabled={loading}>
+                            <RefreshCw size={13} style={loading ? spin : undefined} />
+                        </IconButton>
+                    </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', marginBottom: 'var(--sp-3)' }}>
-                <div style={{ position: 'relative' }}>
-                    <Search
-                        size={15}
-                        style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }}
+                    <SegmentedControl<LevelFilter>
+                        aria-label="Log level"
+                        variant="choice"
+                        value={level}
+                        onChange={(value) => {
+                            hapticPatterns.tap();
+                            onLevelChange(value);
+                        }}
+                        options={[
+                            { value: 'all', label: 'All' },
+                            { value: 'error', label: 'Errors', tone: 'no' },
+                            { value: 'warn', label: 'Warn', tone: 'warn' },
+                            { value: 'info', label: 'Info' },
+                            { value: 'log', label: 'Log' },
+                        ]}
                     />
-                    <input
-                        className="field"
-                        type="text"
-                        inputMode="search"
-                        enterKeyHint="search"
-                        placeholder="Search messages"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        style={{ paddingLeft: 36, paddingRight: 36 }}
-                    />
-                    {search && (
-                        <button
-                            className="press"
-                            aria-label="Clear search"
-                            onClick={() => setSearch('')}
-                            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', display: 'flex' }}
-                        >
-                            <X size={15} />
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+                        <IconButton label="Previous day" onClick={() => setDay((d) => shiftIsoDay(d || today, -1))}>
+                            <ChevronLeft size={15} />
+                        </IconButton>
+                        <input
+                            className="field"
+                            type="date"
+                            aria-label="Day"
+                            value={day}
+                            max={today}
+                            onChange={(e) => setDay(e.target.value)}
+                            style={{ flex: 1, minWidth: 0, minHeight: 36, color: day ? 'var(--text-1)' : 'var(--text-3)' }}
+                        />
+                        <IconButton label="Next day" onClick={() => setDay((d) => (d && d < today ? shiftIsoDay(d, 1) : d))} disabled={!day || day >= today}>
+                            <ChevronRight size={15} />
+                        </IconButton>
+                        <button className="chip press" onClick={() => setDay(day ? '' : today)} style={{ cursor: 'pointer', minHeight: 30 }}>
+                            {day ? <>All days <X size={11} /></> : 'Today'}
                         </button>
+                    </div>
+                    {filtersActive && total !== null && (
+                        <p className="t-caption" style={{ padding: '0 var(--sp-1)' }}>
+                            {total.toLocaleString('en-GB')} matching {total === 1 ? 'line' : 'lines'}
+                        </p>
                     )}
                 </div>
+            </div>
 
-                <SegmentedControl<LevelFilter>
-                    aria-label="Log level"
-                    variant="choice"
-                    value={level}
-                    onChange={(value) => {
-                        hapticPatterns.tap();
-                        setLevel(value);
-                    }}
-                    options={[
-                        { value: 'all', label: 'All' },
-                        { value: 'error', label: 'Errors', tone: 'no' },
-                        { value: 'warn', label: 'Warn', tone: 'warn' },
-                        { value: 'info', label: 'Info' },
-                        { value: 'log', label: 'Log' },
-                    ]}
-                />
+            <div className="flow-body-inner" style={{ paddingTop: 'var(--sp-3)' }}>
+                <div className="list-section" style={{ opacity: loading && logs.length > 0 ? 0.55 : 1, transition: 'opacity 150ms' }}>
+                    {error && (
+                        <div style={{ padding: 'var(--sp-3)' }}>
+                            <InlineNotice
+                                tone="error"
+                                action={<button className="press" onClick={reload} style={{ color: 'inherit', fontWeight: 600 }}>Retry</button>}
+                            >
+                                {error}
+                            </InlineNotice>
+                        </div>
+                    )}
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-                    <IconButton label="Previous day" onClick={() => setDay((d) => shiftIsoDay(d || today, -1))}>
-                        <ChevronLeft size={15} />
-                    </IconButton>
-                    <input
-                        className="field"
-                        type="date"
-                        aria-label="Day"
-                        value={day}
-                        max={today}
-                        onChange={(e) => setDay(e.target.value)}
-                        style={{ flex: 1, minWidth: 0, minHeight: 36, color: day ? 'var(--text-1)' : 'var(--text-3)' }}
-                    />
-                    <IconButton label="Next day" onClick={() => setDay((d) => (d && d < today ? shiftIsoDay(d, 1) : d))} disabled={!day || day >= today}>
-                        <ChevronRight size={15} />
-                    </IconButton>
-                    <button className="chip press" onClick={() => setDay(day ? '' : today)} style={{ cursor: 'pointer', minHeight: 30 }}>
-                        {day ? <>All days <X size={11} /></> : 'Today'}
-                    </button>
+                    {loading && logs.length === 0 && (
+                        <div className="row row-static" style={{ justifyContent: 'center' }}>
+                            <SmallSpinner />
+                        </div>
+                    )}
+
+                    {!loading && !error && logs.length === 0 && (
+                        <EmptyState
+                            compact
+                            icon={<Search size={18} />}
+                            title="No log lines"
+                            description={filtersActive ? 'Nothing matches these filters.' : 'The worker has not logged anything yet.'}
+                            action={filtersActive ? (
+                                <button className="btn btn-quiet" style={{ minHeight: 36 }} onClick={clearFilters}>
+                                    Clear filters
+                                </button>
+                            ) : undefined}
+                        />
+                    )}
+
+                    {groups.map((group) => (
+                        <div key={`${group.key}-${group.entries[0].id}`}>
+                            <div
+                                style={{
+                                    padding: '6px var(--sp-4)',
+                                    background: 'var(--bg-panel-raised)',
+                                    fontSize: 'var(--fs-3xs)',
+                                    fontWeight: 600,
+                                    color: 'var(--text-3)',
+                                }}
+                            >
+                                {group.label}
+                            </div>
+                            {group.entries.map((entry) => (
+                                <LogRow
+                                    key={entry.id}
+                                    entry={entry}
+                                    expanded={expanded.has(entry.id)}
+                                    copied={copied === entry.id}
+                                    onToggle={() => toggle(entry.id)}
+                                    onCopy={() => copy(entry.id, `${entry.date?.toISOString() ?? ''} [${entry.level.toUpperCase()}] ${entry.message}`)}
+                                />
+                            ))}
+                        </div>
+                    ))}
+
+                    {logs.length > 0 && (
+                        <div ref={sentinelRef} className="row row-static" style={{ justifyContent: 'center', minHeight: 40 }}>
+                            {loadingMore ? (
+                                <SmallSpinner />
+                            ) : hasMore ? (
+                                <button className="press" onClick={loadMore} style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 'var(--fs-xs)' }}>
+                                    Load older lines
+                                </button>
+                            ) : (
+                                <span className="t-caption">That&apos;s everything</span>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
-
-            <div className="list-section" style={{ opacity: loading && logs.length > 0 ? 0.55 : 1, transition: 'opacity 150ms' }}>
-                {error && (
-                    <div style={{ padding: 'var(--sp-3)' }}>
-                        <InlineNotice
-                            tone="error"
-                            action={<button className="press" onClick={reload} style={{ color: 'inherit', fontWeight: 600 }}>Retry</button>}
-                        >
-                            {error}
-                        </InlineNotice>
-                    </div>
-                )}
-
-                {loading && logs.length === 0 && (
-                    <div className="row row-static" style={{ justifyContent: 'center' }}>
-                        <SmallSpinner />
-                    </div>
-                )}
-
-                {!loading && !error && logs.length === 0 && (
-                    <EmptyState
-                        compact
-                        icon={<Search size={18} />}
-                        title="No log lines"
-                        description={filtersActive ? 'Nothing matches these filters.' : 'The worker has not logged anything yet.'}
-                        action={filtersActive ? (
-                            <button className="btn btn-quiet" style={{ minHeight: 36 }} onClick={clearFilters}>
-                                Clear filters
-                            </button>
-                        ) : undefined}
-                    />
-                )}
-
-                {groups.map((group) => (
-                    <div key={`${group.key}-${group.entries[0].id}`}>
-                        <div
-                            style={{
-                                padding: '6px var(--sp-4)',
-                                background: 'var(--bg-panel-raised)',
-                                fontSize: 'var(--fs-3xs)',
-                                fontWeight: 600,
-                                color: 'var(--text-3)',
-                            }}
-                        >
-                            {group.label}
-                        </div>
-                        {group.entries.map((entry) => (
-                            <LogRow
-                                key={entry.id}
-                                entry={entry}
-                                expanded={expanded.has(entry.id)}
-                                copied={copied === entry.id}
-                                onToggle={() => toggle(entry.id)}
-                                onCopy={() => copy(entry.id, `${entry.date?.toISOString() ?? ''} [${entry.level.toUpperCase()}] ${entry.message}`)}
-                            />
-                        ))}
-                    </div>
-                ))}
-
-                {logs.length > 0 && (
-                    <div ref={sentinelRef} className="row row-static" style={{ justifyContent: 'center', minHeight: 40 }}>
-                        {loadingMore ? (
-                            <SmallSpinner />
-                        ) : hasMore ? (
-                            <button className="press" onClick={loadMore} style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 'var(--fs-xs)' }}>
-                                Load older lines
-                            </button>
-                        ) : (
-                            <span className="t-caption">That&apos;s everything</span>
-                        )}
-                    </div>
-                )}
-            </div>
-        </section>
+        </>
     );
 }
 
