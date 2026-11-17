@@ -21,6 +21,8 @@ interface FlowPageProps {
      * opened from local state; stack pages are already in the URL.
      */
     backClose?: boolean;
+    /** Extra header row under the title bar, e.g. segmented tabs. */
+    headerExtra?: ReactNode;
     children: ReactNode;
 }
 
@@ -37,6 +39,7 @@ export default function FlowPage({
     headerActions,
     unpadded = false,
     backClose = false,
+    headerExtra,
     children,
 }: FlowPageProps) {
     const level = useNavLevel();
@@ -105,6 +108,7 @@ export default function FlowPage({
                                 </button>
                             )}
                         </div>
+                        {headerExtra && <div className="flow-header-tabs">{headerExtra}</div>}
                     </div>
                     {unpadded ? (
                         children
