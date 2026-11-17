@@ -3,6 +3,7 @@ import { DM_Sans } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import TeamTitle from '@/components/TeamTitle';
+import InlineScript from '@/components/InlineScript';
 
 const dmSans = DM_Sans({
     subsets: ['latin'],
@@ -42,9 +43,8 @@ export default function RootLayout({
                 <meta name="apple-mobile-web-app-capable" content="yes" />
                 <meta name="mobile-web-app-capable" content="yes" />
                 {/* Theme loader - runs before any rendering to prevent flash */}
-                <script
-                    dangerouslySetInnerHTML={{
-                        __html: `
+                <InlineScript
+                    html={`
                             (function() {
                                 let theme = localStorage.getItem('theme');
                                 if (!theme || theme === 'original') {
@@ -67,8 +67,7 @@ export default function RootLayout({
                                     document.head.appendChild(newMeta);
                                 }
                             })();
-                        `,
-                    }}
+                        `}
                 />
             </head>
             <body>

@@ -14,13 +14,15 @@ interface SheetProps {
     children: ReactNode;
     /** The caller already keeps this sheet in the URL/history (e.g. a stack page). */
     historyManaged?: boolean;
+    /** Stack the sheet above a full-screen page (pass that page's z-index + offset). */
+    zIndex?: number;
 }
 
 /**
  * Bottom sheet on mobile, centered panel on desktop (via CSS).
  * Backdrop tap, close button, Escape and the system back gesture all dismiss.
  */
-export default function Sheet({ open, onClose, title, subtitle, children, historyManaged = false }: SheetProps) {
+export default function Sheet({ open, onClose, title, subtitle, children, historyManaged = false, zIndex }: SheetProps) {
     useBackClose(open && !historyManaged, onClose);
 
     useEffect(() => {
@@ -40,6 +42,7 @@ export default function Sheet({ open, onClose, title, subtitle, children, histor
                 <>
                     <motion.div
                         className="backdrop"
+                        style={zIndex !== undefined ? { zIndex } : undefined}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -48,6 +51,7 @@ export default function Sheet({ open, onClose, title, subtitle, children, histor
                     />
                     <motion.div
                         className="sheet-root"
+                        style={zIndex !== undefined ? { zIndex: zIndex + 1 } : undefined}
                         initial={{ y: '100%' }}
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}

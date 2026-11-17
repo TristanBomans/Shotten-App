@@ -44,15 +44,19 @@ export default function PlayerManagementPage({ isOpen, onClose }: PlayerManageme
     const inputRef = useRef<HTMLInputElement>(null);
     const newInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        if (isOpen) {
-            refresh();
-        } else {
-            // Reset state when closing
+    // Reset state when closing (adjusted during render)
+    const [wasOpen, setWasOpen] = useState(isOpen);
+    if (isOpen !== wasOpen) {
+        setWasOpen(isOpen);
+        if (!isOpen) {
             setEditingId(null);
             setIsAddingNew(false);
             setDeleteConfirmId(null);
         }
+    }
+
+    useEffect(() => {
+        if (isOpen) refresh();
     }, [isOpen, refresh]);
 
     useEffect(() => {

@@ -46,6 +46,17 @@ const themeLabels: Record<string, string> = {
     white: 'White',
 };
 
+/** Missing or legacy ('original') theme preferences resolve to 'oled'. */
+function resolveTheme(savedTheme: string | null): string {
+    return !savedTheme || savedTheme === 'original' ? 'oled' : savedTheme;
+}
+
+function readBoolPref(key: string, fallback: boolean): boolean {
+    if (typeof window === 'undefined') return fallback;
+    const stored = localStorage.getItem(key);
+    return stored === null ? fallback : stored === 'true';
+}
+
 export default function SettingsView({
     onLogout,
     playerId,
@@ -59,48 +70,45 @@ export default function SettingsView({
     const isHiddenAdminOpen = isOpenIn(stack, 'admin');
     const isRespondAsPlayerOpen = isOpenIn(stack, 'respond');
     const isForfaitOpen = isOpenIn(stack, 'forfait');
-    const [useMock, setUseMock] = useState(true);
-    const [isLocalhost, setIsLocalhost] = useState(false);
-    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+    // Read once on mount. Safe for hydration: SettingsView only renders under
+    // Dashboard, which app/page.tsx shows after its client-only loading gate.
+    const isClient = typeof window !== 'undefined';
+    const [useMock, setUseMock] = useState(() => (isClient ? getUseMockData() : true));
+    const [isLocalhost] = useState(() =>
+        isClient &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    );
+    const [notificationsEnabled, setNotificationsEnabled] = useState(() =>
+        isClient && localStorage.getItem('notificationsEnabled') === 'true'
+    );
     const [notificationsBusy, setNotificationsBusy] = useState(false);
     const [notificationsMessage, setNotificationsMessage] = useState<string | null>(null);
-    const [pushSupported, setPushSupported] = useState(true);
-    const [hapticFeedback, setHapticFeedback] = useState(true);
-    const [showFullNames, setShowFullNames] = useState(true);
-    const [showPastMatches, setShowPastMatches] = useState(true);
-    const [includeForfait, setIncludeForfait] = useState(false);
-    const [defaultLeague, setDefaultLeague] = useState<string>('');
+    const [pushSupported] = useState(() => (isClient ? isWebPushSupported() : true));
+    const [hapticFeedback, setHapticFeedback] = useState(() =>
+        !isClient || localStorage.getItem('hapticFeedback') !== 'false'
+    );
+    const [showFullNames, setShowFullNames] = useState(() => readBoolPref('showFullNames', true));
+    const [showPastMatches, setShowPastMatches] = useState(() => readBoolPref('showPastMatches', true));
+    const [includeForfait, setIncludeForfait] = useState(() =>
+        isClient && localStorage.getItem(INCLUDE_FORFAIT_STORAGE_KEY) === 'true'
+    );
+    const [defaultLeague, setDefaultLeague] = useState<string>(() =>
+        (isClient && localStorage.getItem('defaultLeague')) || ''
+    );
     const [leagues, setLeagues] = useState<string[]>([]);
     const [showLeagueSelector, setShowLeagueSelector] = useState(false);
-    const [theme, setTheme] = useState<string>('oled');
+    const [theme, setTheme] = useState<string>(() => (isClient ? resolveTheme(localStorage.getItem('theme')) : 'oled'));
     const [showThemeSelector, setShowThemeSelector] = useState(false);
     const whatsNew = useWhatsNew();
 
     useEffect(() => {
-        setUseMock(getUseMockData());
-        setIsLocalhost(
-            typeof window !== 'undefined' &&
-            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        );
-        const notifPref = localStorage.getItem('notificationsEnabled');
-        setNotificationsEnabled(notifPref === 'true');
-        setPushSupported(isWebPushSupported());
-        const hapticPref = localStorage.getItem('hapticFeedback');
-        setHapticFeedback(hapticPref !== 'false');
-        const fullNamesPref = localStorage.getItem('showFullNames');
-        setShowFullNames(fullNamesPref === null ? true : fullNamesPref === 'true');
-        const pastMatchesPref = localStorage.getItem('showPastMatches');
-        setShowPastMatches(pastMatchesPref === null ? true : pastMatchesPref === 'true');
-        setIncludeForfait(localStorage.getItem(INCLUDE_FORFAIT_STORAGE_KEY) === 'true');
-        const savedLeague = localStorage.getItem('defaultLeague');
-        if (savedLeague) setDefaultLeague(savedLeague);
+        // Migrate a missing or legacy theme preference to the resolved one.
         const savedTheme = localStorage.getItem('theme');
-        const resolvedTheme = !savedTheme || savedTheme === 'original' ? 'oled' : savedTheme;
+        const resolvedTheme = resolveTheme(savedTheme);
         if (resolvedTheme !== savedTheme) {
             localStorage.setItem('theme', resolvedTheme);
             document.documentElement.setAttribute('data-theme', resolvedTheme);
         }
-        setTheme(resolvedTheme);
 
         // Fetch leagues for the selector (only leagues where our team plays)
         const loadLeagues = async () => {

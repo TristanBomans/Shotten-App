@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Copy, Database, Users } from 'lucide-react';
 
@@ -15,36 +15,31 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     const [error, setError] = useState<string | null>(null);
     const [manualSql, setManualSql] = useState('');
     const [copied, setCopied] = useState(false);
-    const [busy, setBusy] = useState(false);
+    const [busy, setBusy] = useState(true);
 
     const [teamName, setTeamName] = useState('');
     const [externalId, setExternalId] = useState('');
 
-    const initDatabase = useCallback(async () => {
-        setBusy(true);
-        setError(null);
-        try {
-            const res = await fetch('/api/setup', { method: 'POST' });
-            const data = await res.json();
-
-            if (res.status === 409 && data.needsManualSql) {
-                setManualSql(data.sql);
-                setStep('manual-sql');
-                return;
-            }
-            if (!res.ok) throw new Error(data.details || data.error || 'Initialisatie mislukt');
-
-            setStep('team');
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Initialisatie mislukt');
-        } finally {
-            setBusy(false);
-        }
-    }, []);
-
+    // Initialise the database once on mount (busy starts true for this request).
     useEffect(() => {
-        initDatabase();
-    }, [initDatabase]);
+        fetch('/api/setup', { method: 'POST' })
+            .then(async (res) => {
+                const data = await res.json();
+
+                if (res.status === 409 && data.needsManualSql) {
+                    setManualSql(data.sql);
+                    setStep('manual-sql');
+                    return;
+                }
+                if (!res.ok) throw new Error(data.details || data.error || 'Initialisatie mislukt');
+
+                setStep('team');
+            })
+            .catch((e) => {
+                setError(e instanceof Error ? e.message : 'Initialisatie mislukt');
+            })
+            .finally(() => setBusy(false));
+    }, []);
 
     const recheckAfterManual = async () => {
         setBusy(true);

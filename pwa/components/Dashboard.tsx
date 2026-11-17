@@ -25,6 +25,7 @@ import { topIndexOf, type NavEntry, type PageKind } from '@/lib/navStack';
 import type { RecentMatchItem } from '@/lib/recentMatches';
 import NavStackHost from './NavStackHost';
 import { publishPagerProgress } from '@/lib/pagerProgress';
+import { useNow } from '@/lib/useNow';
 
 interface DashboardProps {
     playerId: number;
@@ -121,7 +122,7 @@ export default function Dashboard({
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const scrollEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isInitialMount = useRef(true);
-    const hasEverLoaded = useRef(false);
+    const [hasEverLoaded, setHasEverLoaded] = useState(false);
 
     const setMatchCardRef = useCallback((matchId: number, node: HTMLDivElement | null) => {
         if (!node) {
@@ -131,43 +132,44 @@ export default function Dashboard({
         matchCardRefs.current.set(matchId, node);
     }, []);
 
+    const loadRecentMatches = useCallback(
+        () =>
+            fetchRecentMatchesData()
+                .then(setRecentMatches, (recentMatchesError) => {
+                    console.warn('Failed to fetch recent matches:', recentMatchesError);
+                    setRecentMatches(EMPTY_RECENT_MATCHES);
+                })
+                .finally(() => setLoadingRecentMatches(false)),
+        []
+    );
+
     const fetchRecentMatches = useCallback(async () => {
         setLoadingRecentMatches(true);
-        try {
-            const data = await fetchRecentMatchesData();
-            setRecentMatches(data);
-        } catch (recentMatchesError) {
-            console.warn('Failed to fetch recent matches:', recentMatchesError);
-            setRecentMatches(EMPTY_RECENT_MATCHES);
-        } finally {
-            setLoadingRecentMatches(false);
-        }
-    }, []);
+        await loadRecentMatches();
+    }, [loadRecentMatches]);
 
     useEffect(() => {
         fetchMatches();
         fetchAllPlayers();
-        fetchRecentMatches();
-    }, [fetchMatches, fetchAllPlayers, fetchRecentMatches]);
+        void loadRecentMatches(); // loading flag already starts true
+    }, [fetchMatches, fetchAllPlayers, loadRecentMatches]);
 
     // Track whether initial data has ever loaded to prevent skeleton flash on remount
-    useEffect(() => {
-        if (!loading && matches.length > 0) {
-            hasEverLoaded.current = true;
-        }
-    }, [loading, matches.length]);
+    if (!hasEverLoaded && !loading && matches.length > 0) {
+        setHasEverLoaded(true);
+    }
 
-    useEffect(() => {
-        if (currentView !== 'league') {
-            setIsLeagueSelectorOpen(false);
-        }
-    }, [currentView]);
+    // Leaving the league tab closes its selector.
+    const [prevView, setPrevView] = useState(currentView);
+    if (prevView !== currentView) {
+        setPrevView(currentView);
+        if (currentView !== 'league') setIsLeagueSelectorOpen(false);
+    }
 
-    useEffect(() => {
-        if (selectedLeague && !leagueOptions.includes(selectedLeague)) {
-            setSelectedLeague(leagueOptions[0] || '');
-        }
-    }, [selectedLeague, leagueOptions]);
+    // Fall back to the first league when the selected one disappears.
+    if (selectedLeague && !leagueOptions.includes(selectedLeague)) {
+        setSelectedLeague(leagueOptions[0] || '');
+    }
 
     // Get current view index from scroll position
     const getViewIndexFromScroll = useCallback((): number => {
@@ -395,8 +397,8 @@ export default function Dashboard({
         () => [...matches].sort((a, b) => parseDateToTimestamp(a.date) - parseDateToTimestamp(b.date)),
         [matches]
     );
+    const now = useNow();
     const { pastMatches, heroMatch, boardMatches } = useMemo(() => {
-        const now = Date.now();
         const past = matchesByDate.filter(m => isMatchFinished(m.date, now));
         const upcoming = matchesByDate.filter(m => !isMatchFinished(m.date, now));
         return {
@@ -404,7 +406,7 @@ export default function Dashboard({
             heroMatch: upcoming[0],
             boardMatches: showPastMatches ? matchesByDate : upcoming,
         };
-    }, [matchesByDate, showPastMatches]);
+    }, [matchesByDate, showPastMatches, now]);
     const notificationSummary = useMemo(
         () => buildMatchReminders(matches, playerId),
         [matches, playerId]
@@ -587,7 +589,7 @@ export default function Dashboard({
     }, [showPastMatches]);
 
     // Loading state - only show skeleton on initial load when no data yet
-    if (loading && matches.length === 0 && !hasEverLoaded.current) {
+    if (loading && matches.length === 0 && !hasEverLoaded) {
         return (
             <>
                 <ScreenHeader

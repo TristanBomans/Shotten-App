@@ -1,1513 +1,1192 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { createPortal } from 'react-dom';
-import { ChevronLeft, AlertTriangle, Play, Loader2, CheckCircle2, AlertCircle, Database, FileText, Shield, Clock, HardDrive, ChevronDown, ChevronUp, Save, RefreshCw, Bell } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+    Bell,
+    Check,
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    Copy,
+    Database,
+    Loader2,
+    Play,
+    RefreshCw,
+    Save,
+    Search,
+    Trash2,
+    X,
+} from 'lucide-react';
+import FlowPage from '../ui/FlowPage';
+import Sheet from '../ui/Sheet';
+import { ListSection, MetricRow, Row } from '../ui/ListSection';
+import { EmptyState, InlineNotice, SegmentedControl, StatusChip } from '../ui/controls';
 import { hapticPatterns } from '@/lib/haptic';
+import { pageZIndex, useNavLevel } from '@/lib/navHistory';
 import { schedulePushTestInOneMinute, subscribePushTest, type PushTestState } from '@/lib/pushTest';
+
+const WORKER_URL = 'http://192.168.129.250:8094';
+const LOGS_LIMIT = 50;
+const BACKUPS_PAGE = 10;
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 
 interface HiddenAdminPageProps {
     open: boolean;
     onClose: () => void;
 }
 
+/* ------------------------------------------------------------------ */
+/* Worker API types                                                    */
+/* ------------------------------------------------------------------ */
 interface BackupStatus {
-    success: boolean;
-    backupDir: string;
     hasBackups: boolean;
     totalCount: number;
-    latest: {
+    latest?: {
         fileName: string;
         fileSize: string;
         createdAt: string;
-        durationSeconds: number;
-        success: boolean;
+        durationSeconds: number | null;
+        success: boolean | null;
         isHealthy: boolean;
         hoursSince: number;
     };
 }
 
+interface BackupItem {
+    fileName: string;
+    size: string | null;
+    sizeBytes: number | null;
+    createdAt: string | null;
+}
+
+interface BackupDetails {
+    fileName: string;
+    size: string;
+    sizeBytes: number;
+    createdAt: string | null;
+    startedAt: string | null;
+    durationSeconds: number | null;
+    success: boolean | null;
+    isLatest: boolean;
+    ageHours: number | null;
+    expiresAt: string | null;
+    archive: {
+        dumpedFrom: string | null;
+        dumpedBy: string | null;
+        format: string | null;
+        compression: string | null;
+        entryCount: number;
+        tables: string[];
+    } | null;
+    archiveError?: string;
+}
+
+type LogLevel = 'error' | 'warn' | 'info' | 'log';
+type LevelFilter = 'all' | LogLevel;
+
 interface LogEntry {
-    timestamp: string;
-    level: 'info' | 'warn' | 'error' | 'LOG';
+    id: string;
+    date: Date | null;
+    level: LogLevel;
     message: string;
-    legacy?: boolean;
+    legacy: boolean;
 }
 
-interface RenderedLogEntry extends LogEntry {
-    entryId: string;
+type Notice = { tone: 'info' | 'error'; text: string } | null;
+
+/* ------------------------------------------------------------------ */
+/* Helpers                                                             */
+/* ------------------------------------------------------------------ */
+async function workerFetch<T>(path: string, init?: RequestInit): Promise<T> {
+    let res: Response;
+    try {
+        res = await fetch(`${WORKER_URL}${path}`, init);
+    } catch {
+        throw new Error('Worker unreachable. Are you on the home network?');
+    }
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.success) {
+        throw new Error(data?.error || `Worker returned ${res.status}`);
+    }
+    return data as T;
 }
 
-function formatBackupName(filename: string): string {
-    // Filenames are UTC, e.g. "supabase_backup_2026-03-31T02-00-00-054Z.dump"
-    const match = filename.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})(?:-(\d{2}))?/);
-    if (!match) return filename;
+/** Backup filenames carry their UTC start time: supabase_backup_2026-03-31T02-00-00-054Z.dump */
+function backupDateFromName(fileName: string): Date | null {
+    const m = fileName.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})(?:-(\d{2}))?/);
+    if (!m) return null;
+    const [, y, mo, d, h, mi, s] = m;
+    const date = new Date(`${y}-${mo}-${d}T${h}:${mi}:${s || '00'}Z`);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
 
-    const [, year, month, day, hour, minute, second] = match;
-    const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second || '00'}Z`);
+function parseDate(value: string | null | undefined): Date | null {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
 
-    return date.toLocaleDateString('en-GB', {
+/** Worker log timestamps look like "2026-11-16 02:00:00.123456789" (UTC). */
+function parseLogTimestamp(raw: string): Date | null {
+    const m = raw.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(?:\.(\d+))?/);
+    if (!m) return parseDate(raw);
+    const ms = (m[3] || '0').padEnd(3, '0').slice(0, 3);
+    return parseDate(`${m[1]}T${m[2]}.${ms}Z`);
+}
+
+function formatDateTime(date: Date | null, withSeconds = false): string {
+    if (!date) return '—';
+    return date.toLocaleString('en-GB', {
+        weekday: 'short',
         day: 'numeric',
         month: 'short',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        ...(withSeconds ? { second: '2-digit' } : {}),
     });
 }
 
-function formatDuration(seconds: number): string {
-    if (seconds < 60) return `${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds}s`;
+function formatRelative(date: Date | null): string {
+    if (!date) return '';
+    const minutes = Math.round((Date.now() - date.getTime()) / 60_000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
 }
 
-function formatHoursAgo(hours: number): string {
-    if (hours < 1) {
-        const minutes = Math.round(hours * 60);
-        if (minutes < 1) return 'just now';
-        return `${minutes}m ago`;
-    }
-    if (hours < 24) {
-        const wholeHours = Math.floor(hours);
-        const minutes = Math.round((hours - wholeHours) * 60);
-        if (minutes === 0) {
-            return `${wholeHours}h ago`;
-        }
-        return `${wholeHours}h ${minutes}m ago`;
-    }
-    const days = Math.floor(hours / 24);
-    const remainingHours = Math.round(hours % 24);
-    if (remainingHours === 0) {
-        return `${days}d ago`;
-    }
-    return `${days}d ${remainingHours}h ago`;
+function formatDuration(seconds: number | null | undefined): string {
+    if (seconds === null || seconds === undefined) return '—';
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
 }
 
-const LOGS_LIMIT = 50;
+function dayKey(date: Date | null): string {
+    if (!date) return 'unknown';
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
 
+function dayLabel(date: Date | null): string {
+    if (!date) return 'Unknown date';
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (dayKey(date) === dayKey(new Date())) return 'Today';
+    if (dayKey(date) === dayKey(yesterday)) return 'Yesterday';
+    return date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function toIsoDay(date: Date): string {
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${m}-${d}`;
+}
+
+function shiftIsoDay(isoDay: string, delta: number): string {
+    const [y, m, d] = isoDay.split('-').map(Number);
+    return toIsoDay(new Date(y, m - 1, d + delta));
+}
+
+/** The worker sends LOG/ERROR/WARN/INFO. */
+function normalizeLevel(level: string): LogLevel {
+    const lower = level.toLowerCase();
+    return lower === 'error' || lower === 'warn' || lower === 'info' ? lower : 'log';
+}
+
+/** Lines like "=====" are separators the worker prints around jobs. */
+function isDividerLine(message: string): boolean {
+    return /^[=\-_*~]{8,}$/.test(message.trim());
+}
+
+/** Pretty-print a trailing JSON payload ("Saved: {...}") for the expanded view. */
+function formatMessageBody(message: string): string {
+    const start = message.search(/[[{]/);
+    if (start === -1) return message;
+    try {
+        const parsed = JSON.parse(message.slice(start));
+        const prefix = message.slice(0, start).trimEnd();
+        return `${prefix ? `${prefix}\n` : ''}${JSON.stringify(parsed, null, 2)}`;
+    } catch {
+        return message;
+    }
+}
+
+const LEVEL_STYLE: Record<LogLevel, { label: string; color: string; tint: string }> = {
+    error: { label: 'Error', color: 'var(--no)', tint: 'rgb(var(--no-rgb) / 0.07)' },
+    warn: { label: 'Warning', color: 'var(--warn)', tint: 'rgb(var(--warn-rgb) / 0.06)' },
+    info: { label: 'Info', color: 'var(--accent)', tint: 'transparent' },
+    log: { label: 'Log', color: 'color-mix(in srgb, var(--text-3) 70%, transparent)', tint: 'transparent' },
+};
+
+const spin = { animation: 'spin 1s linear infinite' } as const;
+
+function SmallSpinner() {
+    return <Loader2 size={15} style={{ ...spin, color: 'var(--text-3)', flexShrink: 0 }} />;
+}
+
+function IconButton({ label, onClick, children, disabled }: { label: string; onClick: () => void; children: ReactNode; disabled?: boolean }) {
+    return (
+        <button
+            className="icon-action press"
+            style={{ width: 30, height: 30, opacity: disabled ? 0.4 : 1 }}
+            aria-label={label}
+            title={label}
+            disabled={disabled}
+            onClick={() => {
+                hapticPatterns.tap();
+                onClick();
+            }}
+        >
+            {children}
+        </button>
+    );
+}
+
+function useCopy() {
+    const [copied, setCopied] = useState<string | null>(null);
+    const copy = useCallback((key: string, text: string) => {
+        if (!navigator.clipboard) return;
+        navigator.clipboard.writeText(text).then(
+            () => {
+                hapticPatterns.success();
+                setCopied(key);
+                window.setTimeout(() => setCopied((current) => (current === key ? null : current)), 1500);
+            },
+            () => hapticPatterns.error(),
+        );
+    }, []);
+    return { copied, copy };
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
 export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps) {
-    const [scrapeLoading, setScrapeLoading] = useState(false);
-    const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
-    const [backupLoading, setBackupLoading] = useState(false);
-    const [backupMessage, setBackupMessage] = useState<string | null>(null);
-    const [backups, setBackups] = useState<string[] | null>(null);
-    const [backupCount, setBackupCount] = useState<number | null>(null);
-    const [backupDir, setBackupDir] = useState<string | null>(null);
-    const [backupsLoading, setBackupsLoading] = useState(false);
-    const [backupsError, setBackupsError] = useState<string | null>(null);
-    const [backupsExpanded, setBackupsExpanded] = useState(false);
+    const zBase = pageZIndex(useNavLevel());
+    const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
+    const backups = useBackups(open);
 
-    // Backup status state
-    const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
-    const [backupStatusLoading, setBackupStatusLoading] = useState(false);
-    const [backupStatusError, setBackupStatusError] = useState<string | null>(null);
+    // With the backup sheet open, Escape closes only the sheet (it has its own handler).
+    const handleBack = useCallback(() => {
+        if (selectedBackup) return;
+        onClose();
+    }, [selectedBackup, onClose]);
+
+    return (
+        <FlowPage open={open} title="Worker Dashboard" subtitle="Shotten scraper worker" onBack={handleBack}>
+            <div style={{ marginBottom: 'var(--sp-5)' }}>
+                <InlineNotice tone="warn">Actions here affect live data on the worker.</InlineNotice>
+            </div>
+
+            <ActionsSection onBackupStarted={backups.refreshSoon} />
+            <BackupsSection backups={backups} onSelect={setSelectedBackup} />
+            <LogsSection open={open} />
+
+            <BackupDetailSheet
+                fileName={selectedBackup}
+                latestFileName={backups.status?.latest?.fileName ?? null}
+                zIndex={zBase + 4}
+                onClose={() => setSelectedBackup(null)}
+                onDeleted={(fileName) => {
+                    setSelectedBackup(null);
+                    backups.removeLocally(fileName);
+                    void backups.refresh();
+                }}
+            />
+        </FlowPage>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/* Actions                                                             */
+/* ------------------------------------------------------------------ */
+function ActionsSection({ onBackupStarted }: { onBackupStarted: () => void }) {
+    const [running, setRunning] = useState<'scrape' | 'backup' | null>(null);
+    const [notice, setNotice] = useState<Notice>(null);
     const [pushTest, setPushTest] = useState<PushTestState>({ status: 'idle', fireAt: null, message: null });
-    const [pushTestRemaining, setPushTestRemaining] = useState<number | null>(null);
+    const [now, setNow] = useState(() => Date.now());
 
-    // Logs state
-    const [logs, setLogs] = useState<RenderedLogEntry[]>([]);
-    const [logsLoading, setLogsLoading] = useState(false);
-    const [logsError, setLogsError] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [levelFilter, setLevelFilter] = useState<'all' | 'info' | 'warn' | 'error' | 'LOG'>('all');
-    const [dateFilter, setDateFilter] = useState<string>('');
-    const [page, setPage] = useState(1);
-    const [hasMoreLogs, setHasMoreLogs] = useState(false);
-    const [logsExpanded, setLogsExpanded] = useState(false);
-    const [isPaginatingLogs, setIsPaginatingLogs] = useState(false);
-    const [expandedLogKeys, setExpandedLogKeys] = useState<Set<string>>(new Set());
-    const logsContainerRef = useRef<HTMLDivElement>(null);
-    const pageRef = useRef<number>(page);
-    const loadingMoreRef = useRef(false);
-    const shouldAutoScrollLogsRef = useRef(false);
-    const pendingScrollRestoreRef = useRef<{
-        scrollTop: number;
-        scrollHeight: number;
-    } | null>(null);
-    const logEntryIdRef = useRef(0);
-    const filterChangeRef = useRef(false);
+    useEffect(() => subscribePushTest(setPushTest), []);
 
-    const withEntryIds = useCallback((entries: LogEntry[]) => {
-        return entries.map(entry => ({
-            ...entry,
-            entryId: `log-${Date.now()}-${logEntryIdRef.current++}`,
+    const counting = pushTest.status === 'scheduled' && !!pushTest.fireAt;
+    useEffect(() => {
+        if (!counting) return;
+        const tick = () => setNow(Date.now());
+        const frame = window.requestAnimationFrame(tick);
+        const interval = window.setInterval(tick, 250);
+        return () => {
+            window.cancelAnimationFrame(frame);
+            window.clearInterval(interval);
+        };
+    }, [counting]);
+
+    const remaining = counting ? Math.max(0, Math.min(60, Math.ceil((pushTest.fireAt! - now) / 1000))) : null;
+
+    const run = async (kind: 'scrape' | 'backup') => {
+        hapticPatterns.tap();
+        setRunning(kind);
+        setNotice(null);
+        try {
+            const data = kind === 'scrape'
+                ? await workerFetch<{ message?: string }>('/api/lzv/scrape/trigger')
+                : await workerFetch<{ message?: string }>('/api/backup/trigger', { method: 'POST' });
+            hapticPatterns.success();
+            setNotice({ tone: 'info', text: data.message || (kind === 'scrape' ? 'Scrape started.' : 'Backup started.') });
+            if (kind === 'backup') onBackupStarted();
+        } catch (error) {
+            hapticPatterns.error();
+            setNotice({ tone: 'error', text: (error as Error).message });
+        } finally {
+            setRunning(null);
+        }
+    };
+
+    const pushBusy = pushTest.status === 'scheduled' || pushTest.status === 'requesting';
+
+    return (
+        <ListSection label="Actions">
+            <Row
+                icon={<Play size={16} />}
+                title="Run LZV scrape"
+                subtitle="Fetch standings, results and player stats now"
+                trailing={running === 'scrape' ? <SmallSpinner /> : undefined}
+                chevron={running !== 'scrape'}
+                disabled={running !== null}
+                onClick={() => void run('scrape')}
+            />
+            <Row
+                icon={<Save size={16} />}
+                title="Back up database"
+                subtitle="Runs pg_dump in the background"
+                trailing={running === 'backup' ? <SmallSpinner /> : undefined}
+                chevron={running !== 'backup'}
+                disabled={running !== null}
+                onClick={() => void run('backup')}
+            />
+            <Row
+                icon={<Bell size={16} />}
+                title="Test notification"
+                subtitle={
+                    pushTest.status === 'requesting'
+                        ? 'Asking permission…'
+                        : pushTest.status === 'scheduled' && remaining !== null
+                            ? `Arrives in ${remaining}s`
+                            : pushTest.message || 'Sends a push to this device in 1 minute'
+                }
+                trailing={pushBusy ? <SmallSpinner /> : undefined}
+                chevron={!pushBusy}
+                disabled={pushBusy}
+                onClick={() => {
+                    hapticPatterns.tap();
+                    void schedulePushTestInOneMinute();
+                }}
+            />
+            {notice && (
+                <div style={{ padding: 'var(--sp-3)' }}>
+                    <InlineNotice
+                        tone={notice.tone}
+                        action={
+                            <button className="press" aria-label="Dismiss" onClick={() => setNotice(null)} style={{ color: 'inherit', display: 'flex' }}>
+                                <X size={14} />
+                            </button>
+                        }
+                    >
+                        {notice.text}
+                    </InlineNotice>
+                </div>
+            )}
+        </ListSection>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/* Backups                                                             */
+/* ------------------------------------------------------------------ */
+async function fetchBackups() {
+    const [list, status] = await Promise.all([
+        workerFetch<{ backups: string[]; items?: BackupItem[]; backupDir?: string; retentionDays?: number }>('/api/backup/list'),
+        workerFetch<BackupStatus>('/api/backup/status').catch(() => null),
+    ]);
+    // Older workers only return names; fall back to the filename's timestamp.
+    const items: BackupItem[] =
+        list.items ??
+        list.backups.map((fileName) => ({
+            fileName,
+            size: null,
+            sizeBytes: null,
+            createdAt: backupDateFromName(fileName)?.toISOString() ?? null,
         }));
+    return { items, status, backupDir: list.backupDir ?? null, retentionDays: list.retentionDays ?? null };
+}
+
+function useBackups(open: boolean) {
+    const [data, setData] = useState<Awaited<ReturnType<typeof fetchBackups>> | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    // Each refresh bumps the nonce; we're loading until that request has answered.
+    const [nonce, setNonce] = useState(0);
+    const [loadedNonce, setLoadedNonce] = useState(-1);
+    const timers = useRef<number[]>([]);
+
+    useEffect(() => {
+        if (!open) return;
+        let cancelled = false;
+        fetchBackups()
+            .then((next) => {
+                if (cancelled) return;
+                setData(next);
+                setError(null);
+            })
+            .catch((err: Error) => {
+                if (!cancelled) setError(err.message);
+            })
+            .finally(() => {
+                if (!cancelled) setLoadedNonce(nonce);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [open, nonce]);
+
+    useEffect(() => {
+        const pending = timers.current;
+        return () => pending.forEach((id) => window.clearTimeout(id));
     }, []);
 
-    const toggleLogExpanded = (key: string) => {
-        hapticPatterns.tap();
-        setExpandedLogKeys(prev => {
-            const next = new Set(prev);
-            if (next.has(key)) {
-                next.delete(key);
-            } else {
-                next.add(key);
+    const refresh = useCallback(() => setNonce((n) => n + 1), []);
+
+    // A manual backup runs in the background on the worker; check back a few times.
+    const refreshSoon = useCallback(() => {
+        for (const delay of [8_000, 30_000, 90_000]) {
+            timers.current.push(window.setTimeout(refresh, delay));
+        }
+    }, [refresh]);
+
+    const removeLocally = useCallback((fileName: string) => {
+        setData((prev) => prev && { ...prev, items: prev.items.filter((item) => item.fileName !== fileName) });
+    }, []);
+
+    return {
+        items: data?.items ?? null,
+        status: data?.status ?? null,
+        backupDir: data?.backupDir ?? null,
+        retentionDays: data?.retentionDays ?? null,
+        loading: open && loadedNonce !== nonce,
+        error,
+        refresh,
+        refreshSoon,
+        removeLocally,
+    };
+}
+
+function BackupsSection({
+    backups,
+    onSelect,
+}: {
+    backups: ReturnType<typeof useBackups>;
+    onSelect: (fileName: string) => void;
+}) {
+    const { items, status, backupDir, retentionDays, loading, error, refresh } = backups;
+    const [visible, setVisible] = useState(BACKUPS_PAGE);
+    const latest = status?.latest;
+    const shown = items?.slice(0, visible) ?? [];
+    const hidden = (items?.length ?? 0) - shown.length;
+
+    const footer = [backupDir && `Stored in ${backupDir}`, retentionDays && `kept ${retentionDays} days`]
+        .filter(Boolean)
+        .join(' · ');
+
+    return (
+        <ListSection
+            label={items ? `Backups · ${items.length}` : 'Backups'}
+            labelAction={
+                <IconButton label="Refresh backups" onClick={() => void refresh()} disabled={loading}>
+                    <RefreshCw size={13} style={loading ? spin : undefined} />
+                </IconButton>
             }
+            footer={footer || undefined}
+        >
+            {latest && (
+                <div className="row row-static" style={{ gap: 'var(--sp-3)' }}>
+                    <StatusChip tone={latest.isHealthy ? 'ok' : 'no'}>
+                        {latest.isHealthy ? 'Healthy' : 'Needs attention'}
+                    </StatusChip>
+                    <span className="t-caption" style={{ flex: 1, minWidth: 0 }}>
+                        Last backup {formatRelative(parseDate(latest.createdAt))} · {latest.fileSize} · took {formatDuration(latest.durationSeconds)}
+                    </span>
+                </div>
+            )}
+
+            {error && (
+                <div style={{ padding: 'var(--sp-3)' }}>
+                    <InlineNotice
+                        tone="error"
+                        action={<button className="press" onClick={() => void refresh()} style={{ color: 'inherit', fontWeight: 600 }}>Retry</button>}
+                    >
+                        {error}
+                    </InlineNotice>
+                </div>
+            )}
+
+            {!items && loading && (
+                <div className="row row-static" style={{ justifyContent: 'center' }}>
+                    <SmallSpinner />
+                </div>
+            )}
+
+            {items && items.length === 0 && (
+                <EmptyState compact icon={<Database size={18} />} title="No backups yet" description="Run one from the actions above." />
+            )}
+
+            {shown.map((item) => {
+                const finished = parseDate(item.createdAt) ?? backupDateFromName(item.fileName);
+                return (
+                    <Row
+                        key={item.fileName}
+                        icon={<Database size={16} />}
+                        title={formatDateTime(backupDateFromName(item.fileName) ?? finished)}
+                        subtitle={[item.size, formatRelative(finished)].filter(Boolean).join(' · ')}
+                        trailing={item.fileName === latest?.fileName ? <StatusChip tone="accent">Latest</StatusChip> : undefined}
+                        chevron
+                        onClick={() => {
+                            hapticPatterns.tap();
+                            onSelect(item.fileName);
+                        }}
+                    />
+                );
+            })}
+
+            {hidden > 0 && (
+                <button
+                    className="row press"
+                    style={{ justifyContent: 'center', gap: 6, color: 'var(--accent)', fontWeight: 600, fontSize: 'var(--fs-xs)' }}
+                    onClick={() => {
+                        hapticPatterns.tap();
+                        setVisible((v) => v + BACKUPS_PAGE * 2);
+                    }}
+                >
+                    Show {Math.min(hidden, BACKUPS_PAGE * 2)} more
+                    <span style={{ color: 'var(--text-3)', fontWeight: 500 }}>({hidden} older)</span>
+                    <ChevronDown size={14} />
+                </button>
+            )}
+        </ListSection>
+    );
+}
+
+interface BackupDetailSheetProps {
+    fileName: string | null;
+    latestFileName: string | null;
+    zIndex: number;
+    onClose: () => void;
+    onDeleted: (fileName: string) => void;
+}
+
+function BackupDetailSheet(props: BackupDetailSheetProps) {
+    const { fileName } = props;
+    // Keep showing the last backup while the sheet animates out, and start a
+    // fresh session (new key = fresh state) every time a backup is opened.
+    const [prevFileName, setPrevFileName] = useState(fileName);
+    const [shownName, setShownName] = useState(fileName);
+    const [session, setSession] = useState(0);
+    if (fileName !== prevFileName) {
+        setPrevFileName(fileName);
+        if (fileName) {
+            setShownName(fileName);
+            setSession((s) => s + 1);
+        }
+    }
+
+    if (!shownName) return null;
+    return <BackupDetailContent key={`${shownName}-${session}`} {...props} shownName={shownName} />;
+}
+
+function BackupDetailContent({
+    fileName,
+    shownName,
+    latestFileName,
+    zIndex,
+    onClose,
+    onDeleted,
+}: BackupDetailSheetProps & { shownName: string }) {
+    const [details, setDetails] = useState<BackupDetails | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [confirming, setConfirming] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [tablesOpen, setTablesOpen] = useState(false);
+    const { copied, copy } = useCopy();
+    const loading = details === null && error === null;
+
+    useEffect(() => {
+        let cancelled = false;
+        workerFetch<{ backup: BackupDetails }>(`/api/backup/files/${encodeURIComponent(shownName)}`)
+            .then((data) => {
+                if (!cancelled) setDetails(data.backup);
+            })
+            .catch((err: Error) => {
+                if (cancelled) return;
+                setError(err.message.endsWith('404') ? 'This worker version has no backup details endpoint yet.' : err.message);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [shownName]);
+
+    const handleDelete = async () => {
+        if (!confirming) {
+            hapticPatterns.tap();
+            setConfirming(true);
+            return;
+        }
+        setDeleting(true);
+        try {
+            await workerFetch(`/api/backup/files/${encodeURIComponent(shownName)}`, { method: 'DELETE' });
+            hapticPatterns.success();
+            onDeleted(shownName);
+        } catch (err) {
+            hapticPatterns.error();
+            setError((err as Error).message);
+            setConfirming(false);
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const started = (details && parseDate(details.startedAt)) ?? (shownName ? backupDateFromName(shownName) : null);
+    const finished = details ? parseDate(details.createdAt) : null;
+    const archive = details?.archive;
+    const isLatest = details?.isLatest ?? shownName === latestFileName;
+
+    return (
+        <Sheet
+            open={fileName !== null}
+            onClose={onClose}
+            zIndex={zIndex}
+            title={formatDateTime(started)}
+            subtitle={details ? `${details.size} · finished ${formatRelative(finished)}` : 'Backup details'}
+        >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+                {loading && (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--sp-5)' }}>
+                        <SmallSpinner />
+                    </div>
+                )}
+
+                {error && <InlineNotice tone="error">{error}</InlineNotice>}
+
+                {details && (
+                    <>
+                        <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+                            {isLatest && <StatusChip tone="accent">Latest</StatusChip>}
+                            {details.success === false
+                                ? <StatusChip tone="no">Failed</StatusChip>
+                                : <StatusChip tone="ok">Completed</StatusChip>}
+                            {archive && <StatusChip>{archive.tables.length} tables</StatusChip>}
+                        </div>
+
+                        <div className="list-section">
+                            <MetricRow label="Started" value={formatDateTime(started, true)} />
+                            <MetricRow label="Finished" value={formatDateTime(finished, true)} />
+                            <MetricRow label="Duration" value={formatDuration(details.durationSeconds)} />
+                            <MetricRow label="Size" value={`${details.size} · ${details.sizeBytes.toLocaleString('en-GB')} B`} />
+                            {details.expiresAt && (
+                                <MetricRow
+                                    label="Auto-deleted on"
+                                    value={parseDate(details.expiresAt)?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) ?? '—'}
+                                />
+                            )}
+                        </div>
+
+                        {archive && (
+                            <div className="list-section">
+                                <MetricRow label="Postgres" value={archive.dumpedFrom ?? '—'} />
+                                <MetricRow label="pg_dump" value={archive.dumpedBy ?? '—'} />
+                                <MetricRow label="Format" value={[archive.format, archive.compression].filter(Boolean).join(' · ') || '—'} />
+                                <MetricRow label="Archive entries" value={archive.entryCount.toLocaleString('en-GB')} />
+                                <button
+                                    className="row press"
+                                    aria-expanded={tablesOpen}
+                                    onClick={() => {
+                                        hapticPatterns.tap();
+                                        setTablesOpen((v) => !v);
+                                    }}
+                                    style={{ justifyContent: 'space-between' }}
+                                >
+                                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-2)' }}>Tables with data</span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-xs)', fontWeight: 700 }}>
+                                        {archive.tables.length}
+                                        <ChevronDown size={14} style={{ transform: tablesOpen ? 'rotate(180deg)' : undefined, transition: 'transform 150ms' }} />
+                                    </span>
+                                </button>
+                                {tablesOpen && (
+                                    <div style={{ padding: 'var(--sp-2) var(--sp-4) var(--sp-3)', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                        {archive.tables.map((table) => (
+                                            <code key={table} className="chip" style={{ fontFamily: MONO, fontWeight: 500 }}>
+                                                {table}
+                                            </code>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {details.archiveError && (
+                            <InlineNotice tone="warn">Couldn&apos;t read the archive contents: {details.archiveError}</InlineNotice>
+                        )}
+                    </>
+                )}
+
+                {shownName && (
+                    <button
+                        className="press"
+                        aria-label="Copy file name"
+                        onClick={() => copy('file', shownName)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            padding: '10px 12px',
+                            borderRadius: 'var(--r-sm)',
+                            background: 'var(--bg-inset)',
+                            border: '1px solid var(--border-hairline)',
+                            color: 'var(--text-2)',
+                            fontFamily: MONO,
+                            fontSize: 'var(--fs-3xs)',
+                            textAlign: 'left',
+                        }}
+                    >
+                        <span style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{shownName}</span>
+                        {copied === 'file' ? <Check size={14} style={{ color: 'var(--ok)' }} /> : <Copy size={14} />}
+                    </button>
+                )}
+
+                {shownName && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
+                        {confirming && (
+                            <p className="t-caption" style={{ textAlign: 'center' }}>
+                                {isLatest
+                                    ? 'This is the newest backup. Backup health will fall back to the one before it.'
+                                    : 'The file is removed from the worker. This cannot be undone.'}
+                            </p>
+                        )}
+                        <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                            {confirming && (
+                                <button className="btn btn-quiet" style={{ flex: 1 }} onClick={() => setConfirming(false)} disabled={deleting}>
+                                    Cancel
+                                </button>
+                            )}
+                            <button className="btn btn-danger" style={{ flex: 1 }} onClick={() => void handleDelete()} disabled={deleting || loading}>
+                                {deleting ? <Loader2 size={16} style={spin} /> : <Trash2 size={16} />}
+                                {confirming ? 'Delete for good' : 'Delete backup'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </Sheet>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/* Logs                                                                */
+/* ------------------------------------------------------------------ */
+type LogFilters = { day: string; level: LevelFilter; search: string };
+
+async function fetchLogPage(pageNum: number, filters: LogFilters): Promise<{ entries: LogEntry[]; total: number | null }> {
+    const params = new URLSearchParams({ page: String(pageNum), limit: String(LOGS_LIMIT) });
+    if (filters.day) params.set('date', filters.day);
+    if (filters.level !== 'all') params.set('level', filters.level);
+    if (filters.search) params.set('search', filters.search);
+    const data = await workerFetch<{
+        logs: { timestamp: string; level: string; message: string; legacy?: boolean }[];
+        total?: number;
+    }>(`/api/logs?${params}`);
+    const entries = (data.logs || []).map((raw, index) => ({
+        id: `${pageNum}-${index}-${raw.timestamp}`,
+        date: parseLogTimestamp(raw.timestamp),
+        level: normalizeLevel(raw.level),
+        message: raw.message,
+        legacy: !!raw.legacy,
+    }));
+    return { entries, total: typeof data.total === 'number' ? data.total : null };
+}
+
+function LogsSection({ open }: { open: boolean }) {
+    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [total, setTotal] = useState<number | null>(null);
+    const [page, setPage] = useState(1);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [level, setLevel] = useState<LevelFilter>('all');
+    const [day, setDay] = useState(''); // '' = all days
+    const [expanded, setExpanded] = useState<Set<string>>(new Set());
+    const [nonce, setNonce] = useState(0);
+    // The first page is loading until the response for the current filters is in.
+    const requestKey = `${day}|${level}|${debouncedSearch}|${nonce}`;
+    const [loadedKey, setLoadedKey] = useState<string | null>(null);
+    const loading = open && loadedKey !== requestKey;
+    const requestKeyRef = useRef(requestKey);
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const { copied, copy } = useCopy();
+
+    useEffect(() => {
+        requestKeyRef.current = requestKey;
+    }, [requestKey]);
+
+    useEffect(() => {
+        const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 350);
+        return () => window.clearTimeout(timeout);
+    }, [search]);
+
+    // First page: refetch whenever the filters change or a refresh is asked for.
+    useEffect(() => {
+        if (!open) return;
+        let cancelled = false;
+        fetchLogPage(1, { day, level, search: debouncedSearch })
+            .then(({ entries, total: nextTotal }) => {
+                if (cancelled) return;
+                setLogs(entries);
+                setTotal(nextTotal);
+                setPage(1);
+                setExpanded(new Set());
+                setError(null);
+            })
+            .catch((err: Error) => {
+                if (!cancelled) setError(err.message);
+            })
+            .finally(() => {
+                if (!cancelled) setLoadedKey(requestKey);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [open, requestKey, day, level, debouncedSearch]);
+
+    const reload = useCallback(() => {
+        setError(null);
+        setNonce((n) => n + 1);
+    }, []);
+
+    const loadMore = useCallback(() => {
+        const key = requestKeyRef.current;
+        setLoadingMore(true);
+        fetchLogPage(page + 1, { day, level, search: debouncedSearch })
+            .then(({ entries, total: nextTotal }) => {
+                if (requestKeyRef.current !== key) return;
+                setLogs((prev) => [...prev, ...entries]);
+                setTotal(nextTotal);
+                setPage(page + 1);
+            })
+            .catch((err: Error) => {
+                if (requestKeyRef.current === key) setError(err.message);
+            })
+            .finally(() => setLoadingMore(false));
+    }, [page, day, level, debouncedSearch]);
+
+    const hasMore = total !== null ? logs.length < total : logs.length === page * LOGS_LIMIT;
+
+    // Load the next (older) page when the end of the list scrolls into view.
+    useEffect(() => {
+        const node = sentinelRef.current;
+        if (!node || !hasMore || loading || loadingMore || error) return;
+        const observer = new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) loadMore();
+        }, { rootMargin: '200px' });
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [hasMore, loading, loadingMore, error, loadMore]);
+
+    const groups = useMemo(() => {
+        const result: { key: string; label: string; entries: LogEntry[] }[] = [];
+        for (const entry of logs) {
+            const key = dayKey(entry.date);
+            const last = result[result.length - 1];
+            if (last && last.key === key) last.entries.push(entry);
+            else result.push({ key, label: dayLabel(entry.date), entries: [entry] });
+        }
+        return result;
+    }, [logs]);
+
+    const toggle = (id: string) => {
+        hapticPatterns.tap();
+        setExpanded((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
             return next;
         });
     };
 
-    const scrollLogsToBottom = useCallback(() => {
-        const el = logsContainerRef.current;
-        if (el) {
-            el.scrollTop = el.scrollHeight;
-        }
-    }, []);
-
-    useEffect(() => {
-        if (!open) return;
-
-        shouldAutoScrollLogsRef.current = false;
-        filterChangeRef.current = false;
-        logEntryIdRef.current = 0;
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                hapticPatterns.tap();
-                onClose();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [open, onClose]);
-
-    // Scroll logs to the newest item after initial load or a non-pagination refresh.
-    useLayoutEffect(() => {
-        if (!logsExpanded || logsLoading || logs.length === 0 || !shouldAutoScrollLogsRef.current) return;
-
-        const raf = window.requestAnimationFrame(() => {
-            scrollLogsToBottom();
-            shouldAutoScrollLogsRef.current = false;
-        });
-
-        return () => window.cancelAnimationFrame(raf);
-    }, [logsExpanded, logsLoading, logs.length, scrollLogsToBottom]);
-
-    useLayoutEffect(() => {
-        const pending = pendingScrollRestoreRef.current;
-        if (!pending || logsLoading || !logsExpanded) return;
-
-        const container = logsContainerRef.current;
-        if (!container) return;
-
-        const scrollDelta = container.scrollHeight - pending.scrollHeight;
-        if (scrollDelta > 0) {
-            container.scrollTop = pending.scrollTop + scrollDelta;
-        }
-
-        pendingScrollRestoreRef.current = null;
-    }, [logs, logsLoading, logsExpanded]);
-
-    useEffect(() => {
-        if (!open) {
-            setScrapeMessage(null);
-            setBackupMessage(null);
-            setBackups(null);
-            setBackupCount(null);
-            setBackupDir(null);
-            setBackupsError(null);
-            return;
-        }
-
-        // Auto-load backups when dialog opens
-        const loadBackups = async () => {
-            setBackupsLoading(true);
-            setBackupsError(null);
-            try {
-                const res = await fetch('http://192.168.129.250:8094/api/backup/list');
-                const data = await res.json();
-                if (data && data.success && Array.isArray(data.backups)) {
-                    setBackups(data.backups);
-                    setBackupCount(data.count ?? data.backups.length);
-                    setBackupDir(data.backupDir ?? null);
-                } else {
-                    setBackupsError(data.error || 'Failed to load backups.');
-                }
-            } catch {
-                setBackupsError('Failed to connect to worker.');
-            } finally {
-                setBackupsLoading(false);
-            }
-        };
-
-        // Load backup status
-        const loadBackupStatus = async () => {
-            setBackupStatusLoading(true);
-            setBackupStatusError(null);
-            try {
-                const res = await fetch('http://192.168.129.250:8094/api/backup/status');
-                const data = await res.json();
-                if (data && data.success) {
-                    setBackupStatus(data);
-                } else {
-                    setBackupStatusError(data.error || 'Failed to load backup status.');
-                }
-            } catch {
-                setBackupStatusError('Failed to connect to worker.');
-            } finally {
-                setBackupStatusLoading(false);
-            }
-        };
-
-        // Initial logs load
-        const loadLogs = async () => {
-            setLogsLoading(true);
-            setLogsError(null);
-            shouldAutoScrollLogsRef.current = true;
-            try {
-                const params = new URLSearchParams();
-                params.set('page', '1');
-                params.set('limit', LOGS_LIMIT.toString());
-
-            const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
-            const data = await res.json();
-            if (data && data.success) {
-                setLogs(withEntryIds(data.logs || []));
-                const total = typeof data.total === 'number' ? data.total : typeof data.totalCount === 'number' ? data.totalCount : undefined;
-                const returnedCount = Array.isArray(data.logs) ? data.logs.length : 0;
-                setHasMoreLogs(
-                    typeof total === 'number'
-                        ? LOGS_LIMIT < total
-                        : returnedCount === LOGS_LIMIT
-                );
-            } else {
-                setLogsError(data.error || 'Failed to load logs.');
-            }
-            } catch {
-                setLogsError('Failed to connect to worker.');
-            } finally {
-                setLogsLoading(false);
-            }
-        };
-
-        loadBackups();
-        loadBackupStatus();
-        loadLogs();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open]);
-
-    useEffect(() => {
-        return subscribePushTest(setPushTest);
-    }, []);
-
-    useEffect(() => {
-        if (pushTest.status !== 'scheduled' || !pushTest.fireAt) {
-            setPushTestRemaining(null);
-            return;
-        }
-
-        const tick = () => {
-            setPushTestRemaining(Math.max(0, Math.ceil((pushTest.fireAt! - Date.now()) / 1000)));
-        };
-        tick();
-        const interval = setInterval(tick, 250);
-        return () => clearInterval(interval);
-    }, [pushTest.status, pushTest.fireAt]);
-
-    const handleTriggerScrape = async () => {
-        hapticPatterns.tap();
-        setScrapeLoading(true);
-        setScrapeMessage(null);
-        try {
-            const res = await fetch('http://192.168.129.250:8094/api/lzv/scrape/trigger');
-            const data = await res.json();
-            if (data && data.success) {
-                setScrapeMessage(data.message || 'Scrape job started.');
-            } else {
-                setScrapeMessage(data.error || 'Scrape failed.');
-            }
-        } catch {
-            setScrapeMessage('Failed to connect to worker.');
-        } finally {
-            setScrapeLoading(false);
-        }
+    const clearFilters = () => {
+        setSearch('');
+        setLevel('all');
+        setDay('');
     };
 
-    const handleTriggerBackup = async () => {
-        hapticPatterns.tap();
-        setBackupLoading(true);
-        setBackupMessage(null);
-        try {
-            const res = await fetch('http://192.168.129.250:8094/api/backup/trigger', { method: 'POST' });
-            const data = await res.json();
-            if (data && data.success) {
-                setBackupMessage(data.message || 'Backup job started.');
-            } else {
-                setBackupMessage(data.error || 'Backup failed.');
-            }
-        } catch {
-            setBackupMessage('Failed to connect to worker.');
-        } finally {
-            setBackupLoading(false);
-        }
-    };
+    const today = toIsoDay(new Date());
+    const filtersActive = level !== 'all' || !!day || !!debouncedSearch;
 
-    const handleSchedulePushTest = async () => {
-        hapticPatterns.tap();
-        await schedulePushTestInOneMinute();
-    };
+    return (
+        <section style={{ marginBottom: 'var(--sp-5)' }}>
+            <div className="section-label">
+                <span>
+                    Logs{total !== null ? ` · ${total.toLocaleString('en-GB')}${filtersActive ? ' matching' : ''}` : ''}
+                </span>
+                <IconButton label="Refresh logs" onClick={reload} disabled={loading}>
+                    <RefreshCw size={13} style={loading ? spin : undefined} />
+                </IconButton>
+            </div>
 
-    const fetchLogs = useCallback(async (pageNum: number = 1, append: boolean = false) => {
-        setLogsLoading(true);
-        setIsPaginatingLogs(append);
-        setLogsError(null);
-        shouldAutoScrollLogsRef.current = !append;
-        if (append) {
-            const container = logsContainerRef.current;
-            if (container) {
-                pendingScrollRestoreRef.current = {
-                    scrollTop: container.scrollTop,
-                    scrollHeight: container.scrollHeight,
-                };
-            }
-        }
-        try {
-            const params = new URLSearchParams();
-            params.set('page', pageNum.toString());
-            params.set('limit', LOGS_LIMIT.toString());
-            if (dateFilter) params.set('date', dateFilter);
-            if (levelFilter !== 'all') params.set('level', levelFilter);
-            if (searchQuery.trim()) params.set('search', searchQuery.trim());
-
-            const res = await fetch(`http://192.168.129.250:8094/api/logs?${params}`);
-            const data = await res.json();
-            if (data && data.success) {
-                const nextEntries = withEntryIds(data.logs || []);
-                setLogs(prev => append ? [...prev, ...nextEntries] : nextEntries);
-                const total = typeof data.total === 'number' ? data.total : typeof data.totalCount === 'number' ? data.totalCount : undefined;
-                const returnedCount = Array.isArray(data.logs) ? data.logs.length : 0;
-                setHasMoreLogs(
-                    typeof total === 'number'
-                        ? pageNum * LOGS_LIMIT < total
-                        : returnedCount === LOGS_LIMIT
-                );
-                setPage(pageNum);
-            } else {
-                setLogsError(data.error || 'Failed to load logs.');
-            }
-        } catch {
-            setLogsError('Failed to connect to worker.');
-        } finally {
-            setLogsLoading(false);
-            setIsPaginatingLogs(false);
-        }
-    }, [dateFilter, levelFilter, searchQuery, withEntryIds]);
-
-    useEffect(() => {
-        if (!logsExpanded || !filterChangeRef.current) return;
-
-        const timeout = window.setTimeout(() => {
-            filterChangeRef.current = false;
-            fetchLogs(1, false);
-        }, 500);
-
-        return () => window.clearTimeout(timeout);
-    }, [searchQuery, levelFilter, dateFilter, logsExpanded, fetchLogs]);
-
-    // Sync pageRef with page state
-    useEffect(() => {
-        pageRef.current = page;
-    }, [page]);
-
-    // Infinite scroll: load next page when scrolling near the top
-    useEffect(() => {
-        if (!logsExpanded || !hasMoreLogs) return;
-
-        const container = logsContainerRef.current;
-        if (!container) return;
-
-        const checkScroll = () => {
-            if (loadingMoreRef.current) return;
-            const { scrollTop } = container;
-            if (scrollTop <= 80) {
-                loadingMoreRef.current = true;
-                fetchLogs(pageRef.current + 1, true).finally(() => {
-                    loadingMoreRef.current = false;
-                });
-            }
-        };
-
-        container.addEventListener('scroll', checkScroll);
-        return () => container.removeEventListener('scroll', checkScroll);
-    }, [logsExpanded, hasMoreLogs, fetchLogs]);
-
-    const getLevelColor = (level: string) => {
-        switch (level) {
-            case 'error': return 'var(--no)';
-            case 'warn': return 'var(--warn)';
-            case 'info': return 'var(--accent)';
-            case 'LOG': return 'var(--text-2)';
-            default: return 'var(--text-3)';
-        }
-    };
-
-    const getLevelBg = (level: string) => {
-        switch (level) {
-            case 'error': return 'rgb(var(--no-rgb) / 0.15)';
-            case 'warn': return 'rgb(var(--warn-rgb) / 0.15)';
-            case 'info': return 'rgb(var(--accent-rgb) / 0.15)';
-            case 'LOG': return 'var(--bg-panel)';
-            default: return 'var(--bg-panel-raised)';
-        }
-    };
-
-    if (typeof document === 'undefined') return null;
-
-    return createPortal(
-        <AnimatePresence>
-            {open && (
-                <motion.div
-                    initial={{ opacity: 0, x: '100%' }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: '100%' }}
-                    transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'var(--bg-screen)',
-                        zIndex: 10020,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                    }}
-                >
-                    {/* Top fade gradient */}
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: 'calc(var(--safe-top) + 92px)',
-                            background: 'linear-gradient(to bottom, var(--bg-screen) 25%, transparent 100%)',
-                            pointerEvents: 'none',
-                            zIndex: 4,
-                        }}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', marginBottom: 'var(--sp-3)' }}>
+                <div style={{ position: 'relative' }}>
+                    <Search
+                        size={15}
+                        style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }}
                     />
+                    <input
+                        className="field"
+                        type="text"
+                        inputMode="search"
+                        enterKeyHint="search"
+                        placeholder="Search messages"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        style={{ paddingLeft: 36, paddingRight: 36 }}
+                    />
+                    {search && (
+                        <button
+                            className="press"
+                            aria-label="Clear search"
+                            onClick={() => setSearch('')}
+                            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', display: 'flex' }}
+                        >
+                            <X size={15} />
+                        </button>
+                    )}
+                </div>
 
-                    {/* Back button */}
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                            hapticPatterns.tap();
-                            onClose();
-                        }}
-                        aria-label="Back"
-                        style={{
-                            position: 'absolute',
-                            top: 'calc(var(--safe-top) + 20px)',
-                            left: 12,
-                            zIndex: 5,
-                            width: 40,
-                            height: 40,
-                            borderRadius: '50%',
-                            background: 'var(--bg-panel)',
-                            backdropFilter: 'blur(40px) saturate(180%)',
-                            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                            border: '0.5px solid var(--border-hairline)',
-                            color: 'var(--text-1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            boxShadow: 'var(--shadow-overlay)',
-                        }}
-                    >
-                        <ChevronLeft size={22} strokeWidth={2} />
-                    </motion.button>
+                <SegmentedControl<LevelFilter>
+                    aria-label="Log level"
+                    variant="choice"
+                    value={level}
+                    onChange={(value) => {
+                        hapticPatterns.tap();
+                        setLevel(value);
+                    }}
+                    options={[
+                        { value: 'all', label: 'All' },
+                        { value: 'error', label: 'Errors', tone: 'no' },
+                        { value: 'warn', label: 'Warn', tone: 'warn' },
+                        { value: 'info', label: 'Info' },
+                        { value: 'log', label: 'Log' },
+                    ]}
+                />
 
-                    {/* Centered bold title */}
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: 'calc(var(--safe-top) + 20px)',
-                            left: 64,
-                            right: 64,
-                            height: 40,
-                            zIndex: 5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            pointerEvents: 'none',
-                        }}
-                    >
-                        <span
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+                    <IconButton label="Previous day" onClick={() => setDay((d) => shiftIsoDay(d || today, -1))}>
+                        <ChevronLeft size={15} />
+                    </IconButton>
+                    <input
+                        className="field"
+                        type="date"
+                        aria-label="Day"
+                        value={day}
+                        max={today}
+                        onChange={(e) => setDay(e.target.value)}
+                        style={{ flex: 1, minWidth: 0, minHeight: 36, color: day ? 'var(--text-1)' : 'var(--text-3)' }}
+                    />
+                    <IconButton label="Next day" onClick={() => setDay((d) => (d && d < today ? shiftIsoDay(d, 1) : d))} disabled={!day || day >= today}>
+                        <ChevronRight size={15} />
+                    </IconButton>
+                    <button className="chip press" onClick={() => setDay(day ? '' : today)} style={{ cursor: 'pointer', minHeight: 30 }}>
+                        {day ? <>All days <X size={11} /></> : 'Today'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="list-section" style={{ opacity: loading && logs.length > 0 ? 0.55 : 1, transition: 'opacity 150ms' }}>
+                {error && (
+                    <div style={{ padding: 'var(--sp-3)' }}>
+                        <InlineNotice
+                            tone="error"
+                            action={<button className="press" onClick={reload} style={{ color: 'inherit', fontWeight: 600 }}>Retry</button>}
+                        >
+                            {error}
+                        </InlineNotice>
+                    </div>
+                )}
+
+                {loading && logs.length === 0 && (
+                    <div className="row row-static" style={{ justifyContent: 'center' }}>
+                        <SmallSpinner />
+                    </div>
+                )}
+
+                {!loading && !error && logs.length === 0 && (
+                    <EmptyState
+                        compact
+                        icon={<Search size={18} />}
+                        title="No log lines"
+                        description={filtersActive ? 'Nothing matches these filters.' : 'The worker has not logged anything yet.'}
+                        action={filtersActive ? (
+                            <button className="btn btn-quiet" style={{ minHeight: 36 }} onClick={clearFilters}>
+                                Clear filters
+                            </button>
+                        ) : undefined}
+                    />
+                )}
+
+                {groups.map((group) => (
+                    <div key={`${group.key}-${group.entries[0].id}`}>
+                        <div
                             style={{
-                                fontSize: '1.0625rem',
+                                padding: '6px var(--sp-4)',
+                                background: 'var(--bg-panel-raised)',
+                                fontSize: 'var(--fs-3xs)',
                                 fontWeight: 600,
-                                color: 'var(--text-1)',
-                                letterSpacing: '-0.01em',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: '100%',
+                                color: 'var(--text-3)',
                             }}
                         >
-                            Worker Dashboard
-                        </span>
+                            {group.label}
+                        </div>
+                        {group.entries.map((entry) => (
+                            <LogRow
+                                key={entry.id}
+                                entry={entry}
+                                expanded={expanded.has(entry.id)}
+                                copied={copied === entry.id}
+                                onToggle={() => toggle(entry.id)}
+                                onCopy={() => copy(entry.id, `${entry.date?.toISOString() ?? ''} [${entry.level.toUpperCase()}] ${entry.message}`)}
+                            />
+                        ))}
                     </div>
+                ))}
 
-                    {/* Scrollable content */}
-                    <div
+                {logs.length > 0 && (
+                    <div ref={sentinelRef} className="row row-static" style={{ justifyContent: 'center', minHeight: 40 }}>
+                        {loadingMore ? (
+                            <SmallSpinner />
+                        ) : hasMore ? (
+                            <button className="press" onClick={loadMore} style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 'var(--fs-xs)' }}>
+                                Load older lines
+                            </button>
+                        ) : (
+                            <span className="t-caption">That&apos;s everything</span>
+                        )}
+                    </div>
+                )}
+            </div>
+        </section>
+    );
+}
+
+function LogRow({
+    entry,
+    expanded,
+    copied,
+    onToggle,
+    onCopy,
+}: {
+    entry: LogEntry;
+    expanded: boolean;
+    copied: boolean;
+    onToggle: () => void;
+    onCopy: () => void;
+}) {
+    const style = LEVEL_STYLE[entry.level];
+
+    if (isDividerLine(entry.message)) {
+        return <div aria-hidden style={{ height: 4, background: 'var(--bg-inset)', borderTop: '1px solid var(--separator)' }} />;
+    }
+
+    const textColor = entry.level === 'error' ? 'var(--no)' : entry.level === 'log' ? 'var(--text-2)' : 'var(--text-1)';
+
+    return (
+        <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={expanded}
+            onClick={onToggle}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onToggle();
+                }
+            }}
+            style={{
+                display: 'flex',
+                gap: 'var(--sp-3)',
+                padding: '9px var(--sp-4)',
+                borderTop: '1px solid var(--separator)',
+                background: expanded ? 'var(--bg-subtle)' : style.tint,
+                cursor: 'pointer',
+                minWidth: 0,
+            }}
+        >
+            {/* Level dot: the only marker on a collapsed line; the time shows when expanded. */}
+            <span
+                aria-label={style.label}
+                style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: style.color,
+                    flexShrink: 0,
+                    marginTop: 5,
+                }}
+            />
+            <div style={{ minWidth: 0, flex: 1 }}>
+                {expanded ? (
+                    <>
+                        <pre
+                            style={{
+                                margin: 0,
+                                fontFamily: MONO,
+                                fontSize: 'var(--fs-3xs)',
+                                lineHeight: 1.5,
+                                color: entry.level === 'error' ? 'var(--no)' : 'var(--text-1)',
+                                whiteSpace: 'pre-wrap',
+                                overflowWrap: 'anywhere',
+                            }}
+                        >
+                            {formatMessageBody(entry.message)}
+                        </pre>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', marginTop: 8, flexWrap: 'wrap' }}>
+                            <span className="chip" style={{ color: style.color }}>{style.label}</span>
+                            {entry.legacy && <span className="chip">Legacy log</span>}
+                            <span className="t-caption" style={{ flex: 1 }}>{formatDateTime(entry.date, true)}</span>
+                            <button
+                                className="chip press"
+                                style={{ cursor: 'pointer' }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onCopy();
+                                }}
+                            >
+                                {copied ? <Check size={11} /> : <Copy size={11} />}
+                                {copied ? 'Copied' : 'Copy'}
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <span
                         style={{
-                            overflowY: 'auto',
-                            padding: 'calc(var(--safe-top) + 84px) 16px calc(var(--safe-bottom, 0px) + 24px)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 16,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            fontSize: 'var(--fs-2xs)',
+                            lineHeight: 1.4,
+                            color: textColor,
+                            overflowWrap: 'anywhere',
                         }}
                     >
-                                {/* Danger Warning */}
-                                <div
-                                    style={{
-                                        background: 'rgb(var(--no-rgb) / 0.1)',
-                                        border: '1px solid rgb(var(--no-rgb) / 0.2)',
-                                        borderRadius: 10,
-                                        padding: '10px 12px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 10,
-                                    }}
-                                >
-                                    <AlertTriangle size={16} style={{ color: 'var(--no)', flexShrink: 0 }} />
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>
-                                        Actions here affect live data on the Shotten Scraper Worker.
-                                    </div>
-                                </div>
-
-                                {/* Manual Actions */}
-                                <div>
-                                    <div
-                                        style={{
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                            color: 'var(--text-3)',
-                                            marginBottom: 8,
-                                        }}
-                                    >
-                                        Manual Actions
-                                    </div>
-                                    {/* Action Buttons Row */}
-                                    <div style={{ display: 'flex', gap: 10 }}>
-                                        <motion.button
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={handleTriggerScrape}
-                                            disabled={scrapeLoading}
-                                            style={{
-                                                flex: 1,
-                                                padding: '10px 12px',
-                                                borderRadius: 10,
-                                                border: '1px solid var(--border-hairline)',
-                                                background: 'var(--bg-panel)',
-                                                color: 'var(--text-1)',
-                                                fontWeight: 500,
-                                                fontSize: '0.85rem',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 6,
-                                                opacity: scrapeLoading ? 0.6 : 1,
-                                            }}
-                                        >
-                                            {scrapeLoading ? (
-                                                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                                            ) : (
-                                                <Play size={14} />
-                                            )}
-                                            Scrape
-                                        </motion.button>
-
-                                        <motion.button
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={handleTriggerBackup}
-                                            disabled={backupLoading}
-                                            style={{
-                                                flex: 1,
-                                                padding: '10px 12px',
-                                                borderRadius: 10,
-                                                border: '1px solid var(--border-hairline)',
-                                                background: 'var(--bg-panel)',
-                                                color: 'var(--text-1)',
-                                                fontWeight: 500,
-                                                fontSize: '0.85rem',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 6,
-                                                opacity: backupLoading ? 0.6 : 1,
-                                            }}
-                                        >
-                                            {backupLoading ? (
-                                                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                                            ) : (
-                                                <Save size={14} />
-                                            )}
-                                            Backup
-                                        </motion.button>
-                                    </div>
-
-                                    <motion.button
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={handleSchedulePushTest}
-                                        disabled={pushTest.status === 'scheduled' || pushTest.status === 'requesting'}
-                                        style={{
-                                            marginTop: 10,
-                                            width: '100%',
-                                            padding: '10px 12px',
-                                            borderRadius: 10,
-                                            border: '1px solid var(--border-hairline)',
-                                            background: 'var(--bg-panel)',
-                                            color: 'var(--text-1)',
-                                            fontWeight: 500,
-                                            fontSize: '0.85rem',
-                                            cursor: pushTest.status === 'scheduled' || pushTest.status === 'requesting' ? 'default' : 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: 6,
-                                            opacity: pushTest.status === 'scheduled' || pushTest.status === 'requesting' ? 0.7 : 1,
-                                        }}
-                                    >
-                                        {pushTest.status === 'requesting' ? (
-                                            <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                                        ) : (
-                                            <Bell size={14} />
-                                        )}
-                                        {pushTest.status === 'requesting'
-                                            ? 'Asking permission…'
-                                            : pushTest.status === 'scheduled' && pushTestRemaining !== null
-                                                ? `Notify in ${pushTestRemaining}s`
-                                                : 'Notify in 1 min'}
-                                    </motion.button>
-
-                                    {/* Messages */}
-                                    {(scrapeMessage || backupMessage || pushTest.message) && (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
-                                            {scrapeMessage && (
-                                                <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 6,
-                                                        fontSize: '0.8rem',
-                                                        color: scrapeMessage.includes('started') || scrapeMessage.includes('success')
-                                                            ? 'var(--ok)'
-                                                            : 'var(--no)',
-                                                    }}
-                                                >
-                                                    {scrapeMessage.includes('started') || scrapeMessage.includes('success') ? (
-                                                        <CheckCircle2 size={12} />
-                                                    ) : (
-                                                        <AlertCircle size={12} />
-                                                    )}
-                                                    {scrapeMessage}
-                                                </div>
-                                            )}
-                                            {backupMessage && (
-                                                <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 6,
-                                                        fontSize: '0.8rem',
-                                                        color: backupMessage.includes('started') || backupMessage.includes('success')
-                                                            ? 'var(--ok)'
-                                                            : 'var(--no)',
-                                                    }}
-                                                >
-                                                    {backupMessage.includes('started') || backupMessage.includes('success') ? (
-                                                        <CheckCircle2 size={12} />
-                                                    ) : (
-                                                        <AlertCircle size={12} />
-                                                    )}
-                                                    {backupMessage}
-                                                </div>
-                                            )}
-                                            {pushTest.message && (
-                                                <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 6,
-                                                        fontSize: '0.8rem',
-                                                        color: pushTest.status === 'error'
-                                                            ? 'var(--no)'
-                                                            : pushTest.status === 'fired'
-                                                                ? 'var(--ok)'
-                                                                : 'var(--text-2)',
-                                                    }}
-                                                >
-                                                    {pushTest.status === 'error' ? (
-                                                        <AlertCircle size={12} />
-                                                    ) : pushTest.status === 'fired' ? (
-                                                        <CheckCircle2 size={12} />
-                                                    ) : (
-                                                        <Bell size={12} />
-                                                    )}
-                                                    {pushTest.message}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Backup Status */}
-                                <div>
-                                    <div
-                                        style={{
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                            color: 'var(--text-3)',
-                                            marginBottom: 8,
-                                        }}
-                                    >
-                                        Backup Status
-                                    </div>
-
-                                    {backupStatusLoading && (
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 8,
-                                                padding: '20px 0',
-                                                color: 'var(--text-3)',
-                                                fontSize: '0.9rem',
-                                            }}
-                                        >
-                                            <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                                            Loading status...
-                                        </div>
-                                    )}
-
-                                    {backupStatusError && (
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 6,
-                                                fontSize: '0.85rem',
-                                                color: 'var(--no)',
-                                                padding: '8px 0',
-                                            }}
-                                        >
-                                            <AlertCircle size={14} />
-                                            {backupStatusError}
-                                        </div>
-                                    )}
-
-                                    {backupStatus?.hasBackups && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            style={{
-                                                background: backupStatus.latest.isHealthy
-                                                    ? 'linear-gradient(135deg, rgb(var(--ok-rgb) / 0.1) 0%, var(--bg-panel) 100%)'
-                                                    : 'linear-gradient(135deg, rgb(var(--no-rgb) / 0.1) 0%, var(--bg-panel) 100%)',
-                                                borderRadius: 16,
-                                                padding: 16,
-                                                border: `1px solid ${backupStatus.latest.isHealthy ? 'rgb(var(--ok-rgb) / 0.25)' : 'rgb(var(--no-rgb) / 0.25)'}`,
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 12,
-                                            }}
-                                        >
-                                            {/* Health Header */}
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 12,
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        width: 48,
-                                                        height: 48,
-                                                        borderRadius: '50%',
-                                                        background: backupStatus.latest.isHealthy
-                                                            ? 'rgb(var(--ok-rgb) / 0.15)'
-                                                            : 'rgb(var(--no-rgb) / 0.15)',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        color: backupStatus.latest.isHealthy ? 'var(--ok)' : 'var(--no)',
-                                                    }}
-                                                >
-                                                    {backupStatus.latest.isHealthy ? <Shield size={24} /> : <AlertCircle size={24} />}
-                                                </div>
-                                                <div>
-                                                    <div
-                                                        style={{
-                                                            fontSize: '1.1rem',
-                                                            fontWeight: 600,
-                                                            color: backupStatus.latest.isHealthy ? 'var(--ok)' : 'var(--no)',
-                                                        }}
-                                                    >
-                                                        {backupStatus.latest.isHealthy ? 'Healthy' : 'Unhealthy'}
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            fontSize: '0.8rem',
-                                                            color: 'var(--text-2)',
-                                                        }}
-                                                    >
-                                                        Last backup {formatHoursAgo(backupStatus.latest.hoursSince)}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Stats Grid */}
-                                            <div
-                                                style={{
-                                                    display: 'grid',
-                                                    gridTemplateColumns: 'repeat(3, 1fr)',
-                                                    gap: 8,
-                                                    padding: '12px 0',
-                                                    borderTop: '1px solid var(--border-subtle)',
-                                                    borderBottom: '1px solid var(--border-subtle)',
-                                                }}
-                                            >
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div
-                                                        style={{
-                                                            fontSize: '0.7rem',
-                                                            color: 'var(--text-3)',
-                                                            marginBottom: 4,
-                                                        }}
-                                                    >
-                                                        Size
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            fontSize: '0.9rem',
-                                                            fontWeight: 600,
-                                                            color: 'var(--text-1)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            gap: 4,
-                                                        }}
-                                                    >
-                                                        <HardDrive size={12} />
-                                                        {backupStatus.latest.fileSize}
-                                                    </div>
-                                                </div>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div
-                                                        style={{
-                                                            fontSize: '0.7rem',
-                                                            color: 'var(--text-3)',
-                                                            marginBottom: 4,
-                                                        }}
-                                                    >
-                                                        Duration
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            fontSize: '0.9rem',
-                                                            fontWeight: 600,
-                                                            color: 'var(--text-1)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            gap: 4,
-                                                        }}
-                                                    >
-                                                        <Clock size={12} />
-                                                        {formatDuration(backupStatus.latest.durationSeconds)}
-                                                    </div>
-                                                </div>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div
-                                                        style={{
-                                                            fontSize: '0.7rem',
-                                                            color: 'var(--text-3)',
-                                                            marginBottom: 4,
-                                                        }}
-                                                    >
-                                                        Total
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            fontSize: '0.9rem',
-                                                            fontWeight: 600,
-                                                            color: 'var(--text-1)',
-                                                        }}
-                                                    >
-                                                        {backupStatus.totalCount}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Timestamp */}
-                                            <div
-                                                style={{
-                                                    fontSize: '0.75rem',
-                                                    color: 'var(--text-3)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 6,
-                                                }}
-                                            >
-                                                <FileText size={12} />
-                                                {backupStatus.latest.fileName}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </div>
-
-                                {/* Log Viewer */}
-                                <div>
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            marginBottom: 8,
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                fontSize: '0.75rem',
-                                                fontWeight: 600,
-                                                color: 'var(--text-3)',
-                                            }}
-                                        >
-                                            Application Logs
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <motion.button
-                                                whileTap={{ scale: 0.9, rotate: 180 }}
-                                                onClick={() => {
-                                                    hapticPatterns.tap();
-                                                    fetchLogs();
-                                                }}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    background: 'transparent',
-                                                    border: 'none',
-                                                    color: 'var(--text-3)',
-                                                    cursor: 'pointer',
-                                                    padding: 4,
-                                                }}
-                                                title="Refresh logs"
-                                            >
-                                                <RefreshCw size={14} />
-                                            </motion.button>
-                                            <motion.button
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => {
-                                                    hapticPatterns.tap();
-                                                    setLogsExpanded(!logsExpanded);
-                                                }}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 4,
-                                                    background: 'transparent',
-                                                    border: 'none',
-                                                    color: 'var(--accent)',
-                                                    fontSize: '0.75rem',
-                                                    cursor: 'pointer',
-                                                    padding: '4px 8px',
-                                                }}
-                                            >
-                                            {logsExpanded ? (
-                                                <>
-                                                    Hide <ChevronUp size={14} />
-                                                </>
-                                            ) : (
-                                                <>
-                                                    Show <ChevronDown size={14} />
-                                                </>
-                                            )}
-                                         </motion.button>
-                                        </div>
-                                    </div>
-
-                                    <AnimatePresence>
-                                        {logsExpanded && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                style={{ overflow: 'hidden' }}
-                                            >
-                                                {/* Search & Filters */}
-                                                <div
-                                                    style={{
-                                                        display: 'grid',
-                                                        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                                                        gap: 8,
-                                                        marginBottom: 12,
-                                                        alignItems: 'stretch',
-                                                    }}
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search logs..."
-                                                        value={searchQuery}
-                                                        onChange={(e) => {
-                                                            filterChangeRef.current = true;
-                                                            setSearchQuery(e.target.value);
-                                                        }}
-                                                        style={{
-                                                            width: '100%',
-                                                            minWidth: 0,
-                                                            padding: '12px 14px',
-                                                            borderRadius: 12,
-                                                            border: '1px solid var(--border-hairline)',
-                                                            background: 'var(--bg-panel-raised)',
-                                                            color: 'var(--text-1)',
-                                                            fontSize: '0.9rem',
-                                                            outline: 'none',
-                                                        }}
-                                                    />
-                                                    <select
-                                                        value={levelFilter}
-                                                        onChange={(e) => {
-                                                            filterChangeRef.current = true;
-                                                            setLevelFilter(e.target.value as 'all' | 'info' | 'warn' | 'error' | 'LOG');
-                                                        }}
-                                                        style={{
-                                                            width: '100%',
-                                                            minWidth: 0,
-                                                            padding: '12px 14px',
-                                                            borderRadius: 12,
-                                                            border: '1px solid var(--border-hairline)',
-                                                            background: 'var(--bg-panel-raised)',
-                                                            color: 'var(--text-1)',
-                                                            fontSize: '0.9rem',
-                                                            cursor: 'pointer',
-                                                        }}
-                                                    >
-                                                        <option value="all">All Levels</option>
-                                                        <option value="info">Info</option>
-                                                        <option value="warn">Warn</option>
-                                                        <option value="error">Error</option>
-                                                        <option value="LOG">Log</option>
-                                                    </select>
-                                                    <div style={{ position: 'relative', minWidth: 0 }}>
-                                                        <input
-                                                            type="date"
-                                                            value={dateFilter}
-                                                            placeholder="Date"
-                                                            onChange={(e) => {
-                                                                filterChangeRef.current = true;
-                                                                setDateFilter(e.target.value);
-                                                            }}
-                                                            style={{
-                                                                width: '100%',
-                                                                padding: '12px 40px 12px 14px',
-                                                                borderRadius: 12,
-                                                                border: '1px solid var(--border-hairline)',
-                                                                background: 'var(--bg-panel-raised)',
-                                                                color: dateFilter ? 'var(--text-1)' : 'var(--text-3)',
-                                                                fontSize: '0.9rem',
-                                                                minWidth: 0,
-                                                            }}
-                                                        />
-                                                        {dateFilter && (
-                                                            <motion.button
-                                                                whileTap={{ scale: 0.9 }}
-                                                                onClick={() => {
-                                                                    hapticPatterns.tap();
-                                                                    filterChangeRef.current = true;
-                                                                    setDateFilter('');
-                                                                }}
-                                                                style={{
-                                                                    position: 'absolute',
-                                                                    right: 8,
-                                                                    top: '50%',
-                                                                    transform: 'translateY(-50%)',
-                                                                    width: 22,
-                                                                    height: 22,
-                                                                    padding: 0,
-                                                                    borderRadius: 999,
-                                                                    border: 'none',
-                                                                    background: 'var(--bg-panel)',
-                                                                    color: 'var(--text-3)',
-                                                                    cursor: 'pointer',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                }}
-                                                                >
-                                                                    ×
-                                                                </motion.button>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {/* Logs List */}
-                                                <div
-                                                    ref={logsContainerRef}
-                                                style={{
-                                                    background: 'var(--bg-panel-raised)',
-                                                    borderRadius: 12,
-                                                    padding: 10,
-                                                    maxHeight: 320,
-                                                    overflowY: 'auto',
-                                                    overflowAnchor: 'none',
-                                                }}
-                                            >
-                                                    {logsLoading && logs.length === 0 && (
-                                                        <div
-                                                            style={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                gap: 8,
-                                                                padding: '20px 0',
-                                                                color: 'var(--text-3)',
-                                                                fontSize: '0.9rem',
-                                                            }}
-                                                        >
-                                                            <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                                                            Loading logs...
-                                                        </div>
-                                                    )}
-
-                                                    {isPaginatingLogs && logs.length > 0 && (
-                                                        <div
-                                                            style={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                gap: 8,
-                                                                padding: '10px 8px',
-                                                                color: 'var(--text-3)',
-                                                                fontSize: '0.85rem',
-                                                                borderBottom: '1px solid var(--border-subtle)',
-                                                                background: 'var(--bg-panel)',
-                                                            }}
-                                                        >
-                                                            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                                                            Loading older logs...
-                                                        </div>
-                                                    )}
-
-                                                    {logsError && (
-                                                        <div
-                                                            style={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 6,
-                                                                fontSize: '0.85rem',
-                                                                color: 'var(--no)',
-                                                                padding: '8px 0',
-                                                            }}
-                                                        >
-                                                            <AlertCircle size={14} />
-                                                            {logsError}
-                                                        </div>
-                                                    )}
-
-                                                    {logs.length === 0 && !logsLoading && !logsError && (
-                                                        <div
-                                                            style={{
-                                                                fontSize: '0.85rem',
-                                                                color: 'var(--text-3)',
-                                                                textAlign: 'center',
-                                                                padding: '16px 0',
-                                                            }}
-                                                        >
-                                                            No logs found.
-                                                        </div>
-                                                    )}
-
-                                                    {logs.slice().reverse().map((log, idx) => {
-                                                        const isExpanded = expandedLogKeys.has(log.entryId);
-                                                        return (
-                                                            <motion.div
-                                                                key={log.entryId}
-                                                                onClick={() => toggleLogExpanded(log.entryId)}
-                                                                initial={false}
-                                                                animate={{ backgroundColor: isExpanded ? 'var(--bg-panel)' : 'transparent' }}
-                                                                style={{
-                                                                    padding: '6px 8px',
-                                                                    borderBottom: idx < logs.length - 1 ? '1px solid var(--border-subtle)' : undefined,
-                                                                    display: 'flex',
-                                                                    alignItems: isExpanded ? 'flex-start' : 'center',
-                                                                    gap: 8,
-                                                                    minWidth: 0,
-                                                                    cursor: 'pointer',
-                                                                    borderRadius: 6,
-                                                                }}
-                                                            >
-                                                                <span
-                                                                    style={{
-                                                                        fontSize: '0.65rem',
-                                                                        fontWeight: 600,
-                                                                        padding: '2px 6px',
-                                                                        borderRadius: 4,
-                                                                        background: getLevelBg(log.level),
-                                                                        color: getLevelColor(log.level),
-                                                                        flexShrink: 0,
-                                                                        marginTop: isExpanded ? 1 : 0,
-                                                                    }}
-                                                                >
-                                                                    {log.level}
-                                                                </span>
-                                                                {log.legacy && (
-                                                                    <span
-                                                                        style={{
-                                                                            fontSize: '0.6rem',
-                                                                            fontWeight: 600,
-                                                                            padding: '2px 5px',
-                                                                            borderRadius: 4,
-                                                                            background: 'var(--bg-panel)',
-                                                                            color: 'var(--text-3)',
-                                                                            border: '1px solid var(--border-hairline)',
-                                                                            flexShrink: 0,
-                                                                            marginTop: isExpanded ? 1 : 0,
-                                                                        }}
-                                                                    >
-                                                                        legacy
-                                                                    </span>
-                                                                )}
-                                                                <span
-                                                                    style={{
-                                                                        fontSize: '0.7rem',
-                                                                        color: 'var(--text-3)',
-                                                                        fontFamily: 'monospace',
-                                                                        flexShrink: 0,
-                                                                        marginTop: isExpanded ? 1 : 0,
-                                                                    }}
-                                                                >
-                                                                    {new Date(log.timestamp.endsWith('Z') ? log.timestamp : `${log.timestamp}Z`).toLocaleDateString('en-GB', {
-                                                                        day: '2-digit',
-                                                                        month: 'short',
-                                                                    })} {' '}
-                                                                    {new Date(log.timestamp.endsWith('Z') ? log.timestamp : `${log.timestamp}Z`).toLocaleTimeString('en-GB', {
-                                                                        hour: '2-digit',
-                                                                        minute: '2-digit',
-                                                                    })}
-                                                                </span>
-                                                                <span
-                                                                    style={{
-                                                                        fontSize: '0.8rem',
-                                                                        color: 'var(--text-2)',
-                                                                        whiteSpace: isExpanded ? 'normal' : 'nowrap',
-                                                                        overflow: isExpanded ? 'visible' : 'hidden',
-                                                                        textOverflow: isExpanded ? 'clip' : 'ellipsis',
-                                                                        wordBreak: isExpanded ? 'break-word' : 'normal',
-                                                                        minWidth: 0,
-                                                                        lineHeight: isExpanded ? 1.4 : 1.2,
-                                                                    }}
-                                                                >
-                                                                    {log.message}
-                                                                </span>
-                                                            </motion.div>
-                                                        );
-                                                    })}
-
-                                                    {logsLoading && logs.length > 0 && !isPaginatingLogs && (
-                                                        <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                                            {[0, 1, 2].map((i) => (
-                                                                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                                                    <div style={{ width: 36, height: 16, borderRadius: 4, background: 'var(--border-hairline)' }} />
-                                                                    <div style={{ width: 60, height: 14, borderRadius: 4, background: 'var(--border-hairline)' }} />
-                                                                    <div style={{ flex: 1, height: 14, borderRadius: 4, background: 'var(--border-hairline)' }} />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-
-                                {/* Backups */}
-                                <div>
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            marginBottom: 8,
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                fontSize: '0.75rem',
-                                                fontWeight: 600,
-                                                color: 'var(--text-3)',
-                                            }}
-                                        >
-                                            Backups
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            {backupCount !== null && (
-                                                <div
-                                                    style={{
-                                                        fontSize: '0.75rem',
-                                                        color: 'var(--text-3)',
-                                                    }}
-                                                >
-                                                    {backupCount} total
-                                                </div>
-                                            )}
-                                            <motion.button
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => {
-                                                    hapticPatterns.tap();
-                                                    setBackupsExpanded(!backupsExpanded);
-                                                }}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 4,
-                                                    background: 'transparent',
-                                                    border: 'none',
-                                                    color: 'var(--accent)',
-                                                    fontSize: '0.75rem',
-                                                    cursor: 'pointer',
-                                                    padding: '4px 8px',
-                                                }}
-                                            >
-                                                {backupsExpanded ? (
-                                                    <>
-                                                        Hide <ChevronUp size={14} />
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        Show <ChevronDown size={14} />
-                                                    </>
-                                                )}
-                                            </motion.button>
-                                        </div>
-                                    </div>
-
-                                    <AnimatePresence>
-                                        {backupsExpanded && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                style={{ overflow: 'hidden' }}
-                                            >
-                                                {backupsLoading && (
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 8,
-                                                padding: '20px 0',
-                                                color: 'var(--text-3)',
-                                                fontSize: '0.9rem',
-                                            }}
-                                        >
-                                            <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                                            Loading backups...
-                                        </div>
-                                    )}
-
-                                    {backupsError && (
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 6,
-                                                fontSize: '0.85rem',
-                                                color: 'var(--no)',
-                                                padding: '8px 0',
-                                            }}
-                                        >
-                                            <AlertCircle size={14} />
-                                            {backupsError}
-                                        </div>
-                                    )}
-
-                                    {backups && backups.length > 0 && (
-                                        <>
-                                            <div
-                                                style={{
-                                                    background: 'var(--bg-panel-raised)',
-                                                    borderRadius: 12,
-                                                    padding: 10,
-                                                    maxHeight: 220,
-                                                    overflowY: 'auto',
-                                                }}
-                                            >
-                                                {backups.slice(0, 10).map((name, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        style={{
-                                                            padding: '6px 8px',
-                                                            fontSize: '0.85rem',
-                                                            color: 'var(--text-2)',
-                                                            borderBottom:
-                                                                idx < Math.min(backups.length, 10) - 1
-                                                                    ? '1px solid var(--border-subtle)'
-                                                                    : undefined,
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: 8,
-                                                        }}
-                                                    >
-                                                        <Database size={12} style={{ opacity: 0.6 }} />
-                                                        {formatBackupName(name)}
-                                                    </div>
-                                                ))}
-                                                {backups.length > 10 && (
-                                                    <div
-                                                        style={{
-                                                            padding: '6px 8px',
-                                                            fontSize: '0.8rem',
-                                                            color: 'var(--text-3)',
-                                                            textAlign: 'center',
-                                                        }}
-                                                    >
-                                                        + {backups.length - 10} more backups
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {backupDir && (
-                                                <div
-                                                    style={{
-                                                        marginTop: 6,
-                                                        fontSize: '0.75rem',
-                                                        color: 'var(--text-3)',
-                                                    }}
-                                                >
-                                                    Location: {backupDir}
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-
-                                    {backups && backups.length === 0 && (
-                                        <div
-                                            style={{
-                                                fontSize: '0.85rem',
-                                                color: 'var(--text-3)',
-                                                textAlign: 'center',
-                                                padding: '16px 0',
-                                            }}
-                                        >
-                                            No backups found.
-                                        </div>
-                                    )}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            </div>
-                        </motion.div>
-            )}
-        </AnimatePresence>,
-        document.body
+                        {entry.message}
+                    </span>
+                )}
+            </div>
+        </div>
     );
 }

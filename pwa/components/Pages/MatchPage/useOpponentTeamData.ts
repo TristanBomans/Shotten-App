@@ -54,13 +54,10 @@ export function useOpponentTeamData({
     enabled,
     knownOpponentId = null,
 }: UseOpponentTeamDataProps): UseOpponentTeamDataResult {
-    const [opponentExternalId, setOpponentExternalId] = useState<number | null>(null);
-    const [lookupDone, setLookupDone] = useState(false);
     const [opponentData, setOpponentData] = useState<ScraperTeam | null>(null);
     const [opponentPlayers, setOpponentPlayers] = useState<ScraperPlayer[]>([]);
     const [opponentMatches, setOpponentMatches] = useState<OpponentMatch[]>([]);
     const [ownTeamData, setOwnTeamData] = useState<ScraperTeam | null>(null);
-    const [loading, setLoading] = useState(false);
 
     // AI Analysis state
     const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
@@ -68,125 +65,126 @@ export function useOpponentTeamData({
     const [aiError, setAiError] = useState<string | null>(null);
     const aiCacheRef = useRef<Map<string, string>>(new Map());
     const detailsLoadedForRef = useRef<number | null>(null);
-    const lookedUpTeamRef = useRef<string | null>(null);
 
-    // Reset when opponent changes
-    useEffect(() => {
-        setOpponentExternalId(null);
-        setLookupDone(false);
+    // Known id stays in effect for the current opponent once seen, as before.
+    const [stickyKnownId, setStickyKnownId] = useState<number | null>(knownOpponentId || null);
+    // Result of the name lookup, tagged with the team it was for.
+    const [lookup, setLookup] = useState<{ team: string; id: number | null } | null>(null);
+    // External id the heavy load last succeeded for / request it last failed for.
+    const [loadedId, setLoadedId] = useState<number | null>(null);
+    const [failedKey, setFailedKey] = useState<string | null>(null);
+
+    // Reset when opponent changes (adjusted during render)
+    const [trackedTeam, setTrackedTeam] = useState(opponentTeam);
+    if (opponentTeam !== trackedTeam) {
+        setTrackedTeam(opponentTeam);
+        setStickyKnownId(knownOpponentId || null);
+        setLookup(null);
+        setLoadedId(null);
+        setFailedKey(null);
         setOpponentData(null);
         setOpponentPlayers([]);
         setOpponentMatches([]);
         setOwnTeamData(null);
         setAiAnalysis(null);
         setAiError(null);
+    } else if (knownOpponentId && knownOpponentId !== stickyKnownId) {
+        setStickyKnownId(knownOpponentId);
+    }
+
+    const resolvedKnownId = knownOpponentId || stickyKnownId;
+    const lookupForTeam = lookup && lookup.team === opponentTeam ? lookup : null;
+    const opponentExternalId = resolvedKnownId ?? lookupForTeam?.id ?? null;
+    const lookupDone = !!resolvedKnownId || !opponentTeam || lookupForTeam !== null;
+
+    // A failed heavy load is retried the next time the opponent tab is shown.
+    const heavyActive = open && enabled && !!opponentTeam;
+    if (!heavyActive && failedKey !== null) {
+        setFailedKey(null);
+    }
+    const requestKey = `${opponentExternalId}|${ownTeam ?? ''}`;
+    const loading = heavyActive && (
+        !lookupDone ||
+        (!!opponentExternalId && loadedId !== opponentExternalId && failedKey !== requestKey)
+    );
+
+    // Matching ref reset when opponent changes
+    useEffect(() => {
         detailsLoadedForRef.current = null;
-        lookedUpTeamRef.current = null;
     }, [opponentTeam]);
 
     // Light lookup: only the LZV id, so the menu link works on the squad tab
     useEffect(() => {
-        if (knownOpponentId) {
-            setOpponentExternalId(knownOpponentId);
-            setLookupDone(true);
-            lookedUpTeamRef.current = opponentTeam;
-            return;
-        }
-
-        if (!open || !opponentTeam) {
-            if (!opponentTeam) setLookupDone(true);
-            return;
-        }
-
-        if (lookedUpTeamRef.current === opponentTeam) {
-            setLookupDone(true);
-            return;
-        }
+        if (resolvedKnownId || !open || !opponentTeam || lookupDone) return;
 
         let cancelled = false;
-
-        const lookup = async () => {
-            try {
-                const result = await lookupScraperTeamByName(opponentTeam);
-                if (cancelled) return;
-                lookedUpTeamRef.current = opponentTeam;
-                setOpponentExternalId(result?.externalId ?? null);
-            } catch (error) {
+        lookupScraperTeamByName(opponentTeam)
+            .then((result) => {
+                if (!cancelled) setLookup({ team: opponentTeam, id: result?.externalId ?? null });
+            })
+            .catch((error) => {
                 console.warn('Failed to look up opponent team:', error);
-                if (!cancelled) {
-                    lookedUpTeamRef.current = opponentTeam;
-                    setOpponentExternalId(null);
-                }
-            } finally {
-                if (!cancelled) setLookupDone(true);
-            }
-        };
+                if (!cancelled) setLookup({ team: opponentTeam, id: null });
+            });
 
-        void lookup();
         return () => {
             cancelled = true;
         };
-    }, [open, opponentTeam, knownOpponentId]);
+    }, [open, opponentTeam, resolvedKnownId, lookupDone]);
 
     // Heavy load: full team, players, matches, own team — only on the opponent tab
     useEffect(() => {
-        if (!open || !enabled || !opponentTeam || !lookupDone) {
-            if (open && enabled && opponentTeam && !lookupDone) setLoading(true);
-            return;
-        }
-
-        if (!opponentExternalId) {
-            setLoading(false);
-            return;
-        }
-
-        if (detailsLoadedForRef.current === opponentExternalId) {
-            setLoading(false);
-            return;
-        }
+        if (!open || !enabled || !opponentTeam || !lookupDone) return;
+        if (!opponentExternalId) return;
+        if (detailsLoadedForRef.current === opponentExternalId) return;
 
         let cancelled = false;
-        setLoading(true);
+        const externalId = opponentExternalId;
+        const key = `${externalId}|${ownTeam ?? ''}`;
 
         const fetchTeamData = async () => {
-            try {
-                const team = await fetchScraperTeamById(opponentExternalId);
+            const team = await fetchScraperTeamById(externalId);
+            if (cancelled) return;
+            if (team) {
+                setOpponentData(team);
+
+                const [players, matchesRes] = await Promise.all([
+                    fetchScraperPlayers(team.externalId),
+                    fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`),
+                ]);
                 if (cancelled) return;
-                if (team) {
-                    setOpponentData(team);
 
-                    const [players, matchesRes] = await Promise.all([
-                        fetchScraperPlayers(team.externalId),
-                        fetch(`${API_BASE_URL}/api/lzv/matches?teamId=${team.externalId}`),
-                    ]);
+                setOpponentPlayers(players.slice(0, 5));
+                if (matchesRes.ok) {
+                    const matches = await matchesRes.json();
                     if (cancelled) return;
+                    setOpponentMatches(matches);
+                }
+            }
 
-                    setOpponentPlayers(players.slice(0, 5));
-                    if (matchesRes.ok) {
-                        setOpponentMatches(await matchesRes.json());
+            if (ownTeam) {
+                const ownLookup = await lookupScraperTeamByName(ownTeam);
+                if (cancelled) return;
+                if (ownLookup) {
+                    const ownTeamResult = await fetchScraperTeamById(ownLookup.externalId);
+                    if (!cancelled && ownTeamResult) {
+                        setOwnTeamData(ownTeamResult);
                     }
                 }
-
-                if (ownTeam) {
-                    const ownLookup = await lookupScraperTeamByName(ownTeam);
-                    if (cancelled) return;
-                    if (ownLookup) {
-                        const ownTeamResult = await fetchScraperTeamById(ownLookup.externalId);
-                        if (!cancelled && ownTeamResult) {
-                            setOwnTeamData(ownTeamResult);
-                        }
-                    }
-                }
-
-                if (!cancelled) detailsLoadedForRef.current = opponentExternalId;
-            } catch (error) {
-                console.warn('Failed to fetch team data:', error);
-            } finally {
-                if (!cancelled) setLoading(false);
             }
         };
 
-        void fetchTeamData();
+        fetchTeamData()
+            .then(() => {
+                if (cancelled) return;
+                detailsLoadedForRef.current = externalId;
+                setLoadedId(externalId);
+            })
+            .catch((error) => {
+                console.warn('Failed to fetch team data:', error);
+                if (!cancelled) setFailedKey(key);
+            });
+
         return () => {
             cancelled = true;
         };

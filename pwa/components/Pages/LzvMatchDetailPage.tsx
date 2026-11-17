@@ -55,10 +55,17 @@ export default function LzvMatchDetailPage({
 }: LzvMatchDetailPageProps) {
     const [state, setState] = useState<LoadState>({ status: 'loading' });
 
+    // Back to the loading state whenever another match is opened.
+    const requestKey = open && resultId !== null ? resultId : null;
+    const [prevRequestKey, setPrevRequestKey] = useState(requestKey);
+    if (requestKey !== prevRequestKey) {
+        setPrevRequestKey(requestKey);
+        if (requestKey !== null) setState({ status: 'loading' });
+    }
+
     useEffect(() => {
         if (!open || resultId === null) return;
         let cancelled = false;
-        setState({ status: 'loading' });
 
         fetch(`${API_BASE_URL}/api/lzv/match-detail/${resultId}`)
             .then(async (res) => {
