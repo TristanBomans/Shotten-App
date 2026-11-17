@@ -7,6 +7,7 @@ import { hapticPatterns } from '@/lib/haptic';
 import { useWhatsNew } from '@/lib/whatsNew';
 import { useGlassMotion, useLiveThumb } from './controls';
 import { subscribePagerProgress } from '@/lib/pagerProgress';
+import { useTabbarDrag } from './useTabbarDrag';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
 
@@ -75,6 +76,10 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
             isNavigatingRef.current = false;
         }, 300);
     }, [currentView, onNavigate]);
+
+    // Hold the active tab and drag the glass lens onto another one (iOS 26 style).
+    const commitDrag = useCallback((index: number) => handleNavigate(navItems[index].id), [handleNavigate]);
+    useTabbarDrag({ rootRef, itemSelector: '.tabbar-item', activeIndex, track, release, onCommit: commitDrag });
 
     return (
         <>
