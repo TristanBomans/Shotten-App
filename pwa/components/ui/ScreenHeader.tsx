@@ -5,23 +5,26 @@ import { Bell, BellRing, Clock3, HelpCircle, Trophy } from 'lucide-react';
 
 // Same glass morph as the rest of the app: elements blur in/out while they
 // fade and scale, so the header changes with the tab instead of snapping.
-// The new element starts easing in right away while the old one fades out,
-// and the bell glides over on a soft spring.
-const glassEase = [0.2, 0.8, 0.2, 1] as const;
-const glassIn: Transition = { duration: 0.42, ease: glassEase };
-const glassFade: Transition = { duration: 0.22, ease: [0.4, 0, 0.6, 1] };
-const glassSlide: Transition = { type: 'spring', stiffness: 220, damping: 28 };
+// Paced in two beats: the old element blurs away first, then the new one
+// settles in on a gentle-start, soft-end curve (not front-loaded), and the bell
+// glides over on a soft spring. The short hold also lets the in-animation
+// start after the heavy page switch, so its first frames aren't dropped.
+const glassEase = [0.33, 0, 0.2, 1] as const;
+const glassIn: Transition = { duration: 0.55, delay: 0.14, ease: glassEase };
+const glassFade: Transition = { duration: 0.2, ease: [0.4, 0, 1, 1] };
+const glassSlide: Transition = { type: 'spring', stiffness: 200, damping: 28 };
+const badgeIn: Transition = { duration: 0.32, ease: glassEase };
 
 const titleMotion = {
-    initial: { opacity: 0, y: 6, filter: 'blur(6px)' },
+    initial: { opacity: 0, y: 10, filter: 'blur(8px)' },
     animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
-    exit: { opacity: 0, y: -6, filter: 'blur(6px)', transition: glassFade },
+    exit: { opacity: 0, y: -10, filter: 'blur(8px)', transition: glassFade },
 };
 
 const actionMotion = {
-    initial: { opacity: 0, scale: 0.6, filter: 'blur(6px)' },
+    initial: { opacity: 0, scale: 0.7, filter: 'blur(8px)' },
     animate: { opacity: 1, scale: 1, filter: 'blur(0px)' },
-    exit: { opacity: 0, scale: 0.6, filter: 'blur(6px)', transition: glassFade },
+    exit: { opacity: 0, scale: 0.7, filter: 'blur(8px)', transition: glassFade },
 };
 
 const badgeMotion = {
@@ -200,7 +203,7 @@ export default function ScreenHeader({
                                 <motion.span
                                     key="badge"
                                     {...badgeMotion}
-                                    transition={transition}
+                                    transition={reduceMotion ? { duration: 0 } : badgeIn}
                                     className="icon-action-badge t-num"
                                 >
                                     {displayCount}
