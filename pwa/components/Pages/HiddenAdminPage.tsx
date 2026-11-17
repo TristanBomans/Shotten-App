@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import {
     Bell,
+    CalendarDays,
     Check,
     ChevronDown,
     ChevronLeft,
@@ -281,6 +282,7 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
     const backups = useBackups(open);
     const health = useWorkerHealth(open);
     const pagerRef = useRef<HTMLDivElement>(null);
+    const logsPaneRef = useRef<HTMLDivElement>(null);
     const programmaticScroll = useRef<number | null>(null);
     const lastTab = useRef<AdminTab>('overview');
 
@@ -394,8 +396,8 @@ export default function HiddenAdminPage({ open, onClose }: HiddenAdminPageProps)
                         <BackupsSection backups={backups} onSelect={setSelectedBackup} />
                     </div>
                 </div>
-                <div className="scrollbar-hide" style={paneStyle} aria-hidden={tab !== 'logs'}>
-                    <LogsSection open={open} level={logLevel} onLevelChange={setLogLevel} />
+                <div ref={logsPaneRef} className="scrollbar-hide" style={paneStyle} aria-hidden={tab !== 'logs'}>
+                    <LogsSection open={open} level={logLevel} onLevelChange={setLogLevel} scrollRef={logsPaneRef} />
                 </div>
             </div>
 
@@ -1092,11 +1094,14 @@ function LogsSection({
     open,
     level,
     onLevelChange,
+    scrollRef,
 }: {
     open: boolean;
     level: LevelFilter;
     onLevelChange: (level: LevelFilter) => void;
+    scrollRef: RefObject<HTMLDivElement | null>;
 }) {
+    // Newest first, as the worker pages them; the view shows them oldest first, like a terminal.
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [total, setTotal] = useState<number | null>(null);
     const [page, setPage] = useState(1);
@@ -1113,6 +1118,9 @@ function LogsSection({
     const loading = open && loadedKey !== requestKey;
     const requestKeyRef = useRef(requestKey);
     const sentinelRef = useRef<HTMLDivElement>(null);
+    // Scroll fix-ups to apply once new lines are on screen.
+    const scrollToEnd = useRef(false);
+    const keepFromBottom = useRef<number | null>(null);
     const { copied, copy } = useCopy();
 
     useEffect(() => {
@@ -1131,6 +1139,7 @@ function LogsSection({
         fetchLogPage(1, { day, level, search: debouncedSearch })
             .then(({ entries, total: nextTotal }) => {
                 if (cancelled) return;
+                scrollToEnd.current = true;
                 setLogs(entries);
                 setTotal(nextTotal);
                 setPage(1);
@@ -1148,6 +1157,19 @@ function LogsSection({
         };
     }, [open, requestKey, day, level, debouncedSearch]);
 
+    // New lines land at the bottom; older pages land on top without moving what is on screen.
+    useLayoutEffect(() => {
+        const pane = scrollRef.current;
+        if (!pane) return;
+        if (scrollToEnd.current) {
+            scrollToEnd.current = false;
+            pane.scrollTop = pane.scrollHeight;
+        } else if (keepFromBottom.current !== null) {
+            pane.scrollTop = pane.scrollHeight - keepFromBottom.current;
+            keepFromBottom.current = null;
+        }
+    }, [logs, scrollRef]);
+
     const reload = useCallback(() => {
         setError(null);
         setNonce((n) => n + 1);
@@ -1159,6 +1181,8 @@ function LogsSection({
         fetchLogPage(page + 1, { day, level, search: debouncedSearch })
             .then(({ entries, total: nextTotal }) => {
                 if (requestKeyRef.current !== key) return;
+                const pane = scrollRef.current;
+                if (pane) keepFromBottom.current = pane.scrollHeight - pane.scrollTop;
                 setLogs((prev) => [...prev, ...entries]);
                 setTotal(nextTotal);
                 setPage(page + 1);
@@ -1167,24 +1191,25 @@ function LogsSection({
                 if (requestKeyRef.current === key) setError(err.message);
             })
             .finally(() => setLoadingMore(false));
-    }, [page, day, level, debouncedSearch]);
+    }, [page, day, level, debouncedSearch, scrollRef]);
 
     const hasMore = total !== null ? logs.length < total : logs.length === page * LOGS_LIMIT;
 
-    // Load the next (older) page when the end of the list scrolls into view.
+    // Load the next (older) page when the top of the list scrolls into view.
     useEffect(() => {
         const node = sentinelRef.current;
         if (!node || !hasMore || loading || loadingMore || error) return;
         const observer = new IntersectionObserver((entries) => {
             if (entries.some((entry) => entry.isIntersecting)) loadMore();
-        }, { rootMargin: '200px' });
+        }, { root: scrollRef.current, rootMargin: '200px' });
         observer.observe(node);
         return () => observer.disconnect();
-    }, [hasMore, loading, loadingMore, error, loadMore]);
+    }, [hasMore, loading, loadingMore, error, loadMore, scrollRef]);
 
     const groups = useMemo(() => {
         const result: { key: string; label: string; entries: LogEntry[] }[] = [];
-        for (const entry of logs) {
+        for (let i = logs.length - 1; i >= 0; i--) {
+            const entry = logs[i];
             const key = dayKey(entry.date);
             const last = result[result.length - 1];
             if (last && last.key === key) last.entries.push(entry);
@@ -1226,12 +1251,12 @@ function LogsSection({
                     borderBottom: '1px solid var(--separator)',
                 }}
             >
-                <div className="flow-body-inner" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', paddingTop: 'var(--sp-3)', paddingBottom: 'var(--sp-3)' }}>
+                <div className="flow-body-inner" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', paddingTop: 'var(--sp-2)', paddingBottom: 'var(--sp-2)' }}>
                     <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
                         <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
                             <Search
-                                size={15}
-                                style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }}
+                                size={13}
+                                style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }}
                             />
                             <input
                                 className="field"
@@ -1241,16 +1266,16 @@ function LogsSection({
                                 placeholder={total !== null && !filtersActive ? `Search ${total.toLocaleString('en-GB')} lines` : 'Search messages'}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                style={{ paddingLeft: 36, paddingRight: 36 }}
+                                style={{ ...compactField, paddingLeft: 30, paddingRight: 30 }}
                             />
                             {search && (
                                 <button
                                     className="press"
                                     aria-label="Clear search"
                                     onClick={() => setSearch('')}
-                                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', display: 'flex' }}
+                                    style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', display: 'flex' }}
                                 >
-                                    <X size={15} />
+                                    <X size={13} />
                                 </button>
                             )}
                         </div>
@@ -1280,15 +1305,44 @@ function LogsSection({
                         <IconButton label="Previous day" onClick={() => setDay((d) => shiftIsoDay(d || today, -1))}>
                             <ChevronLeft size={15} />
                         </IconButton>
-                        <input
-                            className="field"
-                            type="date"
-                            aria-label="Day"
-                            value={day}
-                            max={today}
-                            onChange={(e) => setDay(e.target.value)}
-                            style={{ flex: 1, minWidth: 0, minHeight: 36, color: day ? 'var(--text-1)' : 'var(--text-3)' }}
-                        />
+                        {/* The native picker sits invisibly on top, so the label always says what is shown. */}
+                        <label
+                            className="press"
+                            style={{
+                                ...compactField,
+                                position: 'relative',
+                                flex: 1,
+                                minWidth: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 6,
+                                border: '1px solid var(--border-hairline)',
+                                borderRadius: 'var(--r-sm)',
+                                background: 'var(--bg-inset)',
+                                color: 'var(--text-1)',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <CalendarDays size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{day ? isoDayLabel(day) : 'All days'}</span>
+                            <input
+                                type="date"
+                                aria-label="Day"
+                                value={day || today}
+                                max={today}
+                                onChange={(e) => setDay(e.target.value)}
+                                onClick={(e) => {
+                                    try {
+                                        e.currentTarget.showPicker?.();
+                                    } catch {
+                                        /* the tap itself opens it */
+                                    }
+                                }}
+                                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                            />
+                        </label>
                         <IconButton label="Next day" onClick={() => setDay((d) => (d && d < today ? shiftIsoDay(d, 1) : d))} disabled={!day || day >= today}>
                             <ChevronRight size={15} />
                         </IconButton>
@@ -1305,25 +1359,25 @@ function LogsSection({
             </div>
 
             <div className="flow-body-inner" style={{ paddingTop: 'var(--sp-3)' }}>
-                <div className="list-section" style={{ opacity: loading && logs.length > 0 ? 0.55 : 1, transition: 'opacity 150ms' }}>
-                    {error && (
-                        <div style={{ padding: 'var(--sp-3)' }}>
-                            <InlineNotice
-                                tone="error"
-                                action={<button className="press" onClick={reload} style={{ color: 'inherit', fontWeight: 600 }}>Retry</button>}
-                            >
-                                {error}
-                            </InlineNotice>
-                        </div>
-                    )}
+                {error && (
+                    <div style={{ marginBottom: 'var(--sp-3)' }}>
+                        <InlineNotice
+                            tone="error"
+                            action={<button className="press" onClick={reload} style={{ color: 'inherit', fontWeight: 600 }}>Retry</button>}
+                        >
+                            {error}
+                        </InlineNotice>
+                    </div>
+                )}
 
-                    {loading && logs.length === 0 && (
-                        <div className="row row-static" style={{ justifyContent: 'center' }}>
-                            <SmallSpinner />
-                        </div>
-                    )}
+                {loading && logs.length === 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--sp-4)' }}>
+                        <SmallSpinner />
+                    </div>
+                )}
 
-                    {!loading && !error && logs.length === 0 && (
+                {!loading && !error && logs.length === 0 && (
+                    <div className="list-section">
                         <EmptyState
                             compact
                             icon={<Search size={18} />}
@@ -1335,51 +1389,80 @@ function LogsSection({
                                 </button>
                             ) : undefined}
                         />
-                    )}
+                    </div>
+                )}
 
-                    {groups.map((group) => (
-                        <div key={`${group.key}-${group.entries[0].id}`}>
-                            <div
-                                style={{
-                                    padding: '6px var(--sp-4)',
-                                    background: 'var(--bg-panel-raised)',
-                                    fontSize: 'var(--fs-3xs)',
-                                    fontWeight: 600,
-                                    color: 'var(--text-3)',
-                                }}
-                            >
-                                {group.label}
-                            </div>
-                            {group.entries.map((entry) => (
-                                <LogRow
-                                    key={entry.id}
-                                    entry={entry}
-                                    expanded={expanded.has(entry.id)}
-                                    copied={copied === entry.id}
-                                    onToggle={() => toggle(entry.id)}
-                                    onCopy={() => copy(entry.id, `${entry.date?.toISOString() ?? ''} [${entry.level.toUpperCase()}] ${entry.message}`)}
-                                />
-                            ))}
-                        </div>
-                    ))}
-
-                    {logs.length > 0 && (
-                        <div ref={sentinelRef} className="row row-static" style={{ justifyContent: 'center', minHeight: 40 }}>
+                {logs.length > 0 && (
+                    <div
+                        style={{
+                            background: 'var(--bg-inset)',
+                            border: '1px solid var(--border-hairline)',
+                            borderRadius: 'var(--r-md)',
+                            padding: 'var(--sp-2) 0',
+                            fontFamily: MONO,
+                            fontSize: 'var(--fs-3xs)',
+                            lineHeight: 1.55,
+                            opacity: loading ? 0.55 : 1,
+                            transition: 'opacity 150ms',
+                        }}
+                    >
+                        <div ref={sentinelRef} style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 6px' }}>
                             {loadingMore ? (
                                 <SmallSpinner />
                             ) : hasMore ? (
-                                <button className="press" onClick={loadMore} style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 'var(--fs-xs)' }}>
+                                <button className="press" onClick={loadMore} style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 'var(--fs-3xs)' }}>
                                     Load older lines
                                 </button>
                             ) : (
-                                <span className="t-caption">That&apos;s everything</span>
+                                <span style={{ color: 'var(--text-3)' }}>Start of log</span>
                             )}
                         </div>
-                    )}
-                </div>
+
+                        {groups.map((group) => (
+                            <div key={`${group.key}-${group.entries[0].id}`}>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 8,
+                                        padding: '6px var(--sp-3) 2px',
+                                        color: 'var(--text-3)',
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    <span style={{ flex: 1, height: 1, background: 'var(--separator)' }} />
+                                    {group.label}
+                                    <span style={{ flex: 1, height: 1, background: 'var(--separator)' }} />
+                                </div>
+                                {group.entries.map((entry) => (
+                                    <LogRow
+                                        key={entry.id}
+                                        entry={entry}
+                                        expanded={expanded.has(entry.id)}
+                                        copied={copied === entry.id}
+                                        onToggle={() => toggle(entry.id)}
+                                        onCopy={() => copy(entry.id, `${entry.date?.toISOString() ?? ''} [${entry.level.toUpperCase()}] ${entry.message}`)}
+                                    />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </>
     );
+}
+
+const compactField: CSSProperties = { minHeight: 32, height: 32, fontSize: 'var(--fs-xs)' };
+
+function isoDayLabel(isoDay: string): string {
+    const [y, m, d] = isoDay.split('-').map(Number);
+    return dayLabel(new Date(y, m - 1, d));
+}
+
+function formatClock(date: Date | null): string {
+    if (!date) return '--:--:--';
+    return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function LogRow({
@@ -1398,10 +1481,10 @@ function LogRow({
     const style = LEVEL_STYLE[entry.level];
 
     if (isDividerLine(entry.message)) {
-        return <div aria-hidden style={{ height: 4, background: 'var(--bg-inset)', borderTop: '1px solid var(--separator)' }} />;
+        return <div aria-hidden style={{ height: 8 }} />;
     }
 
-    const textColor = entry.level === 'error' ? 'var(--no)' : entry.level === 'log' ? 'var(--text-2)' : 'var(--text-1)';
+    const textColor = entry.level === 'error' ? 'var(--no)' : entry.level === 'warn' ? 'var(--warn)' : entry.level === 'log' ? 'var(--text-2)' : 'var(--text-1)';
 
     return (
         <div
@@ -1418,73 +1501,42 @@ function LogRow({
             style={{
                 display: 'flex',
                 gap: 'var(--sp-3)',
-                padding: '9px var(--sp-4)',
-                borderTop: '1px solid var(--separator)',
+                padding: '1px var(--sp-3)',
                 background: expanded ? 'var(--bg-subtle)' : style.tint,
                 cursor: 'pointer',
                 minWidth: 0,
             }}
         >
-            {/* Level dot: the only marker on a collapsed line; the time shows when expanded. */}
-            <span
-                aria-label={style.label}
-                style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: style.color,
-                    flexShrink: 0,
-                    marginTop: 5,
-                }}
-            />
+            <span style={{ color: 'var(--text-3)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{formatClock(entry.date)}</span>
             <div style={{ minWidth: 0, flex: 1 }}>
-                {expanded ? (
-                    <>
-                        <pre
-                            style={{
-                                margin: 0,
-                                fontFamily: MONO,
-                                fontSize: 'var(--fs-3xs)',
-                                lineHeight: 1.5,
-                                color: entry.level === 'error' ? 'var(--no)' : 'var(--text-1)',
-                                whiteSpace: 'pre-wrap',
-                                overflowWrap: 'anywhere',
+                <pre
+                    style={{
+                        margin: 0,
+                        font: 'inherit',
+                        color: textColor,
+                        whiteSpace: 'pre-wrap',
+                        overflowWrap: 'anywhere',
+                    }}
+                >
+                    {expanded ? formatMessageBody(entry.message) : entry.message}
+                </pre>
+                {expanded && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', margin: '6px 0 4px', flexWrap: 'wrap', fontFamily: 'var(--font-sans)' }}>
+                        <span className="chip" style={{ color: style.color }}>{style.label}</span>
+                        {entry.legacy && <span className="chip">Legacy log</span>}
+                        <span className="t-caption" style={{ flex: 1 }}>{formatDateTime(entry.date, true)}</span>
+                        <button
+                            className="chip press"
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onCopy();
                             }}
                         >
-                            {formatMessageBody(entry.message)}
-                        </pre>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', marginTop: 8, flexWrap: 'wrap' }}>
-                            <span className="chip" style={{ color: style.color }}>{style.label}</span>
-                            {entry.legacy && <span className="chip">Legacy log</span>}
-                            <span className="t-caption" style={{ flex: 1 }}>{formatDateTime(entry.date, true)}</span>
-                            <button
-                                className="chip press"
-                                style={{ cursor: 'pointer' }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onCopy();
-                                }}
-                            >
-                                {copied ? <Check size={11} /> : <Copy size={11} />}
-                                {copied ? 'Copied' : 'Copy'}
-                            </button>
-                        </div>
-                    </>
-                ) : (
-                    <span
-                        style={{
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            fontSize: 'var(--fs-2xs)',
-                            lineHeight: 1.4,
-                            color: textColor,
-                            overflowWrap: 'anywhere',
-                        }}
-                    >
-                        {entry.message}
-                    </span>
+                            {copied ? <Check size={11} /> : <Copy size={11} />}
+                            {copied ? 'Copied' : 'Copy'}
+                        </button>
+                    </div>
                 )}
             </div>
         </div>
