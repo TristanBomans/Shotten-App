@@ -1,3 +1,5 @@
+import { dateLocale } from './language';
+
 /**
  * Safely parse a date string from various formats (ISO, Supabase TIMESTAMPTZ, etc.)
  * Returns a valid Date object or null if parsing fails
@@ -38,8 +40,13 @@ export function parseDateToTimestamp(dateStr: string | Date | null | undefined):
     return date ? date.getTime() : 0;
 }
 
-/** Shared locale for every user-facing date in the app. */
+/** Shared locale for every user-facing date in the app, following the language preference. */
 export const DATE_LOCALE = 'en-GB';
+
+/** Locale-aware variant: `nl-BE` when the app language is Dutch. */
+function activeLocale(): string {
+    return dateLocale();
+}
 
 /**
  * Format a date safely, returning fallback if invalid
@@ -53,7 +60,7 @@ export function formatDateSafe(
     if (!date) return fallback;
 
     try {
-        return date.toLocaleDateString(DATE_LOCALE, options);
+        return date.toLocaleDateString(activeLocale(), options);
     } catch {
         return fallback;
     }
@@ -95,7 +102,7 @@ export function formatTimeSafe(
     if (!date) return fallback;
 
     try {
-        return date.toLocaleTimeString(DATE_LOCALE, options);
+        return date.toLocaleTimeString(activeLocale(), options);
     } catch {
         return fallback;
     }

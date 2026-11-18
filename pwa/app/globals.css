@@ -62,6 +62,60 @@
   --ambient: none;
 }
 
+[data-theme='mistral'] {
+  /* Mistral: near-black surfaces with the brand's warm orange gradient accents. */
+  --bg-screen: #000000;
+  --bg-panel: #101010;
+  --bg-panel-raised: #181310;
+  --bg-inset: #0c0a09;
+  --bg-subtle: rgba(255, 130, 5, 0.07);
+  --bg-subtle-strong: rgba(255, 130, 5, 0.12);
+  --bg-header: rgba(0, 0, 0, 0.92);
+  --bg-sheet: #141110;
+  --bg-backdrop: rgba(0, 0, 0, 0.6);
+
+  --border-hairline: rgba(255, 178, 10, 0.12);
+  --border-subtle: rgba(255, 178, 10, 0.08);
+  --border-strong: rgba(255, 178, 10, 0.22);
+  --separator: rgba(255, 178, 10, 0.08);
+
+  --text-1: #f7f3ec;
+  --text-2: #a89f92;
+  --text-3: #6b6359;
+  --text-inverse: #180d02;
+
+  /* Primary action (Mistral orange) */
+  --primary: #ff8205;
+  --primary-foreground: #1a0c00;
+
+  /* Accent (links, focus, informational emphasis) */
+  --accent: #ff7000;
+  --accent-rgb: 255 112 0;
+
+  /* Attendance semantics stay semantic */
+  --ok: #30d158;
+  --ok-rgb: 48 209 88;
+  --warn: #ffd60a;
+  --warn-rgb: 255 214 10;
+  --no: #ff453a;
+  --no-rgb: 255 69 58;
+  --tbd: #8e8e93;
+  --tbd-rgb: 142 142 147;
+
+  --switch-on: var(--primary);
+  --switch-off: rgba(255, 178, 10, 0.14);
+  --switch-thumb: #ffffff;
+
+  --shadow-overlay: 0 12px 48px rgba(26, 12, 0, 0.6);
+}
+
+[data-theme='mistral'] .ambient-bg {
+  background:
+    radial-gradient(64% 42% at 88% -6%, rgba(250, 80, 15, 0.18), transparent 70%),
+    radial-gradient(52% 36% at 8% 2%, rgba(255, 216, 0, 0.08), transparent 70%),
+    #000000;
+}
+
 [data-theme='white'] {
   --bg-screen: #f2f2f6;
   --bg-panel: #ffffff;
@@ -243,6 +297,16 @@ button {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* In-app "Reduce motion" toggle: same treatment, driven from Settings. */
+[data-reduce-motion='true'] *,
+[data-reduce-motion='true'] *::before,
+[data-reduce-motion='true'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }
 
 /* Ambient background element kept for layout compatibility; flat by design. */
@@ -797,6 +861,14 @@ button {
     inset 0 -1px 1px rgb(255 255 255 / 0.06), 0 4px 14px rgb(0 0 0 / 0.45);
   --glass-sheen: rgb(255 255 255 / 0.22);
   --glass-brightness: 1.15;
+}
+
+[data-theme='mistral'] {
+  --glass-fill: linear-gradient(180deg, rgb(255 178 10 / 0.1), rgb(250 80 15 / 0.03));
+  --glass-edge: inset 0 0.5px 0 rgb(255 216 0 / 0.45), inset 0 0 0 0.5px rgb(255 130 5 / 0.22),
+    inset 0 -1px 1px rgb(250 80 15 / 0.08), 0 4px 14px rgb(0 0 0 / 0.45);
+  --glass-sheen: rgb(255 214 10 / 0.28);
+  --glass-brightness: 1.12;
 }
 
 [data-theme='white'] {
@@ -1701,6 +1773,12 @@ button {
   --menu-glass-spec: rgb(255 255 255 / 0.45);
 }
 
+[data-theme='mistral'] {
+  --menu-glass-bg: rgb(26 16 8 / 0.8);
+  --menu-glass-edge: inset 0 0 0 0.5px rgb(255 130 5 / 0.2), inset 0 1px 0 rgb(255 216 0 / 0.12);
+  --menu-glass-spec: rgb(255 214 10 / 0.4);
+}
+
 [data-theme='white'] {
   --menu-glass-bg: rgb(255 255 255 / 0.78);
   --menu-glass-edge: inset 0 0 0 0.5px rgb(0 0 0 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.9);
@@ -1832,7 +1910,8 @@ button {
   text-align: left;
 }
 
-[data-theme='oled'] .date-field {
+[data-theme='oled'] .date-field,
+[data-theme='mistral'] .date-field {
   color-scheme: dark;
 }
 

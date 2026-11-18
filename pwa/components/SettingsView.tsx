@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, LogOut, Database, Wifi, WifiOff, Bell, Smartphone, RefreshCw, Users, UserCog, Trophy, Palette, Flag, User, History } from 'lucide-react';
+import { Check, LogOut, Database, Wifi, WifiOff, Bell, Smartphone, RefreshCw, Users, UserCog, Trophy, Palette, Flag, User, History, Languages, Minimize2 } from 'lucide-react';
 import { getUseMockData, setUseMockData, fetchAllScraperTeams } from '@/lib/useData';
 import { disableMatchPush, enableMatchPush } from '@/lib/pushSettings';
 import { isWebPushSupported } from '@/lib/webPushClient';
@@ -19,6 +19,9 @@ import { Switch } from './ui/controls';
 import Sheet from './ui/Sheet';
 import { useNav } from '@/lib/navContext';
 import type { NavEntry, PageKind } from '@/lib/navStack';
+import { useLanguage } from '@/lib/i18n';
+import { getLanguage, type Language } from '@/lib/language';
+import { setReduceMotion, useReduceMotionPref } from '@/lib/motionSettings';
 
 interface SettingsViewProps {
     onLogout: () => void;
@@ -32,19 +35,28 @@ interface SettingsViewProps {
 const isOpenIn = (stack: NavEntry[], kind: PageKind) =>
     stack.some((entry) => entry.kind === kind && (kind !== 'respond' || !entry.id));
 
-function getVersionSubtitle({ build, latestDate, unseenCount }: ReturnType<typeof useWhatsNew>) {
-    if (build === null || !latestDate) return 'View changelog and updates';
-    const updated = `Updated ${formatRelativeTime(latestDate).toLowerCase()}`;
+function getVersionSubtitle(
+    t: (key: string, vars?: Record<string, string | number>) => string,
+    { build, latestDate, unseenCount }: ReturnType<typeof useWhatsNew>,
+) {
+    if (build === null || !latestDate) return t('set.viewChangelog');
+    const updated = t('set.updated', { when: formatRelativeTime(latestDate).toLowerCase() });
     if (unseenCount > 0) {
-        return `${updated} · ${unseenCount} new ${unseenCount === 1 ? 'release' : 'releases'}`;
+        return `${updated} · ${t('set.newReleases', { count: unseenCount })}`;
     }
-    return `Version ${build} · ${updated}`;
+    return t('set.version', { build, when: updated });
 }
 
 const themeLabels: Record<string, string> = {
     oled: 'OLED Black',
     white: 'White',
+    mistral: 'Mistral',
 };
+
+const LANGUAGE_OPTIONS: { id: Language; native: string }[] = [
+    { id: 'nl', native: 'Nederlands' },
+    { id: 'en', native: 'English' },
+];
 
 export default function SettingsView({
     onLogout,
@@ -74,7 +86,11 @@ export default function SettingsView({
     const [showLeagueSelector, setShowLeagueSelector] = useState(false);
     const [theme, setTheme] = useState<string>('oled');
     const [showThemeSelector, setShowThemeSelector] = useState(false);
+    const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+    const [language, setLanguageState] = useState<Language>('en');
     const whatsNew = useWhatsNew();
+    const { t, changeLanguage } = useLanguage();
+    const { reduced, setReduceMotion } = useReduceMotionPref();
 
     useEffect(() => {
         setUseMock(getUseMockData());
@@ -94,8 +110,12 @@ export default function SettingsView({
         setIncludeForfait(localStorage.getItem(INCLUDE_FORFAIT_STORAGE_KEY) === 'true');
         const savedLeague = localStorage.getItem('defaultLeague');
         if (savedLeague) setDefaultLeague(savedLeague);
+        setLanguageState(getLanguage());
         const savedTheme = localStorage.getItem('theme');
-        const resolvedTheme = !savedTheme || savedTheme === 'original' ? 'oled' : savedTheme;
+        const resolvedTheme = !savedTheme
+            || savedTheme === 'original'
+                ? 'oled'
+                : savedTheme;
         if (resolvedTheme !== savedTheme) {
             localStorage.setItem('theme', resolvedTheme);
             document.documentElement.setAttribute('data-theme', resolvedTheme);
@@ -206,6 +226,18 @@ export default function SettingsView({
         window.dispatchEvent(new CustomEvent('defaultLeagueChanged', { detail: null }));
     };
 
+    const handleSelectLanguage = (option: Language) => {
+        hapticPatterns.tap();
+        setLanguageState(option);
+        changeLanguage(option);
+        setShowLanguageSelector(false);
+    };
+
+    const handleToggleReduceMotion = () => {
+        hapticPatterns.toggle();
+        setReduceMotion(!reduced);
+    };
+
     const handleSelectTheme = (newTheme: string) => {
         hapticPatterns.tap();
         setTheme(newTheme);
@@ -215,6 +247,7 @@ export default function SettingsView({
         const themeColors: Record<string, string> = {
             oled: '#000000',
             white: '#f2f2f6',
+            mistral: '#000000',
         };
         const meta = document.querySelector('meta[name="theme-color"]');
         if (meta) {
@@ -226,32 +259,32 @@ export default function SettingsView({
     };
 
     const notificationsSubtitle = !pushSupported
-        ? 'Install Shotten to your home screen first'
+        ? t('set.installFirst')
         : notificationsBusy
-            ? 'Updating…'
+            ? t('set.updating')
             : notificationsMessage
                 ? notificationsMessage
                 : notificationsEnabled
-                    ? 'Attendance and kickoff alerts on this phone'
-                    : 'Attendance and kickoff alerts';
+                    ? t('set.notifOnSub')
+                    : t('set.notifOffSub');
 
     return (
         <div className="screen">
             <AbsencesSettingsSection playerId={playerId} />
 
             {/* Preferences */}
-            <ListSection label="Preferences">
+            <ListSection label={t('set.prefs')}>
                 <div style={{ opacity: notificationsBusy || !pushSupported ? 0.6 : 1 }}>
                     <Row
                         icon={<Bell size={16} />}
-                        title="Notifications"
+                        title={t('set.notifications')}
                         subtitle={notificationsSubtitle}
                         trailing={
                             <Switch
                                 checked={notificationsEnabled}
                                 onChange={() => pushSupported && handleToggleNotifications()}
                                 disabled={!pushSupported || notificationsBusy}
-                                aria-label="Notifications"
+                                aria-label={t('set.notifications')}
                             />
                         }
                     />
@@ -259,59 +292,83 @@ export default function SettingsView({
 
                 <Row
                     icon={<Smartphone size={16} />}
-                    title="Haptic feedback"
-                    subtitle="Vibration on actions"
+                    title={t('set.haptic')}
+                    subtitle={t('set.hapticSub')}
                     trailing={
                         <Switch
                             checked={hapticFeedback}
                             onChange={handleToggleHaptic}
-                            aria-label="Haptic feedback"
+                            aria-label={t('set.haptic')}
+                        />
+                    }
+                />
+
+                <Row
+                    icon={<Minimize2 size={16} />}
+                    title={t('set.reduceMotion')}
+                    subtitle={reduced ? t('set.reduceMotionOn') : t('set.reduceMotionOff')}
+                    trailing={
+                        <Switch
+                            checked={reduced}
+                            onChange={handleToggleReduceMotion}
+                            aria-label={t('set.reduceMotion')}
                         />
                     }
                 />
 
                 <Row
                     icon={<Users size={16} />}
-                    title="Show full names"
-                    subtitle={showFullNames ? 'Names visible on cards' : 'Compact attendance on cards'}
+                    title={t('set.fullNames')}
+                    subtitle={showFullNames ? t('set.fullNamesOn') : t('set.fullNamesOff')}
                     trailing={
                         <Switch
                             checked={showFullNames}
                             onChange={handleToggleFullNames}
-                            aria-label="Show full names"
+                            aria-label={t('set.fullNames')}
                         />
                     }
                 />
 
                 <Row
                     icon={<History size={16} />}
-                    title="Show past matches"
-                    subtitle={showPastMatches ? 'History on the board, scrolls to next' : 'Upcoming matches only'}
+                    title={t('set.pastMatches')}
+                    subtitle={showPastMatches ? t('set.pastOn') : t('set.pastOff')}
                     trailing={
                         <Switch
                             checked={showPastMatches}
                             onChange={handleTogglePastMatches}
-                            aria-label="Show past matches"
+                            aria-label={t('set.pastMatches')}
                         />
                     }
                 />
 
                 <Row
                     icon={<Flag size={16} />}
-                    title="Count forfait matches"
-                    subtitle={includeForfait ? 'Forfaits count toward attendance %' : 'Forfaits left out of attendance %'}
+                    title={t('set.forfait')}
+                    subtitle={includeForfait ? t('set.forfaitOn') : t('set.forfaitOff')}
                     trailing={
                         <Switch
                             checked={includeForfait}
                             onChange={handleToggleIncludeForfait}
-                            aria-label="Count forfait matches in attendance percentage"
+                            aria-label={t('set.forfait')}
                         />
                     }
                 />
 
                 <Row
+                    icon={<Languages size={16} />}
+                    title={t('set.language')}
+                    subtitle={LANGUAGE_OPTIONS.find(o => o.id === language)?.native ?? t('set.languageSub')}
+                    chevron
+                    onClick={() => {
+                        hapticPatterns.tap();
+                        setShowLanguageSelector(true);
+                    }}
+                />
+
+                <Row
                     icon={<Palette size={16} />}
-                    title="Appearance"
+                    title={t('set.appearance')}
                     subtitle={themeLabels[theme]}
                     chevron
                     onClick={() => {
@@ -323,8 +380,8 @@ export default function SettingsView({
                 {leagues.length > 1 && (
                     <Row
                         icon={<Trophy size={16} />}
-                        title="Default league"
-                        subtitle={defaultLeague || 'Auto-select (Mechelen preferred)'}
+                        title={t('set.league')}
+                        subtitle={defaultLeague || `${t('set.leagueAuto')} (${t('set.leagueAutoSub').toLowerCase()})`}
                         chevron
                         onClick={() => {
                             hapticPatterns.tap();
@@ -335,11 +392,11 @@ export default function SettingsView({
             </ListSection>
 
             {/* Team: per-match captain tools live in each match's ⋯ menu */}
-            <ListSection label="Team">
+            <ListSection label={t('set.teamSection')}>
                 <Row
                     icon={<UserCog size={16} />}
-                    title="Manage players"
-                    subtitle="Add, edit or remove players"
+                    title={t('set.managePlayers')}
+                    subtitle={t('set.managePlayersSub')}
                     chevron
                     onClick={() => {
                         hapticPatterns.tap();
@@ -349,15 +406,15 @@ export default function SettingsView({
             </ListSection>
 
             {/* App */}
-            <ListSection label="App">
+            <ListSection label={t('set.appSection')}>
                 <Row
                     icon={<RefreshCw size={16} />}
-                    title="Version history"
-                    subtitle={getVersionSubtitle(whatsNew)}
+                    title={t('set.versionHistory')}
+                    subtitle={getVersionSubtitle(t, whatsNew)}
                     chevron
                     trailing={
                         whatsNew.unseenCount > 0 ? (
-                            <span className="chip" data-tone="accent">New</span>
+                            <span className="chip" data-tone="accent">{t('set.new')}</span>
                         ) : undefined
                     }
                     onClick={() => {
@@ -368,8 +425,8 @@ export default function SettingsView({
                 {isHiddenAdminUnlocked && (
                     <Row
                         icon={<Bell size={16} />}
-                        title="Hidden admin"
-                        subtitle="Worker dashboard for private network"
+                        title={t('set.hiddenAdmin')}
+                        subtitle={t('set.hiddenAdminSub')}
                         chevron
                         onClick={() => {
                             hapticPatterns.tap();
@@ -381,38 +438,38 @@ export default function SettingsView({
 
             {/* Developer Settings - Only on localhost */}
             {isLocalhost && (
-                <ListSection label="Developer">
+                <ListSection label={t('set.devSection')}>
                     <Row
                         icon={useMock ? <Database size={16} /> : <Wifi size={16} />}
-                        title="Data source"
-                        subtitle={useMock ? 'Mock data' : 'Live backend'}
+                        title={t('set.dataSource')}
+                        subtitle={useMock ? t('set.mockData') : t('set.liveBackend')}
                         trailing={
                             <Switch
                                 checked={!useMock}
                                 onChange={handleToggleMock}
-                                aria-label="Use live backend"
+                                aria-label={t('set.liveBackend')}
                             />
                         }
                     />
                     <Row
                         icon={useMock ? <WifiOff size={16} /> : <Wifi size={16} />}
-                        title="Backend status"
-                        subtitle={useMock ? 'Offline' : 'Connected'}
+                        title={t('set.backendStatus')}
+                        subtitle={useMock ? t('set.offline') : t('set.connected')}
                     />
                 </ListSection>
             )}
 
             {/* Account */}
-            <ListSection label="Account">
+            <ListSection label={t('set.accountSection')}>
                 <Row
                     icon={<User size={16} />}
-                    title={playerName || 'Player'}
-                    subtitle="Signed in on this device"
+                    title={playerName || t('set.player')}
+                    subtitle={t('set.signedInSub')}
                 />
                 <Row
                     icon={<LogOut size={16} />}
-                    title="Sign out"
-                    subtitle="Switch to a different player"
+                    title={t('set.signOut')}
+                    subtitle={t('set.signOutSub')}
                     destructive
                     onClick={() => {
                         hapticPatterns.tap();
@@ -425,9 +482,9 @@ export default function SettingsView({
             <Sheet
                 open={showLeagueSelector}
                 onClose={() => setShowLeagueSelector(false)}
-                title="Default league"
+                title={t('set.league')}
             >
-                <div className="list-section" role="listbox" aria-label="Default league">
+                <div className="list-section" role="listbox" aria-label={t('set.league')}>
                     <button
                         className="row"
                         role="option"
@@ -436,10 +493,10 @@ export default function SettingsView({
                     >
                         <span style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ display: 'block', fontWeight: 600, fontSize: 'var(--fs-sm)' }}>
-                                Auto-select
+                                {t('set.leagueAuto')}
                             </span>
                             <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-3)' }}>
-                                Prefer Mechelen if available
+                                {t('set.leagueAutoSub')}
                             </span>
                         </span>
                         {defaultLeague === '' && <Check size={17} style={{ color: 'var(--accent)', flexShrink: 0 }} />}
@@ -463,16 +520,44 @@ export default function SettingsView({
                 </div>
             </Sheet>
 
+            {/* Language Selector */}
+            <Sheet
+                open={showLanguageSelector}
+                onClose={() => setShowLanguageSelector(false)}
+                title={t('set.language')}
+            >
+                <div className="list-section" role="listbox" aria-label={t('set.language')}>
+                    {LANGUAGE_OPTIONS.map((option) => (
+                        <button
+                            key={option.id}
+                            className="row"
+                            role="option"
+                            aria-selected={language === option.id}
+                            onClick={() => handleSelectLanguage(option.id)}
+                            style={{ minHeight: 52 }}
+                        >
+                            <span style={{ flex: 1, fontWeight: 600, fontSize: 'var(--fs-sm)', textAlign: 'left' }}>
+                                {option.native}
+                            </span>
+                            {language === option.id && (
+                                <Check size={17} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                            )}
+                        </button>
+                    ))}
+                </div>
+            </Sheet>
+
             {/* Theme Selector */}
             <Sheet
                 open={showThemeSelector}
                 onClose={() => setShowThemeSelector(false)}
-                title="Appearance"
+                title={t('set.appearance')}
             >
-                <div className="list-section" role="listbox" aria-label="Theme">
+                <div className="list-section" role="listbox" aria-label={t('set.appearance')}>
                     {([
-                        { id: 'oled', label: 'OLED Black', description: 'Pure black for OLED displays', swatch: '#000000', swatchBorder: 'rgba(255,255,255,0.2)' },
-                        { id: 'white', label: 'White', description: 'Clean light theme', swatch: '#ffffff', swatchBorder: 'rgba(0,0,0,0.2)' },
+                        { id: 'oled', label: t('set.oledBlack'), description: t('set.oledDesc'), swatch: '#000000', swatchBorder: 'rgba(255,255,255,0.2)' },
+                        { id: 'white', label: t('set.white'), description: t('set.whiteDesc'), swatch: '#ffffff', swatchBorder: 'rgba(0,0,0,0.2)' },
+                        { id: 'mistral', label: t('set.mistral'), description: t('set.mistralDesc'), swatch: 'linear-gradient(135deg, #ffd800, #ff8205 55%, #fa500f)', swatchBorder: 'rgba(255,130,5,0.45)' },
                     ] as const).map((option) => (
                         <button
                             key={option.id}

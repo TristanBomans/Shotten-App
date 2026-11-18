@@ -41,7 +41,8 @@ export default function RootLayout({
                 <link rel="apple-touch-icon" href={process.env.NEXT_PUBLIC_APP_ICON_URL || '/icons/icon-192x192.png'} />
                 <meta name="apple-mobile-web-app-capable" content="yes" />
                 <meta name="mobile-web-app-capable" content="yes" />
-                {/* Theme loader - runs before any rendering to prevent flash */}
+                {/* Preference loader - runs before any rendering to prevent flash
+                    (theme, language, reduce-motion) */}
                 <script
                     dangerouslySetInnerHTML={{
                         __html: `
@@ -54,7 +55,8 @@ export default function RootLayout({
                                 document.documentElement.setAttribute('data-theme', theme);
                                 const themeColors = {
                                     oled: '#000000',
-                                    white: '#f2f2f6'
+                                    white: '#f2f2f6',
+                                    mistral: '#000000'
                                 };
                                 const meta = document.querySelector('meta[name="theme-color"]');
                                 const color = themeColors[theme] || '#000000';
@@ -66,6 +68,12 @@ export default function RootLayout({
                                     newMeta.setAttribute('content', color);
                                     document.head.appendChild(newMeta);
                                 }
+                                var lang = localStorage.getItem('language') === 'nl' ? 'nl' : 'en';
+                                document.documentElement.setAttribute('lang', lang);
+                                document.documentElement.setAttribute(
+                                    'data-reduce-motion',
+                                    localStorage.getItem('reduceMotion') === 'true' ? 'true' : 'false'
+                                );
                             })();
                         `,
                     }}

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, MapPin, Calendar, MoreHorizontal, ExternalLink, X, Shield, UserCheck, Flag } from 'lucide-react';
+import { ChevronLeft, MapPin, Calendar, MoreHorizontal, ExternalLink, X, Shield, UserCheck, Flag, Share2 } from 'lucide-react';
 import { hapticPatterns } from '@/lib/haptic';
 import { isSameTeamName } from '@/lib/teamNameMatching';
 import { formatMatchDate, formatTimeSafe } from '@/lib/dateUtils';
@@ -16,6 +16,8 @@ import { pageZIndex, useBackClose, useNavLevel } from '@/lib/navHistory';
 import type { AttendanceStatus } from '../../MatchBoard/types';
 import SquadView from './SquadView';
 import OpponentView from './OpponentView';
+import MatchShareSheet from './MatchShareSheet';
+import { useLanguage } from '@/lib/i18n';
 import { MatchScoreboard } from '../../MatchBoard/MatchResult';
 import MotmVoteSection from '../../Motm/MotmVoteSection';
 import AwayChip from '../../Absences/AwayChip';
@@ -67,12 +69,14 @@ export default function MatchPage({
     onOpenPlayer,
     captainActions,
 }: MatchPageProps) {
+    const { t } = useLanguage();
     const level = useNavLevel();
     const zBase = pageZIndex(level);
     const startTab: MatchTab = isFinished ? 'squad' : initialTab;
     const [activeTab, setActiveTab] = useState<MatchTab>(startTab);
     const [showImage, setShowImage] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const [showShare, setShowShare] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const lastTabRef = useRef<MatchTab>(startTab);
     const onTabChangeRef = useRef(onTabChange);
@@ -86,6 +90,7 @@ export default function MatchPage({
     }, []);
 
     useBackClose(open && showMenu, () => setShowMenu(false));
+    useBackClose(open && showShare, () => setShowShare(false));
     // Set while a tab tap drives a smooth scroll, so the in-between scroll
     // positions aren't mistaken for a swipe back to the previous tab.
     const programmaticScrollRef = useRef<number | null>(null);
@@ -137,6 +142,7 @@ export default function MatchPage({
         if (open) {
             setActiveTab(startTab);
             setShowMenu(false);
+            setShowShare(false);
             lastTabRef.current = startTab;
             programmaticScrollRef.current = null;
             const el = scrollRef.current;
@@ -156,10 +162,10 @@ export default function MatchPage({
     const unknown = roster.filter(p => p.status === 'Unknown');
 
     const statusGroups: StatusGroup[] = [
-        { title: isFinished ? 'Present' : 'Coming', players: present, color: 'var(--ok)' },
-        { title: 'Maybe', players: maybe, color: 'var(--warn)' },
-        { title: isFinished ? 'Absent' : 'Not coming', players: absent, color: 'var(--no)' },
-        { title: 'No response', players: unknown, color: 'var(--tbd)' },
+        { title: isFinished ? t('mp.present') : t('mp.coming'), players: present, color: 'var(--ok)' },
+        { title: t('mp.maybe'), players: maybe, color: 'var(--warn)' },
+        { title: isFinished ? t('mp.absent') : t('mp.notComing'), players: absent, color: 'var(--no)' },
+        { title: t('mp.noResponse'), players: unknown, color: 'var(--tbd)' },
     ];
 
     // Current user status for calendar
@@ -299,7 +305,7 @@ export default function MatchPage({
                                         value: tab,
                                         label: (
                                             <>
-                                                {tab === 'squad' ? 'Squad' : 'Opponent'}
+                                                {tab === 'squad' ? t('mp.squad') : t('mp.opponentTab')}
                                                 {tab === 'squad' && present.length > 0 && (
                                                     <span className="t-num seg-count">{present.length}</span>
                                                 )}
@@ -342,7 +348,7 @@ export default function MatchPage({
                                                                 {match.forfait ? (
                                     <div className="panel" style={{ padding: '12px 14px', marginBottom: 'var(--sp-5)', display: 'flex', alignItems: 'center', gap: 10 }}>
                                         <span className="forfait-badge">Forfait</span>
-                                        <span className="t-caption">This match will not be played.</span>
+                                        <span className="t-caption">{t('mp.forfaitNote')}</span>
                                     </div>
                                 ) : null}
                                 <SquadView statusGroups={statusGroups} currentPlayerId={currentPlayerId} onOpenPlayer={onOpenPlayer} />
@@ -379,12 +385,23 @@ export default function MatchPage({
                             updating={respondUpdating}
                             onSelect={onRespond}
                             highlight={highlightResponse}
-                            note={roster.find(p => p.id === currentPlayerId)?.away ? <AwayChip label="Away period" /> : undefined}
+                            note={roster.find(p => p.id === currentPlayerId)?.away ? <AwayChip label={t('mp.awayPeriod')} /> : undefined}
                         />
                     )}
 
                     {/* More menu (Directions / Add to Calendar / View opponent on LZV Cup) */}
                     <GlassMenu open={showMenu} zIndex={zBase + 4} onDismiss={() => setShowMenu(false)}>
+                        <button
+                            className="menu-item"
+                            onClick={() => {
+                                hapticPatterns.tap();
+                                setShowMenu(false);
+                                setShowShare(true);
+                            }}
+                        >
+                            <Share2 size={16} style={{ color: 'var(--text-2)' }} />
+                            {t('mp.shareCard')}
+                        </button>
                         {match.location && (
                             <button
                                 className="menu-item"
@@ -395,7 +412,7 @@ export default function MatchPage({
                                 }}
                             >
                                 <MapPin size={16} style={{ color: 'var(--text-2)' }} />
-                                Directions
+                                {t('mp.directions')}
                             </button>
                         )}
                         <button
@@ -407,7 +424,7 @@ export default function MatchPage({
                             }}
                         >
                             <Calendar size={16} style={{ color: 'var(--text-2)' }} />
-                            Add to Calendar
+                            {t('mp.addCalendar')}
                         </button>
                         {openOpponentTeam && (
                             <button
@@ -419,7 +436,7 @@ export default function MatchPage({
                                 }}
                             >
                                 <Shield size={16} style={{ color: 'var(--text-2)' }} />
-                                Opponent team page
+                                {t('mp.opponentPage')}
                             </button>
                         )}
                         {opponentExternalId && (
@@ -432,7 +449,7 @@ export default function MatchPage({
                                 }}
                             >
                                 <ExternalLink size={16} style={{ color: 'var(--text-2)' }} />
-                                View opponent on LZV Cup
+                                {t('mp.viewOnLzv')}
                             </button>
                         )}
                         {captainActions && (
@@ -446,7 +463,7 @@ export default function MatchPage({
                                         marginTop: 4,
                                     }}
                                 >
-                                    Captain
+                                    {t('mp.captain')}
                                 </div>
                                 <button
                                     className="menu-item"
@@ -457,7 +474,7 @@ export default function MatchPage({
                                     }}
                                 >
                                     <UserCheck size={16} style={{ color: 'var(--text-2)' }} />
-                                    Respond for players
+                                    {t('mp.respondFor')}
                                 </button>
                                 <button
                                     className="menu-item"
@@ -470,11 +487,21 @@ export default function MatchPage({
                                     style={match.forfait ? undefined : { color: 'var(--no)' }}
                                 >
                                     <Flag size={16} style={{ color: match.forfait ? 'var(--text-2)' : 'var(--no)' }} />
-                                    {match.forfait ? 'Undo forfait' : 'Mark as forfait'}
+                                    {match.forfait ? t('mp.undoForfait') : t('mp.markForfait')}
                                 </button>
                             </>
                         )}
                     </GlassMenu>
+
+                    {/* Shareable match card */}
+                    <MatchShareSheet
+                        open={showShare}
+                        onClose={() => setShowShare(false)}
+                        matchName={match.name}
+                        dateObj={dateObj}
+                        location={match.location}
+                        counts={{ in: present.length, maybe: maybe.length, out: absent.length, noResponse: unknown.length }}
+                    />
 
                     {/* Full Screen Image Overlay */}
                     <AnimatePresence>

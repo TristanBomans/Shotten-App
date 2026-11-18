@@ -7,6 +7,7 @@ import { hapticPatterns } from '@/lib/haptic';
 import { useWhatsNew } from '@/lib/whatsNew';
 import { useGlassMotion, useLiveThumb } from './controls';
 import { subscribePagerProgress } from '@/lib/pagerProgress';
+import { useLanguage } from '@/lib/i18n';
 
 type View = 'home' | 'stats' | 'league' | 'settings';
 
@@ -20,11 +21,11 @@ interface AppNavProps {
     isHidden?: boolean;
 }
 
-const navItems: { id: View; icon: React.ComponentType<{ size?: number | string }>; label: string }[] = [
-    { id: 'home', icon: Home, label: 'Home' },
-    { id: 'stats', icon: BarChart2, label: 'Stats' },
-    { id: 'league', icon: Trophy, label: 'League' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
+const navItems: { id: View; icon: React.ComponentType<{ size?: number | string }>; labelKey: string }[] = [
+    { id: 'home', icon: Home, labelKey: 'nav.home' },
+    { id: 'stats', icon: BarChart2, labelKey: 'nav.stats' },
+    { id: 'league', icon: Trophy, labelKey: 'nav.league' },
+    { id: 'settings', icon: Settings, labelKey: 'nav.settings' },
 ];
 
 /**
@@ -32,6 +33,7 @@ const navItems: { id: View; icon: React.ComponentType<{ size?: number | string }
  * rail on desktop. Both render from the same nav model.
  */
 export default function AppNav({ currentView, onNavigate, isHidden = false }: AppNavProps) {
+    const { t } = useLanguage();
     const isNavigatingRef = useRef(false);
     const { unseenCount } = useWhatsNew();
     const hasUnread = (view: View) => view === 'settings' && unseenCount > 0;
@@ -88,7 +90,9 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
             >
                 <span ref={thumbRef} className="tabbar-thumb" aria-hidden />
                 <span ref={lensRef} className="seg-lens tabbar-lens" aria-hidden />
-                {navItems.map(({ id, icon: Icon, label }) => (
+                {navItems.map(({ id, icon: Icon, labelKey }) => {
+                    const label = t(labelKey);
+                    return (
                     <button
                         key={id}
                         type="button"
@@ -101,7 +105,8 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
                         <Icon size={21} />
                         {hasUnread(id) && <span className="unread-dot" aria-hidden />}
                     </button>
-                ))}
+                    );
+                })}
             </nav>
 
             {/* Desktop: persistent side rail */}
@@ -134,7 +139,7 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
                     </span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {navItems.map(({ id, icon: Icon, label }) => (
+                    {navItems.map(({ id, icon: Icon, labelKey }) => (
                         <button
                             key={id}
                             className="siderail-item"
@@ -142,7 +147,7 @@ export default function AppNav({ currentView, onNavigate, isHidden = false }: Ap
                             onClick={() => handleNavigate(id)}
                         >
                             <Icon size={17} />
-                            <span>{label}</span>
+                            <span>{t(labelKey)}</span>
                             {hasUnread(id) && <span className="unread-dot" aria-hidden />}
                         </button>
                     ))}

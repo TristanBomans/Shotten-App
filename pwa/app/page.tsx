@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef, Suspense } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import PlayerSelect from '@/components/PlayerSelect';
 import SetupWizard from '@/components/SetupWizard';
 import Dashboard from '@/components/Dashboard';
@@ -18,6 +18,7 @@ import {
     type NavEntry,
     type View,
 } from '@/lib/navStack';
+import { useReduceMotionPref } from '@/lib/motionSettings';
 
 const readLocation = () => {
     const params = new URLSearchParams(window.location.search);
@@ -32,6 +33,9 @@ function HomeContent() {
     const [loading, setLoading] = useState(true);
     const [needsSetup, setNeedsSetup] = useState(false);
     const [isPlayerManagementOpen, setIsPlayerManagementOpen] = useState(false);
+    // Framer-motion reduction: 'always' when the user toggled Reduce motion,
+    // 'user' when they left it to the OS setting.
+    const { reduced } = useReduceMotionPref();
 
     const [currentView, setCurrentView] = useState<View>(() =>
         typeof window !== 'undefined' ? readLocation().view : 'home'
@@ -113,6 +117,9 @@ function HomeContent() {
 
     const handlePlayerSelect = (id: number) => {
         localStorage.setItem('selectedPlayerId', id.toString());
+        // Remember the last profile even after signing out, so the picker can
+        // pin it at the top of the list.
+        localStorage.setItem('lastPlayerId', id.toString());
         setSelectedPlayerId(id);
     };
 
@@ -146,8 +153,9 @@ function HomeContent() {
     }
 
     return (
-        <NavContext.Provider value={nav}>
-            <main style={{ overflow: 'hidden' }}>
+        <MotionConfig reducedMotion={reduced ? 'always' : 'user'}>
+            <NavContext.Provider value={nav}>
+                <main style={{ overflow: 'hidden' }}>
                 <AnimatePresence initial={false} mode="popLayout">
                     {needsSetup ? (
                         <motion.div
@@ -200,7 +208,8 @@ function HomeContent() {
                     />
                 )}
             </main>
-        </NavContext.Provider>
+            </NavContext.Provider>
+        </MotionConfig>
     );
 }
 
