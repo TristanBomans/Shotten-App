@@ -5,6 +5,7 @@ import { Calendar, MapPin, Share2, Copy, Check } from 'lucide-react';
 import Sheet from '../../ui/Sheet';
 import { formatMatchDate, formatTimeSafe } from '@/lib/dateUtils';
 import { useLanguage } from '@/lib/i18n';
+import type { Language } from '@/lib/language';
 import { hapticPatterns } from '@/lib/haptic';
 
 interface MatchShareSheetProps {
@@ -44,14 +45,27 @@ export default function MatchShareSheet({
     const dateText = formatMatchDate(dateObj);
     const timeText = formatTimeSafe(dateObj);
 
+    // Response summary + call to action, per language.
+    const shareLines: Record<Language, { counts: string; cta: string }> = {
+        en: {
+            counts: `In: ${counts.in} · Maybe: ${counts.maybe} · Out: ${counts.out} · No response: ${counts.noResponse}`,
+            cta: 'Answer in Shotten!',
+        },
+        nl: {
+            counts: `In: ${counts.in} · Misschien: ${counts.maybe} · Uit: ${counts.out} · Nog geen reactie: ${counts.noResponse}`,
+            cta: 'Geef je antwoord in Shotten!',
+        },
+        fr: {
+            counts: `Présent : ${counts.in} · Peut-être : ${counts.maybe} · Absent : ${counts.out} · Sans réponse : ${counts.noResponse}`,
+            cta: 'Réponds dans Shotten !',
+        },
+    };
+    const line = shareLines[lang] ?? shareLines.en;
     const shareText =
         `⚽ ${matchName}\n` +
         `🗓 ${dateText} · ${timeText}` +
         (location ? `\n📍 ${location}` : '') +
-        `\n\n` +
-        (lang === 'nl'
-            ? `In: ${counts.in} · Misschien: ${counts.maybe} · Uit: ${counts.out} · Nog geen reactie: ${counts.noResponse}\n\nGeef je antwoord in Shotten!`
-            : `In: ${counts.in} · Maybe: ${counts.maybe} · Out: ${counts.out} · No response: ${counts.noResponse}\n\nAnswer in Shotten!`);
+        `\n\n${line.counts}\n\n${line.cta}`;
 
     const handleShare = async () => {
         hapticPatterns.tap();

@@ -55,6 +55,7 @@ const themeLabels: Record<string, string> = {
 
 const LANGUAGE_OPTIONS: { id: Language; native: string }[] = [
     { id: 'nl', native: 'Nederlands' },
+    { id: 'fr', native: 'Français' },
     { id: 'en', native: 'English' },
 ];
 

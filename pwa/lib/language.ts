@@ -3,7 +3,9 @@
  * utilities like dateUtils can read it).
  */
 
-export type Language = 'en' | 'nl';
+export type Language = 'en' | 'nl' | 'fr';
+
+export const LANGUAGES: Language[] = ['en', 'nl', 'fr'];
 
 export const LANGUAGE_STORAGE_KEY = 'language';
 export const LANGUAGE_EVENT = 'languageChanged';
@@ -13,7 +15,8 @@ export const DEFAULT_LANGUAGE: Language = 'en';
 
 export function getLanguage(): Language {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined') return DEFAULT_LANGUAGE;
-    return localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'nl' ? 'nl' : DEFAULT_LANGUAGE;
+    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return LANGUAGES.includes(stored as Language) ? (stored as Language) : DEFAULT_LANGUAGE;
 }
 
 export function setLanguage(language: Language): void {
@@ -25,5 +28,12 @@ export function setLanguage(language: Language): void {
 
 /** Locale used for date/time formatting, following the language preference. */
 export function dateLocale(): string {
-    return getLanguage() === 'nl' ? 'nl-BE' : 'en-GB';
+    switch (getLanguage()) {
+        case 'nl':
+            return 'nl-BE';
+        case 'fr':
+            return 'fr-BE';
+        default:
+            return 'en-GB';
+    }
 }

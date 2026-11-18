@@ -68,7 +68,7 @@ export default function RootLayout({
                                     newMeta.setAttribute('content', color);
                                     document.head.appendChild(newMeta);
                                 }
-                                var lang = localStorage.getItem('language') === 'nl' ? 'nl' : 'en';
+                                var lang = (['nl', 'fr'].indexOf(localStorage.getItem('language')) !== -1) ? localStorage.getItem('language') : 'en';
                                 document.documentElement.setAttribute('lang', lang);
                                 document.documentElement.setAttribute(
                                     'data-reduce-motion',
