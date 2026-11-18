@@ -40,13 +40,7 @@ export function parseDateToTimestamp(dateStr: string | Date | null | undefined):
     return date ? date.getTime() : 0;
 }
 
-/** Shared locale for every user-facing date in the app, following the language preference. */
-export const DATE_LOCALE = 'en-GB';
-
-/** Locale-aware variant: `nl-BE` when the app language is Dutch. */
-function activeLocale(): string {
-    return dateLocale();
-}
+/** Locale for user-facing dates, following the app language (en/nl/fr). */
 
 /**
  * Format a date safely, returning fallback if invalid
@@ -60,7 +54,7 @@ export function formatDateSafe(
     if (!date) return fallback;
 
     try {
-        return date.toLocaleDateString(activeLocale(), options);
+        return date.toLocaleDateString(dateLocale(), options);
     } catch {
         return fallback;
     }
@@ -102,7 +96,7 @@ export function formatTimeSafe(
     if (!date) return fallback;
 
     try {
-        return date.toLocaleTimeString(activeLocale(), options);
+        return date.toLocaleTimeString(dateLocale(), options);
     } catch {
         return fallback;
     }

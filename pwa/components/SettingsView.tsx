@@ -21,7 +21,7 @@ import { useNav } from '@/lib/navContext';
 import type { NavEntry, PageKind } from '@/lib/navStack';
 import { useLanguage } from '@/lib/i18n';
 import { getLanguage, type Language } from '@/lib/language';
-import { setReduceMotion, useReduceMotionPref } from '@/lib/motionSettings';
+import { useReduceMotionPref } from '@/lib/motionSettings';
 
 interface SettingsViewProps {
     onLogout: () => void;

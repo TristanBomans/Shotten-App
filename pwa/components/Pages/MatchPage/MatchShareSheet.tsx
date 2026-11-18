@@ -44,6 +44,8 @@ export default function MatchShareSheet({
 
     const dateText = formatMatchDate(dateObj);
     const timeText = formatTimeSafe(dateObj);
+    // Card and shared text use the same "A vs B" display name.
+    const displayMatchName = matchName.replace(/-/g, ' vs ');
 
     // Response summary + call to action, per language.
     const shareLines: Record<Language, { counts: string; cta: string }> = {
@@ -62,28 +64,29 @@ export default function MatchShareSheet({
     };
     const line = shareLines[lang] ?? shareLines.en;
     const shareText =
-        `⚽ ${matchName}\n` +
+        `⚽ ${displayMatchName}\n` +
         `🗓 ${dateText} · ${timeText}` +
         (location ? `\n📍 ${location}` : '') +
         `\n\n${line.counts}\n\n${line.cta}`;
 
     const handleShare = async () => {
         hapticPatterns.tap();
+        if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+            // No Web Share (desktop): copy and stay open so "Copied!" is visible.
+            await copyToClipboard();
+            return;
+        }
         try {
-            if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-                await navigator.share({
-                    title: matchName,
-                    text: shareText,
-                });
-            } else {
-                throw new Error('Web Share unsupported');
-            }
+            await navigator.share({
+                title: displayMatchName,
+                text: shareText,
+            });
+            onClose();
         } catch (error) {
-            // AbortError = the user dismissed the sheet; anything else falls back to copy.
+            // AbortError = the user dismissed the OS sheet; anything else falls back to copy.
             if (error instanceof DOMException && error.name === 'AbortError') return;
             await copyToClipboard();
         }
-        onClose();
     };
 
     const copyToClipboard = async () => {
@@ -110,7 +113,7 @@ export default function MatchShareSheet({
                 }}
             >
                 <span style={{ fontSize: 'var(--fs-base)', fontWeight: 600, lineHeight: 1.25 }}>
-                    {matchName.replace(/-/g, ' vs ')}
+                    {displayMatchName}
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                     <span className="t-caption" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -89,8 +89,8 @@ export default function MatchPage({
         onTabChangeRef.current?.(tab);
     }, []);
 
-    useBackClose(open && showMenu, () => setShowMenu(false));
-    useBackClose(open && showShare, () => setShowShare(false));
+    // The share sheet's Sheet component handles back/close history itself,
+    // so no second useBackClose entry here.
     // Set while a tab tap drives a smooth scroll, so the in-between scroll
     // positions aren't mistaken for a swipe back to the previous tab.
     const programmaticScrollRef = useRef<number | null>(null);
